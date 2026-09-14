@@ -53,6 +53,9 @@ The reference images are visual evidence only. Their level number, stars, hint b
 | R20 | Levels 1–3 start with five lives, levels 4–6 with four, and levels 7–10 with three. Retry resets lives and red-arrow history. |
 | R21 | Refresh/reopen resumes the exact logical state, preserving removed arrows, lives, and failure history, including the result of an interrupted move. |
 | R22 | Highlight the selected arrow on press before release. Ambiguous taps do nothing so the player can zoom closer. |
+| R23 | Save player progress in browser `localStorage` so players can resume after refresh or reopening the game. |
+| R24 | Support installation as a progressive web app (PWA) and launching from its installed icon. |
+| R25 | Support mobile devices up to two hardware generations old, including the current generation and the previous two. Select concrete representative devices for verification. |
 
 ## 4. MVP boundary
 
@@ -62,10 +65,11 @@ The reference images are visual evidence only. Their level number, stars, hint b
 - M2: Rotatable cube, reliable selection, unobstructed exit animation, blocked rebound, red feedback, and life accounting.
 - M3: Ten curated cube levels with increasing density and the confirmed five/four/three starting-life curve.
 - M4: Onboarding, level indicator, arrows-remaining count, lives display, restart, failure/retry, completion/next-level, and replay of unlocked levels.
-- M5: Exact logical progress resume, including failed-arrow history. Storage location, settings scope, and account/offline features remain open.
+- M5: Exact logical progress resume from browser `localStorage`, including failed-arrow history, in the browser and installed PWA. Settings and offline-play scope remain open.
 - M6: Validated levels with a demonstrated full-clear solution and desktop/mobile verification.
+- M7: PWA installation and standalone launch, with real-device checks covering mobile hardware up to two generations old.
 
-The count, curated source, life curve, exact resume behavior, and solvability checker are confirmed. Other progression, interface, storage, and platform choices below remain proposals where labeled.
+The count, curated source, life curve, exact resume behavior, browser `localStorage`, solvability checker, PWA installation, and mobile hardware age target are confirmed. Other progression, interface, and platform details below remain proposals where labeled.
 
 ### 4.2 Deferred content and features
 
@@ -74,7 +78,7 @@ The count, curated source, life curve, exact resume behavior, and solvability ch
 - X3: Further unspecified mechanics. Provide explicit rule boundaries, not a general plugin or scripting platform.
 - X4: Accounts, cloud saves, leaderboards, monetization, advertisements, energy timers, purchases, and social features.
 - X5: Undo, hints, rewards, stars, scoring, daily challenges, and a player-facing level editor unless separately approved.
-- X6: Installable/offline PWA behavior and custom audio assets until their scope is decided.
+- X6: Offline gameplay and custom audio assets until their scope is decided. PWA installation is included in the MVP.
 
 ## 5. Core rules requiring confirmation
 
@@ -161,11 +165,17 @@ Curated authoring and a checker are confirmed for the MVP. Generated progression
 
 ## 8. Save and platform expectations — Q11, Q14, Q15
 
-**Proposed:** Browser-local saves only, with no account or backend. Store schema version, level content version, unlocked levels, current level, remaining arrow IDs, failed-arrow IDs, lives, and settings. Saving failed-arrow IDs preserves both permanent red feedback and exemption from repeat penalties. Save atomic logical outcomes rather than animation transforms. If a level's data changes, preserve campaign unlocks and restart that level safely instead of applying incompatible occupancy data.
+**Confirmed:** Save progress in browser `localStorage` and restore it when the player returns. Preserve unlocked levels, current level, remaining arrow IDs, failed-arrow IDs, and lives. Saving failed-arrow IDs preserves both permanent red feedback and exemption from repeat penalties. Accounts and cloud saves remain deferred.
+
+Proposed storage format: one versioned save snapshot containing schema version, level content version, logical progress, and approved settings. Save after each accepted move's logical result, Retry/reset, and level completion/unlock; do not rely on page exit to save. Restore the interrupted move's settled result as confirmed in Q11. Save logical outcomes rather than animation transforms. If a level's data changes, preserve campaign unlocks and restart that level safely instead of applying incompatible occupancy data.
+
+**Confirmed PWA scope:** Allow installation and standalone launch on supported platforms while retaining ordinary browser play. Installation is optional for the player. Verify save/resume in the installed app as well as the browser. Offline gameplay is not yet decided. Installation support and offline behavior are separate capabilities; see [MDN's PWA installation guide](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable).
 
 Storage denial, quota errors, or corrupt data must not prevent a session from playing. Show a concise message when progress cannot be saved. Multiple tabs must not silently combine incompatible in-progress attempts. Proposed MVP policy: independent active attempts, monotonic unlock merging, and an explicit conflict decision before replacing an older attempt.
 
-**Proposed browser floor:** Current and previous major desktop Chrome, Edge, Firefox, and Safari; current and previous major iOS Safari and Android Chrome where the required graphics capabilities exist. Confirm actual device/OS coverage before implementation. Mobile emulation supplements real-device testing.
+**Confirmed mobile hardware target:** Current-generation devices and the previous two hardware generations. Freeze representative iPhone, iPad/tablet, and Android models at MVP acceptance planning, and include the oldest supported generation in physical-device verification. This hardware-age target does not itself require obsolete operating systems.
+
+**Proposed browser floor:** Current and previous major desktop Chrome, Edge, Firefox, and Safari; current and previous major iOS Safari and Android Chrome where the required graphics capabilities exist. Record the actual OS/browser versions used on the chosen hardware. Mobile emulation supplements real-device testing.
 
 The proposed Three.js renderer requires WebGL 2. Show a clear unsupported-graphics message when unavailable. No WebGPU-only requirement is proposed. See [Three.js WebGLRenderer documentation](https://threejs.org/docs/pages/WebGLRenderer.html).
 
@@ -205,10 +215,11 @@ For non-cube shapes, resolve surface grid alignment, exposed versus interior fac
 | AC6 | Last-arrow removal, zero-life failure, same-level retry, unlocking, and replay follow the approved rules without duplicate transitions. |
 | AC7 | Every campaign level passes structural validation and has a reproducible complete solution. Difficulty and life budgets follow the approved curve. |
 | AC8 | Dense selection and rendering remain usable on agreed real desktop and mobile targets in portrait and landscape. Record devices and measurements. |
-| AC9 | Reload, background/resume, storage failure, changed level data, and rapid input preserve the chosen logical result and do not corrupt progression. |
+| AC9 | Progress is written to browser `localStorage` and resumes after refresh/reopen with the same level, removed arrows, lives, and red-arrow history. Reload during a move, background/resume, storage failure, changed level data, and rapid input follow the specified recovery policies without corrupting progression. |
 | AC10 | Reduced motion, directional cues, non-color failure feedback, and accessible menus work as specified. Any gameplay accessibility gaps are stated. |
 | AC11 | Engine fixtures demonstrate future endpoint selection and seam continuation boundaries without placing deferred mechanics in the MVP campaign. |
 | AC12 | The project's actual formatting, lint, typecheck, tests, build, and relevant browser checks pass. Automated results and physical-device evidence are reported separately. |
+| AC13 | The PWA installs and launches standalone on supported target platforms. Closing/reopening it resumes local progress. Real-device checks include hardware two generations old, and installation is not required for normal browser play. |
 
 ## 11. Decision interview
 
@@ -233,12 +244,12 @@ Answer the blocking rules first. An unanswered proposal remains a proposal, even
 - **Q10 — Confirmed 2026-09-14:** Five lives for levels 1–3, four for 4–6, three for 7–10. Retry restores lives and clears red-arrow history. Beyond-MVP life reductions remain open.
 - **Q11 — Confirmed 2026-09-14:** Resume exact logical state, including removed arrows, lives, red-arrow history, and the result of an interrupted move.
 - **Q12 — Confirmed 2026-09-14:** Highlight on press before release. Ambiguous taps do nothing; the player can zoom closer.
-- **Q13:** Should the tutorial deliberately teach a blocked move? If so, does that attempt use one of level 1's five lives? Recommendation: optional separate demonstration without changing the playable level's life budget.
+- **Q13 — Clarification pending:** Owner said “no skipable collision demo.” Confirm whether this means omit the collision demo entirely or make it mandatory and unskippable. Do not assume either behavior while the clarification is pending.
 
 ### 11.3 Scope and later-mechanic questions
 
-- **Q14:** Must the MVP install to a home screen or work offline after loading? Are anonymous local saves sufficient? Recommendation: ordinary web app and local saves first.
-- **Q15:** Which real phone, tablet, and oldest desktop/browser must be supported? Are sound, haptics, keyboard gameplay, and nonvisual gameplay MVP requirements? Recommendation: agree a concrete test matrix and treat these as separate choices.
+- **Q14 — Partially confirmed 2026-09-14:** Save progress in browser `localStorage` and allow PWA installation. Offline gameplay remains unanswered.
+- **Q15 — Hardware confirmed 2026-09-14:** Support mobile devices up to two generations old. Choose the exact representative models and OS/browser matrix before verification. Sound, haptics, keyboard gameplay, and nonvisual gameplay scope remain separate unanswered choices.
 - **Q16:** For blue/green arrows, does each color cover exactly half the total path length? What should the exact midpoint do? Does either half remain selectable when the other is hidden? Recommendation: equal surface-path halves, neutral midpoint, only exposed portions selectable.
 - **Q17:** Are yellow edges whole-edge or partial-edge rules? Do they work both ways? Can yellow markings be hidden behind the shape? Recommendation: whole-edge, reciprocal, visible using the same inspection rules as the shape.
 - **Q18:** If yellow edges produce a loop with no exit, should the move fail with a life loss or should such boards be prohibited? Recommendation: prohibit in shipped static content and keep a bounded runtime safeguard.
@@ -250,7 +261,7 @@ Answer the blocking rules first. An unanswered proposal remains a proposal, even
 
 ### 11.4 Approval boundaries
 
-Q1–Q12 have owner answers; Q8 retains a tail-boundary clarification. Resolve that boundary before implementing movement. Resolve Q13–Q15, Q20, and Q21 before freezing the remaining MVP scope. Resolve Q16–Q19 and Q23 before implementing their deferred content. Q22 can be explored with rendered comparisons once implementation is separately authorized.
+Q1–Q12 have owner answers; Q8 retains a tail-boundary clarification. Q14 confirms `localStorage` and PWA installation. Q15 confirms mobile support through two prior hardware generations. Resolve the Q8 boundary before implementing movement. Resolve Q13, Q14's offline scope, Q15's remaining platform/accessibility details, Q20, and Q21 before freezing the remaining MVP scope. Resolve Q16–Q19 and Q23 before implementing their deferred content. Q22 can be explored with rendered comparisons once implementation is separately authorized.
 
 ## 12. Current deliverable status
 
