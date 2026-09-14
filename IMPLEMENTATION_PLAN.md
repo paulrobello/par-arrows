@@ -21,7 +21,7 @@ The owner confirmed path-following movement, body unwrapping across ordinary sea
 | Gate | Required decisions | Blocks |
 | --- | --- | --- |
 | G1: Rule agreement | Q1–Q3 and Q7–Q9 answered. Resolve the exact vacated-tail boundary in Q8. | Movement implementation and authoritative level format. |
-| G2: MVP scope | Q4–Q6 and Q10–Q12 confirmed. Q14 confirms `localStorage` and PWA installation; Q15 confirms mobile hardware up to two generations old. Resolve Q13, offline scope, remaining platform/accessibility details, and Q20–Q21. | Onboarding, offline/platform details, final progression scope. |
+| G2: MVP scope | Q4–Q6 and Q10–Q13 confirmed. Q14 confirms `localStorage` and PWA installation; Q15 confirms mobile hardware up to two generations old. Resolve demo lifecycle details, offline scope, remaining platform/accessibility details, and Q20–Q21. | Onboarding lifecycle, offline/platform details, final progression scope. |
 | G3: Visual direction | Q22. | Final visual acceptance, not neutral prototype geometry. |
 | G4: Deferred mechanics | Q16–Q19 and Q23, mechanic introduction order and level numbers. | Shipping bidirectional arrows, yellow edges, or non-cube content. |
 
@@ -109,6 +109,12 @@ Persist progress through browser `localStorage`. Use one versioned logical snaps
 
 Restore the saved settled state on refresh/reopen in both browser and installed-PWA sessions. Reload must not turn red arrows black or charge their repeated collisions again. On content-version mismatch, restart the affected attempt while preserving compatible progression. Storage failures allow continued play with honest feedback. Decide multi-tab policy before enabling automatic attempt restoration. Verify save behavior when moving from browser play to installed launch on each target rather than assuming shared storage between contexts. Resolve any platform-specific transfer limitation before closing installation acceptance. Offline loading remains a separate open decision.
 
+### A8: Onboarding demo
+
+Author a tiny, deterministic cube fixture with only a few arrows, including one blocked move and a different clear exit. Drive the same simulation and presentation used by gameplay, with visible touch/press/release cues. Show the blocked move first, wait for contact and rebound to finish, leave its arrow red, then show the second arrow departing completely. No Skip control is part of this sequence.
+
+Proposed isolation: use a separate demo state so scripted moves cannot consume campaign lives, unlock levels, or overwrite an in-progress puzzle. A demo-only life display can illustrate the first-failure deduction. On first-run completion, store a tutorial-completed flag and transition to a fresh level 1 with five lives. Decide replay, interruption, and reduced-motion behavior before closing demo acceptance. Do not force a third move or an interactive practice step beyond the requested two-action demonstration.
+
 ## 4. Dependency-ordered phases
 
 Each phase below is planned, not started. Split any phase into small, coherent verified commits. Use no more than five changed files per execution batch unless the approved independent-subagent workflow applies. Run the actual project gate after each completed batch and relevant runtime checks at each visible milestone. Keep the board's acceptance criteria open until individually demonstrated.
@@ -185,7 +191,7 @@ This is the first playable milestone. Verify the full loop with the owner before
 
 Depends on: P4 and the approved content strategy.
 
-Deliverables: level validator/solver, solution evidence, onboarding according to the clarified Q13 answer, configured life curve, sequential unlocks, replay, campaign completion, versioned `localStorage` saves with automatic resume, and PWA manifest/icons/install guidance. Author the agreed number of levels in small batches.
+Deliverables: level validator/solver, solution evidence, a small-cube demo showing a failed touch followed by a successful touch, configured life curve, sequential unlocks, replay, campaign completion, versioned `localStorage` saves with automatic resume, and PWA manifest/icons/install guidance. Author the agreed number of levels in small batches.
 
 Q6 confirms ten curated cube levels. Procedural generation is outside this phase. If requested later, plan deterministic seeds, bounded generation attempts, solvability validation, fallback curated content, and difficulty calibration as separate work.
 
@@ -195,7 +201,7 @@ Acceptance:
 - P5.2: The approved progression curve is observable in the actual levels, with multiple arrows across all faces and genuine density growth.
 - P5.3: Replay and retry do not relock progress. Final campaign completion does not point to a nonexistent next level.
 - P5.4: Verify `localStorage` contains the updated logical snapshot after successful removal, first collision, repeated red-arrow collision, Retry, and completion/unlock. Refresh/reopen restores the same progress, lives, and red-arrow history. Reload during success and failure, corrupt saves, denied storage, old schema/content, and multiple tabs follow the approved policy.
-- P5.5: Onboarding teaches selection and rotation without unintended life penalties. Hints and rewards remain excluded unless approved.
+- P5.5: On a small cube with few arrows, visible touch cues first activate a blocked arrow that contacts, rebounds, and stays red, then activate another arrow that exits completely. The demo cannot be skipped. Verify the approved demo-state/lifecycle policy, including no unintended campaign penalties or overwritten saves. Hints and rewards remain excluded unless approved.
 - P5.6: The manifest and icons validate, installation works on supported targets, standalone launch reaches the game, and closing/reopening the installed app resumes saved progress. Browser play still works without installation.
 
 ### P6 — Device hardening and MVP acceptance
@@ -206,7 +212,7 @@ Deliverables: refined visual treatment, input tuning, accessibility checks, meas
 
 Acceptance:
 
-- P6.1: All PRD AC1–AC13 have individual evidence or are explicitly left unmet.
+- P6.1: All PRD AC1–AC14 have individual evidence or are explicitly left unmet.
 - P6.2: Agreed real desktop/mobile browsers and installed PWAs pass representative playthroughs in portrait and landscape. Include mobile hardware two generations old and record actual models, OS versions, and browser versions. Emulation alone does not close physical-device criteria.
 - P6.3: Normal levels and the later-density stress fixture meet the agreed frame-time and input targets. Inspect scene resource counts across repeated restart/level transitions.
 - P6.4: Unsupported graphics, context loss, background/resume, reduced motion, and narrow safe-area layouts recover or explain the limitation without corrupting play.
@@ -239,6 +245,7 @@ P7 and P8 can be developed independently only where file ownership does not over
 | T11 | Future reversed endpoint and yellow-edge chains/cycles. | Correct seam transforms, bounded simulation, separate invalid-content outcome. |
 | T12 | Full campaign and repeated scene lifecycle. | Replayed solutions, progressive difficulty, stable resource use, real-device measurements. |
 | T13 | PWA install, standalone launch, close/reopen, and transition from browser play; devices two generations old. | Installation works where supported, saved progress resumes, controls fit standalone safe areas, and oldest-target hardware meets the approved performance criteria. |
+| T14 | Small-cube demo: visible failed touch, completed red rebound, then visible successful touch and exit. | Correct order and real rule outcomes; no Skip control; failed arrow remains red; approved lifecycle preserves campaign state and handles interruption/reduced motion. |
 
 Use focused unit tests for logical behavior, small exhaustive/property fixtures for invariants, and real browser/device tests for visual and input behavior. Do not substitute screenshots for a logical solver or unit tests for touch usability.
 
@@ -263,7 +270,7 @@ There is no configured build, linter, typechecker, test suite, or Makefile in th
 
 - [x] Original images preserved and source mapping recorded; all three byte comparisons and manifest hashes verified.
 - [x] PRD and implementation plan checked for working relative links and consistent planning-only scope.
-- [x] Owner's unanswered questions clearly separated from confirmed requirements; Q1–Q12 answers, Q14's `localStorage`/PWA choices, and Q15's mobile hardware age target incorporated. Q13 clarification remains pending.
+- [x] Owner's unanswered questions clearly separated from confirmed requirements; Q1–Q13 answers, Q14's `localStorage`/PWA choices, and Q15's mobile hardware age target incorporated. Demo isolation/lifecycle details remain proposed.
 - [x] Planning-only files verified for the local documentation commit; Git history and the project board record the commit evidence.
 - [ ] Owner answers incorporated and G1/G2 closed.
 - [ ] Separate implementation request received before starting P1.

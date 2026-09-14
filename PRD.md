@@ -56,6 +56,7 @@ The reference images are visual evidence only. Their level number, stars, hint b
 | R23 | Save player progress in browser `localStorage` so players can resume after refresh or reopening the game. |
 | R24 | Support installation as a progressive web app (PWA) and launching from its installed icon. |
 | R25 | Support mobile devices up to two hardware generations old, including the current generation and the previous two. Select concrete representative devices for verification. |
+| R26 | Include an onboarding demo on a small cube with only a few arrows. Show a touch on an arrow that fails, then a touch on an arrow that succeeds. The demo is non-skippable, consistent with the owner's preceding instruction. |
 
 ## 4. MVP boundary
 
@@ -64,7 +65,7 @@ The reference images are visual evidence only. Their level number, stars, hint b
 - M1: One-direction black arrows, including bent paths and paths crossing cube faces.
 - M2: Rotatable cube, reliable selection, unobstructed exit animation, blocked rebound, red feedback, and life accounting.
 - M3: Ten curated cube levels with increasing density and the confirmed five/four/three starting-life curve.
-- M4: Onboarding, level indicator, arrows-remaining count, lives display, restart, failure/retry, completion/next-level, and replay of unlocked levels.
+- M4: A small-cube onboarding demo showing a failed touch followed by a successful touch; level indicator, arrows-remaining count, lives display, restart, failure/retry, completion/next-level, and replay of unlocked levels.
 - M5: Exact logical progress resume from browser `localStorage`, including failed-arrow history, in the browser and installed PWA. Settings and offline-play scope remain open.
 - M6: Validated levels with a demonstrated full-clear solution and desktop/mobile verification.
 - M7: PWA installation and standalone launch, with real-device checks covering mobile hardware up to two generations old.
@@ -124,6 +125,14 @@ Completion happens after the last arrow has fully exited. Show a short completio
 
 **Confirmed:** Reload/reopen resumes the exact logical state, including an interrupted move's result. Proposed implementation: save the complete logical result when the attempt is accepted, before presentation, and restore to a settled view of that result. Backgrounding pauses presentation; returning completes it once. An interrupted first collision still costs its one life; an interrupted collision by an already-red arrow costs none. Preserve failed-arrow history and never restore partially displaced geometry.
 
+### 5.5 Onboarding demonstration — Q13
+
+**Confirmed sequence:** Use a small cube with only a few arrows. Visibly demonstrate touching a blocked arrow first, then touching a different arrow that can leave successfully. The two actions occur in that order and do not overlap.
+
+Proposed presentation: an animated hand or touch indicator makes each press and release clear. Use one fixed, readable camera view where both chosen arrows and the blocker can be seen. First, the blocked arrow advances to contact, rebounds to its exact starting path, and remains red. Then the second arrow advances unobstructed, flies off, and is fully removed. Keep the failed arrow red throughout the second action. Prefer making the second arrow the first arrow's blocker so the relationship is easy to understand. Do not add a third demonstration move to the requested sequence.
+
+The preceding instruction rules out a skippable collision demo, and the owner has now specified its content: show the complete sequence without a Skip control. Proposed lifecycle: run before the first campaign attempt, offer Start after completion, record completion locally, and do not repeat it on every resume. Keep this practice board separate from the ten campaign levels, with no campaign life or progress changes. If the demo displays lives, demonstrate the first-failure deduction using a demo-only counter. Level 1 still starts untouched with five lives. Exact arrow count, demonstration timing, replay access, and reduced-motion presentation remain implementation/design details to resolve.
+
 ## 6. Camera, input, and readability — Q4, Q12
 
 Free rotation, faint noninteractive far-side arrows, mouse-wheel/pinch zoom, press highlighting, and ignoring ambiguous taps are confirmed. Other details below are proposed:
@@ -158,7 +167,7 @@ These are authoring envelopes for playtesting, not generated layouts or promised
 - L2: Static arrow-removal puzzles should have at least one removable arrow at every reachable nonterminal state. A solver must verify the intended guarantee instead of assuming that a visually plausible board is solvable.
 - L3: A successful removal should not create a dead end in the basic MVP rules. If simulation is purely removal-monotone, prove and test that property before using a simpler solver. Future mechanics may invalidate it and require state search.
 - L4: Increase difficulty using dependency depth, number of initially available moves, wrapping, turn count, occlusion, and density. Lives alone do not define difficulty.
-- L5: Tutorial prompts do not consume lives. Whether tutorial mistakes receive a special exemption is open in Q13.
+- L5: The onboarding demo shows a failed touch followed by a successful touch on a small cube with few arrows. Proposed isolation: demonstrate penalties in demo state while leaving campaign lives and progress untouched.
 - L6: Reject any arrow with possible self-contact over its full motion, including after other arrows are removed. A complete solution alone does not waive this constraint.
 
 Curated authoring and a checker are confirmed for the MVP. Generated progression and player-facing editor tooling are deferred. A development-only solver/validator is distinct from a player-facing hint feature.
@@ -220,6 +229,7 @@ For non-cube shapes, resolve surface grid alignment, exposed versus interior fac
 | AC11 | Engine fixtures demonstrate future endpoint selection and seam continuation boundaries without placing deferred mechanics in the MVP campaign. |
 | AC12 | The project's actual formatting, lint, typecheck, tests, build, and relevant browser checks pass. Automated results and physical-device evidence are reported separately. |
 | AC13 | The PWA installs and launches standalone on supported target platforms. Closing/reopening it resumes local progress. Real-device checks include hardware two generations old, and installation is not required for normal browser play. |
+| AC14 | A small cube with few arrows demonstrates a visible touch on a blocked arrow, its contact/rebound/persistent red feedback, then a visible touch on another arrow that exits and disappears. The sequence cannot be skipped. Under the proposed demo-isolation policy, level 1 begins afterward with five lives and untouched arrows. |
 
 ## 11. Decision interview
 
@@ -244,7 +254,7 @@ Answer the blocking rules first. An unanswered proposal remains a proposal, even
 - **Q10 — Confirmed 2026-09-14:** Five lives for levels 1–3, four for 4–6, three for 7–10. Retry restores lives and clears red-arrow history. Beyond-MVP life reductions remain open.
 - **Q11 — Confirmed 2026-09-14:** Resume exact logical state, including removed arrows, lives, red-arrow history, and the result of an interrupted move.
 - **Q12 — Confirmed 2026-09-14:** Highlight on press before release. Ambiguous taps do nothing; the player can zoom closer.
-- **Q13 — Clarification pending:** Owner said “no skipable collision demo.” Confirm whether this means omit the collision demo entirely or make it mandatory and unskippable. Do not assume either behavior while the clarification is pending.
+- **Q13 — Confirmed 2026-09-14:** Include a demo showing a touch on an arrow that fails, followed by a touch on an arrow that succeeds, on a small cube with only a few arrows. Combined with the preceding “no skipable collision demo” instruction, the demo is non-skippable. Practice-state isolation and first-run/replay details are proposed in section 5.5.
 
 ### 11.3 Scope and later-mechanic questions
 
@@ -261,7 +271,7 @@ Answer the blocking rules first. An unanswered proposal remains a proposal, even
 
 ### 11.4 Approval boundaries
 
-Q1–Q12 have owner answers; Q8 retains a tail-boundary clarification. Q14 confirms `localStorage` and PWA installation. Q15 confirms mobile support through two prior hardware generations. Resolve the Q8 boundary before implementing movement. Resolve Q13, Q14's offline scope, Q15's remaining platform/accessibility details, Q20, and Q21 before freezing the remaining MVP scope. Resolve Q16–Q19 and Q23 before implementing their deferred content. Q22 can be explored with rendered comparisons once implementation is separately authorized.
+Q1–Q13 have owner answers; Q8 retains a tail-boundary clarification. Q13 confirms the demo sequence; its practice-state/lifecycle details are proposed. Q14 confirms `localStorage` and PWA installation. Q15 confirms mobile support through two prior hardware generations. Resolve the Q8 boundary before implementing movement. Resolve the remaining demo lifecycle details, Q14's offline scope, Q15's remaining platform/accessibility details, Q20, and Q21 before freezing the remaining MVP scope. Resolve Q16–Q19 and Q23 before implementing their deferred content. Q22 can be explored with rendered comparisons once implementation is separately authorized.
 
 ## 12. Current deliverable status
 
