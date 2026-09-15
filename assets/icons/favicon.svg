@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Par Arrows bent ribbon mark</title>
+  <defs><linearGradient id="ink" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07131c"/><stop offset="1" stop-color="#103548"/></linearGradient></defs>
+  <rect width="64" height="64" rx="15" fill="url(#ink)"/>
+  <path d="M16 20v20h18" fill="none" stroke="#f4fcff" stroke-width="8" stroke-linecap="square" stroke-linejoin="miter"/>
+  <path d="m31 33 9 7-9 7" fill="none" stroke="#69cef3" stroke-width="8" stroke-linecap="square" stroke-linejoin="miter"/>
+  <path d="M15 14h24" stroke="#69cef3" stroke-opacity=".34" stroke-width="3" stroke-linecap="round"/>
+</svg>

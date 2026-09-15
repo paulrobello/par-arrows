@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Par Arrows maskable cube and ribbon mark</title>
+  <defs>
+    <linearGradient id="ink" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07131c"/><stop offset="1" stop-color="#103548"/></linearGradient>
+    <linearGradient id="top" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#d9edf4"/></linearGradient>
+    <linearGradient id="right" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c8e5ee"/><stop offset="1" stop-color="#91becd"/></linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#ink)"/>
+  <g transform="translate(0 -15)">
+  <path d="m256 136 122 69v136l-122 69-122-69V205Z" fill="#e9f7fb" stroke="#b1d3df" stroke-width="7" stroke-linejoin="round"/>
+  <path d="m256 136 122 69-122 70-122-70Z" fill="url(#top)" stroke="#d7eff6" stroke-width="5" stroke-linejoin="round"/>
+  <path d="m256 275 122-70v136l-122 69Z" fill="url(#right)"/>
+  <path d="M172 276v44l34 20" fill="none" stroke="#0b1015" stroke-width="17" stroke-linecap="butt" stroke-linejoin="miter"/>
+  <path d="M200 351 211 331 225 353Z" fill="#0b1015"/>
+  <path d="M300 341l40-24v-55" fill="none" stroke="#108acb" stroke-width="17" stroke-linecap="butt" stroke-linejoin="miter"/>
+  <path d="M328 263 351 263 340 241Z" fill="#108acb"/>
+  <path d="m200 218 55 31 33-19" fill="none" stroke="#0b1015" stroke-width="15" stroke-linecap="butt" stroke-linejoin="miter"/>
+  <path d="M283 223 292 239 311 219Z" fill="#0b1015"/>
+  </g>
+</svg>

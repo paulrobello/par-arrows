@@ -343,12 +343,62 @@ try {
     await page.request.get("/manifest.webmanifest")
   ).json()) as {
     display: string;
-    icons: { src: string }[];
+    icons: { src: string; sizes: string; type: string; purpose: string }[];
   };
   assert.equal(manifest.display, "standalone");
-  assert.ok(manifest.icons.length >= 3);
-  for (const icon of manifest.icons)
-    assert.ok((await page.request.get(icon.src)).ok());
+  assert.deepEqual(manifest.icons, [
+    {
+      src: "/icon-192.png",
+      sizes: "192x192",
+      type: "image/png",
+      purpose: "any",
+    },
+    {
+      src: "/icon-512.png",
+      sizes: "512x512",
+      type: "image/png",
+      purpose: "any",
+    },
+    {
+      src: "/icon-maskable-512.png",
+      sizes: "512x512",
+      type: "image/png",
+      purpose: "maskable",
+    },
+    {
+      src: "/icon-maskable-192.png",
+      sizes: "192x192",
+      type: "image/png",
+      purpose: "maskable",
+    },
+  ]);
+  const assets = [
+    ["/favicon.ico", "image/x-icon"],
+    ["/favicon.svg", "image/svg+xml"],
+    ["/favicon-16x16.png", "image/png"],
+    ["/favicon-32x32.png", "image/png"],
+    ["/favicon-48x48.png", "image/png"],
+    ["/favicon-64x64.png", "image/png"],
+    ["/favicon-128x128.png", "image/png"],
+    ["/apple-touch-icon.png", "image/png"],
+    ["/icon.svg", "image/svg+xml"],
+    ["/icon-192.png", "image/png"],
+    ["/icon-512.png", "image/png"],
+    ["/icon-maskable-192.png", "image/png"],
+    ["/icon-maskable-512.png", "image/png"],
+  ] as const;
+  for (const [path, mime] of assets) {
+    const response = await page.request.get(path);
+    assert.equal(
+      response.status(),
+      200,
+      `${path} must not fall back to the app HTML`,
+    );
+    assert.ok(
+      response.headers()["content-type"]?.startsWith(mime),
+      `${path} must return ${mime}`,
+    );
+  }
   assert.equal(await page.locator('link[rel="manifest"]').count(), 1);
   console.log("PASS PWA manifest and installation assets");
 

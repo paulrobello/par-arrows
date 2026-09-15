@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Par Arrows — Icon set</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { margin: 0; background: #edf4f8; color: #10242d; font: 15px/1.5 ui-sans-serif, system-ui, sans-serif; }
+      main { max-width: 1100px; margin: 0 auto; padding: 42px 32px; }
+      header { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 30px; }
+      h1 { margin: 2px 0; font-size: 36px; letter-spacing: -1.5px; line-height: 1.2; }
+      h2 { font-size: 16px; margin: 0 0 16px; }
+      p { margin: 6px 0; color: #536c77; }
+      .eyebrow { font: 11px ui-monospace, monospace; text-transform: uppercase; letter-spacing: 2px; }
+      .grid { display: grid; grid-template-columns: 340px 1fr; gap: 24px; }
+      .panel { background: #fff; border: 1px solid #d5e2e8; border-radius: 20px; padding: 24px; }
+      .mark { width: 256px; height: 256px; display: block; margin: 8px auto 24px; border-radius: 22%; }
+      .native { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; min-height: 135px; gap: 12px; }
+      figure { margin: 0; text-align: center; }
+      figcaption { margin-top: 10px; color: #536c77; font: 11px ui-monospace, monospace; }
+      .tabs { display: grid; gap: 12px; margin-top: 24px; }
+      .chrome { padding: 10px 14px 0; border: 1px solid #d2dee4; border-radius: 12px; background: #e7edf1; }
+      .tab { display: flex; align-items: center; gap: 9px; width: 220px; padding: 9px 12px; border-radius: 8px 8px 0 0; background: #fff; font-size: 12px; }
+      .tab img { width: 16px; height: 16px; }
+      .tab span:last-child { margin-left: auto; }
+      .dark { background: #121d23; border-color: #263c47; }
+      .dark .tab { background: #273941; color: #edf4f8; }
+      .masks { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 18px; }
+      .mask { position: relative; width: 112px; height: 112px; overflow: hidden; background: #0b1015; }
+      .mask img { width: 100%; height: 100%; display: block; }
+      .circle { border-radius: 50%; }
+      .squircle { border-radius: 26%; }
+      .soft { border-radius: 14%; }
+      .safe { position: absolute; inset: 10%; border: 1px dashed #ffdb70; border-radius: 50%; opacity: 0; }
+      body:has(#safe-zone:checked) .safe { opacity: 1; }
+      .bottom { margin-top: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+      .apple { width: 96px; height: 96px; border-radius: 22%; display: block; }
+      .apple-row { display: flex; align-items: center; gap: 22px; }
+      label { color: #536c77; font-size: 12px; white-space: nowrap; }
+      footer { margin-top: 24px; color: #536c77; font-size: 12px; }
+      @media (max-width: 760px) { .grid, .bottom { grid-template-columns: 1fr; } header { align-items: start; flex-direction: column; } main { padding: 24px 16px; } .masks { justify-content: center; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div><div class="eyebrow">Par Arrows / Identity</div><h1>Small mark. Clear direction.</h1><p>Browser favicons, Apple home-screen artwork, and PWA install icons.</p></div>
+        <label><input id="safe-zone" type="checkbox" /> Show maskable safe zone</label>
+      </header>
+      <div class="grid">
+        <section class="panel">
+          <h2>Installation artwork</h2>
+          <img class="mark" src="/icon-512.png" width="256" height="256" alt="Par Arrows app icon" />
+          <p>Full-size cube and arrow identity.</p>
+          <p>192 px and 512 px exports.</p>
+        </section>
+        <section class="panel">
+          <h2>Favicons at native size</h2>
+          <div class="native">
+            <figure><img src="/favicon-16x16.png" width="16" height="16" alt="16 pixel favicon" /><figcaption>16 px</figcaption></figure>
+            <figure><img src="/favicon-32x32.png" width="32" height="32" alt="32 pixel favicon" /><figcaption>32 px</figcaption></figure>
+            <figure><img src="/favicon-48x48.png" width="48" height="48" alt="48 pixel favicon" /><figcaption>48 px</figcaption></figure>
+            <figure><img src="/favicon-64x64.png" width="64" height="64" alt="64 pixel favicon" /><figcaption>64 px</figcaption></figure>
+            <figure><img src="/favicon-128x128.png" width="128" height="128" alt="128 pixel favicon" /><figcaption>128 px</figcaption></figure>
+          </div>
+          <section class="tabs" aria-label="Browser tab previews">
+            <div class="chrome"><div class="tab"><img src="/favicon-16x16.png" alt="" /><span>Par Arrows</span><span>×</span></div></div>
+            <div class="chrome dark"><div class="tab"><img src="/favicon-16x16.png" alt="" /><span>Par Arrows</span><span>×</span></div></div>
+          </section>
+        </section>
+      </div>
+      <div class="bottom">
+        <section class="panel">
+          <h2>Device mask previews</h2>
+          <div class="masks">
+            <figure><div class="mask circle"><img src="/icon-maskable-512.png" alt="Circular icon crop" /><span class="safe"></span></div><figcaption>Circle</figcaption></figure>
+            <figure><div class="mask squircle"><img src="/icon-maskable-512.png" alt="Squircle icon crop" /><span class="safe"></span></div><figcaption>Squircle</figcaption></figure>
+            <figure><div class="mask soft"><img src="/icon-maskable-512.png" alt="Rounded icon crop" /><span class="safe"></span></div><figcaption>Rounded square</figcaption></figure>
+          </div>
+        </section>
+        <section class="panel">
+          <h2>Apple touch icon</h2>
+          <div class="apple-row"><img class="apple" src="/apple-touch-icon.png" alt="Apple home-screen icon" /><div><p>180 × 180 pixels</p><p>Opaque source image; the device applies its own corner mask.</p></div></div>
+        </section>
+      </div>
+      <footer>Artwork is shown at the labeled display sizes. Device-mask crops are previews, not a claim of physical-device installation testing.</footer>
+    </main>
+  </body>
+</html>

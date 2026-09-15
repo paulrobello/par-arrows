@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 DEV_PORT := 8057
 
-.PHONY: build test lint fmt format-check typecheck checkall pre-commit dev dev-stop dev-restart browser-test browser-install
+.PHONY: build test lint fmt format-check typecheck checkall pre-commit icons icons-check dev dev-stop dev-restart browser-test browser-install
 
 build:
 	bun run build
@@ -22,10 +22,16 @@ format-check:
 typecheck:
 	bun run typecheck
 
-checkall: format-check lint typecheck test build
+checkall: format-check lint typecheck test build icons-check
 
 pre-commit:
 	pre-commit run --all-files
+
+icons:
+	bun run scripts/generate-icons.ts
+
+icons-check:
+	bun run scripts/generate-icons.ts --check
 
 dev:
 	bun run dev

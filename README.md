@@ -40,6 +40,8 @@ Install pre-commit and run `pre-commit install` to enable the pinned secret-scan
 
 PWA installation is supported where the browser provides it. A production installation needs a secure origin; local development can use localhost. Installation does not require an account. Offline gameplay is outside the current MVP scope.
 
+The [icon suite](docs/icons.md) includes browser favicons, Apple touch artwork, and standard/maskable PWA icons. Run `make icons` to regenerate them from the checked-in SVG sources.
+
 Use one active play session. Multi-tab save conflicts, physical-device performance, and installed-app save transfer still need qualification.
 
 ## Structure
