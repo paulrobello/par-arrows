@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import type { Browser, Page } from "playwright";
 import {
   GENERATOR_VERSION,
-  MAX_LEVEL_ID,
   generateLevel,
   getWrappingEdgePolicies,
+  MAX_LEVEL_ID,
   seedForLevel,
 } from "../src/content/procedural";
 import {
@@ -279,6 +279,39 @@ export async function assertLevelPreview(
     assert.equal(
       await page.evaluate((key) => localStorage.getItem(key), CAMPAIGN_KEY),
       null,
+    );
+    await page.goto(previewUrl(url, "feature=wrap"));
+    await waitForReady(page);
+    assert.equal((await state(page)).level.id, 11);
+    assert.equal((await state(page)).preview?.active, true);
+    assert.ok((await state(page)).wrappingEdges >= 1);
+    assert.equal(await page.locator("#wrap-intro").isVisible(), true);
+    assert.equal(
+      await page.evaluate((key) => localStorage.getItem(key), CAMPAIGN_KEY),
+      null,
+      "The wrap intro preview must not create a campaign save",
+    );
+    await page.screenshot({ path: `${output}/wrap-intro-preview-light.png` });
+    await page.evaluate(() => {
+      const select = document.querySelector<HTMLSelectElement>("#theme-select");
+      if (!select) throw new Error("Theme selector missing");
+      select.value = "dark";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await page.screenshot({ path: `${output}/wrap-intro-preview-dark.png` });
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert.equal(await page.locator("#wrap-intro").isVisible(), true);
+    assert.equal(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > window.innerWidth,
+      ),
+      false,
+    );
+    await page.screenshot({ path: `${output}/wrap-intro-preview-mobile.png` });
+    assert.equal(
+      await page.evaluate((key) => localStorage.getItem(key), CAMPAIGN_KEY),
+      null,
+      "Responsive preview rendering must remain isolated from campaign saves",
     );
     assert.deepEqual(errors, []);
     console.log(

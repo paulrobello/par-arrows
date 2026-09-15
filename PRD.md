@@ -44,11 +44,11 @@ The four additional photos supplied on 2026-09-14 are preserved as references 04
 | R9 | Later levels can be much denser and need not use perfect cubes. |
 | R10 | Future double-ended arrows have blue and green halves. The half clicked determines travel direction. |
 | R11 | Special physical cube edges are marked yellow. A head reaching one continues onto the adjoining face instead of flying off. |
-| R12 | The engine design must allow additional mechanics beyond R10 and R11. Yellow continuation edges are now introduced in generated levels from level 11; blue/green two-ended arrows remain deferred. |
+| R12 | The engine design must allow additional mechanics beyond R10 and R11. Level 11 is an authored, low-density introduction to yellow continuation edges; normal generated layouts resume at level 12. Blue/green two-ended arrows remain deferred. |
 | R13 | Movement follows the arrow's path: the tail follows the head. Existing wrapped bodies unwrap through ordinary seams; only a new head crossing determines exit versus continuation. |
 | R14 | Allow continuous rotation in every drag direction with no axis stops, including repeated turns over the top and bottom, plus mouse-wheel and pinch zoom. Far-side arrows remain faintly visible and become selectable only when rotated onto exposed faces. |
 | R15 | At zero lives, allow unlimited retries of the same puzzle, restoring its configured starting lives. |
-| R16 | Level 1 is the unchanged authored teaching cube. Every logical level at or above 2 is generated at runtime from its level number, validated for solvability, and is the same seeded puzzle for every player. |
+| R16 | Level 1 is the unchanged authored teaching cube. Levels 2–10 and 12 onward are generated at runtime from their level number and validated for solvability; level 11 is an authored yellow-wrap introduction. A given generated level is the same seeded puzzle for every player. |
 | R17 | Arrow paths use grid-aligned 90-degree turns, with no starting overlaps or overpasses. |
 | R18 | Reject any level where an arrow could contact its own body. Do not turn self-contact into an ordinary life-costing gameplay event. |
 | R19 | Only one arrow moves or rebounds at a time. Ignore additional arrow taps while rotation and zoom remain available. |
@@ -83,7 +83,7 @@ The count, curated source, life curve, exact resume behavior, browser `localStor
 
 ### 4.2 Deferred content and features
 
-- X1: Playable blue/green double-ended arrows remain deferred. Yellow continuation edges are implemented in generated levels from level 11; their rule contract is recorded in section 9.2.
+- X1: Playable blue/green double-ended arrows remain deferred. Level 11 introduces yellow continuation edges in an authored teaching layout; generated layouts from level 12 onward use the rule contract recorded in section 9.2.
 - X2: Non-cube content. First extension candidate: rectangular cuboids, followed by grid-aligned compound solids. Arbitrary curved surfaces, holes, and concave shapes need a separate scope decision.
 - X3: Further unspecified mechanics. Provide explicit rule boundaries, not a general plugin or scripting platform.
 - X4: Accounts, cloud saves, leaderboards, monetization, advertisements, energy timers, purchases, and social features.
@@ -140,7 +140,7 @@ Completion happens after the last arrow has fully exited. Show a short completio
 
 Proposed presentation: an animated hand or touch indicator makes each press and release clear. Use one fixed, readable camera view where both chosen arrows and the blocker can be seen. First, the blocked arrow advances to contact, rebounds to its exact starting path, and remains red. Then the second arrow advances unobstructed, flies off, and is fully removed. Keep the failed arrow red throughout the second action. Prefer making the second arrow the first arrow's blocker so the relationship is easy to understand. Do not add a third demonstration move to the requested sequence.
 
-The preceding instruction rules out a skippable collision demo, and the owner has now specified its content: show the complete sequence without a Skip control. Proposed lifecycle: run before the first campaign attempt, offer Start after completion, record completion locally, and do not repeat it on every resume. Keep this practice board separate from the ten campaign levels, with no campaign life or progress changes. If the demo displays lives, demonstrate the first-failure deduction using a demo-only counter. Level 1 still starts untouched with five lives. Exact arrow count, demonstration timing, replay access, and reduced-motion presentation remain implementation/design details to resolve.
+The preceding instruction rules out a skippable collision demo, and the owner has now specified its content: show the complete sequence without a Skip control. Proposed lifecycle: run before the first campaign attempt, offer Start after completion, record completion locally, and do not repeat it on every resume. Keep this practice board separate from campaign levels, with no campaign life or progress changes. If the demo displays lives, demonstrate the first-failure deduction using a demo-only counter. Level 1 still starts untouched with five lives. Exact arrow count, demonstration timing, replay access, and reduced-motion presentation remain implementation/design details to resolve.
 
 ### 5.6 Safe-arrow hints
 
@@ -168,17 +168,18 @@ Keyboard puzzle navigation and a nonvisual equivalent of the spatial puzzle need
 
 **Superseded historical policy:** the fixed ten-level, content-version-5 catalog described in earlier reports is retained only as historical reference and test fixtures. It is not a production import.
 
-**Current policy:** level 1 remains the unchanged authored teaching cube. Levels 2–10 retain their version-1 seeds and geometry. Levels above 10 use version-2 seeds and may include yellow continuation edges under section 9.2. Each generated puzzle is reverse-constructed and validated as solvable before use. A player retry and every player on the same level number receive the same puzzle.
+**Current policy:** level 1 remains the unchanged authored teaching cube. Levels 2–10 retain their version-1 seeds and geometry. Level 11 is an authored 4 × 4 cube with six short arrows, one per face, five lives, and a guaranteed reciprocal front-west/left-east yellow edge. Two safe moves wrap across that edge; the other four arrows exit through ordinary edges. This teaching layout is exempt from random edge-count selection and generated density. Normal generated layouts resume at level 12, with their existing version-2 generator and weighted edge distribution unchanged. Level 11's seed alone gains the `:wrap-intro:1` suffix so prior generated level-11 attempts refresh while unlocks and tutorial completion remain preserved. Each generated puzzle is reverse-constructed and validated as solvable before use. A player retry and every player on the same generated level number receive the same puzzle.
 
 | Range | Generation bounds | Starting lives | Purpose |
 | --- | --- | --- | --- |
 | Level 1 | Authored 4 × 4 cube, 6 arrows | 5 | Teach tapping, rotation, and clear exits. |
+| Level 11 | Authored 4 × 4 cube, 6 short arrows, reciprocal front-west/left-east yellow edge | 5 | Introduce two safe head-wrap moves and four ordinary exits at low density. |
 | Early runtime levels | 60–180 arrows with increasing grid/detail | Decreases toward 3 | Build density, wrapping, and removal dependencies. |
 | Later runtime levels | At most 240 arrows, 26 × 26 cells per face, and 40 cells per path | 3 floor | Continue endlessly within validated desktop bounds. |
 
 Generation uses a worker, caches the three most recent results, and times out after 12 seconds. A stale request, reset, or failed restore must never replace a newer accepted state. Never present an unvalidated puzzle merely to meet a count target.
 
-References [04](docs/references/reference-04.jpeg), [05](docs/references/reference-05.jpeg), and [06](docs/references/reference-06.jpeg) establish the later visual direction: mix short and long arrows, single and multiple bends, hooked returns, stepped zigzags, and winding paths, with close spacing across multiple faces. Preserve each arrow's readable identity and validate self-contact and solvability. The pictured late-game density is a progression reference; level 1 keeps its simple teaching layout. Screenshot counters do not set campaign arrow quotas.
+References [04](docs/references/reference-04.jpeg), [05](docs/references/reference-05.jpeg), and [06](docs/references/reference-06.jpeg) establish the later visual direction: mix short and long arrows, single and multiple bends, hooked returns, stepped zigzags, and winding paths, with close spacing across multiple faces. Preserve each arrow's readable identity and validate self-contact and solvability. The pictured late-game density is a progression reference; level 1 and the level 11 mechanic introduction keep their simple teaching layouts. Screenshot counters do not set campaign arrow quotas.
 
 The owner identified stamped S-curve repetition in content version 3. Version 4 addresses the [reference complexity criteria](docs/references/arrow-complexity-study.md) with paths grown around neighboring routes, varied footprints and run lengths, and distributed heads. Automated checks count rotated, mirrored, reversed, and seam-crossing copies together; whole-board visual review remains required. Higher arrow counts or bend totals alone do not satisfy the requirement. See the [comparison and verification report](docs/verification/irregular-routes.md).
 
@@ -223,9 +224,9 @@ Define the two halves by distance along the full surface path, not by a screen-s
 
 An edge rule belongs to shape topology and maps a crossing position and direction onto the adjoining face. It is independent of camera orientation. Existing static path seams and head-continuation rules remain separate concepts.
 
-In [reference 07](docs/references/reference-07.jpeg), yellow highlights the special boundary. The owner confirms that a moving head reaching this boundary turns around the corner and keeps traveling along the next face; the body feeds behind it. At an ordinary boundary the advancing head exits. An arrow whose body already spans an ordinary seam can still unwrap without that seam being yellow. Generated levels from level 11 may include yellow continuation edges; level 1 and levels 2–10 retain their existing layouts and ordinary exits.
+In [reference 07](docs/references/reference-07.jpeg), yellow highlights the special boundary. The owner confirms that a moving head reaching this boundary turns around the corner and keeps traveling along the next face; the body feeds behind it. At an ordinary boundary the advancing head exits. An arrow whose body already spans an ordinary seam can still unwrap without that seam being yellow. Level 11 introduces the mechanic in a fixed authored six-arrow layout; level 1 and levels 2–10 retain their existing layouts and ordinary exits. Normal generated layouts with weighted yellow continuation edges begin at level 12.
 
-Implemented defaults: yellow marks a whole physical cube edge and applies reciprocally in both crossing directions. The transition is a right-angle face change with paths aligned away from vertices. Generated edge selection uses a separate deterministic stream from layout construction, so retries do not change the edge choices. From level 11, the selected outcome weights are 25% for no yellow edges, 60/12/3% for one/two/three edges, and they shift linearly to 15/30/30% by level 100 before remaining capped. Each generated layout must pass validation and the solver before presentation.
+Implemented defaults: yellow marks a whole physical cube edge and applies reciprocally in both crossing directions. The transition is a right-angle face change with paths aligned away from vertices. Level 11 has one guaranteed reciprocal front-west/left-east edge, with two safe arrows wrapping across it and four arrows exiting ordinarily. Generated edge selection uses a separate deterministic stream from layout construction, so retries do not change the edge choices. From level 12, generated layouts retain the existing curve: zero edges remain at 25%, while the other edge-count weights shift toward 15% for one, 30% for two, and 30% for three edges by level 100, then stay capped. Level 11 is excluded from random edge-count and density selection. Each generated layout must pass validation and the solver before presentation.
 
 A path may encounter several yellow edges before an ordinary exit. Simulation terminates on a continuation cycle or self-collision, and invalid content is rejected before play. Dynamic mechanics that could introduce new cycles remain outside the current campaign.
 
@@ -249,7 +250,7 @@ For non-cube shapes, resolve surface grid alignment, exposed versus interior fac
 | AC8 | Dense selection and rendering remain usable on agreed real desktop and mobile targets in portrait and landscape. Record devices and measurements. |
 | AC9 | Progress is written to browser `localStorage` and resumes after refresh/reopen with the same level, removed arrows, lives, and red-arrow history. Reload during a move, background/resume, storage failure, changed level data, and rapid input follow the specified recovery policies without corrupting progression. |
 | AC10 | Reduced motion, directional cues, non-color failure feedback, and accessible menus work as specified. Any gameplay accessibility gaps are stated. |
-| AC11 | Engine fixtures demonstrate future endpoint selection, and generated levels from level 11 can include solver-validated yellow continuation seams. |
+| AC11 | Engine fixtures demonstrate future endpoint selection. Level 11 introduces reciprocal yellow continuation in its authored six-arrow teaching layout, and generated layouts from level 12 onward retain solver-validated weighted yellow seams. |
 | AC12 | The project's actual formatting, lint, typecheck, tests, build, and relevant browser checks pass. Automated results and physical-device evidence are reported separately. |
 | AC13 | The PWA installs and launches standalone on supported target platforms. Closing/reopening it resumes local progress. Real-device checks include hardware two generations old, and installation is not required for normal browser play. |
 | AC14 | A small cube with few arrows demonstrates a visible touch on a blocked arrow, its contact/rebound/persistent red feedback, then a visible touch on another arrow that exits and disappears. The sequence cannot be skipped. Under the proposed demo-isolation policy, level 1 begins afterward with five lives and untouched arrows. |
@@ -267,7 +268,7 @@ Answer the blocking rules first. An unanswered proposal remains a proposal, even
 | Q3 | How long does collision red persist, and are repeat failures charged? | Red until removed; additional failures of that red arrow cost no extra lives. | Confirmed 2026-09-14. |
 | Q4 | Free orbit or fixed face views? Should far-side arrows be visible and selectable? | Free orbit, faint far-side arrows, exposed surfaces only selectable. Mouse-wheel and pinch zoom also requested. | Confirmed 2026-09-14. |
 | Q5 | What happens at zero lives? Does retry restore the same puzzle and full lives? | Unlimited retries of the same layout with full per-level lives. | Confirmed 2026-09-14. |
-| Q6 | How many MVP levels, and authored, generated, or both? | Superseded: the prior ten-curated-cube policy. Current: authored level 1 plus endless deterministic, solver-validated runtime generation for every level number at or above 2. | Superseded and replaced 2026-09-15. |
+| Q6 | How many MVP levels, and authored, generated, or both? | Superseded: the prior ten-curated-cube policy. Current: authored levels 1 and 11 plus endless deterministic, solver-validated runtime generation for levels 2–10 and 12 onward. | Superseded and replaced 2026-09-15. |
 
 ### 11.2 Movement and fairness edge cases
 

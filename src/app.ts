@@ -5,6 +5,7 @@ import {
   DEMO_LEVEL,
   DEMO_SUCCESS_ID,
   LEVEL_ONE,
+  WRAP_INTRO_LEVEL,
 } from "./content/intro";
 import { LevelLoader } from "./content/level-loader";
 import {
@@ -126,6 +127,7 @@ export class ParArrowsApp {
           <span id="preview-status">Test mode · Campaign progress is unchanged.</span>
           <a id="preview-exit" href="/">Return to campaign</a>
         </aside>
+        <p class="wrap-intro" id="wrap-intro" hidden>Yellow edges carry arrows onto the next face. Try an arrow pointing toward the yellow line.</p>
         <header class="hud" aria-label="Puzzle status">
           <div class="brand"><span class="brand-mark">↗</span><span>Par Arrows</span></div>
           <div class="status-chip"><span id="level-label">Cube 1</span><span class="separator">·</span><span id="arrows-label">0 arrows</span></div>
@@ -724,6 +726,13 @@ export class ParArrowsApp {
     this.livesLabel.textContent = String(this.displayedState.lives);
     this.arrowsLabel.textContent = `${this.displayedState.remainingIds.length} arrows`;
     this.tutorial.hidden = this.mode !== "demo";
+    this.requireElement("wrap-intro").hidden =
+      this.mode !== "campaign" ||
+      this.level.id !== WRAP_INTRO_LEVEL.id ||
+      this.loading ||
+      this.loadingError !== undefined ||
+      this.preview.error !== undefined ||
+      this.state.status !== "playing";
     const pickerDisabled =
       this.mode !== "campaign" ||
       this.loading ||

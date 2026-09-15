@@ -504,6 +504,23 @@ button {
   font-weight: 800;
   text-underline-offset: 0.16em;
 }
+.wrap-intro {
+  position: absolute;
+  z-index: 2;
+  top: max(4.6rem, calc(env(safe-area-inset-top) + 3.8rem));
+  left: 50%;
+  width: min(25rem, calc(100% - 2rem));
+  margin: 0;
+  color: var(--page-text);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  text-align: center;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+.preview-banner:not([hidden]) ~ .wrap-intro {
+  top: max(8rem, calc(env(safe-area-inset-top) + 7.2rem));
+}
 .generation-layer {
   position: absolute;
   z-index: 4;
@@ -674,6 +691,18 @@ input:focus-visible {
   }
   .level-picker input {
     width: 3.2rem;
+  }
+}
+
+@media (max-height: 700px) and (min-aspect-ratio: 1 / 1) {
+  .wrap-intro,
+  .preview-banner:not([hidden]) ~ .wrap-intro {
+    top: max(4rem, calc(env(safe-area-inset-top) + 3.2rem));
+    left: max(0.8rem, env(safe-area-inset-left));
+    width: min(10rem, 22vw);
+    font-size: 0.7rem;
+    text-align: left;
+    transform: none;
   }
 }
 

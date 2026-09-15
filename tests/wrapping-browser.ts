@@ -10,11 +10,11 @@ import {
   seedForLevel,
 } from "../src/content/procedural";
 import { createGameState, simulateMove } from "../src/core/game-state";
-import { waitForReady } from "./runtime-fixtures";
 import {
   wrappingEdgeOpacity,
   wrappingEdgeSegments,
 } from "../src/render/renderer";
+import { waitForReady } from "./runtime-fixtures";
 
 export interface WrappingBrowserFixtures {
   readonly movementLevelId: number;
@@ -73,6 +73,7 @@ function crossingArrow(levelId: number, expectedKind?: "exit" | "blocked") {
 async function assertEdgeDimming(
   page: Page,
   levelId: number,
+  restoreLevelId: number,
   output: string,
 ): Promise<void> {
   const read = async () =>
@@ -80,6 +81,7 @@ async function assertEdgeDimming(
       await page.evaluate(() => window.render_game_to_text?.() ?? "{}"),
     ) as { camera: { position: number[] }; wrappingEdgeOpacities: number[] };
   const level = generateLevel(levelId);
+  await loadLevel(page, levelId);
   assert.equal(
     level.edgePolicies?.length,
     2,
@@ -165,9 +167,18 @@ async function assertEdgeDimming(
     select.value = "light";
     select.dispatchEvent(new Event("change", { bubbles: true }));
   });
-  await loadLevel(page, levelId);
+  await loadLevel(page, restoreLevelId);
   await page.getByRole("button", { name: "Reset camera view" }).click();
-  assert.deepEqual((await read()).wrappingEdgeOpacities, [1]);
+  const restored = await read();
+  const restoredOpacities = wrappingEdgeSegments(
+    generateLevel(restoreLevelId),
+  ).map((edge) =>
+    wrappingEdgeOpacity(
+      edge,
+      new Vector3().fromArray(restored.camera.position),
+    ),
+  );
+  assert.deepEqual(restored.wrappingEdgeOpacities, restoredOpacities);
   console.log(
     "PASS hidden wrapping edges dim during orbit, exposed edges brighten, and mixed edge opacities remain independent",
   );
@@ -194,7 +205,7 @@ export async function assertWrappingEdges(
     const movementLevel = generateLevel(fixtures.movementLevelId);
     const movementArrow = crossingArrow(fixtures.movementLevelId);
     await loadLevel(page, fixtures.movementLevelId);
-    await assertEdgeDimming(page, fixtures.movementLevelId, output);
+    await assertEdgeDimming(page, 52, fixtures.movementLevelId, output);
     const expectedEdges =
       (movementLevel.edgePolicies ?? []).filter(
         (policy) => policy.policy === "continue",

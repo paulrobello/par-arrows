@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { LEVELS } from "../src/content/levels";
+import { generateLevel, seedForLevel } from "../src/content/procedural";
 import {
   applyMove,
   createGameState,
@@ -124,6 +125,69 @@ function exitedState(level: LevelDefinition): GameState {
 }
 
 describe("resumable campaign saves", () => {
+  test("refreshes only the old cube-eleven layout and preserves its progression", async () => {
+    const level = generateLevel(11);
+    expect(save(createGameState(level), 27)).toBe(true);
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({
+        ...savedJson(),
+        seed: "par-arrows:runtime:2:level:11",
+        tutorialComplete: false,
+        state: {
+          ...createGameState(level),
+          remainingIds: ["r11-wrap-0"],
+          lives: 3,
+          revision: 179,
+        },
+      }),
+    );
+    const restored = await loadCampaign(async (id) => generateLevel(id));
+    expect(restored.recovered).toBe(true);
+    expect(restored.contentUpdated).toBe(true);
+    expect(restored.value).toMatchObject({
+      currentLevelId: 11,
+      unlockedLevelId: 27,
+      tutorialComplete: false,
+      state: createGameState(level),
+    });
+    if (!restored.value) throw new Error("Expected restored introduction");
+    expect(saveCampaign(restored.value)).toBe(true);
+    expect(savedJson().seed).toBe(seedForLevel(11));
+    expect(
+      (await loadCampaign(async (id) => generateLevel(id))).recovered,
+    ).toBe(false);
+  });
+
+  test("resumes partial introductory and unchanged surrounding levels exactly", async () => {
+    for (const id of [1, 10, 11, 12, 30]) {
+      const level = generateLevel(id);
+      const initial = createGameState(level);
+      const clearArrow = level.arrows.find(
+        (arrow) => simulateMove(level, initial, arrow.id).kind === "exit",
+      );
+      if (!clearArrow) throw new Error("Expected a clear arrow");
+      const state = applyMove(
+        level,
+        initial,
+        simulateMove(level, initial, clearArrow.id),
+      );
+      expect(save(state, 35)).toBe(true);
+      if (id !== 11)
+        expect(savedJson().seed).toBe(
+          `par-arrows:runtime:${id <= 10 ? 1 : 2}:level:${id}`,
+        );
+      const restored = await loadCampaign(async (requestedId) =>
+        generateLevel(requestedId),
+      );
+      expect(restored.recovered).toBe(false);
+      expect(restored.contentUpdated).toBe(false);
+      expect(restored.value?.state).toEqual(state);
+      expect(restored.value?.unlockedLevelId).toBe(35);
+      expect(restored.value?.tutorialComplete).toBe(true);
+    }
+  });
+
   test("does not invoke the resolver when no save exists", async () => {
     let calls = 0;
     const result = await loadCampaign(async (id) => {

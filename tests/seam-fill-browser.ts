@@ -38,7 +38,7 @@ export async function assertSeamFills(
       select.value = "dark";
       select.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    for (const id of [10, 11]) {
+    for (const id of [10, 44]) {
       await page.evaluate(
         (id) => window.__PAR_ARROWS_TEST__?.loadLevel(id),
         id,
@@ -60,7 +60,7 @@ export async function assertSeamFills(
             policy.edge === "east" &&
             policy.policy === "continue",
         ) ?? false,
-        id === 11,
+        id === 44,
         "Keep one ordinary-edge fixture and one yellow-edge fixture",
       );
       const bounds = await page.locator("canvas").boundingBox();

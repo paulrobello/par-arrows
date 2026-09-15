@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import type { LevelDefinition } from "../src/core/types";
-import { LEVEL_ONE } from "../src/content/intro";
+import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "../src/content/intro";
 import {
   GENERATOR_VERSION,
   MAX_LEVEL_ID,
@@ -12,7 +12,11 @@ import {
   seedForLevel,
 } from "../src/content/procedural";
 import { simulateMove } from "../src/core/movement";
-import { headingBetween, oppositeHeading } from "../src/core/topology";
+import {
+  headingBetween,
+  oppositeHeading,
+  seamTransition,
+} from "../src/core/topology";
 import { solveLevel, validateLevel } from "../src/core/validation";
 
 function geometryHash(level: LevelDefinition): string {
@@ -41,7 +45,6 @@ function diverseLevelIds(): readonly number[] {
     8,
     9,
     10,
-    11,
     12,
     13,
     100,
@@ -94,7 +97,7 @@ describe("runtime campaign generator", () => {
 
   test("keeps level one unchanged and regenerates every later id identically", () => {
     expect(generateLevel(1)).toEqual(LEVEL_ONE);
-    for (const id of [2, 10, 11, 100, 1_000, 1_000_000]) {
+    for (const id of [2, 10, 12, 100, 1_000, 1_000_000]) {
       expect(generateLevel(id)).toEqual(generateLevel(id));
     }
   });
@@ -106,13 +109,22 @@ describe("runtime campaign generator", () => {
     expect(geometryHash(generateLevel(10))).toBe(
       "a1572c55ffc7ac95ef43344545191c17255a64a95a0a50169dd7a0ab85f3eec7",
     );
+    expect(geometryHash(generateLevel(12))).toBe(
+      "0ae328a1b7d451e914a4166a5ee6ea828cc55784d42fe58c1082a5064b4da2c1",
+    );
+    expect(geometryHash(generateLevel(13))).toBe(
+      "d98224a1a930e1a8aaa002f96b0f176e127b8798cad9ba7ba52ae97ebc6c5978",
+    );
+    expect(geometryHash(generateLevel(100))).toBe(
+      "57c8bcddc17af4bf2724948a5be32ab3f687f2c397029460400114ad20b6c590",
+    );
     expect(geometryHash(generateLevel(1_000))).toBe(
       "220f2acef467091070da1f03114880920bc299eafd020ff193ef6e01877995b8",
     );
   });
 
   test("builds bounded valid levels with reverse construction certificates", () => {
-    const layouts = [2, 3, 7, 10, 11, 1_000, 1_000_000].map(generateLevel);
+    const layouts = [2, 3, 7, 10, 12, 1_000, 1_000_000].map(generateLevel);
     expect(
       new Set(layouts.map((level) => JSON.stringify(level.arrows))).size,
     ).toBe(layouts.length);
@@ -148,7 +160,7 @@ describe("runtime campaign generator", () => {
         expect(simulateMove(level, remaining, arrow.id).kind).toBe("exit");
         remaining.splice(remaining.indexOf(arrow.id), 1);
       }
-      if ([2, 10, 11].includes(level.id))
+      if ([2, 10, 12].includes(level.id))
         expect(solveLevel(level)).toHaveLength(level.arrows.length);
     }
   });
@@ -191,7 +203,10 @@ describe("runtime campaign generator", () => {
       expect(getWrappingEdgeWeights(id)).toEqual([1, 0, 0, 0]);
       expect(generateLevel(id).edgePolicies ?? []).toEqual([]);
     }
-    expect(getWrappingEdgeWeights(11)).toEqual([0.25, 0.6, 0.12, 0.03]);
+    expect(getWrappingEdgeWeights(11)).toEqual([0, 1, 0, 0]);
+    expect(getWrappingEdgeWeights(12)).toEqual([
+      0.25, 0.594943820224719, 0.12202247191011235, 0.033033707865168536,
+    ]);
     const final = getWrappingEdgeWeights(100);
     expect(final[0]).toBe(0.25);
     expect(final[1]).toBeCloseTo(0.15);
@@ -208,6 +223,82 @@ describe("runtime campaign generator", () => {
       expect(current[1]).toBeLessThan(previous[1]);
       expect(current[2]).toBeGreaterThan(previous[2]);
       expect(current[3]).toBeGreaterThan(previous[3]);
+    }
+  });
+
+  test("authored level eleven safely teaches the reciprocal front-left wrap", () => {
+    const level = generateLevel(11);
+    expect(level).toBe(WRAP_INTRO_LEVEL);
+    expect(level).toMatchObject({
+      id: 11,
+      title: "Cube 11",
+      gridSize: 4,
+      lives: 5,
+      arrowScale: 1,
+    });
+    expect(getLevelConfig(11)).toEqual({
+      gridSize: 4,
+      arrowCount: 6,
+      lives: 5,
+      arrowScale: 1,
+    });
+    expect(level.arrows).toHaveLength(6);
+    expect(
+      new Set(
+        level.arrows.flatMap((arrow) => arrow.path.map((cell) => cell.face)),
+      ),
+    ).toEqual(new Set(["front", "back", "right", "left", "top", "bottom"]));
+    expect(seedForLevel(11)).toBe("par-arrows:runtime:2:level:11:wrap-intro:1");
+    expect(generateLevel(11)).toBe(WRAP_INTRO_LEVEL);
+    expect(getWrappingEdgePolicies(11)).toEqual([
+      {
+        face: "front",
+        edge: "west",
+        policy: "continue",
+        neighbor: { face: "left", entering: "west" },
+      },
+      {
+        face: "left",
+        edge: "east",
+        policy: "continue",
+        neighbor: { face: "front", entering: "east" },
+      },
+    ]);
+    expect(level.edgePolicies).toEqual(getWrappingEdgePolicies(11));
+    expect(validateLevel(level)).toEqual({ valid: true, errors: [] });
+    const allIds = level.arrows.map((arrow) => arrow.id);
+    for (const arrow of level.arrows) {
+      expect(simulateMove(level, allIds, arrow.id).kind).toBe("exit");
+    }
+
+    const frontArrow = level.arrows.find(
+      (arrow) => arrow.id === "wrap-intro-front",
+    );
+    const leftArrow = level.arrows.find(
+      (arrow) => arrow.id === "wrap-intro-left",
+    );
+    const frontBoundary = frontArrow?.path[1];
+    const leftBoundary = leftArrow?.path[1];
+    if (!frontArrow || !leftArrow || !frontBoundary || !leftBoundary)
+      throw new Error("Wrap intro arrows are missing their boundary cells.");
+    const frontMove = simulateMove(level, allIds, frontArrow.id);
+    const leftMove = simulateMove(level, allIds, leftArrow.id);
+    expect(frontMove.route).toContainEqual(
+      seamTransition(frontBoundary, "west", 4).cell,
+    );
+    expect(leftMove.route).toContainEqual(
+      seamTransition(leftBoundary, "east", 4).cell,
+    );
+    expect(frontMove.kind).toBe("exit");
+    expect(new Set(frontMove.route.map((cell) => cell.face))).toEqual(
+      new Set(["front", "left"]),
+    );
+    expect(leftMove.kind).toBe("exit");
+    expect(new Set(leftMove.route.map((cell) => cell.face))).toEqual(
+      new Set(["left", "front"]),
+    );
+    for (let id = 1; id <= 10; id += 1) {
+      expect(generateLevel(id).edgePolicies ?? []).toEqual([]);
     }
   });
 

@@ -14,7 +14,7 @@ import type {
 } from "../core/types";
 import { advanceHead, simulateMove } from "../core/movement";
 import { validateLevel } from "../core/validation";
-import { LEVEL_ONE } from "./intro";
+import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "./intro";
 
 export const GENERATOR_VERSION = 2;
 export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
@@ -39,6 +39,7 @@ export interface LevelConfig {
 /** The stable, inspectable input to the seeded layout generator. */
 export function seedForLevel(id: number): string {
   assertLevelId(id);
+  if (id === 11) return "par-arrows:runtime:2:level:11:wrap-intro:1";
   return `par-arrows:runtime:${id <= 10 ? 1 : GENERATOR_VERSION}:level:${id}`;
 }
 
@@ -47,6 +48,7 @@ export function getWrappingEdgeWeights(
 ): readonly [number, number, number, number] {
   assertLevelId(id);
   if (id <= 10) return [1, 0, 0, 0];
+  if (id === 11) return [0, 1, 0, 0];
   const progress = Math.min(1, (id - 11) / 89);
   return [
     0.25,
@@ -60,6 +62,7 @@ export function getWrappingEdgeWeights(
 export function getWrappingEdgePolicies(
   id: number,
 ): readonly EdgePolicyDefinition[] {
+  if (id === 11) return WRAP_INTRO_LEVEL.edgePolicies ?? [];
   const weights = getWrappingEdgeWeights(id);
   if (id <= 10) return [];
   const rng = new Rng(hashSeed(`${seedForLevel(id)}:edges`));
@@ -112,7 +115,7 @@ export function getWrappingEdgePolicies(
 
 export function getLevelConfig(id: number): LevelConfig {
   assertLevelId(id);
-  if (id === 1) {
+  if (id === 1 || id === 11) {
     return { gridSize: 4, arrowCount: 6, lives: 5, arrowScale: 1 };
   }
   const early = [0, 60, 84, 108, 132, 156, 168, 180, 180, 180];
@@ -319,6 +322,7 @@ function validateGenerated(
 export function generateLevel(id: number): LevelDefinition {
   assertLevelId(id);
   if (id === 1) return LEVEL_ONE;
+  if (id === 11) return WRAP_INTRO_LEVEL;
   const config = getLevelConfig(id);
   const baseSeed = hashSeed(seedForLevel(id));
   const edgePolicies = getWrappingEdgePolicies(id);

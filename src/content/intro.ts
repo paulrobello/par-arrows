@@ -23,6 +23,46 @@ export const LEVEL_ONE: LevelDefinition = {
   ],
 };
 
+/** A sparse first encounter with the reciprocal front-left wrap seam. */
+export const WRAP_INTRO_LEVEL: LevelDefinition = {
+  id: 11,
+  title: "Cube 11",
+  gridSize: 4,
+  lives: 5,
+  arrowScale: 1,
+  edgePolicies: [
+    {
+      face: "front",
+      edge: "west",
+      policy: "continue",
+      neighbor: { face: "left", entering: "west" },
+    },
+    {
+      face: "left",
+      edge: "east",
+      policy: "continue",
+      neighbor: { face: "front", entering: "east" },
+    },
+  ],
+  arrows: [
+    {
+      id: "wrap-intro-front",
+      path: [cell("front", 1, 1), cell("front", 0, 1)],
+    },
+    { id: "wrap-intro-left", path: [cell("left", 2, 2), cell("left", 3, 2)] },
+    { id: "wrap-intro-back", path: [cell("back", 2, 0), cell("back", 3, 0)] },
+    {
+      id: "wrap-intro-right",
+      path: [cell("right", 2, 0), cell("right", 3, 0)],
+    },
+    { id: "wrap-intro-top", path: [cell("top", 2, 0), cell("top", 3, 0)] },
+    {
+      id: "wrap-intro-bottom",
+      path: [cell("bottom", 2, 0), cell("bottom", 3, 0)],
+    },
+  ],
+};
+
 export const DEMO_BLOCKED_ID = "demo-blocked";
 export const DEMO_SUCCESS_ID = "demo-success";
 

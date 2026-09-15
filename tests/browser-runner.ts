@@ -18,13 +18,14 @@ import {
 import { solveLevel } from "../src/core/validation";
 import { arrowDimensions } from "../src/render/renderer";
 import { runHintChecks } from "./hints-browser";
-import { assertRuntimeCampaign } from "./runtime-browser";
-import { assertWrappingEdges } from "./wrapping-browser";
 import { assertConsistentMotion } from "./motion-browser";
 import { assertLevelPreview } from "./preview-browser";
+import { assertRuntimeCampaign } from "./runtime-browser";
+import { LEVELS, waitForReady } from "./runtime-fixtures";
 import { assertSeamFills } from "./seam-fill-browser";
 import { assertReliableTaps } from "./tap-browser";
-import { LEVELS, waitForReady } from "./runtime-fixtures";
+import { assertWrapIntro } from "./wrap-intro-browser";
+import { assertWrappingEdges } from "./wrapping-browser";
 
 interface Snapshot {
   mode: string;
@@ -1301,13 +1302,14 @@ try {
   );
   await mobile.close();
   await assertRuntimeCampaign(browser, url, output);
+  await assertWrapIntro(browser, url, output);
   await assertConsistentMotion(browser, url, output);
   await assertReliableTaps(browser, url, output);
   await assertSeamFills(browser, url, output);
   await assertLevelPreview(browser, url, output);
   await assertWrappingEdges(browser, url, output, {
-    movementLevelId: 11,
-    reboundLevelId: 11,
+    movementLevelId: 44,
+    reboundLevelId: 44,
   });
   await assertThemeBootstrap(browser);
   assert.deepEqual(failures, [], "Browser must not report uncaught errors");

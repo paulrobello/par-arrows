@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import type { Browser, Page } from "playwright";
 import {
-  generateLevel,
   GENERATOR_VERSION,
+  generateLevel,
   seedForLevel,
 } from "../src/content/procedural";
 import {
@@ -48,25 +48,25 @@ export async function assertRuntimeCampaign(
   await page.goto(url);
   await waitForReady(page);
   const pending = await page.evaluate(() => {
-    void window.__PAR_ARROWS_TEST__?.loadLevel(11);
+    void window.__PAR_ARROWS_TEST__?.loadLevel(12);
     return JSON.parse(window.render_game_to_text?.() ?? "{}");
   });
   assert.equal(pending.loading, true);
   await waitForReady(page);
-  assert.equal((await state(page)).level.id, 11);
+  assert.equal((await state(page)).level.id, 12);
   assert.ok(workers > 0, "A real worker must generate runtime levels");
-  const eleven = generateLevel(11);
+  const twelve = generateLevel(12);
   assert.deepEqual(
     await page.evaluate(() => window.__PAR_ARROWS_TEST__?.getLevel()),
-    eleven,
+    twelve,
   );
   assert.deepEqual((await state(page)).generation, {
     version: GENERATOR_VERSION,
-    seed: seedForLevel(11),
+    seed: seedForLevel(12),
   });
-  const blocked = eleven.arrows.find(
+  const blocked = twelve.arrows.find(
     (arrow) =>
-      simulateMove(eleven, createGameState(eleven), arrow.id).kind ===
+      simulateMove(twelve, createGameState(twelve), arrow.id).kind ===
       "blocked",
   );
   assert.ok(blocked);
@@ -79,28 +79,28 @@ export async function assertRuntimeCampaign(
   await page.reload();
   await waitForReady(page);
   assert.deepEqual((await state(page)).failedIds, [blocked.id]);
-  assert.equal((await state(page)).lives, eleven.lives - 1);
+  assert.equal((await state(page)).lives, twelve.lives - 1);
   assert.deepEqual(
     await page.evaluate(() => window.__PAR_ARROWS_TEST__?.getLevel()),
-    eleven,
+    twelve,
   );
   await page.locator('[data-action="retry"]').first().click();
-  assert.equal((await state(page)).lives, eleven.lives);
+  assert.equal((await state(page)).lives, twelve.lives);
   assert.deepEqual((await state(page)).failedIds, []);
   assert.deepEqual(
     await page.evaluate(() => window.__PAR_ARROWS_TEST__?.getLevel()),
-    eleven,
+    twelve,
   );
 
   await page.evaluate(async () => {
     await Promise.allSettled([
       window.__PAR_ARROWS_TEST__?.loadLevel(50_000),
-      window.__PAR_ARROWS_TEST__?.loadLevel(11),
+      window.__PAR_ARROWS_TEST__?.loadLevel(12),
     ]);
   });
   assert.equal(
     (await state(page)).level.id,
-    11,
+    12,
     "A stale worker result cannot replace the latest request",
   );
   await page.evaluate(async () => {
@@ -222,27 +222,27 @@ export async function assertRuntimeCampaign(
   assert.equal((await state(migrationPage)).lives, migrationLevel.lives - 1);
   await migration.close();
 
-  const levelEleven = generateLevel(11);
-  const initialElevenState = createGameState(levelEleven);
-  const blockedEleven = levelEleven.arrows.find(
+  const levelTwelve = generateLevel(12);
+  const initialTwelveState = createGameState(levelTwelve);
+  const blockedTwelve = levelTwelve.arrows.find(
     (arrow) =>
-      simulateMove(levelEleven, initialElevenState, arrow.id).kind ===
+      simulateMove(levelTwelve, initialTwelveState, arrow.id).kind ===
       "blocked",
   );
-  assert.ok(blockedEleven);
+  assert.ok(blockedTwelve);
   const staleLaterState = applyMove(
-    levelEleven,
-    initialElevenState,
-    simulateMove(levelEleven, initialElevenState, blockedEleven.id),
+    levelTwelve,
+    initialTwelveState,
+    simulateMove(levelTwelve, initialTwelveState, blockedTwelve.id),
   );
   const laterLegacySave = JSON.stringify({
-    currentLevelId: 11,
+    currentLevelId: 12,
     unlockedLevelId: 17,
     state: staleLaterState,
     tutorialComplete: true,
     contentVersion: 6,
     generatorVersion: 1,
-    seed: "par-arrows:runtime:1:level:11",
+    seed: "par-arrows:runtime:1:level:12",
   });
   const refresh = await browser.newContext();
   await refresh.addInitScript(
@@ -252,9 +252,9 @@ export async function assertRuntimeCampaign(
   const refreshPage = await refresh.newPage();
   await refreshPage.goto(url);
   await waitForReady(refreshPage);
-  assert.equal((await state(refreshPage)).level.id, 11);
+  assert.equal((await state(refreshPage)).level.id, 12);
   assert.deepEqual((await state(refreshPage)).failedIds, []);
-  assert.equal((await state(refreshPage)).lives, levelEleven.lives);
+  assert.equal((await state(refreshPage)).lives, levelTwelve.lives);
   const migratedCampaign = await refreshPage.evaluate((key) => {
     const savedCampaign = JSON.parse(localStorage.getItem(key) ?? "{}");
     return {
@@ -264,7 +264,7 @@ export async function assertRuntimeCampaign(
     };
   }, KEY);
   assert.deepEqual(migratedCampaign, {
-    currentLevelId: 11,
+    currentLevelId: 12,
     unlockedLevelId: 17,
     tutorialComplete: true,
   });
@@ -309,9 +309,9 @@ export async function assertRuntimeCampaign(
   );
   await failedPage.locator('[data-action="generation-retry"]').click();
   await waitForReady(failedPage);
-  assert.equal((await state(failedPage)).level.id, 11);
+  assert.equal((await state(failedPage)).level.id, 12);
   assert.deepEqual((await state(failedPage)).failedIds, [blocked.id]);
-  assert.equal((await state(failedPage)).lives, eleven.lives - 1);
+  assert.equal((await state(failedPage)).lives, twelve.lives - 1);
   await failed.close();
 
   const legacy = JSON.parse(saved);

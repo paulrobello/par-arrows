@@ -2,6 +2,14 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## First yellow-wrap introduction
+
+The owner requested a small level like level 1 when yellow wrapping first appears. Cube 11 is now an authored 4 × 4 cube with six short arrows, five lives, and one yellow edge visible from the initial camera. Two arrows demonstrate continuation onto the neighboring face; the others use ordinary exits. All six moves are safe with the full board occupied. A nonblocking instruction explains the yellow edge and moves aside in short landscape windows. Cube 1 and the original demo remain unchanged, and cube 12 onward retains existing layouts and weights. Only cube 11 receives a revised seed, so its older attempt refreshes while unlocks and tutorial completion survive.
+
+The full project gate passed with 110 tests and 127,554 assertions. Headed Chrome and WebKit passed real level 10 win → 11 → 12 progression, visible mouse-driven wrapping, partial-save reload/retry, old cube-11 migration, save-isolated URL previews, both themes, mobile layouts, motion speed, solid seam fills, and independently dimmed wrapping edges. Introductory, crossing, mobile, short-window, and web-game-client screenshots were inspected. Review found no actionable production or save-compatibility issues. Browser fixtures formerly tied to dense cube 11 now use unchanged generated cubes; the new transition test uses one valid remaining cube-10 arrow and seeds storage only once so reload exercises the actual saved progress.
+
+The broader Chrome suite did not complete: one run lost its execution context during the existing native-touch test, and a diagnostic rerun timed out during the existing rotation test. The rotation event trace shows intervening unpressed mouse movements and lost pointer capture during an automated drag. The isolated mouse/native-touch suite passed all eleven release offsets with navigation monitoring. These broader runs are not claimed as green. The task-specific Chrome/WebKit suites completed successfully in visible windows; minimizing a separate diagnostic browser prevented screenshot capture and was not used as visual proof.
+
 ## Dim wrapping edges behind the cube
 
 Yellow wrapping edges now use 32% opacity when both adjoining faces face away from the camera, matching the far-side arrow opacity. Exposed edges and silhouettes remain fully bright. Each edge has its own material so cubes with multiple wrapping edges can show bright and dim markers together; orbit, zoom, and camera reset update visibility immediately. The half-thickness radius and drawing order beneath arrows are preserved.
@@ -130,7 +138,7 @@ Flat quads and triangular heads follow face planes and fold at seams. Moving bod
 
 ## Confirmed behavior
 
-- Level 1 is authored; levels 2 and above are deterministic, solver-validated runtime puzzles. Progression is endless, with an early 60–180 arrow ramp and later 240-arrow cap, 26 × 26 face grids, 40-cell paths, and a three-life floor.
+- Levels 1 and 11 are authored teaching cubes; levels 2–10 and 12 onward are deterministic, solver-validated runtime puzzles. Progression is endless, with an early 60–180 arrow ramp and later 240-arrow cap, 26 × 26 face grids, 40-cell paths, and a three-life floor for generated puzzles.
 - Head advances forward; body follows its existing path and unwraps ordinary seams. A new head crossing continues only on a marked reciprocal yellow seam; ordinary crossings exit.
 - First failure per arrow costs one life and keeps it red until removed. Repeat failures of that arrow are free.
 - Reject self-contact levels. One active arrow at a time; extra taps ignored while orbit/zoom remain available.
@@ -142,7 +150,7 @@ Flat quads and triangular heads follow face planes and fold at seams. Moving bod
 ## Execution assumptions
 
 - User request on 2026-09-14 supersedes planning-only instructions in the original documents.
-- Implement current documented defaults for remaining MVP details. Yellow seams from level 11 use the documented whole-edge reciprocal rules and deterministic edge-count weights. Blue/green arrows, non-cube content, offline gameplay, accounts, undo, and sound assets remain deferred. Safe-arrow hints were separately approved on 2026-09-15.
+- Implement current documented defaults for remaining MVP details. Cube 11 introduces one fixed whole-edge reciprocal yellow seam; generated cubes from 12 onward use the established deterministic edge-count weights. Blue/green arrows, non-cube content, offline gameplay, accounts, undo, and sound assets remain deferred. Safe-arrow hints were separately approved on 2026-09-15.
 - A vacated tail cell is allowed only without simultaneous swept contact. Self-contact validation checks each arrow without other blockers.
 - Demo uses independent state, starts before first campaign play, saves completion only after both moves, and leaves level 1 untouched. Interrupted demo restarts if not completed.
 - Sequential unlock/replay of unlocked levels, bounded numeric Go/Enter navigation, no final campaign completion, reduced-motion presentation, accessible HTML controls.
