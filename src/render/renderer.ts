@@ -12,7 +12,7 @@ import type {
 const PICK_RADIUS = 0.14;
 const PICK_LAYER = 1;
 const HEAD_PICK_MARGIN_PX = 1.5;
-const WRAPPING_EDGE_RADIUS = 0.014;
+const WRAPPING_EDGE_RADIUS = 0.007;
 
 export type Theme = "light" | "dark";
 
