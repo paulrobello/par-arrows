@@ -1,223 +1,202 @@
-import {
-  cellKey,
-  forwardInfo,
-  seamTransition,
-  stepAcrossSeam,
-} from "../core/topology";
+import { forwardInfo, oppositeHeading, seamTransition } from "../core/topology";
 import type {
   ArrowDefinition,
   Cell,
   FaceId,
+  Heading,
   LevelDefinition,
 } from "../core/types";
-
-const FACES: readonly FaceId[] = [
-  "front",
-  "back",
-  "right",
-  "left",
-  "top",
-  "bottom",
-];
+import { CAMPAIGN_LAYOUTS } from "./campaign-layouts";
 
 function cell(face: FaceId, x: number, y: number): Cell {
   return { face, x, y };
 }
 
-function pair(id: string, face: FaceId, y: number): readonly ArrowDefinition[] {
-  return [
-    { id: `${id}-a`, path: [cell(face, 0, y), cell(face, 1, y)] },
-    { id: `${id}-b`, path: [cell(face, 2, y), cell(face, 3, y)] },
-  ];
-}
-
-function bentDependency(
-  id: string,
+function boundaryCell(
   face: FaceId,
-  y: number,
-): readonly ArrowDefinition[] {
-  return [
-    {
-      id: `${id}-a`,
-      path: [cell(face, 0, y), cell(face, 0, y + 1), cell(face, 1, y + 1)],
-    },
-    { id: `${id}-b`, path: [cell(face, 2, y + 1), cell(face, 3, y + 1)] },
-  ];
-}
-
-function chain(
-  id: string,
-  face: FaceId,
-  y: number,
-): readonly ArrowDefinition[] {
-  return [
-    { id: `${id}-a`, path: [cell(face, 0, y), cell(face, 1, y)] },
-    { id: `${id}-b`, path: [cell(face, 2, y), cell(face, 3, y)] },
-    { id: `${id}-c`, path: [cell(face, 4, y), cell(face, 5, y)] },
-  ];
-}
-
-function clearTerminal(
-  id: string,
-  face: FaceId,
+  heading: Heading,
+  lane: number,
   gridSize: number,
-): ArrowDefinition {
-  return {
-    id,
-    path: [cell(face, gridSize - 2, 0), cell(face, gridSize - 1, 0)],
-  };
+): Cell {
+  switch (heading) {
+    case "east":
+      return cell(face, gridSize - 1, lane);
+    case "west":
+      return cell(face, 0, lane);
+    case "south":
+      return cell(face, lane, gridSize - 1);
+    case "north":
+      return cell(face, lane, 0);
+  }
 }
 
-function wrappedTerminal(
-  id: string,
+function straightPath(
   face: FaceId,
+  heading: Heading,
+  lane: number,
+  length: number,
   gridSize: number,
-): ArrowDefinition {
-  const tail = cell(face, gridSize - 1, 0);
-  return { id, path: [tail, stepAcrossSeam(tail, "east", gridSize)] };
-}
-
-function bentTerminal(
-  id: string,
-  face: FaceId,
-  gridSize: number,
-): ArrowDefinition {
-  return {
-    id,
-    path: [
-      cell(face, gridSize - 2, 0),
-      cell(face, gridSize - 2, 1),
-      cell(face, gridSize - 1, 1),
-    ],
-  };
-}
-
-function verticalTerminal(
-  id: string,
-  face: FaceId,
-  gridSize: number,
-): ArrowDefinition {
-  return {
-    id,
-    path: [
-      cell(face, gridSize - 1, gridSize - 1),
-      cell(face, gridSize - 1, gridSize - 2),
-    ],
-  };
-}
-
-/** A deliberate long route that crosses front, right, then back. */
-function threeFaceRoute(id: string, gridSize: number): ArrowDefinition {
-  const path: Cell[] = [cell("front", gridSize - 1, gridSize - 1)];
+): readonly Cell[] {
+  const path: Cell[] = [boundaryCell(face, heading, lane, gridSize)];
   let current = path[0];
-  if (!current) throw new Error("Three-face route needs a starting cell.");
-  let transition = seamTransition(current, "east", gridSize);
+  if (!current) throw new Error("Static straight route has no boundary cell.");
+  for (let index = 1; index < length; index += 1) {
+    const behind: Cell | undefined = forwardInfo(
+      current,
+      oppositeHeading(heading),
+      gridSize,
+    ).next;
+    if (!behind)
+      throw new Error("Static straight route extends beyond its face.");
+    path.push(behind);
+    current = behind;
+  }
+  return path.reverse();
+}
+
+function bentPath(
+  face: FaceId,
+  heading: Heading,
+  lane: number,
+  gridSize: number,
+): readonly Cell[] {
+  const path = [...straightPath(face, heading, lane, 3, gridSize)];
+  const tail = path[0];
+  if (!tail) throw new Error("Static bent route has no tail.");
+  const turns: readonly Heading[] =
+    heading === "east" || heading === "west"
+      ? ["north", "south"]
+      : ["east", "west"];
+  const corner = turns
+    .map((turn) => forwardInfo(tail, turn, gridSize).next)
+    .find(Boolean);
+  if (!corner) throw new Error("Static bent route has no corner.");
+  return [corner, ...path];
+}
+
+function wrappedPath(
+  face: FaceId,
+  heading: Heading,
+  lane: number,
+  crossings: number,
+  gridSize: number,
+): readonly Cell[] {
+  if (!Number.isInteger(crossings) || crossings < 1 || crossings > 3) {
+    throw new Error(
+      `Static wrapped route requires 1-3 seam crossings, received ${crossings}.`,
+    );
+  }
+  const boundary = boundaryCell(face, heading, lane, gridSize);
+  const tail = forwardInfo(boundary, oppositeHeading(heading), gridSize).next;
+  if (!tail) throw new Error("Static wrapped route has no source tail.");
+  const path: Cell[] = [tail, boundary];
+  let transition = seamTransition(boundary, heading, gridSize);
   path.push(transition.cell);
-  current = transition.cell;
-  let heading = transition.heading;
-  for (let step = 0; step < gridSize; step += 1) {
-    const forward = forwardInfo(current, heading, gridSize);
+  let current = transition.cell;
+  let currentHeading = transition.heading;
+  let crossed = 1;
+  const maximumSteps = crossings * (gridSize + 1);
+  for (let step = 0; step < maximumSteps; step += 1) {
+    const forward = forwardInfo(current, currentHeading, gridSize);
     if (forward.exits) {
-      transition = seamTransition(current, heading, gridSize);
+      if (crossed === crossings) return path;
+      transition = seamTransition(current, currentHeading, gridSize);
       path.push(transition.cell);
       current = transition.cell;
-      heading = transition.heading;
+      currentHeading = transition.heading;
+      crossed += 1;
     } else if (forward.next) {
       path.push(forward.next);
       current = forward.next;
     }
   }
-  return { id, path };
-}
-
-function hasOpenCells(
-  arrows: readonly ArrowDefinition[],
-  candidates: readonly ArrowDefinition[],
-): boolean {
-  const used = new Set(arrows.flatMap((arrow) => arrow.path.map(cellKey)));
-  const proposed = candidates.flatMap((arrow) => arrow.path.map(cellKey));
-  return (
-    proposed.length === new Set(proposed).size &&
-    proposed.every((key) => !used.has(key))
+  throw new Error(
+    `Static wrapped route did not reach its ${crossings}-seam exit within ${maximumSteps} steps.`,
   );
 }
 
-function curatedLevel(
-  id: number,
-  gridSize: number,
-  targetCount: number,
-): LevelDefinition {
-  const arrows: ArrowDefinition[] = [];
-  if (id >= 5) arrows.push(threeFaceRoute(`l${id}-three-face-route`, gridSize));
-  for (const face of FACES) {
-    const candidates: ArrowDefinition[] = [
-      clearTerminal(`l${id}-${face}-clear`, face, gridSize),
-    ];
-    if (face === "front" && id >= 2)
-      candidates.unshift(
-        wrappedTerminal(`l${id}-front-wrap`, "front", gridSize),
-      );
-    if (face === "back" && id >= 3)
-      candidates.unshift(bentTerminal(`l${id}-back-bend`, "back", gridSize));
-    candidates.push(
-      verticalTerminal(`l${id}-${face}-vertical`, face, gridSize),
-    );
-    const terminal = candidates.find((candidate) =>
-      hasOpenCells(arrows, [candidate]),
-    );
-    if (!terminal)
-      throw new Error(`Curated level ${id} cannot place its ${face} terminal.`);
-    arrows.push(terminal);
+function dependencyPath(face: FaceId, role: string): readonly Cell[] {
+  switch (role) {
+    case "blocked":
+      return [cell(face, 1, 0), cell(face, 2, 0)];
+    case "clear":
+      return [cell(face, 3, 1), cell(face, 3, 0)];
+    case "a":
+      return [cell(face, 0, 0), cell(face, 1, 0)];
+    case "b":
+      return [cell(face, 2, 0), cell(face, 3, 0)];
+    case "c":
+      return [cell(face, 4, 1), cell(face, 4, 0)];
+    default:
+      throw new Error(`Unknown static dependency role ${role}.`);
   }
+}
 
-  let remaining = targetCount - arrows.length;
-  if (id >= 5) {
-    const dependencyChain = chain(`l${id}-depth-three`, "top", 1);
-    if (!hasOpenCells(arrows, dependencyChain))
-      throw new Error(`Curated level ${id} cannot place its dependency chain.`);
-    arrows.push(...dependencyChain);
-    remaining -= dependencyChain.length;
-  }
-  let useBentDependency = id >= 4;
-  for (let row = 1; remaining > 0 && row < gridSize - 1; row += 1) {
-    for (const face of FACES) {
-      if (remaining === 0) break;
-      const bent = bentDependency(`l${id}-${face}-bend${row}`, face, row);
-      const straight = pair(`l${id}-${face}-row${row}`, face, row);
-      const motifs =
-        useBentDependency && row + 1 < gridSize ? [bent, straight] : [straight];
-      const motif = motifs.find((candidate) => hasOpenCells(arrows, candidate));
-      if (!motif || motif.length > remaining) continue;
-      arrows.push(...motif);
-      remaining -= motif.length;
-      useBentDependency = false;
-    }
-  }
-  if (remaining !== 0)
-    throw new Error(
-      `Curated level ${id} has no safe motif for ${remaining} arrows.`,
+export function decodeCampaignArrow(
+  id: string,
+  gridSize: number,
+): ArrowDefinition {
+  const dependency =
+    /^l\d+-(front|back|right|left|top|bottom)-dependency-(blocked|clear|a|b|c)$/.exec(
+      id,
     );
+  if (dependency?.[1] && dependency[2])
+    return { id, path: dependencyPath(dependency[1] as FaceId, dependency[2]) };
+  const route =
+    /^l\d+-(straight|bend|wrap)-(front|back|right|left|top|bottom)-(east|west|south|north)-(\d+)(?:-(\d+))?$/.exec(
+      id,
+    );
+  if (!route?.[1] || !route[2] || !route[3] || !route[4])
+    throw new Error(`Unknown static campaign route ${id}.`);
+  const [, type, faceValue, headingValue, laneValue, lengthValue] = route;
+  const face = faceValue as FaceId;
+  const heading = headingValue as Heading;
+  const lane = Number(laneValue);
+  if (type === "straight") {
+    if (!lengthValue)
+      throw new Error(`Static straight route ${id} lacks a length.`);
+    return {
+      id,
+      path: straightPath(face, heading, lane, Number(lengthValue), gridSize),
+    };
+  }
+  if (type === "bend")
+    return { id, path: bentPath(face, heading, lane, gridSize) };
+  if (!lengthValue)
+    throw new Error(`Static wrapped route ${id} lacks a seam count.`);
   return {
     id,
-    title: `Cube ${id}`,
-    gridSize,
-    lives: id <= 3 ? 5 : id <= 6 ? 4 : 3,
-    arrows,
+    path: wrappedPath(face, heading, lane, Number(lengthValue), gridSize),
   };
 }
 
-/** Ten authored deterministic layouts with seams, turns, and removal dependencies. */
+// Kept as the original authored data so existing first-level progress remains exact.
+const LEVEL_ONE: LevelDefinition = {
+  id: 1,
+  title: "Cube 1",
+  gridSize: 4,
+  lives: 5,
+  arrows: [
+    { id: "l1-front-clear", path: [cell("front", 2, 0), cell("front", 3, 0)] },
+    { id: "l1-back-clear", path: [cell("back", 2, 0), cell("back", 3, 0)] },
+    { id: "l1-right-clear", path: [cell("right", 2, 0), cell("right", 3, 0)] },
+    { id: "l1-left-clear", path: [cell("left", 2, 0), cell("left", 3, 0)] },
+    { id: "l1-top-clear", path: [cell("top", 2, 0), cell("top", 3, 0)] },
+    {
+      id: "l1-bottom-clear",
+      path: [cell("bottom", 2, 0), cell("bottom", 3, 0)],
+    },
+  ],
+};
+
 export const LEVELS: readonly LevelDefinition[] = [
-  curatedLevel(1, 4, 6),
-  curatedLevel(2, 4, 12),
-  curatedLevel(3, 5, 16),
-  curatedLevel(4, 5, 20),
-  curatedLevel(5, 6, 24),
-  curatedLevel(6, 6, 28),
-  curatedLevel(7, 6, 32),
-  curatedLevel(8, 7, 36),
-  curatedLevel(9, 8, 40),
-  curatedLevel(10, 8, 42),
+  LEVEL_ONE,
+  ...CAMPAIGN_LAYOUTS.map((layout) => ({
+    ...layout,
+    arrows: layout.arrowIds.map((id) =>
+      decodeCampaignArrow(id, layout.gridSize),
+    ),
+  })),
 ];
 
 export const DEMO_BLOCKED_ID = "demo-blocked";

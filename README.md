@@ -35,6 +35,7 @@ Install pre-commit and run `pre-commit install` to enable the pinned secret-scan
 - A press highlights its arrow. Ambiguous touches do nothing. Dragging and pinching do not activate arrows.
 - The first-run demo shows a failed move followed by a successful move before campaign play.
 - Ten curated cube levels use five, four, then three starting lives. Retry restores the same layout and full life budget.
+- Starting at level 2, short, medium, and long arrows mix with multiple paths wrapping over cube edges.
 - Progress, lives, and failed-arrow history are stored in browser `localStorage` for resume.
 
 PWA installation is supported where the browser provides it. A production installation needs a secure origin; local development can use localhost. Installation does not require an account. Offline gameplay is outside the current MVP scope.

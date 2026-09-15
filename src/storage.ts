@@ -3,7 +3,7 @@ import type { GameState, LevelDefinition } from "./core/types";
 
 const STORAGE_KEY = "par-arrows:campaign:v1";
 const SETTINGS_KEY = "par-arrows:settings:v1";
-const CONTENT_VERSION = 1;
+const CONTENT_VERSION = 2;
 
 export interface CampaignSave {
   readonly currentLevelId: number;
@@ -19,6 +19,7 @@ export interface PlayerSettings {
 export interface StorageResult<T> {
   readonly value: T | undefined;
   readonly recovered: boolean;
+  readonly contentUpdated: boolean;
 }
 
 const DEFAULT_SETTINGS: PlayerSettings = { reducedMotion: false };
@@ -74,12 +75,12 @@ export function loadCampaign(
 ): StorageResult<CampaignSave> {
   const store = getStore();
   if (!store) {
-    return { value: undefined, recovered: true };
+    return { value: undefined, recovered: true, contentUpdated: false };
   }
   try {
     const raw = store.getItem(STORAGE_KEY);
     if (!raw) {
-      return { value: undefined, recovered: false };
+      return { value: undefined, recovered: false, contentUpdated: false };
     }
     const parsed = JSON.parse(raw) as Partial<CampaignSave> & {
       contentVersion?: unknown;
@@ -97,12 +98,33 @@ export function loadCampaign(
       unlockedLevelId > (levels.at(-1)?.id ?? 1)
     ) {
       store.removeItem(STORAGE_KEY);
-      return { value: undefined, recovered: true };
+      return { value: undefined, recovered: true, contentUpdated: false };
     }
-    if (
-      parsed.contentVersion !== CONTENT_VERSION ||
-      !isState(parsed.state, level)
-    ) {
+    const legacyLevelOne = parsed.contentVersion === 1 && level.id === 1;
+    const currentStateIsValid = isState(parsed.state, level);
+    if (parsed.contentVersion === CONTENT_VERSION && currentStateIsValid) {
+      return {
+        value: {
+          currentLevelId: level.id,
+          unlockedLevelId,
+          state: parsed.state,
+          tutorialComplete: parsed.tutorialComplete === true,
+        },
+        recovered: false,
+        contentUpdated: false,
+      };
+    }
+    if (legacyLevelOne && currentStateIsValid) {
+      const compatible: CampaignSave = {
+        currentLevelId: level.id,
+        unlockedLevelId,
+        state: parsed.state,
+        tutorialComplete: parsed.tutorialComplete === true,
+      };
+      saveCampaign(compatible);
+      return { value: compatible, recovered: false, contentUpdated: false };
+    }
+    {
       const recovered: CampaignSave = {
         currentLevelId: level.id,
         unlockedLevelId,
@@ -110,24 +132,19 @@ export function loadCampaign(
         tutorialComplete: parsed.tutorialComplete === true,
       };
       saveCampaign(recovered);
-      return { value: recovered, recovered: true };
+      return {
+        value: recovered,
+        recovered: true,
+        contentUpdated: parsed.contentVersion === 1 && level.id > 1,
+      };
     }
-    return {
-      value: {
-        currentLevelId: level.id,
-        unlockedLevelId,
-        state: parsed.state,
-        tutorialComplete: parsed.tutorialComplete === true,
-      },
-      recovered: false,
-    };
   } catch {
     try {
       store.removeItem(STORAGE_KEY);
     } catch {
       // Storage can be unavailable in private or embedded browser contexts.
     }
-    return { value: undefined, recovered: true };
+    return { value: undefined, recovered: true, contentUpdated: false };
   }
 }
 

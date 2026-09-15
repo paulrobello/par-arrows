@@ -309,7 +309,10 @@ export class ParArrowsApp {
 
   private restore(): void {
     const saved = loadCampaign(LEVELS);
-    if (saved.recovered) {
+    if (saved.contentUpdated) {
+      this.message.textContent =
+        "Puzzle layouts were updated. This cube restarted, and your unlocked cubes are still available.";
+    } else if (saved.recovered) {
       this.message.textContent =
         "Saved progress was unavailable, so this puzzle started fresh.";
     }

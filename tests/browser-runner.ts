@@ -189,6 +189,11 @@ try {
     "PASS demo: blocked touch, persistent red, then exit; campaign starts clean",
   );
 
+  await loadLevel(page, 2);
+  await assertCubeFits(page);
+  await assertVisibleArrows(page, 2);
+  await page.screenshot({ path: `${output}/desktop-level-2.png` });
+
   await loadLevel(page, 3);
   const level = LEVELS.find((candidate) => candidate.id === 3);
   assert.ok(level);

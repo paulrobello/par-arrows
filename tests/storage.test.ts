@@ -57,6 +57,25 @@ function save(state: GameState): boolean {
   });
 }
 
+function writeLegacyV1(
+  state: GameState,
+  unlockedLevelId: number,
+  tutorialComplete = true,
+): void {
+  expect(
+    saveCampaign({
+      currentLevelId: state.levelId,
+      unlockedLevelId,
+      tutorialComplete,
+      state,
+    }),
+  ).toBe(true);
+  const key = entries.keys().next().value;
+  if (!key) throw new Error("Expected legacy save key");
+  const current = JSON.parse(entries.get(key) ?? "{}");
+  entries.set(key, JSON.stringify({ ...current, contentVersion: 1 }));
+}
+
 function levelWithBlockedArrow(): {
   level: LevelDefinition;
   arrowId: string;
@@ -113,6 +132,59 @@ describe("resumable campaign saves", () => {
     expect(loadCampaign(LEVELS).value?.state.remainingIds).not.toContain(
       arrow.id,
     );
+  });
+
+  test("migrates a level one v1 attempt without changing its exact state", () => {
+    const level = LEVELS[0];
+    if (!level) throw new Error("Expected first level");
+    const initial = createGameState(level);
+    const arrow = level.arrows.find(
+      (candidate) => simulateMove(level, initial, candidate.id).kind === "exit",
+    );
+    if (!arrow) throw new Error("Expected removable level one arrow");
+    const partial = applyMove(
+      level,
+      initial,
+      simulateMove(level, initial, arrow.id),
+    );
+    writeLegacyV1(partial, Math.min(3, LEVELS.at(-1)?.id ?? 1));
+
+    const restored = loadCampaign(LEVELS);
+    expect(restored.recovered).toBe(false);
+    expect(restored.contentUpdated).toBe(false);
+    expect(restored.value?.state).toEqual(partial);
+    expect(restored.value?.unlockedLevelId).toBe(
+      Math.min(3, LEVELS.at(-1)?.id ?? 1),
+    );
+    const key = entries.keys().next().value;
+    if (!key) throw new Error("Expected migrated save key");
+    expect(JSON.parse(entries.get(key) ?? "{}").contentVersion).toBe(2);
+  });
+
+  test("resets a later v1 attempt while preserving unlocks and tutorial completion", () => {
+    const level = LEVELS[1];
+    if (!level) throw new Error("Expected second level");
+    const initial = createGameState(level);
+    const arrow = level.arrows.find(
+      (candidate) => simulateMove(level, initial, candidate.id).kind === "exit",
+    );
+    if (!arrow) throw new Error("Expected removable later-level arrow");
+    const partial = applyMove(
+      level,
+      initial,
+      simulateMove(level, initial, arrow.id),
+    );
+    const unlockedLevelId = Math.min(4, LEVELS.at(-1)?.id ?? level.id);
+    writeLegacyV1(partial, Math.max(level.id, unlockedLevelId));
+
+    const restored = loadCampaign(LEVELS);
+    expect(restored.recovered).toBe(true);
+    expect(restored.contentUpdated).toBe(true);
+    expect(restored.value?.state).toEqual(createGameState(level));
+    expect(restored.value?.unlockedLevelId).toBe(
+      Math.max(level.id, unlockedLevelId),
+    );
+    expect(restored.value?.tutorialComplete).toBe(true);
   });
 
   test("removing a previously red arrow does not invalidate the saved campaign", () => {

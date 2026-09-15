@@ -198,7 +198,7 @@ Q6 confirms ten curated cube levels. Procedural generation is outside this phase
 Acceptance:
 
 - P5.1: Every shipped level passes validation and its stored solution replays to an empty board under production rules.
-- P5.2: The approved progression curve is observable in the actual levels, with multiple arrows across all faces and genuine density growth.
+- P5.2: The progression curve is observable in actual levels, with arrows on all faces and growing density. Every level after level 1 includes varied straight-arrow lengths and several meaningful edge-spanning paths. Level 1 and the onboarding demo retain their simple layouts. Content updates preserve unlocked levels and restart only incompatible active attempts.
 - P5.3: Replay and retry do not relock progress. Final campaign completion does not point to a nonexistent next level.
 - P5.4: Verify `localStorage` contains the updated logical snapshot after successful removal, first collision, repeated red-arrow collision, Retry, and completion/unlock. Refresh/reopen restores the same progress, lives, and red-arrow history. Reload during success and failure, corrupt saves, denied storage, old schema/content, and multiple tabs follow the approved policy.
 - P5.5: On a small cube with few arrows, visible touch cues first activate a blocked arrow that contacts, rebounds, and stays red, then activate another arrow that exits completely. The demo cannot be skipped. Verify the approved demo-state/lifecycle policy, including no unintended campaign penalties or overwritten saves. Hints and rewards remain excluded unless approved.

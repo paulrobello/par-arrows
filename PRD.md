@@ -59,6 +59,7 @@ The reference images are visual evidence only. Their level number, stars, hint b
 | R26 | Include an onboarding demo on a small cube with only a few arrows. Show a touch on an arrow that fails, then a touch on an arrow that succeeds. The demo is non-skippable, consistent with the owner's preceding instruction. |
 | R27 | Render arrows as flat ribbons with flat arrowheads, following the surface and folding across face seams. |
 | R28 | Apply two successive 25% arrow-speed increases from the initial MVP, for a total multiplier of 1.5625. Current durations are 563.2 ms exits, 473.6 ms rebounds, and 70.4 ms reduced-motion transitions. Demo pauses are unchanged. |
+| R29 | Keep level 1 simple. From level 2 onward, straight arrows must visibly vary in length, and each level must include multiple arrows spanning cube edges. |
 
 ## 4. MVP boundary
 

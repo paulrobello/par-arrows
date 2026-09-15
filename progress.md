@@ -2,6 +2,10 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Arrow-length and wrapping revision
+
+The owner requested varied straight-arrow lengths and wrapping after the first level. Terra revised levels 2–10 as frozen route recipes, with at least three straight-arrow lengths in every revised level. Level 2 has lengths 2/3/4/6 and two substantial wraps; levels 5–10 have 6/7/8/9/10/11 wraps, including three-face routes. Level 1 and the demo match their original data exactly. Saved content is version 2: legacy level 1 resumes exactly, while legacy later-level attempts restart on the revised layout with unlocks and tutorial completion preserved. Root verified 40 tests / 729 assertions, full project checks, headed Chrome/WebKit flows, visible early/late/mobile layouts, real-click wrapped-arrow motion, and an actual legacy save migration. Decoder traversal is bounded and reviewed.
+
 ## Miter join correction
 
 The owner supplied a close-up showing a notch where independent flat ribbon segments met at a right-angle bend. Terra implemented a shared mitered endpoint cross-section for adjacent segments on the same face. Exact inner/outer vertex tests cover left/right turns on all faces and tiny fractional moving segments. Straight ends and cube-edge folds retain their existing behavior, with the 1.5625 speed multiplier. Root verified the repaired close-up, 34 tests / 626 assertions, full project gate, headed Chrome/WebKit flows, and the skill's headed browser client. The fix was re-reviewed without remaining findings.
