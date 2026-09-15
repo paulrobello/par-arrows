@@ -1,6 +1,6 @@
 # Par Arrows — Implementation Plan
 
-Status: **Draft. Do not execute until the owner requests implementation.**
+Status: **Initial MVP implemented; final device/release qualification remains open.**
 
 Created: 2026-09-14
 
@@ -8,7 +8,7 @@ Requirements source: [PRD.md](PRD.md)
 
 References: [gallery](docs/references/README.md)
 
-This is a plan for future work. No game implementation, dependency installation, server, or deployment is authorized by the current request. Unanswered product choices retain their Q identifiers from the PRD. Plan approval does not cancel the current explicit planning-only instruction.
+The owner has requested implementation using Terra subagents and proper greenfield/Git setup. This supersedes the initial planning-only instruction. Remaining Q identifiers distinguish confirmed choices from the documented execution defaults in [progress.md](progress.md). No remote publication or deployment is included.
 
 ## 1. Delivery strategy
 
@@ -25,7 +25,7 @@ The owner confirmed path-following movement, body unwrapping across ordinary sea
 | G3: Visual direction | Q22. | Final visual acceptance, not neutral prototype geometry. |
 | G4: Deferred mechanics | Q16–Q19 and Q23, mechanic introduction order and level numbers. | Shipping bidirectional arrows, yellow edges, or non-cube content. |
 
-Record answers in the PRD and revise this plan as needed. Separate authorization to implement must then be present before P1 starts.
+Record owner answers and implementation defaults distinctly. Implementation authorization is present. Resolve technical details using the documented MVP defaults and preserve deferred gameplay scope.
 
 ## 2. Proposed technology and constraints
 
@@ -117,7 +117,7 @@ Proposed isolation: use a separate demo state so scripted moves cannot consume c
 
 ## 4. Dependency-ordered phases
 
-Each phase below is planned, not started. Split any phase into small, coherent verified commits. Use no more than five changed files per execution batch unless the approved independent-subagent workflow applies. Run the actual project gate after each completed batch and relevant runtime checks at each visible milestone. Keep the board's acceptance criteria open until individually demonstrated.
+Track phase execution in [progress.md](progress.md). Split phases into small, coherent verified commits. Use no more than five changed files per execution batch unless the approved independent-subagent workflow applies. Run the actual project gate after each completed batch and relevant runtime checks at each visible milestone. Keep the board's acceptance criteria open until individually demonstrated.
 
 ### P0 — Resolve rules and freeze the MVP
 
@@ -185,7 +185,7 @@ Acceptance:
 - P4.3: The final arrow completes the level once. Zero lives produces failure once. Retry clears stale animation work and restores the same level, full lives, and no failed-arrow history, with ordinary arrows black again.
 - P4.4: Losing focus, backgrounding, and changing motion preferences do not leave the level stuck or mutate the result twice.
 
-This is the first playable milestone. Verify the full loop with the owner before expanding content. That review is a planned gameplay checkpoint, not a claim that this planning session implements it.
+This is the first playable milestone. Verify the full loop in a headed browser and show the playable result for owner feedback. Continue the authorized implementation phases while incorporating any owner corrections.
 
 ### P5 — Campaign, validation, and saves
 
@@ -264,7 +264,7 @@ No calendar estimate is committed while G1/G2 remain open. After those decisions
 
 The planning session began in an empty directory with no existing code or checks. The initial documentation commit may be created on the default branch under the greenfield exception. Future implementation uses isolated worktrees, setup in each worktree, scoped formatting, verified atomic commits, and the project board. Do not push or deploy without the owner's authorization.
 
-There is no configured build, linter, typechecker, test suite, or Makefile in this planning-only package. Validate the current deliverable through reference byte comparisons, image decoding/dimensions, Markdown link checks, requirement/decision consistency, file-scope inspection, and whitespace checks. Do not report `make checkall` as passed before P1 creates a real gate.
+The initial planning package had no build, linter, typechecker, test suite, or Makefile. P1 establishes those checks; use the resulting `make checkall` gate and browser checks for implementation, retaining image-integrity and document-consistency verification. Record actual results in [progress.md](progress.md).
 
 ## 9. Planning checklist
 
@@ -272,5 +272,5 @@ There is no configured build, linter, typechecker, test suite, or Makefile in th
 - [x] PRD and implementation plan checked for working relative links and consistent planning-only scope.
 - [x] Owner's unanswered questions clearly separated from confirmed requirements; Q1–Q13 answers, Q14's `localStorage`/PWA choices, and Q15's mobile hardware age target incorporated. Demo isolation/lifecycle details remain proposed.
 - [x] Planning-only files verified for the local documentation commit; Git history and the project board record the commit evidence.
-- [ ] Owner answers incorporated and G1/G2 closed.
-- [ ] Separate implementation request received before starting P1.
+- [x] Owner answers incorporated and remaining MVP execution defaults recorded in progress.md; deferred product decisions remain distinct.
+- [x] Separate implementation request received before starting P1: owner requested Terra subagents, greenfield setup, and Git repository on 2026-09-14.

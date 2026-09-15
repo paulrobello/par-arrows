@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>Par Arrows cube</title>
+  <defs>
+    <linearGradient id="background" x2="1" y2="1">
+      <stop stop-color="#f4f9fc"/>
+      <stop offset="1" stop-color="#cce0ed"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="108" fill="url(#background)"/>
+  <path d="M256 100 390 174v164L256 414 122 338V174Z" fill="#f7fbfe" stroke="#c1d8e5" stroke-width="8" stroke-linejoin="round"/>
+  <path d="m256 100 134 74-134 78-134-78Z" fill="#fff"/>
+  <path d="m256 252 134-78v164l-134 76Z" fill="#d7e8f2"/>
+  <path d="M170 250v58l47 27" fill="none" stroke="#172a38" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m203 308 18 29-31 2" fill="none" stroke="#172a38" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m303 345 41-24v-77" fill="none" stroke="#197ed0" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m327 268 17-28 17 9" fill="none" stroke="#197ed0" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m213 176 40 23 44-26" fill="none" stroke="#172a38" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m272 172 29-2-14 24" fill="none" stroke="#172a38" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

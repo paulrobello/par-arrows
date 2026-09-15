@@ -1,0 +1,453 @@
+:root {
+  color: #0b1015;
+  background: #e9f4f7;
+  font-family: "Manrope Variable", Manrope, sans-serif;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+button,
+select,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app-shell {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at 50% 42%,
+      rgb(255 255 255 / 82%),
+      transparent 36rem
+    ),
+    linear-gradient(145deg, #eefaff 0%, #e4f0f3 50%, #fdf9ed 100%);
+}
+
+.app-shell::after {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  opacity: 0.18;
+  background-image: radial-gradient(#1687b7 0.6px, transparent 0.6px);
+  background-size: 12px 12px;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black 30%,
+    transparent 85%
+  );
+}
+
+.hud,
+.control-dock,
+.settings-panel,
+.gesture-help,
+.storage-note,
+.tutorial-card,
+.state-card {
+  z-index: 2;
+}
+
+.hud {
+  position: absolute;
+  top: max(1.1rem, env(safe-area-inset-top));
+  right: 1.4rem;
+  left: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  pointer-events: none;
+}
+
+.brand,
+.status-chip,
+.lives,
+.control-dock,
+.settings-panel,
+.tutorial-card,
+.state-card {
+  border: 1px solid rgb(20 82 104 / 14%);
+  box-shadow: 0 18px 48px rgb(34 89 106 / 12%);
+  backdrop-filter: blur(16px);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.45rem 0.8rem 0.45rem 0.48rem;
+  border-radius: 1.4rem;
+  background: rgb(255 253 247 / 82%);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.brand-mark {
+  display: grid;
+  width: 1.8rem;
+  height: 1.8rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #0b1015;
+  color: #fdf9ed;
+  font-size: 1.15rem;
+}
+
+.status-chip {
+  padding: 0.58rem 0.85rem;
+  border-radius: 1rem;
+  background: rgb(255 253 247 / 62%);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.separator {
+  margin: 0 0.3rem;
+  color: #1687b7;
+}
+
+.lives {
+  display: flex;
+  align-items: baseline;
+  gap: 0.36rem;
+  padding: 0.35rem 0.68rem;
+  border-radius: 1rem;
+  background: #0b1015;
+  color: #fffdf7;
+}
+.lives-caption {
+  font-size: 0.57rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  opacity: 0.65;
+}
+.lives strong {
+  color: #65c8f2;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.game-stage {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+}
+.game-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+}
+
+.tutorial-card,
+.state-card {
+  position: absolute;
+  top: 50%;
+  left: max(1.3rem, env(safe-area-inset-left));
+  width: min(20rem, calc(100vw - 2.6rem));
+  padding: 1.15rem 1.2rem;
+  transform: translateY(-50%);
+  border-radius: 1.25rem;
+  background: rgb(255 253 247 / 83%);
+}
+
+.state-card {
+  left: 50%;
+  width: min(21rem, calc(100vw - 2.6rem));
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.tutorial-kicker {
+  color: #1687b7;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+}
+.tutorial-card h1,
+.state-card h2 {
+  margin: 0.35rem 0 0.45rem;
+  font-size: clamp(1.35rem, 3.2vw, 2rem);
+  letter-spacing: -0.07em;
+  line-height: 1;
+}
+.tutorial-card p,
+.state-card p {
+  margin: 0;
+  color: #415159;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.touch-cue {
+  position: absolute;
+  z-index: 3;
+  width: 2.45rem;
+  height: 2.45rem;
+  border: 1px solid #1687b7;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: pulse 1.3s ease-in-out infinite;
+}
+.touch-cue span {
+  display: block;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin: 0.88rem;
+  border-radius: 50%;
+  background: #1687b7;
+}
+@keyframes pulse {
+  50% {
+    transform: scale(1.18);
+    opacity: 0.45;
+  }
+}
+
+.primary-button {
+  margin-top: 1rem;
+  border: 0;
+  border-radius: 0.7rem;
+  padding: 0.7rem 0.9rem;
+  background: #0b1015;
+  color: #fffdf7;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.primary-button:hover {
+  background: #1687b7;
+}
+
+.control-dock {
+  position: absolute;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  left: 50%;
+  display: flex;
+  align-items: stretch;
+  padding: 0.32rem;
+  border-radius: 1rem;
+  background: rgb(255 253 247 / 86%);
+  transform: translateX(-50%);
+}
+
+.dock-button {
+  display: grid;
+  min-width: 3.6rem;
+  gap: 0.12rem;
+  padding: 0.35rem 0.5rem;
+  border: 0;
+  border-radius: 0.72rem;
+  background: transparent;
+  color: #0b1015;
+  font-size: 1rem;
+}
+.dock-button span,
+.level-picker span {
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.dock-button:hover {
+  background: #d8eff6;
+}
+.level-picker {
+  display: grid;
+  gap: 0.14rem;
+  padding: 0.25rem 0.55rem;
+  border-left: 1px solid rgb(20 82 104 / 12%);
+}
+.level-picker select {
+  max-width: 8rem;
+  border: 0;
+  background: transparent;
+  color: #0b1015;
+  font-size: 0.72rem;
+  font-weight: 750;
+  outline: none;
+}
+
+.settings-panel {
+  position: absolute;
+  right: 1.4rem;
+  bottom: 5.3rem;
+  width: min(17rem, calc(100vw - 2.8rem));
+  padding: 0.9rem;
+  border-radius: 1rem;
+  background: rgb(255 253 247 / 95%);
+  font-size: 0.76rem;
+}
+.settings-panel label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+}
+.settings-panel button {
+  width: 100%;
+  margin-top: 0.75rem;
+  border: 0;
+  border-radius: 0.55rem;
+  padding: 0.55rem;
+  background: #1687b7;
+  color: white;
+  font-weight: 800;
+}
+.settings-panel p {
+  margin: 0.75rem 0 0;
+  color: #415159;
+  line-height: 1.45;
+}
+
+.gesture-help,
+.storage-note {
+  position: absolute;
+  right: 1.4rem;
+  bottom: 1.5rem;
+  max-width: 24rem;
+  color: #49646f;
+  font-size: 0.62rem;
+  text-align: right;
+}
+.storage-note {
+  bottom: 2.55rem;
+  color: #a74b42;
+}
+
+@media (max-width: 640px) {
+  .hud {
+    top: max(0.8rem, env(safe-area-inset-top));
+    right: 0.85rem;
+    left: 0.85rem;
+  }
+  .brand {
+    font-size: 0.7rem;
+  }
+  .status-chip {
+    display: block;
+    padding: 0.45rem 0.52rem;
+    font-size: 0.56rem;
+  }
+  .tutorial-card {
+    top: auto;
+    bottom: 6.2rem;
+    transform: none;
+  }
+  .gesture-help {
+    right: 50%;
+    bottom: 5.35rem;
+    width: 90vw;
+    transform: translateX(50%);
+    text-align: center;
+  }
+  .storage-note {
+    right: 50%;
+    bottom: 6.4rem;
+    width: 90vw;
+    transform: translateX(50%);
+    text-align: center;
+  }
+  .control-dock {
+    width: calc(100vw - 1.2rem);
+    justify-content: center;
+  }
+  .dock-button {
+    min-width: 3.3rem;
+  }
+}
+
+@media (max-height: 520px) and (orientation: landscape) {
+  .hud {
+    top: max(0.48rem, env(safe-area-inset-top));
+    right: 0.7rem;
+    left: 0.7rem;
+  }
+  .brand {
+    padding: 0.3rem 0.5rem 0.3rem 0.3rem;
+    font-size: 0.62rem;
+  }
+  .brand-mark {
+    width: 1.4rem;
+    height: 1.4rem;
+    font-size: 0.9rem;
+  }
+  .status-chip {
+    padding: 0.36rem 0.5rem;
+    font-size: 0.56rem;
+  }
+  .lives {
+    padding: 0.25rem 0.5rem;
+  }
+  .control-dock {
+    right: max(0.6rem, env(safe-area-inset-right));
+    bottom: max(0.5rem, env(safe-area-inset-bottom));
+    left: auto;
+    transform: none;
+  }
+  .dock-button {
+    min-width: 2.85rem;
+    padding: 0.24rem 0.36rem;
+    font-size: 0.82rem;
+  }
+  .level-picker {
+    padding: 0.18rem 0.38rem;
+  }
+  .gesture-help,
+  .storage-note {
+    display: none;
+  }
+  .tutorial-card {
+    top: auto;
+    bottom: 0.7rem;
+    left: 0.75rem;
+    width: min(16rem, 40vw);
+    padding: 0.75rem;
+    transform: none;
+  }
+  .tutorial-card h1 {
+    font-size: 1.2rem;
+  }
+  .touch-cue {
+    width: 2rem;
+    height: 2rem;
+  }
+  .touch-cue span {
+    width: 0.42rem;
+    height: 0.42rem;
+    margin: 0.72rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .touch-cue {
+    animation: none;
+  }
+}

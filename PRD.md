@@ -1,12 +1,12 @@
 # Par Arrows — Product Requirements
 
-Status: **Draft for owner review. Planning only.**
+Status: **Initial MVP implemented; device/release qualification remains open.**
 
 Owner: Paul Robello
 
 Created: 2026-09-14
 
-This document captures the requested game and makes unresolved choices explicit. Proposed defaults are recommendations, not owner-approved requirements. Creating or approving these documents does not authorize implementation in this session. No game code, build scaffold, or deployment is part of the current deliverable.
+This document captures the requested game and distinguishes confirmed choices from implementation defaults. On 2026-09-14 the owner requested implementation using Terra subagents and a proper greenfield/Git setup, superseding the original planning-only scope. Current execution defaults and verification status are recorded in [progress.md](progress.md). Deployment and remote publication are separate from this authorization.
 
 Companion: [implementation plan](IMPLEMENTATION_PLAN.md). Visual sources: [reference gallery and provenance](docs/references/README.md).
 
@@ -275,6 +275,6 @@ Q1–Q13 have owner answers; Q8 retains a tail-boundary clarification. Q13 confi
 
 ## 12. Current deliverable status
 
-- S1: Planning documents and original reference copies are the only project deliverables in this session.
-- S2: Gameplay, levels, renderer, tests, package configuration, and deployment have not been implemented.
-- S3: No runtime quality or solvability claim is made from these documents. Future acceptance criteria describe work to verify later.
+- S1: Planning documents and original reference copies are preserved. The initial ten-level MVP is implemented.
+- S2: Project setup, core rules, content, rendering/input, local saves, and PWA installation support have passed the local checks described in the [verification report](docs/verification/2026-09-14-mvp.md).
+- S3: Physical-device performance, installed-app behavior, multi-tab save handling, and broader accessibility qualification remain open. Remote publication and deployment have not been requested.

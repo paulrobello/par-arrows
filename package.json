@@ -1,0 +1,29 @@
+{
+  "name": "par-arrows",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 8057 --strictPort",
+    "build": "vite build",
+    "test": "bun test",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "typecheck": "tsc --noEmit",
+    "browser:test": "bun run tests/browser-runner.ts",
+    "browser:install": "playwright install chromium"
+  },
+  "dependencies": {
+    "@fontsource-variable/manrope": "5.3.0",
+    "three": "0.186.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.13",
+    "@types/bun": "1.4.2",
+    "@types/three": "0.186.0",
+    "playwright": "1.63.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.0"
+  }
+}

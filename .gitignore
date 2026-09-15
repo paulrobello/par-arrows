@@ -1,0 +1,31 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+
+# Browser-test artifacts
+playwright-report/
+test-results/
+
+# Environment and local configuration
+.env
+.env.*
+!.env.example
+*.local
+*.local.*
+
+# Runtime and agent state
+*.log
+*.pid
+*.tmp
+.claude/
+.codex/
+.gemini/
+.superpowers/
+
+# Editor and operating-system files
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
