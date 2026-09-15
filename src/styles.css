@@ -280,7 +280,7 @@ button {
   border-radius: 0.1rem;
   background: var(--confetti-color);
   opacity: 0;
-  animation: confetti-burst 2.45s cubic-bezier(0.12, 0.7, 0.25, 1)
+  animation: confetti-burst 1.96s cubic-bezier(0.12, 0.7, 0.25, 1)
     var(--confetti-delay) forwards;
 }
 

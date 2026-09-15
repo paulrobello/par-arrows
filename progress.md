@@ -2,6 +2,10 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Confetti speed tuning
+
+The requested 25% speed increase divides confetti travel, stagger, and cleanup durations by 1.25: travel is now 1.96 seconds, stagger is 19.2 ms per group, and cleanup occurs at 2.08 seconds. The victory card retains its 440 ms entrance. Root verified computed animation timings and cleanup in headed Chrome/WebKit, inspected the rendered burst and web-game client, and passed the full gate (65 tests / 2,075 assertions). These timings supersede the initial celebration timings below.
+
 ## Safe-arrow hints
 
 Added a free Hint button that checks the current puzzle for an unobstructed exit, rotates to the chosen arrow's actual head face over 600 ms, then highlights it with three slow pulses over 2.4 seconds. Reduced-motion preferences snap the view and use steady emphasis. Camera framing returns to a fitted distance; hints never move an arrow, spend lives, change failure history, or write progress. Canvas interaction, zoom, camera reset, retry, level changes, and disposal cancel the effect. Hint is disabled during the demo, arrow motion, another hint, and terminal states. Root verified the full gate (65 tests / 2,075 assertions), headed Chrome/WebKit desktop/mobile flows, all six head faces, hidden/extreme-zoom views, wrapped previously failed arrows, safe hinted-arrow activation, light/dark themes, native two-pointer pinch and cancellation events, and a 320-pixel-wide dock. Screenshots and the web-game client were inspected. Review findings about immediate disabled-state updates and unnecessary simulations were corrected. No content or save-version changes.
@@ -10,7 +14,7 @@ Added a free Hint button that checks the current puzzle for an unobstructed exit
 
 Settings now offers System (default), Light, and Dark, persisted alongside reduced motion. System mode follows live OS changes; manual choices override the OS until System is selected again. A guarded early HTML bootstrap applies the initial appearance before the app bundle loads. Existing renderer materials retint in place, preserving camera, selection, active motion, failed-arrow history, and progress. The dark palette uses a slate cube, ivory arrows, coral failures, cyan selection, and faint blue-gray far-side paths. HTML surfaces, controls, native selects, browser theme color, and victory cards follow the resolved theme. Settings overlays the gesture hint cleanly on mobile. Legacy/malformed/denied storage is safe. Root verified 65 tests / 2,075 assertions, full gate, headed Chrome/WebKit desktop/mobile theme and gameplay flows, startup before bundle execution, persistence, motion-preserving changes, and inspected dark dense/failed/selected/settings/victory views. The web-game skill client also passed. Campaign content and save versions are unchanged.
 
-## Level-completion celebration
+## Level-completion celebration (initial timing)
 
 Campaign wins now celebrate after the final arrow settles with a 56-piece multicolor confetti burst, a gold star emblem, a brief card entrance/glow, and distinct cube/campaign completion messages. Effects expire after 2.6 seconds and never intercept controls. Next, Retry, level changes, reset, and disposal remove transient effects. In-game and system reduced-motion preferences suppress motion and stop an active burst; restored wins show only the static success card. Headed Chrome/WebKit tests cover final-arrow timing, Next during the burst, expiry, loss/demo exclusion, saved wins, final campaign, and both reduced-motion settings including live toggles. Root inspected desktop/mobile celebrations and corrected mobile particle layering. Full gate passes with 59 tests / 2,064 assertions; the web-game skill client also passes. No content or save-version changes.
 

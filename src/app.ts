@@ -42,7 +42,7 @@ interface Hint {
   lit: boolean;
 }
 
-const CELEBRATION_DURATION = 2600;
+const CELEBRATION_DURATION = 2080;
 const CONFETTI_COUNT = 56;
 const HINT_FOCUS_DURATION = 600;
 const HINT_FLASH_DURATION = 2400;
@@ -765,7 +765,7 @@ export class ParArrowsApp {
       piece.className = "confetti-piece";
       piece.style.setProperty("--confetti-angle", `${angle}deg`);
       piece.style.setProperty("--confetti-distance", `${distance}vmin`);
-      piece.style.setProperty("--confetti-delay", `${(index % 7) * 24}ms`);
+      piece.style.setProperty("--confetti-delay", `${(index % 7) * 19.2}ms`);
       piece.style.setProperty(
         "--confetti-color",
         colors[index % colors.length] as string,
