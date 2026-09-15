@@ -6,6 +6,7 @@ import {
   edgePoint,
   faceHeadingVector,
   faceNormal,
+  seamTransition,
   stepAcrossSeam,
 } from "../src/core/topology";
 import type { Cell, FaceId, Heading, MoveResult } from "../src/core/types";
@@ -16,6 +17,7 @@ import {
   ribbonSections,
   ribbonVertices,
   slicePath,
+  wrappingEdgeOpacity,
   wrappingEdgeSegments,
 } from "../src/render/renderer";
 
@@ -76,6 +78,66 @@ function polylineLength(points: readonly THREE.Vector3[]): number {
 }
 
 describe("flat ribbon geometry", () => {
+  test("dims hidden wrapping edges and keeps visible faces and outlines bright", () => {
+    const faces: readonly FaceId[] = [
+      "front",
+      "back",
+      "left",
+      "right",
+      "top",
+      "bottom",
+    ];
+    const headings: readonly Heading[] = ["east", "west", "north", "south"];
+    const edges = wrappingEdgeSegments({
+      id: 11,
+      title: "Edge visibility",
+      gridSize: 4,
+      lives: 3,
+      arrows: [],
+      edgePolicies: faces.flatMap((face) =>
+        headings.map((edge) => {
+          const boundary: Cell = {
+            face,
+            x: edge === "east" ? 3 : edge === "west" ? 0 : 1,
+            y: edge === "south" ? 3 : edge === "north" ? 0 : 1,
+          };
+          const next = seamTransition(boundary, edge, 4);
+          return {
+            face,
+            edge,
+            policy: "continue" as const,
+            neighbor: { face: next.cell.face, entering: next.heading },
+          };
+        }),
+      ),
+    });
+    expect(edges).toHaveLength(12);
+    for (const edge of edges) {
+      const [first, second] = edge.faceNormals;
+      expect(wrappingEdgeOpacity(edge, first.clone().multiplyScalar(5))).toBe(
+        1,
+      );
+      expect(wrappingEdgeOpacity(edge, second.clone().multiplyScalar(5))).toBe(
+        1,
+      );
+      expect(
+        wrappingEdgeOpacity(edge, first.clone().add(second).multiplyScalar(-5)),
+      ).toBe(0.32);
+      expect(
+        wrappingEdgeOpacity(edge, first.clone().add(second).multiplyScalar(5)),
+      ).toBe(1);
+      expect(
+        wrappingEdgeOpacity(edge, first.clone().addScaledVector(second, -5)),
+      ).toBe(1);
+      const overhead = first
+        .clone()
+        .cross(second)
+        .multiplyScalar(5)
+        .addScaledVector(first, 0.5)
+        .addScaledVector(second, 0.5);
+      expect(wrappingEdgeOpacity(edge, overhead)).toBe(0.32);
+    }
+  });
   test("keeps near and far exits at the same five-unit world speed", () => {
     const nearPath = expandedPoints(
       [

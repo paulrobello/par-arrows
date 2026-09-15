@@ -2,13 +2,19 @@ import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import type { Browser, Page } from "playwright";
 import sharp from "sharp";
+import { Vector3 } from "three";
 import {
   GENERATOR_VERSION,
   generateLevel,
+  getWrappingEdgePolicies,
   seedForLevel,
 } from "../src/content/procedural";
 import { createGameState, simulateMove } from "../src/core/game-state";
 import { waitForReady } from "./runtime-fixtures";
+import {
+  wrappingEdgeOpacity,
+  wrappingEdgeSegments,
+} from "../src/render/renderer";
 
 export interface WrappingBrowserFixtures {
   readonly movementLevelId: number;
@@ -64,6 +70,109 @@ function crossingArrow(levelId: number, expectedKind?: "exit" | "blocked") {
   return arrow;
 }
 
+async function assertEdgeDimming(
+  page: Page,
+  levelId: number,
+  output: string,
+): Promise<void> {
+  const read = async () =>
+    JSON.parse(
+      await page.evaluate(() => window.render_game_to_text?.() ?? "{}"),
+    ) as { camera: { position: number[] }; wrappingEdgeOpacities: number[] };
+  const level = generateLevel(levelId);
+  assert.equal(
+    level.edgePolicies?.length,
+    2,
+    "Use a single-edge visibility fixture",
+  );
+  assert.ok(
+    level.edgePolicies.some(
+      (rule) => rule.face === "front" && rule.edge === "east",
+    ),
+  );
+  assert.deepEqual((await read()).wrappingEdgeOpacities, [1]);
+  for (let step = 0; step < 8; step += 1) {
+    await page.mouse.move(550, 450);
+    await page.mouse.down();
+    await page.mouse.move(580, 450, { steps: 3 });
+    await page.mouse.up();
+    const view = await read();
+    if (
+      (view.camera.position[0] ?? 0) < 1 &&
+      (view.camera.position[2] ?? 0) < 1
+    )
+      break;
+  }
+  await page.waitForFunction(
+    () =>
+      JSON.parse(window.render_game_to_text?.() ?? "{}")
+        .wrappingEdgeOpacities?.[0] === 0.32,
+  );
+  const hidden = await read();
+  assert.ok(
+    (hidden.camera.position[0] ?? 0) < 1 &&
+      (hidden.camera.position[2] ?? 0) < 1,
+  );
+  for (const theme of ["light", "dark"]) {
+    await page.evaluate((theme) => {
+      const select = document.querySelector<HTMLSelectElement>("#theme-select");
+      if (!select) throw new Error("Theme selector missing");
+      select.value = theme;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    }, theme);
+    assert.deepEqual((await read()).wrappingEdgeOpacities, [0.32]);
+    await page.screenshot({
+      path: `${output}/wrapping-edge-hidden-${theme}.png`,
+    });
+  }
+  await page.getByRole("button", { name: "Reset camera view" }).click();
+  assert.deepEqual((await read()).wrappingEdgeOpacities, [1]);
+  await page.screenshot({ path: `${output}/wrapping-edge-exposed-dark.png` });
+
+  const camera = new Vector3().fromArray((await read()).camera.position);
+  const mixedId = Array.from({ length: 100 }, (_, index) => index + 11).find(
+    (id) => {
+      const edges = wrappingEdgeSegments({
+        id,
+        title: "Visibility fixture",
+        gridSize: 4,
+        lives: 3,
+        arrows: [],
+        edgePolicies: getWrappingEdgePolicies(id),
+      });
+      const opacities = edges.map((edge) => wrappingEdgeOpacity(edge, camera));
+      return opacities.includes(1) && opacities.includes(0.32);
+    },
+  );
+  assert.ok(mixedId, "Find a cube with both exposed and hidden wrapping edges");
+  await loadLevel(page, mixedId);
+  await page.getByRole("button", { name: "Reset camera view" }).click();
+  const mixed = await read();
+  const expected = wrappingEdgeSegments(generateLevel(mixedId)).map((edge) =>
+    wrappingEdgeOpacity(edge, new Vector3().fromArray(mixed.camera.position)),
+  );
+  assert.deepEqual(mixed.wrappingEdgeOpacities, expected);
+  assert.ok(
+    expected.includes(1) && expected.includes(0.32),
+    "Edge materials must keep independent opacities",
+  );
+  await page.screenshot({
+    path: `${output}/wrapping-edges-mixed-visibility.png`,
+  });
+  await page.evaluate(() => {
+    const select = document.querySelector<HTMLSelectElement>("#theme-select");
+    if (!select) throw new Error("Theme selector missing");
+    select.value = "light";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await loadLevel(page, levelId);
+  await page.getByRole("button", { name: "Reset camera view" }).click();
+  assert.deepEqual((await read()).wrappingEdgeOpacities, [1]);
+  console.log(
+    "PASS hidden wrapping edges dim during orbit, exposed edges brighten, and mixed edge opacities remain independent",
+  );
+}
+
 export async function assertWrappingEdges(
   browser: Browser,
   url: string,
@@ -85,6 +194,7 @@ export async function assertWrappingEdges(
     const movementLevel = generateLevel(fixtures.movementLevelId);
     const movementArrow = crossingArrow(fixtures.movementLevelId);
     await loadLevel(page, fixtures.movementLevelId);
+    await assertEdgeDimming(page, fixtures.movementLevelId, output);
     const expectedEdges =
       (movementLevel.edgePolicies ?? []).filter(
         (policy) => policy.policy === "continue",

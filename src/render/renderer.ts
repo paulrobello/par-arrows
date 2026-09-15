@@ -148,6 +148,16 @@ export interface ExpandedPath {
 export interface WrappingEdgeSegment {
   readonly start: THREE.Vector3;
   readonly end: THREE.Vector3;
+  readonly faceNormals: readonly [THREE.Vector3, THREE.Vector3];
+}
+
+export function wrappingEdgeOpacity(
+  edge: WrappingEdgeSegment,
+  cameraPosition: THREE.Vector3,
+): number {
+  return edge.faceNormals.some((normal) => normal.dot(cameraPosition) >= 1)
+    ? 1
+    : 0.32;
 }
 
 /** Returns one world-space segment for each continued physical cube edge. */
@@ -175,7 +185,8 @@ export function wrappingEdgeSegments(
         .map((value) => value.toFixed(4))
         .join(",");
     const key = [pointKey(start), pointKey(end)].sort().join("|");
-    if (!segments.has(key)) segments.set(key, { start, end });
+    if (!segments.has(key))
+      segments.set(key, { start, end, faceNormals: [normal, outward] });
   }
   return [...segments.values()];
 }
@@ -924,6 +935,14 @@ export class PuzzleRenderer {
     return this.wrappingEdgesGroup.children.length;
   }
 
+  wrappingEdgeOpacities(): readonly number[] {
+    return this.wrappingEdgesGroup.children.map(
+      (child) =>
+        (child as THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>)
+          .material.opacity,
+    );
+  }
+
   selectedArrowId(): string | undefined {
     return this.selectedId;
   }
@@ -954,6 +973,16 @@ export class PuzzleRenderer {
 
   render(): void {
     this.updateCamera();
+    for (const child of this.wrappingEdgesGroup.children) {
+      const mesh = child as THREE.Mesh<
+        THREE.BufferGeometry,
+        THREE.MeshBasicMaterial
+      >;
+      mesh.material.opacity = wrappingEdgeOpacity(
+        mesh.userData.edge as WrappingEdgeSegment,
+        this.camera.position,
+      );
+    }
     for (const visual of this.visuals.values()) {
       const activeColor =
         visual.arrow.id === this.hintFocus?.arrowId && this.hintLit
@@ -1034,13 +1063,14 @@ export class PuzzleRenderer {
     const segments = wrappingEdgeSegments(level);
     if (segments.length === 0) return;
     const color = this.theme === "light" ? 0xb77900 : 0xffd84a;
-    const material = new THREE.MeshBasicMaterial({
-      color,
-      toneMapped: false,
-      transparent: true,
-      depthWrite: false,
-    });
-    for (const { start, end } of segments) {
+    for (const edge of segments) {
+      const { start, end } = edge;
+      const material = new THREE.MeshBasicMaterial({
+        color,
+        toneMapped: false,
+        transparent: true,
+        depthWrite: false,
+      });
       const direction = end.clone().sub(start);
       const mesh = new THREE.Mesh(
         new THREE.CylinderGeometry(
@@ -1052,6 +1082,7 @@ export class PuzzleRenderer {
         material,
       );
       mesh.renderOrder = -1;
+      mesh.userData.edge = edge;
       mesh.position.copy(start).add(end).multiplyScalar(0.5);
       mesh.quaternion.setFromUnitVectors(
         new THREE.Vector3(0, 1, 0),

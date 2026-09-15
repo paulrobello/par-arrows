@@ -313,6 +313,7 @@ export class ParArrowsApp {
           : {}),
       },
       wrappingEdges: this.renderer.wrappingEdgeCount(),
+      wrappingEdgeOpacities: this.renderer.wrappingEdgeOpacities(),
       lives: this.displayedState.lives,
       remainingIds: this.displayedState.remainingIds,
       failedIds: this.displayedState.failedIds,

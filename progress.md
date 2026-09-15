@@ -2,6 +2,12 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Dim wrapping edges behind the cube
+
+Yellow wrapping edges now use 32% opacity when both adjoining faces face away from the camera, matching the far-side arrow opacity. Exposed edges and silhouettes remain fully bright. Each edge has its own material so cubes with multiple wrapping edges can show bright and dim markers together; orbit, zoom, and camera reset update visibility immediately. The half-thickness radius and drawing order beneath arrows are preserved.
+
+The full gate passed with 107 tests and 127,477 assertions. Geometry checks cover all twelve physical cube edges, either exposed face, hidden views, and silhouettes. Headed Chrome and WebKit passed rotation-driven dimming/restoration, mixed independent edge opacities, both themes, mobile marker visibility, head folding, rebound, retry, reload, and cleanup. Hidden, exposed, and mixed-edge screenshots were inspected. Chrome's seam-fill pixel checks confirmed that ordinary and yellow edges stay under solid arrow fills, and the headed web-game client passed with its preview inspected.
+
 ## Thinner yellow wrapping lines
 
 Reduced the wrapping-marker radius from 0.014 to 0.007, halving its diameter. Headed Chrome/WebKit checks passed light/dark/mobile visibility, head folding, rebound, retry, reload, and cleanup; the web-game preview was inspected. The full gate passed with 106 tests and 127,404 assertions. An initial five-second solver-test timeout passed in isolation (2.74 seconds) and on the full-gate rerun.
