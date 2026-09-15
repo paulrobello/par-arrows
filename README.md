@@ -17,6 +17,19 @@ make dev
 
 Open [the local game](http://localhost:8057). The development server binds to loopback and uses a reserved port. Use `make dev-stop` to stop it or `make dev-restart` to restart it after the port is released.
 
+### Test levels
+
+Open these links to preview campaign content without unlocking it:
+
+- [Level 25](http://localhost:8057/?level=25) loads that level directly, regardless of campaign unlocks.
+- [First level with wrapping](http://localhost:8057/?feature=wrap) finds the first level containing a yellow physical edge.
+- [Level with exactly three wrapping edges](http://localhost:8057/?wraps=3) searches for an exact edge count.
+- [Three wrapping edges at or after level 50](http://localhost:8057/?level=50&wraps=3) searches from level 50 for an exact count.
+
+`feature` accepts `wrap`, `wrapping`, or `wraparound`, case-insensitively. `wraps` accepts `0`, `1`, `2`, or `3`. Only wrapping is supported today. A filter searches from level 1 unless `level` sets the starting point; Go and Next keep the filter active, and the resolved level is written into the URL for reloads. Searches inspect at most 1,000 candidates using edge-count metadata rather than generating and rendering every level. Levels must be safe integers from 1 through `Number.MAX_SAFE_INTEGER - 1`; malformed values, duplicate parameters, conflicting selectors, unknown features, and searches with no match show a clear error.
+
+Using `level`, `feature`, or `wraps` opens a separate preview session, skips the onboarding demo, and never writes or deletes campaign saves during play, Retry, Next, Reset, or error handling. Use **Return to campaign** to leave preview. The existing `?test=1` flag only enables automation hooks; by itself it does not start preview mode.
+
 ## Verify
 
 ```sh

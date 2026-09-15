@@ -475,6 +475,35 @@ button {
   font-size: 0.65rem;
   font-weight: 800;
 }
+.preview-banner {
+  position: absolute;
+  z-index: 6;
+  top: max(4.4rem, calc(env(safe-area-inset-top) + 3.6rem));
+  left: 50%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.3rem 0.8rem;
+  width: max-content;
+  max-width: calc(100% - 1.5rem);
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 0.8rem;
+  background: var(--panel-background-solid);
+  color: var(--page-text);
+  text-align: center;
+  font-size: 0.7rem;
+  transform: translateX(-50%);
+}
+.preview-banner[hidden] {
+  display: none;
+}
+.preview-banner a {
+  color: var(--accent);
+  font-weight: 800;
+  text-underline-offset: 0.16em;
+}
 .generation-layer {
   position: absolute;
   z-index: 4;
@@ -649,6 +678,13 @@ input:focus-visible {
 }
 
 @media (max-height: 520px) and (orientation: landscape) {
+  .preview-banner {
+    top: auto;
+    bottom: max(0.7rem, env(safe-area-inset-bottom));
+    left: max(0.7rem, env(safe-area-inset-left));
+    width: min(15rem, 36vw);
+    transform: none;
+  }
   .hud {
     top: max(0.48rem, env(safe-area-inset-top));
     right: 0.7rem;

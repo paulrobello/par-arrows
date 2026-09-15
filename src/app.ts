@@ -8,6 +8,10 @@ import {
 } from "./content/intro";
 import { LevelLoader } from "./content/level-loader";
 import {
+  parseLevelPreview,
+  resolveLevelPreview,
+} from "./content/level-preview";
+import {
   GENERATOR_VERSION,
   MAX_LEVEL_ID,
   seedForLevel,
@@ -78,7 +82,13 @@ export class ParArrowsApp {
   private readonly themeSelect: HTMLSelectElement;
   private readonly celebrationLayer: HTMLElement;
   private readonly loadingLayer: HTMLElement;
+  private readonly previewBanner: HTMLElement;
+  private readonly previewStatus: HTMLElement;
+  private readonly previewExit: HTMLAnchorElement;
   private readonly loader = new LevelLoader();
+  private readonly preview = resolveLevelPreview(
+    parseLevelPreview(window.location.search),
+  );
   private readonly systemMotionPreference = window.matchMedia(
     "(prefers-reduced-motion: reduce)",
   );
@@ -103,6 +113,7 @@ export class ParArrowsApp {
   private loading = true;
   private loadingError: string | undefined;
   private requestedLevelId = 1;
+  private previewResolvedLevelId: number | undefined;
   private loadRequest = 0;
   private disposed = false;
   private retryPurpose: "restore" | "level" | undefined;
@@ -111,6 +122,10 @@ export class ParArrowsApp {
     this.root = root;
     root.innerHTML = `
       <main class="app-shell">
+        <aside class="preview-banner" id="preview-banner" hidden>
+          <span id="preview-status">Test mode · Campaign progress is unchanged.</span>
+          <a id="preview-exit" href="/">Return to campaign</a>
+        </aside>
         <header class="hud" aria-label="Puzzle status">
           <div class="brand"><span class="brand-mark">↗</span><span>Par Arrows</span></div>
           <div class="status-chip"><span id="level-label">Cube 1</span><span class="separator">·</span><span id="arrows-label">0 arrows</span></div>
@@ -183,6 +198,9 @@ export class ParArrowsApp {
     this.themeSelect = this.requireElement("theme-select") as HTMLSelectElement;
     this.celebrationLayer = this.requireElement("celebration-layer");
     this.loadingLayer = this.requireElement("generation-layer");
+    this.previewBanner = this.requireElement("preview-banner");
+    this.previewStatus = this.requireElement("preview-status");
+    this.previewExit = this.requireElement("preview-exit") as HTMLAnchorElement;
     this.reducedMotion.checked = this.settings.reducedMotion;
     this.themeSelect.value = this.settings.theme;
     this.renderer = new PuzzleRenderer(this.stage);
@@ -214,7 +232,23 @@ export class ParArrowsApp {
       this.handleThemePreference,
     );
     this.renderer.setLevel(this.level, this.state);
-    void this.restore();
+    if (this.preview.active) {
+      this.mode = "campaign";
+      this.tutorialComplete = true;
+      this.unlockedLevelId = MAX_LEVEL_ID;
+      this.requestedLevelId =
+        this.preview.requestedLevelId ?? this.preview.resolvedLevelId ?? 1;
+      if (this.preview.error || this.preview.resolvedLevelId === undefined) {
+        this.showPreviewError(
+          this.preview.error ?? "No matching test cube was found.",
+          this.requestedLevelId,
+        );
+      } else {
+        void this.loadLevel(this.preview.resolvedLevelId);
+      }
+    } else {
+      void this.restore();
+    }
     this.installPrompt = new PwaInstallPrompt((available, ios) =>
       this.updateInstallPrompt(available, ios),
     );
@@ -254,6 +288,24 @@ export class ParArrowsApp {
     return JSON.stringify({
       mode: this.mode,
       level: { id: this.level.id, title: this.level.title },
+      preview: {
+        active: this.preview.active,
+        ...(this.preview.active
+          ? {
+              requestedLevelId: this.requestedLevelId,
+              ...(this.previewResolvedLevelId === undefined
+                ? {}
+                : { resolvedLevelId: this.previewResolvedLevelId }),
+              ...(this.preview.feature
+                ? { feature: this.preview.feature }
+                : {}),
+              ...(this.preview.wraps === undefined
+                ? {}
+                : { wraps: this.preview.wraps }),
+              ...(this.loadingError ? { error: this.loadingError } : {}),
+            }
+          : {}),
+      },
       wrappingEdges: this.renderer.wrappingEdgeCount(),
       lives: this.displayedState.lives,
       remainingIds: this.displayedState.remainingIds,
@@ -313,7 +365,25 @@ export class ParArrowsApp {
       levelId < 1 ||
       levelId > MAX_LEVEL_ID
     ) {
+      if (this.preview.active) {
+        this.showPreviewError(
+          `Level must be a whole number from 1 through ${MAX_LEVEL_ID}.`,
+          levelId,
+        );
+      }
       return;
+    }
+    let targetLevelId = levelId;
+    if (this.preview.active) {
+      const selection = resolveLevelPreview(this.preview, levelId);
+      if (selection.resolvedLevelId === undefined || selection.error) {
+        this.showPreviewError(
+          selection.error ?? "No matching test cube was found.",
+          levelId,
+        );
+        return;
+      }
+      targetLevelId = selection.resolvedLevelId;
     }
     const request = ++this.loadRequest;
     this.requestedLevelId = levelId;
@@ -326,7 +396,7 @@ export class ParArrowsApp {
     this.clearCelebration();
     this.renderUi();
     try {
-      const level = await this.loader.load(levelId);
+      const level = await this.loader.load(targetLevelId);
       if (this.disposed || request !== this.loadRequest) return;
       this.mode = "campaign";
       this.level = level;
@@ -335,6 +405,10 @@ export class ParArrowsApp {
       this.tutorialComplete = true;
       this.unlockedLevelId = Math.max(this.unlockedLevelId, level.id);
       this.renderer.setLevel(level, this.state);
+      if (this.preview.active) {
+        this.previewResolvedLevelId = level.id;
+        this.updatePreviewUrl(level.id);
+      }
       this.persist();
     } catch (error) {
       if (this.disposed || request !== this.loadRequest) return;
@@ -349,6 +423,10 @@ export class ParArrowsApp {
   }
 
   resetProgress(): void {
+    if (this.preview.active) {
+      void this.loadLevel(this.previewResolvedLevelId ?? this.requestedLevelId);
+      return;
+    }
     this.loadRequest += 1;
     this.retryPurpose = undefined;
     clearCampaign();
@@ -489,6 +567,7 @@ export class ParArrowsApp {
   }
 
   private async restore(): Promise<void> {
+    if (this.preview.active) return;
     const request = ++this.loadRequest;
     this.retryPurpose = "restore";
     this.loading = true;
@@ -569,6 +648,11 @@ export class ParArrowsApp {
   }
 
   private selectLevel(levelId: number): void {
+    if (this.preview.active) {
+      if (this.loading) return;
+      void this.loadLevel(levelId);
+      return;
+    }
     if (
       this.mode !== "campaign" ||
       this.loading ||
@@ -583,6 +667,7 @@ export class ParArrowsApp {
   }
 
   private persist(): void {
+    if (this.preview.active) return;
     const stored = saveCampaign({
       currentLevelId: this.level.id,
       unlockedLevelId: this.unlockedLevelId,
@@ -595,6 +680,37 @@ export class ParArrowsApp {
     }
   }
 
+  private showPreviewError(error: string, requestedLevelId: number): void {
+    this.loadRequest += 1;
+    this.requestedLevelId = requestedLevelId;
+    this.previewResolvedLevelId = undefined;
+    this.retryPurpose = undefined;
+    this.loading = false;
+    this.loadingError = error;
+    this.settleMotion();
+    this.cancelHint();
+    this.clearCelebration();
+    this.renderUi();
+  }
+
+  private updatePreviewUrl(levelId: number): void {
+    const url = new URL(window.location.href);
+    url.searchParams.set("level", String(levelId));
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${url.pathname}${url.search}${url.hash}`,
+    );
+  }
+
+  private previewReturnHref(): string {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("level");
+    url.searchParams.delete("feature");
+    url.searchParams.delete("wraps");
+    return `${url.pathname}${url.search}${url.hash}`;
+  }
+
   private renderUi(): void {
     this.levelLabel.textContent =
       this.mode === "demo" ? "First flight" : this.level.title;
@@ -604,7 +720,8 @@ export class ParArrowsApp {
     const pickerDisabled =
       this.mode !== "campaign" ||
       this.loading ||
-      this.loadingError !== undefined;
+      this.preview.error !== undefined ||
+      (this.loadingError !== undefined && !this.preview.active);
     this.levelInput.disabled = pickerDisabled;
     this.levelSubmit.disabled = pickerDisabled;
     this.hintButton.disabled =
@@ -641,7 +758,17 @@ export class ParArrowsApp {
       this.requireElement("touch-cue").hidden = true;
     }
     this.levelInput.value = String(this.level.id);
-    this.levelInput.max = String(this.unlockedLevelId);
+    this.levelInput.max = String(
+      this.preview.active ? MAX_LEVEL_ID : this.unlockedLevelId,
+    );
+    this.levelInput.setAttribute(
+      "aria-label",
+      this.preview.active ? "Choose a test cube" : "Choose an unlocked cube",
+    );
+    this.previewBanner.hidden = !this.preview.active;
+    this.previewStatus.textContent =
+      "Test mode · Campaign progress is unchanged.";
+    this.previewExit.href = this.previewReturnHref();
     const generationStatus = this.requireElement("generation-status");
     const generationRetry = this.root.querySelector<HTMLButtonElement>(
       '[data-action="generation-retry"]',
@@ -650,7 +777,9 @@ export class ParArrowsApp {
     generationStatus.textContent = this.loading
       ? "Preparing cube…"
       : (this.loadingError ?? "Could not prepare this cube.");
-    if (generationRetry) generationRetry.hidden = this.loading;
+    if (generationRetry) {
+      generationRetry.hidden = this.loading || this.retryPurpose === undefined;
+    }
     const card = this.requireElement("state-card");
     const title = this.requireElement("state-title");
     const copy = this.requireElement("state-copy");

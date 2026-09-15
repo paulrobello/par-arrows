@@ -2,6 +2,12 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## URL-driven level preview
+
+Test URLs open any valid level directly or filter by wrapping seams. `feature=wrap` (also `wrapping` and `wraparound`, case-insensitive) finds the first level with at least one seam; `wraps=0|1|2|3` requests an exact seam count. Combining either filter with `level` searches at or after the starting level and checks no more than 1,000 candidates using edge-count metadata. Levels must be from 1 through `Number.MAX_SAFE_INTEGER - 1`; invalid numbers, duplicate parameters, conflicting selectors, and unknown features produce a clear error. These selectors start a preview that skips the demo and never writes or deletes campaign saves; Return to campaign exits it. Go and Next preserve the filter and update the URL to the resolved level. Bare `?test=1` remains automation-hooks-only.
+
+Root verified the full gate with 93 tests and 123,347 assertions. Headed Chrome and WebKit passed public URLs without automation hooks, generated feature/count matches, filtered Next/Go, normalized URL reloads, preservation of unrelated query/hash state, exact campaign-save isolation during play/retry/reset/completion/errors, no-match handling at the maximum level, cold previews without a save, and Return to campaign. The test banner was inspected on desktop, portrait mobile, and landscape, where an overlap assertion keeps it clear of the cube. The headed web-game client opened a wrapping preview successfully. The initial dense completion smoke passed its feature assertions but timed out during browser cleanup; the bounded completion regression now uses the authored teaching cube, while generated wrapping filters are exercised through Go and reload. Final browser suites and cleanup pass, and diff review found no actionable issues.
+
 ## Consistent arrow movement speed
 
 The owner reported faster movement when an arrow starts farther from an edge. Exits previously used the same 563.2 ms duration for different travel distances, including flight extensions proportional to the raw path cell count. Normal exits and both rebound legs now use five cube-space units per second. The renderer and attempt controller share the same geometric distance calculation, including yellow seam turns. Off-cube travel is the actual body length plus two units, preserving speed across grid sizes and allowing the full arrow to clear. Reduced-motion transitions remain 70.4 ms. Level geometry, saves, penalties, and demo pauses are unchanged.

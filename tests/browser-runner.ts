@@ -21,6 +21,7 @@ import { runHintChecks } from "./hints-browser";
 import { assertRuntimeCampaign } from "./runtime-browser";
 import { assertWrappingEdges } from "./wrapping-browser";
 import { assertConsistentMotion } from "./motion-browser";
+import { assertLevelPreview } from "./preview-browser";
 import { LEVELS, waitForReady } from "./runtime-fixtures";
 
 interface Snapshot {
@@ -1299,6 +1300,7 @@ try {
   await mobile.close();
   await assertRuntimeCampaign(browser, url, output);
   await assertConsistentMotion(browser, url, output);
+  await assertLevelPreview(browser, url, output);
   await assertWrappingEdges(browser, url, output, {
     movementLevelId: 11,
     reboundLevelId: 11,

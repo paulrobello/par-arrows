@@ -215,6 +215,8 @@ Acceptance:
 - P5.6: The manifest and icons validate, installation works on supported targets, standalone launch reaches the game, and closing/reopening the installed app resumes saved progress. Browser play still works without installation.
 - P5.7: Hint checks the current state for a safe exit, focuses the head face before flashing, and leaves saves/lives unchanged. Verify hidden and wrapped heads, extreme zoom, pole-facing views, slow pulses, reduced-motion steady emphasis, cancellation, theme changes, and the mobile dock.
 
+Development level previews use `?level=`, `?feature=wrap`, or `?wraps=0|1|2|3`; feature aliases `wrapping` and `wraparound` are case-insensitive. A combined level and filter searches at or after that level, with at most 1,000 candidates checked through edge-count metadata. Valid levels range from 1 to `Number.MAX_SAFE_INTEGER - 1`. Any of these selectors starts a separate preview that skips onboarding and never writes or deletes campaign storage during play, Retry, Next, Reset, or errors; Return to campaign exits preview. Go and Next preserve filters and write the resolved level back to the URL. Strict numeric parsing rejects duplicates, conflicts, and unknown features with a clear error. Bare `?test=1` continues to enable automation hooks only. Browser and combined-gate verification is pending.
+
 ### P6 — Device hardening and MVP acceptance
 
 Depends on: P5.
