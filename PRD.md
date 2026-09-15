@@ -168,6 +168,8 @@ These are the fixed authored layouts in content version 3. Every level validates
 
 References [04](docs/references/reference-04.jpeg), [05](docs/references/reference-05.jpeg), and [06](docs/references/reference-06.jpeg) establish the later visual direction: mix short and long arrows, single and multiple bends, hooked returns, stepped zigzags, and winding paths, with close spacing across multiple faces. Preserve each arrow's readable identity and validate self-contact and solvability. The pictured late-game density is a progression reference; level 1 keeps its simple teaching layout. Screenshot counters do not set campaign arrow quotas.
 
+**Visual acceptance remains open:** the owner identified that content version 3 still repeats stamped S curves. The [reference complexity study](docs/references/arrow-complexity-study.md) confirms a dominant repeated footprint and regular bands. Future content must vary run lengths and turn sequences within paths, route footprints, endpoint placement, and how neighboring paths fit together. Higher arrow counts or bend totals alone do not satisfy this requirement.
+
 ### 7.2 Solvability and authoring
 
 - L1: Every shipped level must validate and have a complete, zero-mistake removal sequence under the exact runtime rules. No randomized placement may ship without validation.

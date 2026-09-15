@@ -2,6 +2,10 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Reference complexity study
+
+The owner identified that most arrows still appear stamped from the same S curve. A live/reference comparison and normalized footprint analysis confirmed the gap: level 10 has only eight distinct single-face footprints across 87 arrows, including 29 copies of the same S. The references vary run lengths within arrows, broad and compact footprints, endpoint locations, and paths fitted around neighboring routes. The earlier density/bend-count checks did not establish that visual variety. The findings and next-revision criteria are recorded in `docs/references/arrow-complexity-study.md`, and the PRD/plan now leave visual acceptance open. This turn changes documentation only.
+
 ## Vertical drag direction correction
 
 The owner reported reversed vertical rotation. Inverted only the vertical component of the camera-local drag axis, preserving horizontal direction, sensitivity, unrestricted turns, and reset/zoom behavior. Browser rotation checks now assert the signed local rotation for mouse and touch, so a direction reversal cannot pass merely because the amount of rotation is correct. Root verified the full gate, headed Chrome/WebKit and repeated Chrome checks, and the web-game skill client. A live downward drag moved the visible front arrow down from screen y=284 to y=310, confirming the rendered direction.
