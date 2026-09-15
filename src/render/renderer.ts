@@ -13,6 +13,39 @@ const PICK_RADIUS = 0.14;
 const PICK_LAYER = 1;
 const HEAD_PICK_MARGIN_PX = 1.5;
 
+export type Theme = "light" | "dark";
+
+interface ThemePalette {
+  readonly background: number;
+  readonly cube: number;
+  readonly edges: number;
+  readonly arrow: number;
+  readonly failed: number;
+  readonly selected: number;
+  readonly farSide: number;
+}
+
+const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
+  light: {
+    background: 0xe9f4f7,
+    cube: 0xfffcf4,
+    edges: 0xa9c5ce,
+    arrow: 0x0b1015,
+    failed: 0xd94841,
+    selected: 0x108acb,
+    farSide: 0x6f9fb2,
+  },
+  dark: {
+    background: 0x101820,
+    cube: 0x253641,
+    edges: 0x597784,
+    arrow: 0xf7f0dc,
+    failed: 0xff776c,
+    selected: 0x54d6ee,
+    farSide: 0x516a7a,
+  },
+};
+
 export function arrowDimensions(
   gridSize: number,
   arrowScale = 1,
@@ -389,6 +422,9 @@ export class PuzzleRenderer {
   private readonly pointer = new THREE.Vector2();
   private readonly pickers: THREE.Object3D[] = [];
   private readonly visuals = new Map<string, ArrowVisual>();
+  private cubeMaterial: THREE.MeshStandardMaterial | undefined;
+  private edgeMaterial: THREE.LineBasicMaterial | undefined;
+  private theme: Theme = "light";
   private level: LevelDefinition | undefined;
   private state: GameState | undefined;
   private selectedId: string | undefined;
@@ -402,7 +438,6 @@ export class PuzzleRenderer {
     this.raycaster.layers.set(PICK_LAYER);
     this.canvas = this.renderer.domElement;
     this.canvas.className = "game-canvas";
-    this.renderer.setClearColor(0xe9f4f7, 1);
     this.renderer.setPixelRatio(
       Math.min(
         window.devicePixelRatio,
@@ -419,6 +454,9 @@ export class PuzzleRenderer {
     this.scene.add(key);
     this.scene.add(new THREE.AmbientLight(0xf7fbff, 1.4));
     this.createCube();
+    this.setTheme(
+      document.documentElement.dataset.theme === "dark" ? "dark" : "light",
+    );
     this.resize();
     window.addEventListener("resize", () => this.resize());
   }
@@ -443,9 +481,11 @@ export class PuzzleRenderer {
     for (const [id, visual] of this.visuals) {
       visual.group.visible = state.remainingIds.includes(id);
       const red = state.failedIds.includes(id);
-      visual.material.color.set(red ? 0xd94841 : 0x0b1015);
+      visual.material.color.set(red ? this.palette.failed : this.palette.arrow);
       for (const segment of visual.segments) {
-        segment.material.color.set(red ? 0xd94841 : 0x0b1015);
+        segment.material.color.set(
+          red ? this.palette.failed : this.palette.arrow,
+        );
       }
     }
     this.applySelection();
@@ -454,6 +494,16 @@ export class PuzzleRenderer {
 
   setSelected(id: string | undefined): void {
     this.selectedId = id;
+    this.applySelection();
+    this.render();
+  }
+
+  setTheme(theme: Theme): void {
+    this.theme = theme;
+    const palette = this.palette;
+    this.renderer.setClearColor(palette.background, 1);
+    this.cubeMaterial?.color.set(palette.cube);
+    this.edgeMaterial?.color.set(palette.edges);
     this.applySelection();
     this.render();
   }
@@ -710,10 +760,10 @@ export class PuzzleRenderer {
     for (const visual of this.visuals.values()) {
       const activeColor =
         visual.arrow.id === this.selectedId
-          ? 0x108acb
+          ? this.palette.selected
           : this.state?.failedIds.includes(visual.arrow.id)
-            ? 0xd94841
-            : 0x0b1015;
+            ? this.palette.failed
+            : this.palette.arrow;
       for (const segment of visual.segments) {
         const face = segment.picker.userData.face as Cell["face"] | undefined;
         const [nx, ny, nz] = face ? faceNormal(face) : [0, 0, 0];
@@ -722,7 +772,9 @@ export class PuzzleRenderer {
             this.camera.position.clone().sub(segment.picker.position),
           ) > 0;
         segment.material.opacity = exposed ? 1 : 0.32;
-        segment.material.color.set(exposed ? activeColor : 0x6f9fb2);
+        segment.material.color.set(
+          exposed ? activeColor : this.palette.farSide,
+        );
       }
       const headFace = visual.head.userData.face as Cell["face"] | undefined;
       const [nx, ny, nz] = headFace ? faceNormal(headFace) : [0, 0, 0];
@@ -737,7 +789,7 @@ export class PuzzleRenderer {
           ? 1
           : 0.32;
       visual.material.color.set(
-        visual.material.opacity === 1 ? activeColor : 0x6f9fb2,
+        visual.material.opacity === 1 ? activeColor : this.palette.farSide,
       );
     }
     this.renderer.render(this.scene, this.camera);
@@ -751,20 +803,24 @@ export class PuzzleRenderer {
   }
 
   private createCube(): void {
+    this.cubeMaterial = new THREE.MeshStandardMaterial({
+      color: this.palette.cube,
+      roughness: 0.88,
+      metalness: 0,
+      transparent: true,
+      opacity: 0.68,
+      depthWrite: false,
+    });
     const cube = new THREE.Mesh(
       new THREE.BoxGeometry(2, 2, 2),
-      new THREE.MeshStandardMaterial({
-        color: 0xfffcf4,
-        roughness: 0.88,
-        metalness: 0,
-        transparent: true,
-        opacity: 0.68,
-        depthWrite: false,
-      }),
+      this.cubeMaterial,
     );
+    this.edgeMaterial = new THREE.LineBasicMaterial({
+      color: this.palette.edges,
+    });
     const edges = new THREE.LineSegments(
       new THREE.EdgesGeometry(cube.geometry),
-      new THREE.LineBasicMaterial({ color: 0xa9c5ce }),
+      this.edgeMaterial,
     );
     this.cubeGroup.add(cube, edges);
   }
@@ -779,7 +835,7 @@ export class PuzzleRenderer {
     const { ribbonWidth, headLength } = arrowDimensions(gridSize, arrowScale);
     const pickRadius = Math.min(PICK_RADIUS, pitch * 0.28);
     const material = new THREE.MeshBasicMaterial({
-      color: 0x0b1015,
+      color: this.palette.arrow,
       transparent: true,
       forceSinglePass: true,
     });
@@ -923,15 +979,19 @@ export class PuzzleRenderer {
       const selected = id === this.selectedId;
       visual.material.color.set(
         selected
-          ? 0x108acb
+          ? this.palette.selected
           : this.state?.failedIds.includes(id)
-            ? 0xd94841
-            : 0x0b1015,
+            ? this.palette.failed
+            : this.palette.arrow,
       );
       for (const segment of visual.segments) {
         segment.material.color.copy(visual.material.color);
       }
     }
+  }
+
+  private get palette(): ThemePalette {
+    return THEME_PALETTES[this.theme];
   }
 
   private isArrowFacingCamera(arrow: ArrowDefinition): boolean {

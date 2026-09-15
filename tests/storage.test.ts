@@ -7,7 +7,12 @@ import {
 } from "../src/core/game-state";
 import type { GameState, LevelDefinition } from "../src/core/types";
 import { solveLevel } from "../src/core/validation";
-import { loadCampaign, saveCampaign } from "../src/storage";
+import {
+  loadCampaign,
+  loadSettings,
+  saveCampaign,
+  saveSettings,
+} from "../src/storage";
 
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
 let entries: Map<string, string>;
@@ -449,5 +454,51 @@ describe("resumable campaign saves", () => {
     expect(loadCampaign(LEVELS).recovered).toBe(true);
     installStorage(true);
     expect(save(state)).toBe(false);
+  });
+});
+
+describe("player settings", () => {
+  test("defaults to system theme and full motion", () => {
+    expect(loadSettings()).toEqual({ reducedMotion: false, theme: "system" });
+  });
+
+  test("loads legacy reduced-motion settings with the system theme", () => {
+    entries.set(
+      "par-arrows:settings:v1",
+      JSON.stringify({ reducedMotion: true }),
+    );
+
+    expect(loadSettings()).toEqual({ reducedMotion: true, theme: "system" });
+  });
+
+  test("recovers from malformed and invalid saved themes", () => {
+    entries.set("par-arrows:settings:v1", "{broken");
+    expect(loadSettings()).toEqual({ reducedMotion: false, theme: "system" });
+
+    entries.set(
+      "par-arrows:settings:v1",
+      JSON.stringify({ reducedMotion: true, theme: "midnight" }),
+    );
+    expect(loadSettings()).toEqual({ reducedMotion: true, theme: "system" });
+  });
+
+  test("persists a manual theme without dropping reduced motion", () => {
+    expect(saveSettings({ reducedMotion: true, theme: "dark" })).toBe(true);
+
+    expect(loadSettings()).toEqual({ reducedMotion: true, theme: "dark" });
+  });
+
+  test("persists reduced motion without dropping the theme", () => {
+    expect(saveSettings({ reducedMotion: false, theme: "light" })).toBe(true);
+    expect(saveSettings({ reducedMotion: true, theme: "light" })).toBe(true);
+
+    expect(loadSettings()).toEqual({ reducedMotion: true, theme: "light" });
+  });
+
+  test("denied storage leaves settings usable in memory", () => {
+    installStorage(true);
+
+    expect(saveSettings({ reducedMotion: true, theme: "dark" })).toBe(false);
+    expect(loadSettings()).toEqual({ reducedMotion: false, theme: "system" });
   });
 });

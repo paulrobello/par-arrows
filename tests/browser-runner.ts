@@ -21,6 +21,10 @@ interface Snapshot {
   failedIds: string[];
   moving: { arrowId: string; kind: string; elapsed: number } | null;
   celebration: { active: boolean; elapsed: number; duration: number };
+  theme: {
+    preference: "system" | "light" | "dark";
+    resolved: "light" | "dark";
+  };
   camera: {
     orientation: [number, number, number, number];
     position: [number, number, number];
@@ -215,7 +219,7 @@ async function assertCubeFits(page: Page): Promise<void> {
 }
 
 async function assertVisibleArrows(page: Page, levelId: number): Promise<void> {
-  const darkPixels = await page.evaluate((id) => {
+  const arrowPixels = await page.evaluate((id) => {
     window.__PAR_ARROWS_TEST__?.loadLevel(id);
     const source = document.querySelector("canvas");
     if (!source) return 0;
@@ -226,21 +230,191 @@ async function assertVisibleArrows(page: Page, levelId: number): Promise<void> {
     if (!context) return 0;
     context.drawImage(source, 0, 0);
     const pixels = context.getImageData(0, 0, probe.width, probe.height).data;
-    let dark = 0;
+    const darkTheme = document.documentElement.dataset.theme === "dark";
+    let visible = 0;
     for (let index = 0; index < pixels.length; index += 4) {
       if (
-        (pixels[index] ?? 255) < 80 &&
-        (pixels[index + 1] ?? 255) < 80 &&
-        (pixels[index + 2] ?? 255) < 80 &&
+        (darkTheme
+          ? (pixels[index] ?? 0) > 180 &&
+            (pixels[index + 1] ?? 0) > 180 &&
+            (pixels[index + 2] ?? 0) > 180
+          : (pixels[index] ?? 255) < 80 &&
+            (pixels[index + 1] ?? 255) < 80 &&
+            (pixels[index + 2] ?? 255) < 80) &&
         (pixels[index + 3] ?? 0) > 128
       )
-        dark += 1;
+        visible += 1;
     }
-    return dark;
+    return visible;
   }, levelId);
   assert.ok(
-    darkPixels > 80,
-    "The actual canvas must contain visible black arrows, not only invisible hit targets",
+    arrowPixels > 80,
+    "The actual canvas must contain contrasting arrows, not only invisible hit targets",
+  );
+}
+
+async function assertTheme(
+  page: Page,
+  resolved: "light" | "dark",
+): Promise<void> {
+  await page.waitForFunction(
+    (expected) => document.documentElement.dataset.theme === expected,
+    resolved,
+  );
+  assert.equal((await snapshot(page)).theme.resolved, resolved);
+  assert.equal(
+    await page.locator('meta[name="theme-color"]').getAttribute("content"),
+    resolved === "dark" ? "#101820" : "#e9f4f7",
+  );
+}
+
+async function assertThemes(page: Page, mobile = false): Promise<void> {
+  const prefix = mobile ? "mobile" : "desktop";
+  await page.emulateMedia({ colorScheme: "light" });
+  assert.equal((await snapshot(page)).theme.preference, "system");
+  await assertTheme(page, "light");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await assertTheme(page, "dark");
+  await assertVisibleArrows(page, 10);
+  await page.screenshot({ path: `${output}/theme-${prefix}-dark-dense.png` });
+  await assertArrowheadPicking(page, 2, mobile);
+  await loadLevel(page, 3);
+  await page.getByRole("button", { name: "Reset camera view" }).click();
+  const level = LEVELS[2];
+  assert.ok(level);
+  const exposed = (await snapshot(page)).visibleProjectedArrowPositions;
+  const blocked = exposed.find(
+    (arrow) =>
+      simulateMove(level, createGameState(level), arrow.id).kind === "blocked",
+  );
+  assert.ok(blocked);
+  await clickArrow(page, blocked.id);
+  await advance(page);
+  const before = await snapshot(page);
+  assert.ok(before.failedIds.includes(blocked.id));
+  await page.screenshot({ path: `${output}/theme-${prefix}-dark-failed.png` });
+  await page.locator("#settings-button").click();
+  await page.locator("#theme-select").selectOption("light");
+  await assertTheme(page, "light");
+  const after = await snapshot(page);
+  assert.deepEqual(after.remainingIds, before.remainingIds);
+  assert.deepEqual(after.failedIds, before.failedIds);
+  assert.equal(after.lives, before.lives);
+  assert.deepEqual(after.camera, before.camera);
+  const clear = level.arrows.find(
+    (arrow) =>
+      simulateMove(level, createGameState(level), arrow.id).kind === "exit",
+  );
+  assert.ok(clear);
+  const motion = await page.evaluate((id) => {
+    window.__PAR_ARROWS_TEST__?.activate(id);
+    const beforeTheme = window.render_game_to_text?.();
+    const select = document.querySelector<HTMLSelectElement>("#theme-select");
+    if (select) {
+      select.value = "dark";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    return { before: beforeTheme, after: window.render_game_to_text?.() };
+  }, clear.id);
+  assert.ok(motion.before && motion.after);
+  const beforeTheme = JSON.parse(motion.before) as Snapshot;
+  const afterTheme = JSON.parse(motion.after) as Snapshot;
+  assert.equal(beforeTheme.moving?.arrowId, clear.id);
+  assert.deepEqual(afterTheme.moving, beforeTheme.moving);
+  assert.deepEqual(afterTheme.camera, beforeTheme.camera);
+  assert.deepEqual(afterTheme.remainingIds, beforeTheme.remainingIds);
+  await advance(page, 650);
+  await page.locator("#theme-select").selectOption("light");
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await assertTheme(page, "light");
+  await page.locator("#theme-select").selectOption("dark");
+  await page.getByLabel("Reduce movement").check();
+  await page.emulateMedia({ colorScheme: "light" });
+  await assertTheme(page, "dark");
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__PAR_ARROWS_TEST__));
+  await assertTheme(page, "dark");
+  assert.equal((await snapshot(page)).theme.preference, "dark");
+  assert.deepEqual((await snapshot(page)).failedIds, before.failedIds);
+  assert.equal((await snapshot(page)).lives, before.lives);
+  await page.locator("#settings-button").click();
+  assert.equal(await page.getByLabel("Reduce movement").isChecked(), true);
+  await page.getByLabel("Reduce movement").uncheck();
+  await page.screenshot({
+    path: `${output}/theme-${prefix}-dark-settings.png`,
+  });
+  await page.locator("#settings-button").click();
+  await launchLastArrow(page);
+  await advance(page, 650);
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: `${output}/theme-${prefix}-dark-victory.png` });
+  assert.equal(await page.locator(".state-card.is-won").isVisible(), true);
+  await page.getByRole("button", { name: "Next cube", exact: true }).click();
+  await page.locator("#settings-button").click();
+  await page.locator("#theme-select").selectOption("system");
+  await assertTheme(page, "light");
+  await page.emulateMedia({ colorScheme: "dark" });
+  await assertTheme(page, "dark");
+  await page.emulateMedia({ colorScheme: "light" });
+  await assertTheme(page, "light");
+  await page.locator("#settings-button").click();
+  console.log(
+    `PASS ${prefix} system theme, persistent overrides, settings preservation, dark arrows/picking/failure/victory`,
+  );
+}
+
+async function assertThemeBootstrap(browser: Browser): Promise<void> {
+  const cases = [
+    { scheme: "dark", saved: null, expected: "dark" },
+    { scheme: "dark", saved: '{"theme":"light"}', expected: "light" },
+    { scheme: "light", saved: '{"theme":"dark"}', expected: "dark" },
+    {
+      scheme: "dark",
+      saved: '{"theme":"invalid","reducedMotion":true}',
+      expected: "dark",
+    },
+    { scheme: "dark", saved: '{"reducedMotion":true}', expected: "dark" },
+    { scheme: "dark", saved: "{broken", expected: "dark" },
+  ] as const;
+  for (const scenario of cases) {
+    const context = await browser.newContext({ colorScheme: scenario.scheme });
+    if (scenario.saved)
+      await context.addInitScript((saved) => {
+        localStorage.setItem("par-arrows:settings:v1", saved);
+      }, scenario.saved);
+    await context.route("**/assets/index-*.js", (route) => route.abort());
+    const page = await context.newPage();
+    await page.goto(url);
+    assert.equal(
+      await page.evaluate(() => document.documentElement.dataset.theme),
+      scenario.expected,
+    );
+    assert.equal(
+      await page.evaluate(() => document.documentElement.style.colorScheme),
+      scenario.expected,
+    );
+    await context.close();
+  }
+  const denied = await browser.newContext({ colorScheme: "dark" });
+  await denied.addInitScript(() => {
+    Object.defineProperty(window, "localStorage", {
+      get() {
+        throw new DOMException("Storage denied", "SecurityError");
+      },
+    });
+  });
+  const page = await denied.newPage();
+  observeErrors(page);
+  await page.goto(url);
+  await page.waitForFunction(() => Boolean(window.__PAR_ARROWS_TEST__));
+  await assertTheme(page, "dark");
+  await page.locator("#settings-button").click();
+  await page.locator("#theme-select").selectOption("light");
+  await assertTheme(page, "light");
+  await denied.close();
+  console.log(
+    "PASS theme before app bundle execution, saved overrides/legacy/malformed data, and denied storage",
   );
 }
 
@@ -628,6 +802,7 @@ try {
   });
   const context = await browser.newContext({
     baseURL: url,
+    colorScheme: "light",
     viewport: { width: 1365, height: 900 },
   });
   const page = await context.newPage();
@@ -924,8 +1099,10 @@ try {
   }
   assert.equal(await page.locator('link[rel="manifest"]').count(), 1);
   console.log("PASS PWA manifest and installation assets");
+  await assertThemes(page);
 
   const mobile = await browser.newContext({
+    colorScheme: "light",
     viewport: { width: 390, height: 844 },
     isMobile: true,
     hasTouch: true,
@@ -935,6 +1112,7 @@ try {
   observeErrors(touchPage);
   await touchPage.goto(url);
   await touchPage.waitForFunction(() => Boolean(window.__PAR_ARROWS_TEST__));
+  await assertThemes(touchPage, true);
   await assertCelebration(touchPage, true);
   await loadLevel(touchPage, 3);
   await assertVisibleArrows(touchPage, 3);
@@ -1039,6 +1217,7 @@ try {
     `PASS emulated mobile portrait/landscape and ${engine === chromium ? "continuous touch rotation and two-pointer pinch without a move" : "WebKit touch activation"}`,
   );
   await mobile.close();
+  await assertThemeBootstrap(browser);
   assert.deepEqual(failures, [], "Browser must not report uncaught errors");
   await Bun.write(
     `${output}/summary.json`,

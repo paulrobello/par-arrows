@@ -55,9 +55,13 @@ export class ParArrowsApp {
   private readonly installHint: HTMLElement;
   private readonly settingsButton: HTMLButtonElement;
   private readonly reducedMotion: HTMLInputElement;
+  private readonly themeSelect: HTMLSelectElement;
   private readonly celebrationLayer: HTMLElement;
   private readonly systemMotionPreference = window.matchMedia(
     "(prefers-reduced-motion: reduce)",
+  );
+  private readonly systemThemePreference = window.matchMedia(
+    "(prefers-color-scheme: dark)",
   );
   private mode: AppMode = "campaign";
   private level: LevelDefinition = LEVELS[0] as LevelDefinition;
@@ -72,6 +76,7 @@ export class ParArrowsApp {
   private demoElapsed = 0;
   private animationFrame = 0;
   private lastTimestamp = 0;
+  private appliedTheme: "light" | "dark" | undefined;
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -107,6 +112,7 @@ export class ParArrowsApp {
         </nav>
         <aside class="settings-panel" id="settings-panel" hidden>
           <label><input id="reduced-motion" type="checkbox" /> Reduce movement</label>
+          <label>Theme<select id="theme-select"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
           <button id="install-button" type="button" hidden>Install app</button>
           <p id="install-hint" hidden></p>
         </aside>
@@ -132,9 +138,12 @@ export class ParArrowsApp {
     this.reducedMotion = this.requireElement(
       "reduced-motion",
     ) as HTMLInputElement;
+    this.themeSelect = this.requireElement("theme-select") as HTMLSelectElement;
     this.celebrationLayer = this.requireElement("celebration-layer");
     this.reducedMotion.checked = this.settings.reducedMotion;
+    this.themeSelect.value = this.settings.theme;
     this.renderer = new PuzzleRenderer(this.stage);
+    this.applyTheme();
     this.input = new PointerInput(this.renderer.canvas, {
       pick: (x, y) => this.renderer.pick(x, y),
       onPress: (id) => this.renderer.setSelected(id),
@@ -146,6 +155,10 @@ export class ParArrowsApp {
     this.systemMotionPreference.addEventListener(
       "change",
       this.handleMotionPreference,
+    );
+    this.systemThemePreference.addEventListener(
+      "change",
+      this.handleThemePreference,
     );
     this.restore();
     this.installPrompt = new PwaInstallPrompt((available, ios) =>
@@ -162,6 +175,10 @@ export class ParArrowsApp {
     this.systemMotionPreference.removeEventListener(
       "change",
       this.handleMotionPreference,
+    );
+    this.systemThemePreference.removeEventListener(
+      "change",
+      this.handleThemePreference,
     );
     this.clearCelebration();
     this.input.dispose();
@@ -197,6 +214,10 @@ export class ParArrowsApp {
             duration: CELEBRATION_DURATION,
           }
         : { active: false, elapsed: 0, duration: CELEBRATION_DURATION },
+      theme: {
+        preference: this.settings.theme,
+        resolved: this.resolvedTheme(),
+      },
       camera: this.renderer.cameraDiagnostics(),
       visibleProjectedArrowPositions: this.renderer
         .projectedArrows()
@@ -526,12 +547,25 @@ export class ParArrowsApp {
       this.settingsButton.setAttribute("aria-expanded", String(!panel.hidden));
     });
     this.reducedMotion.addEventListener("change", () => {
-      this.settings = { reducedMotion: this.reducedMotion.checked };
+      this.settings = {
+        ...this.settings,
+        reducedMotion: this.reducedMotion.checked,
+      };
       saveSettings(this.settings);
       if (this.shouldReduceMotion()) {
         this.clearCelebration();
         this.renderUi();
       }
+    });
+    this.themeSelect.addEventListener("change", () => {
+      const theme = this.themeSelect.value;
+      if (theme !== "system" && theme !== "light" && theme !== "dark") {
+        this.themeSelect.value = this.settings.theme;
+        return;
+      }
+      this.settings = { ...this.settings, theme };
+      saveSettings(this.settings);
+      this.applyTheme();
     });
     this.installButton.addEventListener(
       "click",
@@ -552,6 +586,35 @@ export class ParArrowsApp {
       this.renderUi();
     }
   };
+
+  private readonly handleThemePreference = (): void => {
+    if (this.settings.theme === "system") {
+      this.applyTheme();
+    }
+  };
+
+  private resolvedTheme(): "light" | "dark" {
+    if (this.settings.theme === "system") {
+      return this.systemThemePreference.matches ? "dark" : "light";
+    }
+    return this.settings.theme;
+  }
+
+  private applyTheme(): void {
+    const theme = this.resolvedTheme();
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+    const themeColor = document.querySelector<HTMLMetaElement>(
+      'meta[name="theme-color"]',
+    );
+    if (themeColor) {
+      themeColor.content = theme === "dark" ? "#101820" : "#e9f4f7";
+    }
+    if (this.appliedTheme !== theme) {
+      this.renderer.setTheme(theme);
+      this.appliedTheme = theme;
+    }
+  }
 
   private shouldReduceMotion(): boolean {
     return this.settings.reducedMotion || this.systemMotionPreference.matches;

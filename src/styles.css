@@ -1,8 +1,91 @@
 :root {
-  color: #0b1015;
-  background: #e9f4f7;
+  color-scheme: light;
+  --page-text: #0b1015;
+  --page-background: #e9f4f7;
+  --shell-background:
+    radial-gradient(
+      circle at 50% 42%,
+      rgb(255 255 255 / 82%),
+      transparent 36rem
+    ),
+    linear-gradient(145deg, #eefaff 0%, #e4f0f3 50%, #fdf9ed 100%);
+  --dot-color: #1687b7;
+  --panel-border: rgb(20 82 104 / 14%);
+  --panel-shadow: rgb(34 89 106 / 12%);
+  --panel-background: rgb(255 253 247 / 82%);
+  --panel-background-muted: rgb(255 253 247 / 62%);
+  --panel-background-solid: rgb(255 253 247 / 95%);
+  --card-background: rgb(255 253 247 / 83%);
+  --dock-background: rgb(255 253 247 / 86%);
+  --ink-surface: #0b1015;
+  --ink-on-surface: #fffdf7;
+  --lives-background: #0b1015;
+  --lives-text: #fffdf7;
+  --mark-on-surface: #fdf9ed;
+  --accent: #1687b7;
+  --accent-on: #fff;
+  --primary-button-hover-text: #fffdf7;
+  --accent-soft: #d8eff6;
+  --accent-bright: #65c8f2;
+  --muted-text: #415159;
+  --quiet-text: #49646f;
+  --warning-text: #a74b42;
+  --divider: rgb(20 82 104 / 12%);
+  --victory-border: rgb(240 174 48 / 45%);
+  --victory-state-border: rgb(240 174 48 / 48%);
+  --victory-background: radial-gradient(
+    circle at 35% 30%,
+    #fff8c7,
+    #f2b53b 72%
+  );
+  --victory-shadow: rgb(224 161 36 / 26%);
+  --victory-state-shadow: rgb(224 161 36 / 22%);
+  --victory-text: #71430c;
+  color: var(--page-text);
+  background: var(--page-background);
   font-family: "Manrope Variable", Manrope, sans-serif;
   font-synthesis: none;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --page-text: #f7f0dc;
+  --page-background: #101820;
+  --shell-background:
+    radial-gradient(circle at 50% 42%, rgb(55 89 104 / 32%), transparent 34rem),
+    linear-gradient(145deg, #172630 0%, #101820 52%, #17232e 100%);
+  --dot-color: #5ca9bd;
+  --panel-border: rgb(127 178 192 / 24%);
+  --panel-shadow: rgb(0 0 0 / 34%);
+  --panel-background: rgb(23 38 48 / 86%);
+  --panel-background-muted: rgb(23 38 48 / 72%);
+  --panel-background-solid: rgb(20 34 43 / 96%);
+  --card-background: rgb(23 38 48 / 86%);
+  --dock-background: rgb(23 38 48 / 86%);
+  --ink-surface: #e8dec7;
+  --ink-on-surface: #101820;
+  --lives-background: #1d303a;
+  --lives-text: #f7f0dc;
+  --mark-on-surface: #101820;
+  --accent: #54d6ee;
+  --accent-on: #071116;
+  --primary-button-hover-text: #071116;
+  --accent-soft: #1d4451;
+  --accent-bright: #8be6f5;
+  --muted-text: #b8c8ca;
+  --quiet-text: #9db4b9;
+  --warning-text: #ff968d;
+  --divider: rgb(127 178 192 / 24%);
+  --victory-border: rgb(255 211 100 / 56%);
+  --victory-state-border: rgb(255 211 100 / 60%);
+  --victory-background: radial-gradient(
+    circle at 35% 30%,
+    #fff3bd,
+    #c98b29 72%
+  );
+  --victory-shadow: rgb(237 177 48 / 30%);
+  --victory-state-shadow: rgb(237 177 48 / 34%);
+  --victory-text: #34220b;
 }
 
 * {
@@ -36,13 +119,7 @@ button {
   position: relative;
   min-height: 100vh;
   overflow: hidden;
-  background:
-    radial-gradient(
-      circle at 50% 42%,
-      rgb(255 255 255 / 82%),
-      transparent 36rem
-    ),
-    linear-gradient(145deg, #eefaff 0%, #e4f0f3 50%, #fdf9ed 100%);
+  background: var(--shell-background);
 }
 
 .app-shell::after {
@@ -52,7 +129,7 @@ button {
   pointer-events: none;
   content: "";
   opacity: 0.18;
-  background-image: radial-gradient(#1687b7 0.6px, transparent 0.6px);
+  background-image: radial-gradient(var(--dot-color) 0.6px, transparent 0.6px);
   background-size: 12px 12px;
   mask-image: linear-gradient(
     to bottom,
@@ -91,8 +168,8 @@ button {
 .settings-panel,
 .tutorial-card,
 .state-card {
-  border: 1px solid rgb(20 82 104 / 14%);
-  box-shadow: 0 18px 48px rgb(34 89 106 / 12%);
+  border: 1px solid var(--panel-border);
+  box-shadow: 0 18px 48px var(--panel-shadow);
   backdrop-filter: blur(16px);
 }
 
@@ -102,7 +179,7 @@ button {
   gap: 0.55rem;
   padding: 0.45rem 0.8rem 0.45rem 0.48rem;
   border-radius: 1.4rem;
-  background: rgb(255 253 247 / 82%);
+  background: var(--panel-background);
   font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: -0.03em;
@@ -114,15 +191,15 @@ button {
   height: 1.8rem;
   place-items: center;
   border-radius: 50%;
-  background: #0b1015;
-  color: #fdf9ed;
+  background: var(--ink-surface);
+  color: var(--mark-on-surface);
   font-size: 1.15rem;
 }
 
 .status-chip {
   padding: 0.58rem 0.85rem;
   border-radius: 1rem;
-  background: rgb(255 253 247 / 62%);
+  background: var(--panel-background-muted);
   font-size: 0.74rem;
   font-weight: 800;
   letter-spacing: 0.03em;
@@ -131,7 +208,7 @@ button {
 
 .separator {
   margin: 0 0.3rem;
-  color: #1687b7;
+  color: var(--accent);
 }
 
 .lives {
@@ -140,8 +217,8 @@ button {
   gap: 0.36rem;
   padding: 0.35rem 0.68rem;
   border-radius: 1rem;
-  background: #0b1015;
-  color: #fffdf7;
+  background: var(--lives-background);
+  color: var(--lives-text);
 }
 .lives-caption {
   font-size: 0.57rem;
@@ -150,7 +227,7 @@ button {
   opacity: 0.65;
 }
 .lives strong {
-  color: #65c8f2;
+  color: var(--accent-bright);
   font-size: 1.2rem;
   line-height: 1;
 }
@@ -176,7 +253,7 @@ button {
   padding: 1.15rem 1.2rem;
   transform: translateY(-50%);
   border-radius: 1.25rem;
-  background: rgb(255 253 247 / 83%);
+  background: var(--card-background);
 }
 
 .state-card {
@@ -213,17 +290,17 @@ button {
   height: 2.45rem;
   margin: 0 auto 0.6rem;
   place-items: center;
-  border: 1px solid rgb(240 174 48 / 45%);
+  border: 1px solid var(--victory-border);
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff8c7, #f2b53b 72%);
-  box-shadow: 0 0.45rem 1.3rem rgb(224 161 36 / 26%);
-  color: #71430c;
+  background: var(--victory-background);
+  box-shadow: 0 0.45rem 1.3rem var(--victory-shadow);
+  color: var(--victory-text);
   font-size: 1.35rem;
 }
 
 .state-card.is-won {
-  border-color: rgb(240 174 48 / 48%);
-  box-shadow: 0 20px 54px rgb(224 161 36 / 22%);
+  border-color: var(--victory-state-border);
+  box-shadow: 0 20px 54px var(--victory-state-shadow);
 }
 
 .state-card.is-won .victory-emblem {
@@ -265,7 +342,7 @@ button {
   }
 }
 .tutorial-kicker {
-  color: #1687b7;
+  color: var(--accent);
   font-size: 0.58rem;
   font-weight: 900;
   letter-spacing: 0.15em;
@@ -280,7 +357,7 @@ button {
 .tutorial-card p,
 .state-card p {
   margin: 0;
-  color: #415159;
+  color: var(--muted-text);
   font-size: 0.8rem;
   line-height: 1.45;
 }
@@ -290,7 +367,7 @@ button {
   z-index: 3;
   width: 2.45rem;
   height: 2.45rem;
-  border: 1px solid #1687b7;
+  border: 1px solid var(--accent);
   border-radius: 50%;
   pointer-events: none;
   transform: translate(-50%, -50%);
@@ -302,7 +379,7 @@ button {
   height: 0.55rem;
   margin: 0.88rem;
   border-radius: 50%;
-  background: #1687b7;
+  background: var(--accent);
 }
 @keyframes pulse {
   50% {
@@ -316,13 +393,14 @@ button {
   border: 0;
   border-radius: 0.7rem;
   padding: 0.7rem 0.9rem;
-  background: #0b1015;
-  color: #fffdf7;
+  background: var(--ink-surface);
+  color: var(--ink-on-surface);
   font-size: 0.75rem;
   font-weight: 800;
 }
 .primary-button:hover {
-  background: #1687b7;
+  background: var(--accent);
+  color: var(--primary-button-hover-text);
 }
 
 .control-dock {
@@ -333,7 +411,7 @@ button {
   align-items: stretch;
   padding: 0.32rem;
   border-radius: 1rem;
-  background: rgb(255 253 247 / 86%);
+  background: var(--dock-background);
   transform: translateX(-50%);
 }
 
@@ -345,7 +423,7 @@ button {
   border: 0;
   border-radius: 0.72rem;
   background: transparent;
-  color: #0b1015;
+  color: var(--page-text);
   font-size: 1rem;
 }
 .dock-button span,
@@ -356,32 +434,52 @@ button {
   text-transform: uppercase;
 }
 .dock-button:hover {
-  background: #d8eff6;
+  background: var(--accent-soft);
 }
 .level-picker {
   display: grid;
   gap: 0.14rem;
   padding: 0.25rem 0.55rem;
-  border-left: 1px solid rgb(20 82 104 / 12%);
+  border-left: 1px solid var(--divider);
 }
 .level-picker select {
   max-width: 8rem;
   border: 0;
   background: transparent;
-  color: #0b1015;
+  color: var(--page-text);
   font-size: 0.72rem;
   font-weight: 750;
   outline: none;
 }
 
+.settings-panel select {
+  min-width: 0;
+  margin-left: auto;
+  border: 1px solid var(--divider);
+  border-radius: 0.42rem;
+  padding: 0.32rem 1.65rem 0.32rem 0.48rem;
+  background: var(--panel-background-muted);
+  color: var(--page-text);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .settings-panel {
   position: absolute;
+  z-index: 4;
   right: 1.4rem;
   bottom: 5.3rem;
   width: min(17rem, calc(100vw - 2.8rem));
   padding: 0.9rem;
   border-radius: 1rem;
-  background: rgb(255 253 247 / 95%);
+  background: var(--panel-background-solid);
   font-size: 0.76rem;
 }
 .settings-panel label {
@@ -396,14 +494,22 @@ button {
   border: 0;
   border-radius: 0.55rem;
   padding: 0.55rem;
-  background: #1687b7;
-  color: white;
+  background: var(--accent);
+  color: var(--accent-on);
   font-weight: 800;
+}
+.settings-panel button:hover {
+  background: var(--ink-surface);
+  color: var(--ink-on-surface);
 }
 .settings-panel p {
   margin: 0.75rem 0 0;
-  color: #415159;
+  color: var(--muted-text);
   line-height: 1.45;
+}
+
+:where(.settings-panel:not([hidden])) ~ .gesture-help {
+  visibility: hidden;
 }
 
 .gesture-help,
@@ -412,13 +518,13 @@ button {
   right: 1.4rem;
   bottom: 1.5rem;
   max-width: 24rem;
-  color: #49646f;
+  color: var(--quiet-text);
   font-size: 0.62rem;
   text-align: right;
 }
 .storage-note {
   bottom: 2.55rem;
-  color: #a74b42;
+  color: var(--warning-text);
 }
 
 .zoom-help-touch {

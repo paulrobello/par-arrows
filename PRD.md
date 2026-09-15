@@ -63,16 +63,17 @@ The four additional photos supplied on 2026-09-14 are preserved as references 04
 | R28 | Apply two successive 25% arrow-speed increases from the initial MVP, for a total multiplier of 1.5625. Current durations are 563.2 ms exits, 473.6 ms rebounds, and 70.4 ms reduced-motion transitions. Demo pauses are unchanged. |
 | R29 | Keep level 1 simple. From level 2 onward, substantially increase arrow density and multi-bend zigzag complexity, mix different path shapes and straight-arrow lengths, and include multiple arrows spanning cube edges. |
 | R30 | Make arrow shafts and heads 20% wider and double the version-4 arrow counts on levels 2–10 to 60, 84, 108, 132, 156, 168, 180, 180, and 180. Preserve the visible width increase when a finer grid is needed. Level 1 keeps its original six-arrow layout. |
+| R31 | Support dark mode with system-preference detection and a persistent manual appearance control. |
 
 ## 4. MVP boundary
 
 ### 4.1 Proposed playable MVP
 
-- M1: One-direction black arrows, including bent paths and paths crossing cube faces.
+- M1: One-direction arrows, black in light mode and ivory in dark mode, including bent paths and paths crossing cube faces.
 - M2: Rotatable cube, reliable selection, unobstructed exit animation, blocked rebound, red feedback, and life accounting.
 - M3: Ten curated cube levels with increasing density and the confirmed five/four/three starting-life curve.
 - M4: A small-cube onboarding demo showing a failed touch followed by a successful touch; level indicator, arrows-remaining count, lives display, restart, failure/retry, completion/next-level, and replay of unlocked levels.
-- M5: Exact logical progress resume from browser `localStorage`, including failed-arrow history, in the browser and installed PWA. Settings and offline-play scope remain open.
+- M5: Exact logical progress resume from browser `localStorage`, including failed-arrow history, in the browser and installed PWA. Persist reduced-motion and System/Light/Dark appearance settings separately. Offline-play scope remains open.
 - M6: Validated levels with a demonstrated full-clear solution and desktop/mobile verification.
 - M7: PWA installation and standalone launch, with real-device checks covering mobile hardware up to two generations old.
 
@@ -149,6 +150,7 @@ Free rotation, faint noninteractive far-side arrows, mouse-wheel/pinch zoom, pre
 - U4: Proposed implementation: enlarge arrow selection regions without changing collision geometry. Confirmed behavior: if there is no unambiguous visible arrow, do nothing and let the player zoom closer. Dense levels need zoom before shrinking targets beyond usability.
 - U5: Keep directional arrowheads visible. Confirmed: highlight the selected arrow on press before release. Proposed: also show desktop hover feedback, without revealing whether removal will succeed.
 - U6: Normal moves, success, collisions, and future direction choices must remain understandable without color alone. Support reduced motion and accessible HTML controls outside the 3D canvas.
+- U7: Default appearance follows the system, including live changes. Settings offers System, Light, and Dark; explicit choices persist and override the system until System is selected again. Apply appearance before the first app paint and update both HTML controls and the 3D view without resetting the puzzle, camera, or motion. Use contrasting normal, failed, selected, and faint far-side arrow colors in each theme.
 
 Keyboard puzzle navigation and a nonvisual equivalent of the spatial puzzle need an explicit accessibility decision. Do not claim full keyboard or screen-reader gameplay from accessible menus alone.
 
@@ -186,7 +188,7 @@ Curated authoring and a checker are confirmed for the MVP. Generated progression
 
 **Confirmed:** Save progress in browser `localStorage` and restore it when the player returns. Preserve unlocked levels, current level, remaining arrow IDs, failed-arrow IDs, and lives. Saving failed-arrow IDs preserves both permanent red feedback and exemption from repeat penalties. Accounts and cloud saves remain deferred.
 
-Proposed storage format: one versioned save snapshot containing schema version, level content version, logical progress, and approved settings. Save after each accepted move's logical result, Retry/reset, and level completion/unlock; do not rely on page exit to save. Restore the interrupted move's settled result as confirmed in Q11. Save logical outcomes rather than animation transforms. If a level's data changes, preserve campaign unlocks and restart that level safely instead of applying incompatible occupancy data.
+The implementation stores versioned campaign progress and player settings in separate localStorage entries. Appearance changes preserve reduced-motion settings and do not change campaign content versions or progress. Save after each accepted move's logical result, Retry/reset, and level completion/unlock; do not rely on page exit to save. Restore the interrupted move's settled result as confirmed in Q11. Save logical outcomes rather than animation transforms. If a level's data changes, preserve campaign unlocks and restart that level safely instead of applying incompatible occupancy data.
 
 **Confirmed PWA scope:** Allow installation and standalone launch on supported platforms while retaining ordinary browser play. Installation is optional for the player. Verify save/resume in the installed app as well as the browser. Offline gameplay is not yet decided. Installation support and offline behavior are separate capabilities; see [MDN's PWA installation guide](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable).
 
@@ -278,12 +280,12 @@ Answer the blocking rules first. An unanswered proposal remains a proposal, even
 - **Q19:** Which non-cube shapes come first: rectangular boxes, joined cubes, carved/concave blocks, or arbitrary meshes? Recommendation: boxes, then grid-aligned compound solids.
 - **Q20:** Is progression strictly sequential? Can players skip, replay, or reset it? What happens after the final MVP level? Recommendation: sequential unlocks, replay unlocked levels, explicit campaign-complete screen.
 - **Q21:** Do hints, undo, scoring, stars, time limits, or rewards belong in the MVP? Recommendation: none until the core rules are proven.
-- **Q22:** Within the confirmed faint-far-side treatment, should the final art match the references' pale colors or use a different theme? Recommendation: preserve arrow readability and compare two palette/opacity treatments during implementation.
+- **Q22 — Confirmed 2026-09-15:** Preserve the pale light theme and add a dark theme with system detection and persistent manual selection. Both themes retain faint far-side arrows and readable arrow states.
 - **Q23:** For a blue/green arrow, is its first collision the only life penalty for the entire arrow, or can the other direction cost another life? Once red, how should the two selectable halves remain distinguishable? Recommendation: one penalty per whole arrow and persistent direction markers alongside red.
 
 ### 11.4 Approval boundaries
 
-Q1–Q13 have owner answers; Q8 retains a tail-boundary clarification. Q13 confirms the demo sequence; its practice-state/lifecycle details are proposed. Q14 confirms `localStorage` and PWA installation. Q15 confirms mobile support through two prior hardware generations. Resolve the Q8 boundary before implementing movement. Resolve the remaining demo lifecycle details, Q14's offline scope, Q15's remaining platform/accessibility details, Q20, and Q21 before freezing the remaining MVP scope. Resolve Q16–Q19 and Q23 before implementing their deferred content. Q22 can be explored with rendered comparisons once implementation is separately authorized.
+Q1–Q13 have owner answers; Q8 retains a tail-boundary clarification. Q13 confirms the demo sequence; its practice-state/lifecycle details are proposed. Q14 confirms `localStorage` and PWA installation. Q15 confirms mobile support through two prior hardware generations. Resolve the Q8 boundary before implementing movement. Resolve the remaining demo lifecycle details, Q14's offline scope, Q15's remaining platform/accessibility details, Q20, and Q21 before freezing the remaining MVP scope. Resolve Q16–Q19 and Q23 before implementing their deferred content. Q22 is resolved by the system-aware light/dark appearance feature described in U7.
 
 ## 12. Current deliverable status
 

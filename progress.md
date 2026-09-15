@@ -2,6 +2,10 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## System-aware light and dark themes
+
+Settings now offers System (default), Light, and Dark, persisted alongside reduced motion. System mode follows live OS changes; manual choices override the OS until System is selected again. A guarded early HTML bootstrap applies the initial appearance before the app bundle loads. Existing renderer materials retint in place, preserving camera, selection, active motion, failed-arrow history, and progress. The dark palette uses a slate cube, ivory arrows, coral failures, cyan selection, and faint blue-gray far-side paths. HTML surfaces, controls, native selects, browser theme color, and victory cards follow the resolved theme. Settings overlays the gesture hint cleanly on mobile. Legacy/malformed/denied storage is safe. Root verified 65 tests / 2,075 assertions, full gate, headed Chrome/WebKit desktop/mobile theme and gameplay flows, startup before bundle execution, persistence, motion-preserving changes, and inspected dark dense/failed/selected/settings/victory views. The web-game skill client also passed. Campaign content and save versions are unchanged.
+
 ## Level-completion celebration
 
 Campaign wins now celebrate after the final arrow settles with a 56-piece multicolor confetti burst, a gold star emblem, a brief card entrance/glow, and distinct cube/campaign completion messages. Effects expire after 2.6 seconds and never intercept controls. Next, Retry, level changes, reset, and disposal remove transient effects. In-game and system reduced-motion preferences suppress motion and stop an active burst; restored wins show only the static success card. Headed Chrome/WebKit tests cover final-arrow timing, Next during the burst, expiry, loss/demo exclusion, saved wins, final campaign, and both reduced-motion settings including live toggles. Root inspected desktop/mobile celebrations and corrected mobile particle layering. Full gate passes with 59 tests / 2,064 assertions; the web-game skill client also passes. No content or save-version changes.

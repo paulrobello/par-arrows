@@ -14,6 +14,7 @@ export interface CampaignSave {
 
 export interface PlayerSettings {
   readonly reducedMotion: boolean;
+  readonly theme: "system" | "light" | "dark";
 }
 
 export interface StorageResult<T> {
@@ -22,7 +23,10 @@ export interface StorageResult<T> {
   readonly contentUpdated: boolean;
 }
 
-const DEFAULT_SETTINGS: PlayerSettings = { reducedMotion: false };
+const DEFAULT_SETTINGS: PlayerSettings = {
+  reducedMotion: false,
+  theme: "system",
+};
 
 function getStore(): Storage | undefined {
   try {
@@ -175,7 +179,14 @@ export function loadSettings(): PlayerSettings {
     const parsed = raw
       ? (JSON.parse(raw) as Partial<PlayerSettings>)
       : undefined;
-    return { reducedMotion: parsed?.reducedMotion === true };
+    const theme = parsed?.theme;
+    return {
+      reducedMotion: parsed?.reducedMotion === true,
+      theme:
+        theme === "light" || theme === "dark" || theme === "system"
+          ? theme
+          : "system",
+    };
   } catch {
     return DEFAULT_SETTINGS;
   }
