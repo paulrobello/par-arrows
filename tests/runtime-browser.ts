@@ -5,7 +5,11 @@ import {
   GENERATOR_VERSION,
   seedForLevel,
 } from "../src/content/procedural";
-import { createGameState, simulateMove } from "../src/core/game-state";
+import {
+  applyMove,
+  createGameState,
+  simulateMove,
+} from "../src/core/game-state";
 import { waitForReady } from "./runtime-fixtures";
 
 const KEY = "par-arrows:campaign:v1";
@@ -176,6 +180,95 @@ export async function assertRuntimeCampaign(
   await second.close();
   assert.deepEqual(errors, []);
   await context.close();
+
+  const migrationLevel = generateLevel(10);
+  const initialMigrationState = createGameState(migrationLevel);
+  const migrationBlocker = migrationLevel.arrows.find(
+    (arrow) =>
+      simulateMove(migrationLevel, initialMigrationState, arrow.id).kind ===
+      "blocked",
+  );
+  assert.ok(migrationBlocker);
+  const partialMigrationState = applyMove(
+    migrationLevel,
+    initialMigrationState,
+    simulateMove(migrationLevel, initialMigrationState, migrationBlocker.id),
+  );
+  const levelTenLegacySave = JSON.stringify({
+    currentLevelId: 10,
+    unlockedLevelId: 14,
+    state: partialMigrationState,
+    tutorialComplete: true,
+    contentVersion: 6,
+    generatorVersion: 1,
+    seed: "par-arrows:runtime:1:level:10",
+  });
+  const migration = await browser.newContext();
+  await migration.addInitScript(
+    ({ key, saved }) => localStorage.setItem(key, saved),
+    { key: KEY, saved: levelTenLegacySave },
+  );
+  const migrationPage = await migration.newPage();
+  await migrationPage.goto(url);
+  await waitForReady(migrationPage);
+  assert.equal((await state(migrationPage)).level.id, 10);
+  assert.deepEqual(
+    (await state(migrationPage)).remainingIds,
+    partialMigrationState.remainingIds,
+  );
+  assert.deepEqual((await state(migrationPage)).failedIds, [
+    migrationBlocker.id,
+  ]);
+  assert.equal((await state(migrationPage)).lives, migrationLevel.lives - 1);
+  await migration.close();
+
+  const levelEleven = generateLevel(11);
+  const initialElevenState = createGameState(levelEleven);
+  const blockedEleven = levelEleven.arrows.find(
+    (arrow) =>
+      simulateMove(levelEleven, initialElevenState, arrow.id).kind ===
+      "blocked",
+  );
+  assert.ok(blockedEleven);
+  const staleLaterState = applyMove(
+    levelEleven,
+    initialElevenState,
+    simulateMove(levelEleven, initialElevenState, blockedEleven.id),
+  );
+  const laterLegacySave = JSON.stringify({
+    currentLevelId: 11,
+    unlockedLevelId: 17,
+    state: staleLaterState,
+    tutorialComplete: true,
+    contentVersion: 6,
+    generatorVersion: 1,
+    seed: "par-arrows:runtime:1:level:11",
+  });
+  const refresh = await browser.newContext();
+  await refresh.addInitScript(
+    ({ key, saved }) => localStorage.setItem(key, saved),
+    { key: KEY, saved: laterLegacySave },
+  );
+  const refreshPage = await refresh.newPage();
+  await refreshPage.goto(url);
+  await waitForReady(refreshPage);
+  assert.equal((await state(refreshPage)).level.id, 11);
+  assert.deepEqual((await state(refreshPage)).failedIds, []);
+  assert.equal((await state(refreshPage)).lives, levelEleven.lives);
+  const migratedCampaign = await refreshPage.evaluate((key) => {
+    const savedCampaign = JSON.parse(localStorage.getItem(key) ?? "{}");
+    return {
+      currentLevelId: savedCampaign.currentLevelId,
+      unlockedLevelId: savedCampaign.unlockedLevelId,
+      tutorialComplete: savedCampaign.tutorialComplete,
+    };
+  }, KEY);
+  assert.deepEqual(migratedCampaign, {
+    currentLevelId: 11,
+    unlockedLevelId: 17,
+    tutorialComplete: true,
+  });
+  await refresh.close();
 
   const failed = await browser.newContext();
   await failed.addInitScript(

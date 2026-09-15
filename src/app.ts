@@ -256,6 +256,7 @@ export class ParArrowsApp {
     return JSON.stringify({
       mode: this.mode,
       level: { id: this.level.id, title: this.level.title },
+      wrappingEdges: this.renderer.wrappingEdgeCount(),
       lives: this.displayedState.lives,
       remainingIds: this.displayedState.remainingIds,
       failedIds: this.displayedState.failedIds,
@@ -263,6 +264,7 @@ export class ParArrowsApp {
         ? {
             arrowId: this.motion.result.arrowId,
             kind: this.motion.result.kind,
+            headFace: this.renderer.arrowHeadFace(this.motion.result.arrowId),
             elapsed: Math.round(this.motion.elapsed),
             duration: this.motion.duration,
           }

@@ -119,9 +119,11 @@ function hasMatchingGeneratorMetadata(
   value: StoredCampaign,
   levelId: number,
 ): boolean {
+  const seedMatches = value.seed === seedForLevel(levelId);
   return (
-    value.generatorVersion === GENERATOR_VERSION &&
-    value.seed === seedForLevel(levelId)
+    seedMatches &&
+    (value.generatorVersion === GENERATOR_VERSION ||
+      (levelId <= 10 && value.generatorVersion === 1))
   );
 }
 

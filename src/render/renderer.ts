@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { cellToWorld, faceNormal } from "../core/topology";
+import { cellToWorld, faceHeadingVector, faceNormal } from "../core/topology";
 import type {
   ArrowDefinition,
   Cell,
@@ -12,6 +12,7 @@ import type {
 const PICK_RADIUS = 0.14;
 const PICK_LAYER = 1;
 const HEAD_PICK_MARGIN_PX = 1.5;
+const WRAPPING_EDGE_RADIUS = 0.014;
 
 export type Theme = "light" | "dark";
 
@@ -142,6 +143,41 @@ function seamPoint(
 export interface ExpandedPath {
   readonly points: readonly THREE.Vector3[];
   readonly segmentFaces: readonly Cell["face"][];
+}
+
+export interface WrappingEdgeSegment {
+  readonly start: THREE.Vector3;
+  readonly end: THREE.Vector3;
+}
+
+/** Returns one world-space segment for each continued physical cube edge. */
+export function wrappingEdgeSegments(
+  level: LevelDefinition,
+): readonly WrappingEdgeSegment[] {
+  const segments = new Map<string, WrappingEdgeSegment>();
+  for (const policy of level.edgePolicies ?? []) {
+    if (policy.policy !== "continue") continue;
+    const [nx, ny, nz] = faceNormal(policy.face);
+    const [ex, ey, ez] = faceHeadingVector(policy.face, policy.edge);
+    const normal = new THREE.Vector3(nx, ny, nz);
+    const outward = new THREE.Vector3(ex, ey, ez);
+    const along = normal.clone().cross(outward).normalize();
+    const offset = normal
+      .clone()
+      .add(outward)
+      .normalize()
+      .multiplyScalar(0.006);
+    const start = normal.clone().add(outward).sub(along).add(offset);
+    const end = normal.clone().add(outward).add(along).add(offset);
+    const pointKey = (point: THREE.Vector3): string =>
+      point
+        .toArray()
+        .map((value) => value.toFixed(4))
+        .join(",");
+    const key = [pointKey(start), pointKey(end)].sort().join("|");
+    if (!segments.has(key)) segments.set(key, { start, end });
+  }
+  return [...segments.values()];
 }
 
 interface RibbonSlice extends ExpandedPath {
@@ -424,6 +460,7 @@ export class PuzzleRenderer {
   private readonly camera = new THREE.PerspectiveCamera(32, 1, 0.1, 40);
   private readonly renderer: THREE.WebGLRenderer;
   private readonly cubeGroup = new THREE.Group();
+  private readonly wrappingEdgesGroup = new THREE.Group();
   private readonly arrowsGroup = new THREE.Group();
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
@@ -457,6 +494,7 @@ export class PuzzleRenderer {
     container.append(this.canvas);
 
     this.scene.add(this.cubeGroup, this.arrowsGroup);
+    this.cubeGroup.add(this.wrappingEdgesGroup);
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0xb7d5df, 2.4));
     const key = new THREE.DirectionalLight(0xffffff, 2.1);
     key.position.set(3, 5, 4);
@@ -473,8 +511,10 @@ export class PuzzleRenderer {
   setLevel(level: LevelDefinition, state: GameState): void {
     this.clearHint();
     this.clearArrows();
+    this.clearWrappingEdges();
     this.level = level;
     this.state = state;
+    this.createWrappingEdges(level);
     for (const arrow of level.arrows) {
       const visual = this.createArrow(arrow, level.gridSize, level.arrowScale);
       this.visuals.set(arrow.id, visual);
@@ -514,6 +554,12 @@ export class PuzzleRenderer {
     this.renderer.setClearColor(palette.background, 1);
     this.cubeMaterial?.color.set(palette.cube);
     this.edgeMaterial?.color.set(palette.edges);
+    this.wrappingEdgesGroup.traverse((child) => {
+      const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
+      if (mesh.material instanceof THREE.MeshBasicMaterial) {
+        mesh.material.color.set(theme === "light" ? 0xb77900 : 0xffd84a);
+      }
+    });
     this.applySelection();
     this.render();
   }
@@ -819,6 +865,16 @@ export class PuzzleRenderer {
     };
   }
 
+  wrappingEdgeCount(): number {
+    return this.wrappingEdgesGroup.children.length;
+  }
+
+  arrowHeadFace(arrowId: string): Cell["face"] | undefined {
+    return this.visuals.get(arrowId)?.head.userData.face as
+      | Cell["face"]
+      | undefined;
+  }
+
   render(): void {
     this.updateCamera();
     for (const visual of this.visuals.values()) {
@@ -863,6 +919,7 @@ export class PuzzleRenderer {
 
   dispose(): void {
     this.clearArrows();
+    this.clearWrappingEdges();
     disposeTree(this.cubeGroup);
     this.renderer.dispose();
     this.canvas.remove();
@@ -889,6 +946,39 @@ export class PuzzleRenderer {
       this.edgeMaterial,
     );
     this.cubeGroup.add(cube, edges);
+  }
+
+  private createWrappingEdges(level: LevelDefinition): void {
+    const segments = wrappingEdgeSegments(level);
+    if (segments.length === 0) return;
+    const color = this.theme === "light" ? 0xb77900 : 0xffd84a;
+    const material = new THREE.MeshBasicMaterial({
+      color,
+      toneMapped: false,
+    });
+    for (const { start, end } of segments) {
+      const direction = end.clone().sub(start);
+      const mesh = new THREE.Mesh(
+        new THREE.CylinderGeometry(
+          WRAPPING_EDGE_RADIUS,
+          WRAPPING_EDGE_RADIUS,
+          direction.length(),
+          8,
+        ),
+        material,
+      );
+      mesh.position.copy(start).add(end).multiplyScalar(0.5);
+      mesh.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        direction.normalize(),
+      );
+      this.wrappingEdgesGroup.add(mesh);
+    }
+  }
+
+  private clearWrappingEdges(): void {
+    disposeTree(this.wrappingEdgesGroup);
+    this.wrappingEdgesGroup.clear();
   }
 
   private createArrow(

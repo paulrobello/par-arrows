@@ -1,21 +1,22 @@
 import {
   cellKey,
-  forwardInfo,
   oppositeHeading,
+  seamTransition,
   stepSurface,
 } from "../core/topology";
 import type {
   ArrowDefinition,
   Cell,
+  EdgePolicyDefinition,
   FaceId,
   Heading,
   LevelDefinition,
 } from "../core/types";
-import { simulateMove } from "../core/movement";
+import { advanceHead, simulateMove } from "../core/movement";
 import { validateLevel } from "../core/validation";
 import { LEVEL_ONE } from "./intro";
 
-export const GENERATOR_VERSION = 1;
+export const GENERATOR_VERSION = 2;
 export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
 
 const FACES: readonly FaceId[] = [
@@ -38,7 +39,75 @@ export interface LevelConfig {
 /** The stable, inspectable input to the seeded layout generator. */
 export function seedForLevel(id: number): string {
   assertLevelId(id);
-  return `par-arrows:runtime:${GENERATOR_VERSION}:level:${id}`;
+  return `par-arrows:runtime:${id <= 10 ? 1 : GENERATOR_VERSION}:level:${id}`;
+}
+
+export function getWrappingEdgeWeights(
+  id: number,
+): readonly [number, number, number, number] {
+  assertLevelId(id);
+  if (id <= 10) return [1, 0, 0, 0];
+  const progress = Math.min(1, (id - 11) / 89);
+  return [
+    0.25,
+    0.6 - 0.45 * progress,
+    0.12 + 0.18 * progress,
+    0.03 + 0.27 * progress,
+  ];
+}
+
+/** Edge selection has its own seeded stream, independent of layout retries. */
+export function getWrappingEdgePolicies(
+  id: number,
+): readonly EdgePolicyDefinition[] {
+  const weights = getWrappingEdgeWeights(id);
+  if (id <= 10) return [];
+  const rng = new Rng(hashSeed(`${seedForLevel(id)}:edges`));
+  const roll = rng.next();
+  let count = 0;
+  let threshold = weights[0];
+  while (count < 3 && roll >= threshold) {
+    count += 1;
+    threshold += weights[count] ?? 0;
+  }
+  if (count === 0) return [];
+
+  const physicalEdges: EdgePolicyDefinition[][] = [];
+  const seen = new Set<string>();
+  for (const face of FACES) {
+    for (const edge of HEADINGS) {
+      const boundary: Cell = {
+        face,
+        x: edge === "east" ? 2 : edge === "west" ? 0 : 1,
+        y: edge === "south" ? 2 : edge === "north" ? 0 : 1,
+      };
+      const next = seamTransition(boundary, edge, 3);
+      const key = [face, next.cell.face].sort().join(":");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      physicalEdges.push([
+        {
+          face,
+          edge,
+          policy: "continue",
+          neighbor: { face: next.cell.face, entering: next.heading },
+        },
+        {
+          face: next.cell.face,
+          edge: oppositeHeading(next.heading),
+          policy: "continue",
+          neighbor: { face, entering: oppositeHeading(edge) },
+        },
+      ]);
+    }
+  }
+  for (let index = physicalEdges.length - 1; index > 0; index -= 1) {
+    const replacement = rng.int(index + 1);
+    const current = physicalEdges[index] as EdgePolicyDefinition[];
+    physicalEdges[index] = physicalEdges[replacement] as EdgePolicyDefinition[];
+    physicalEdges[replacement] = current;
+  }
+  return physicalEdges.slice(0, count).flat();
 }
 
 export function getLevelConfig(id: number): LevelConfig {
@@ -100,15 +169,20 @@ function hashSeed(seed: string): number {
   return hash || 1;
 }
 
-function exitRay(head: Cell, heading: Heading, size: number): readonly Cell[] {
+function exitRay(
+  level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
+  head: Cell,
+  heading: Heading,
+): readonly Cell[] {
   const ray: Cell[] = [];
   let current = head;
-  for (let step = 0; step <= size; step += 1) {
+  for (let step = 0; step <= level.gridSize * 4; step += 1) {
     ray.push(current);
-    const forward = forwardInfo(current, heading, size);
+    const forward = advanceHead(level, current, heading);
     if (forward.exits) return ray;
     if (!forward.next) return [];
     current = forward.next;
+    heading = forward.heading;
   }
   return [];
 }
@@ -173,17 +247,18 @@ function shuffledFaces(rng: Rng): readonly FaceId[] {
 
 function candidate(
   rng: Rng,
-  size: number,
+  level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
   occupied: ReadonlySet<string>,
   length: number,
 ): readonly Cell[] | undefined {
+  const size = level.gridSize;
   const head: Cell = {
     face: rng.pick(FACES),
     x: rng.int(size),
     y: rng.int(size),
   };
   const heading = rng.pick(HEADINGS);
-  const ray = exitRay(head, heading, size);
+  const ray = exitRay(level, head, heading);
   if (ray.length === 0 || ray.some((cell) => occupied.has(cellKey(cell))))
     return undefined;
 
@@ -246,7 +321,8 @@ export function generateLevel(id: number): LevelDefinition {
   if (id === 1) return LEVEL_ONE;
   const config = getLevelConfig(id);
   const baseSeed = hashSeed(seedForLevel(id));
-  for (let restart = 0; restart < 8; restart += 1) {
+  const edgePolicies = getWrappingEdgePolicies(id);
+  construction: for (let restart = 0; restart < 8; restart += 1) {
     const rng = new Rng((baseSeed + Math.imul(restart + 1, 0x9e3779b9)) >>> 0);
     const occupied = new Set<string>();
     const arrows: ArrowDefinition[] = [];
@@ -256,12 +332,21 @@ export function generateLevel(id: number): LevelDefinition {
       gridSize: config.gridSize,
       lives: config.lives,
       arrowScale: config.arrowScale,
+      ...(edgePolicies.length > 0 ? { edgePolicies } : {}),
     } as const;
     const faces = shuffledFaces(rng);
     const headingOffset = rng.int(HEADINGS.length);
     for (const [index, length] of [2, 3, 4].entries()) {
       const face = faces[index];
-      const heading = HEADINGS[(headingOffset + index) % HEADINGS.length];
+      const heading = HEADINGS.map(
+        (_, offset) =>
+          HEADINGS[(headingOffset + index + offset) % HEADINGS.length],
+      ).find(
+        (direction) =>
+          !edgePolicies.some(
+            (rule) => rule.face === face && rule.edge === direction,
+          ),
+      );
       if (!face || !heading)
         throw new Error("Could not choose a seeded straight-arrow starter.");
       const path = straightCandidate(
@@ -285,6 +370,34 @@ export function generateLevel(id: number): LevelDefinition {
       for (const cell of path) occupied.add(cellKey(cell));
       arrows.push(arrow);
     }
+    for (let index = 0; index < edgePolicies.length; index += 2) {
+      let accepted = false;
+      for (let attempt = 0; attempt < config.gridSize * 4; attempt += 1) {
+        const rule = edgePolicies[index + (attempt % 2)];
+        if (!rule) continue;
+        const path = straightCandidate(
+          rng,
+          config.gridSize,
+          rule.face,
+          rule.edge,
+          5 + index / 2,
+          occupied,
+        );
+        const head = path?.[path.length - 1];
+        if (!path || !head) continue;
+        const ray = exitRay(candidateLevel, head, rule.edge);
+        if (ray.length === 0 || ray.some((cell) => occupied.has(cellKey(cell))))
+          continue;
+        const arrow: ArrowDefinition = { id: `r${id}-wrap-${index / 2}`, path };
+        if (!validateLevel({ ...candidateLevel, arrows: [arrow] }).valid)
+          continue;
+        for (const cell of path) occupied.add(cellKey(cell));
+        arrows.push(arrow);
+        accepted = true;
+        break;
+      }
+      if (!accepted) continue construction;
+    }
     for (
       let attempt = 0;
       arrows.length < config.arrowCount && attempt < config.arrowCount * 900;
@@ -292,9 +405,14 @@ export function generateLevel(id: number): LevelDefinition {
     ) {
       const path = candidate(
         rng,
-        config.gridSize,
+        candidateLevel,
         occupied,
-        targetLength(rng, id, config),
+        Math.max(
+          2,
+          Math.floor(
+            targetLength(rng, id, config) * (1 - edgePolicies.length * 0.05),
+          ),
+        ),
       );
       if (!path) continue;
       const arrow: ArrowDefinition = { id: `r${id}-${arrows.length}`, path };
@@ -305,11 +423,7 @@ export function generateLevel(id: number): LevelDefinition {
     }
     if (arrows.length !== config.arrowCount) continue;
     const level: LevelDefinition = {
-      id,
-      title: `Cube ${id}`,
-      gridSize: config.gridSize,
-      lives: config.lives,
-      arrowScale: config.arrowScale,
+      ...candidateLevel,
       arrows,
     };
     const certificate = [...arrows].reverse().map((arrow) => arrow.id);

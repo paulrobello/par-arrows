@@ -15,7 +15,7 @@ export interface ArrowDefinition {
   readonly kind?: "single" | "double";
 }
 
-/** A declared rule for an oriented cube boundary. `continue` is deferred. */
+/** A declared rule for an oriented cube boundary. */
 export interface EdgePolicyDefinition {
   readonly face: FaceId;
   readonly edge: Heading;
@@ -27,7 +27,7 @@ export interface EdgePolicyDefinition {
   };
 }
 
-/** Cube-only level data. Production content uses ordinary exits on every edge. */
+/** Cube-only level data with ordinary exits and optional continuation edges. */
 export interface LevelDefinition {
   readonly id: number;
   readonly title: string;

@@ -8,7 +8,7 @@ Requirements source: [PRD.md](PRD.md)
 
 References: [gallery](docs/references/README.md)
 
-References 04–06 guide future content toward densely packed mixtures of straight, hooked, zigzag, and winding multi-bend paths with varied lengths and face spans. During later content work, compare turn variety, spacing, readability, and wrapping with these photos while preserving the simple opening level and validating every route. Reference 07 documents the owner's yellow-edge head-continuation rule: animate the head turning onto the adjacent face with its body following. Keep that future rule distinct from an existing body's ordinary-seam unwrapping. The new photos are reference material; yellow-edge runtime behavior remains outside the current campaign.
+References 04–06 guide content toward densely packed mixtures of straight, hooked, zigzag, and winding multi-bend paths with varied lengths and face spans. Compare turn variety, spacing, readability, and wrapping with these photos while preserving the simple opening level and validating every route. Reference 07 documents the owner's yellow-edge head-continuation rule: animate the head turning onto the adjacent face with its body following. Keep that rule distinct from an existing body's ordinary-seam unwrapping. Generated levels from 11 onward can include reciprocal whole-edge yellow seams under the documented implementation defaults.
 
 The owner has requested implementation using Terra subagents and proper greenfield/Git setup. This supersedes the initial planning-only instruction. Remaining Q identifiers distinguish confirmed choices from the documented execution defaults in [progress.md](progress.md). No remote publication or deployment is included.
 
@@ -25,7 +25,7 @@ The owner superseded the fixed ten-level catalog: level 1 remains the authored t
 | G1: Rule agreement | Q1–Q3 and Q7–Q9 answered. Resolve the exact vacated-tail boundary in Q8. | Movement implementation and authoritative level format. |
 | G2: MVP scope | Q4–Q6 and Q10–Q13 are resolved for the runtime campaign. Q14 confirms `localStorage` and PWA installation; Q15 confirms mobile hardware up to two generations old. Resolve demo lifecycle details, offline scope, remaining platform/accessibility details, and Q21. | Onboarding lifecycle and offline/platform details. |
 | G3: Visual direction | Q22. | Final visual acceptance, not neutral prototype geometry. |
-| G4: Deferred mechanics | Q16–Q19 and Q23, mechanic introduction order and level numbers. | Shipping bidirectional arrows, yellow edges, or non-cube content. |
+| G4: Deferred mechanics | Q16, Q19, and Q23 remain open. Blue/green arrows and non-cube content remain deferred. Yellow seams are implemented from level 11 using documented defaults. | Shipping bidirectional arrows or non-cube content. |
 
 Record owner answers and implementation defaults distinctly. Implementation authorization is present. Resolve technical details using the documented MVP defaults and preserve deferred gameplay scope.
 
@@ -57,7 +57,7 @@ PWA work follows [MDN's installation guide](https://developer.mozilla.org/en-US/
 
 Represent surfaces as identified planar faces with integer grids and explicit local coordinate bases. Each boundary can describe its neighboring face, coordinate mapping, orientation, and head-crossing policy. The model must not derive game directions from camera orientation or mesh triangle numbering.
 
-Keep **static path adjacency** separate from **head edge behavior**. A body can already span an ordinary seam. That does not automatically make a newly arriving head wrap there. This distinction is essential to the requested combination of wrapped arrows and later yellow edges.
+Keep **static path adjacency** separate from **head edge behavior**. A body can already span an ordinary seam. That does not automatically make a newly arriving head wrap there. This distinction supports the combination of wrapped arrows and yellow edges.
 
 Proposed canonical occupancy: a cell is an identified face-cell center; a link connects adjacent centers. A route is an ordered sequence of cells plus those links. Two different arrows may share neither cells nor links, including endpoints. Within-face links join cardinal neighbors. A cross-face link joins the two distinct boundary cells through the seam, with a canonical identity independent of direction. Do not duplicate a crossing as two unrelated links or merge neighboring face cells into one cell. Edge lanes avoid physical cube vertices, so no three-face corner choice arises in MVP content.
 
@@ -107,7 +107,7 @@ Keep settings, lives, retry, level selection, and completion controls in HTML. S
 
 ### A7: Content tooling and persistence
 
-The production campaign imports the authored level 1 and generates every level at or above 2 through `content/procedural.ts`. Generator version 1 derives `seedForLevel` and a descriptor from the level number, reverse-constructs free surface paths, validates occupancy/self-contact/solvability, and returns only a puzzle matching the configured bounds: early growth from 60 to 180 arrows, then a 240-arrow cap, 26 × 26 cells per face, and 40 cells per path. `campaign-layouts.ts` and `levels.ts` and the offline generator remain legacy test fixtures only and are excluded from production imports.
+The production campaign imports the authored level 1 and generates every level at or above 2 through `content/procedural.ts`. Generator version 2 derives seeds from the level number above level 10; levels through 10 retain their literal version-1 seeds and unchanged geometry. It reverse-constructs free surface paths, validates occupancy/self-contact/solvability, and returns only a puzzle matching the configured bounds: early growth from 60 to 180 arrows, then a 240-arrow cap, 26 × 26 cells per face, and 40 cells per path. From level 11, a separate seeded stream selects zero to three physical wrapping seams without changing on generation retries; each selected seam gets a 5/6/7-cell wrapping starter, and its full head-exit ray is protected during construction. Random target body lengths scale to 90/80/70% for one/two/three physical wrapping seams. `campaign-layouts.ts` and `levels.ts` and the offline generator remain legacy test fixtures only and are excluded from production imports.
 
 `level-loader` runs generation in a Web Worker, caches three results, and has a 12-second timeout. Request generations and reset/restore flows use revisions so stale results cannot replace a newer accepted puzzle. Keep the reference complexity criteria as visual guidance; generator validity is determined by the runtime validator and solver, not by a frozen catalog.
 
@@ -115,7 +115,7 @@ Validate paths, occupancy, seams, arrow endpoints, mechanic versions, life budge
 
 Persist progress through browser `localStorage` as schema v6. Store unlocked levels, current level, generator version and seed, remaining arrows, failed-arrow IDs, and lives, without a generated catalog. Store reduced-motion and System/Light/Dark settings separately so appearance changes preserve the active attempt. Write each accepted move's final logical result before its animation, and write Retry/reset and completion/unlock changes when they occur.
 
-Valid v1–v5 level-one attempts resume exactly. Older attempts above level 1 regenerate the current layout for the same logical ID, retain unlocks and onboarding completion, and show the content-refresh message. Restoration is asynchronous and storage normalization remains pure; only the app commits an accepted restored state.
+Valid v1–v5 level-one attempts resume exactly. Valid v6 generator-v1 saves resume their exact state through level 10 only when the saved seed matches; above level 10 they regenerate the current layout for the same logical ID, retain unlocks and onboarding completion, and show the content-refresh message. New saves use content version 6 and generator version 2. Restoration is asynchronous and storage normalization remains pure; only the app commits an accepted restored state.
 
 Restore the saved settled state on refresh/reopen in both browser and installed-PWA sessions. Reload must not turn red arrows black or charge their repeated collisions again. On content-version mismatch, restart the affected attempt while preserving compatible progression. Storage failures allow continued play with honest feedback. Decide multi-tab policy before enabling automatic attempt restoration. Verify save behavior when moving from browser play to installed launch on each target rather than assuming shared storage between contexts. Resolve any platform-specific transfer limitation before closing installation acceptance. Offline loading remains a separate open decision.
 
@@ -167,7 +167,7 @@ Acceptance:
 - P2.2: Straight, bent, and multi-face paths exit or block exactly as approved, including collisions with a blocker body rather than its head.
 - P2.3: Reject possible self-contact, including contact initially hidden by another blocker. The approved just-vacated-tail boundary, seam occupancy, malformed data, and large travel distances have explicit tests.
 - P2.4: Result and restored state are independent of animation timing and camera state.
-- P2.5: Contract fixtures show endpoint reversal and a continuation-edge mapping can use the same rule boundaries. Production content still accepts only approved MVP mechanics.
+- P2.5: Contract fixtures show endpoint reversal and a continuation-edge mapping can use the same rule boundaries. Production content accepts the implemented yellow-edge rules; blue/green arrows remain deferred.
 
 ### P3 — Interactive 3D cube
 
@@ -234,10 +234,10 @@ Acceptance:
 | Phase | Depends on | Future work and proof |
 | --- | --- | --- |
 | P7 | MVP acceptance, Q16 and Q23 | Blue/green two-ended arrows, distance-based half selection, reversed paths, midpoint policy, persistent red and direction cues, first-failure scope, solver updates, and introductory levels. |
-| P8 | MVP acceptance, Q17–Q18 | Yellow continuation edges, visible markings, seam direction changes, repeated crossings, cycle handling, hidden-edge readability, solver updates, and introductory levels. |
+| P8 | Implemented and locally verified 2026-09-15 | Yellow continuation edges from level 11, visible whole-edge markings, reciprocal seam direction changes, repeated crossings, cycle rejection, and solver-validated generated content. Early and late edge-count weights are documented in the PRD. |
 | P9 | Stable seam model, Q19 | Cuboids first if approved, then compound solids. Verify concave/convex seams, exposed faces, flight behavior, dense selection, and solver correctness for each new topology. |
 
-P7 and P8 can be developed independently only where file ownership does not overlap. Their release order and introduction level numbers are owner decisions. Each further mechanic needs a short rule spec, simulation tests, authoring/solver support, and tutorial content before release.
+P7 remains deferred pending Q16/Q23. P8 is implemented under documented defaults and passes the full project gate plus headed Chrome/WebKit checks. Each future mechanic needs a short rule spec, simulation tests, authoring/solver support, and tutorial content before release.
 
 ## 6. Verification matrix
 
@@ -253,7 +253,7 @@ P7 and P8 can be developed independently only where file ownership does not over
 | T8 | Final exit, last-life collision, and reduced-motion instant completion. | One terminal transition with consistent saved state. |
 | T9 | Inspect `localStorage` after progress changes; refresh/reopen and reload/background during impact and exit; denied or corrupt storage. | Exact saved progress resumes under the approved settlement policy, without duplicate deductions or partial routes. |
 | T10 | Mouse wheel, pinch zoom, rotated screens, browser zoom, safe areas, dense adjacent arrows. | Controlled zoom without activation, correct canvas coordinate mapping, and usable selection. |
-| T11 | Future reversed endpoint and yellow-edge chains/cycles. | Correct seam transforms, bounded simulation, separate invalid-content outcome. |
+| T11 | Future reversed endpoint; current generated yellow-edge chains/cycles. | Correct seam transforms, terminating validated continuation, and separate invalid-content outcome. |
 | T12 | Full campaign and repeated scene lifecycle. | Replayed solutions, progressive difficulty, stable resource use, real-device measurements. |
 | T13 | PWA install, standalone launch, close/reopen, and transition from browser play; devices two generations old. | Installation works where supported, saved progress resumes, controls fit standalone safe areas, and oldest-target hardware meets the approved performance criteria. |
 | T14 | Small-cube demo: visible failed touch, completed red rebound, then visible successful touch and exit. | Correct order and real rule outcomes; no Skip control; failed arrow remains red; approved lifecycle preserves campaign state and handles interruption/reduced motion. |
@@ -266,7 +266,7 @@ Use focused unit tests for logical behavior, small exhaustive/property fixtures 
 - **K2 — Transparency and picking:** Faint rear arrows may improve inspection but create false depth cues. Compare rendered treatments and verify occlusion on mobile.
 - **K3 — Dense usability:** Rendering more arrows is easier than making them individually tappable. Zoom, spacing, and camera angles are acceptance concerns.
 - **K4 — Procedural content:** A solvable puzzle can still be trivial, repetitive, or unreadable. Generation needs difficulty metrics and human playtesting beyond solver success.
-- **K5 — Future surface rules:** Yellow-edge cycles, endpoint reversal, and concave shapes can invalidate simplifying assumptions in the MVP solver.
+- **K5 — Future surface rules:** Dynamic mechanics, endpoint reversal, and concave shapes can invalidate simplifying assumptions in the current solver.
 - **K6 — Platform breadth:** Exact device/browser commitments and accessibility scope materially affect verification work.
 
 No calendar estimate is committed while G1/G2 remain open. After those decisions, estimate the phases from the agreed content quantity and physical-device matrix.

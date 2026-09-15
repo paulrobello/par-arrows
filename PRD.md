@@ -43,8 +43,8 @@ The four additional photos supplied on 2026-09-14 are preserved as references 04
 | R8 | Level 1 starts with five lives. Runtime levels have a deterministic per-level life budget that falls to three lives and never goes below that floor. |
 | R9 | Later levels can be much denser and need not use perfect cubes. |
 | R10 | Future double-ended arrows have blue and green halves. The half clicked determines travel direction. |
-| R11 | Future special edges are marked yellow. A head reaching one continues onto the adjoining face instead of flying off. |
-| R12 | The engine design must allow additional mechanics beyond R10 and R11. These two mechanics are introduced at later levels, after the basic gameplay MVP. |
+| R11 | Special physical cube edges are marked yellow. A head reaching one continues onto the adjoining face instead of flying off. |
+| R12 | The engine design must allow additional mechanics beyond R10 and R11. Yellow continuation edges are now introduced in generated levels from level 11; blue/green two-ended arrows remain deferred. |
 | R13 | Movement follows the arrow's path: the tail follows the head. Existing wrapped bodies unwrap through ordinary seams; only a new head crossing determines exit versus continuation. |
 | R14 | Allow continuous rotation in every drag direction with no axis stops, including repeated turns over the top and bottom, plus mouse-wheel and pinch zoom. Far-side arrows remain faintly visible and become selectable only when rotated onto exposed faces. |
 | R15 | At zero lives, allow unlimited retries of the same puzzle, restoring its configured starting lives. |
@@ -83,7 +83,7 @@ The count, curated source, life curve, exact resume behavior, browser `localStor
 
 ### 4.2 Deferred content and features
 
-- X1: Playable blue/green double-ended arrows and yellow continuation edges. Reserve their rule contracts now. Introduce them through separate tutorial levels later.
+- X1: Playable blue/green double-ended arrows remain deferred. Yellow continuation edges are implemented in generated levels from level 11; their rule contract is recorded in section 9.2.
 - X2: Non-cube content. First extension candidate: rectangular cuboids, followed by grid-aligned compound solids. Arbitrary curved surfaces, holes, and concave shapes need a separate scope decision.
 - X3: Further unspecified mechanics. Provide explicit rule boundaries, not a general plugin or scripting platform.
 - X4: Accounts, cloud saves, leaderboards, monetization, advertisements, energy timers, purchases, and social features.
@@ -168,7 +168,7 @@ Keyboard puzzle navigation and a nonvisual equivalent of the spatial puzzle need
 
 **Superseded historical policy:** the fixed ten-level, content-version-5 catalog described in earlier reports is retained only as historical reference and test fixtures. It is not a production import.
 
-**Current policy:** level 1 remains the unchanged authored teaching cube. Each level number at or above 2 deterministically derives a version-1 seed and descriptor, then generates a reverse-constructed puzzle that is validated as solvable before use. A player retry and every player on the same level number receive the same puzzle.
+**Current policy:** level 1 remains the unchanged authored teaching cube. Levels 2–10 retain their version-1 seeds and geometry. Levels above 10 use version-2 seeds and may include yellow continuation edges under section 9.2. Each generated puzzle is reverse-constructed and validated as solvable before use. A player retry and every player on the same level number receive the same puzzle.
 
 | Range | Generation bounds | Starting lives | Purpose |
 | --- | --- | --- | --- |
@@ -191,7 +191,7 @@ The owner identified stamped S-curve repetition in content version 3. Version 4 
 - L5: The onboarding demo shows a failed touch followed by a successful touch on a small cube with few arrows. Proposed isolation: demonstrate penalties in demo state while leaving campaign lives and progress untouched.
 - L6: Reject any arrow with possible self-contact over its full motion, including after other arrows are removed. A complete solution alone does not waive this constraint.
 
-Curated authoring and a checker are confirmed for the MVP. Generated progression and player-facing editor tooling are deferred. A development-only solver/validator is distinct from a player-facing hint feature.
+Level 1 is authored; later progression is generated and checked at runtime. Player-facing editor tooling remains deferred. The solver/validator checks content independently of the approved player-facing Hint feature.
 
 ## 8. Save and platform expectations — Q11, Q14, Q15
 
@@ -221,13 +221,13 @@ Define the two halves by distance along the full surface path, not by a screen-s
 
 ### 9.2 Yellow continuation edges — Q17, Q18
 
-An edge rule belongs to shape topology and maps a crossing position and direction onto the adjoining face. It is independent of camera orientation. Existing static path seams and future head-continuation rules must remain separate concepts.
+An edge rule belongs to shape topology and maps a crossing position and direction onto the adjoining face. It is independent of camera orientation. Existing static path seams and head-continuation rules remain separate concepts.
 
-In [reference 07](docs/references/reference-07.jpeg), yellow highlights the special boundary. The owner confirms that a moving head reaching this boundary turns around the corner and keeps traveling along the next face; the body feeds behind it. At an ordinary boundary the advancing head exits. An arrow whose body already spans an ordinary seam can still unwrap without that seam being yellow. The yellow-edge mechanic remains deferred to later levels; adding this reference does not enable it in the current campaign.
+In [reference 07](docs/references/reference-07.jpeg), yellow highlights the special boundary. The owner confirms that a moving head reaching this boundary turns around the corner and keeps traveling along the next face; the body feeds behind it. At an ordinary boundary the advancing head exits. An arrow whose body already spans an ordinary seam can still unwrap without that seam being yellow. Generated levels from level 11 may include yellow continuation edges; level 1 and levels 2–10 retain their existing layouts and ordinary exits.
 
-Pending owner choices: whether yellow applies to a whole physical edge or a segment, whether it is shared in both crossing directions, and how corner ties behave. Proposed first version: whole physical edge, reciprocal in both directions, right-angle face transition, and paths aligned to cross edges away from vertices.
+Implemented defaults: yellow marks a whole physical cube edge and applies reciprocally in both crossing directions. The transition is a right-angle face change with paths aligned away from vertices. Generated edge selection uses a separate deterministic stream from layout construction, so retries do not change the edge choices. From level 11, the selected outcome weights are 25% for no yellow edges, 60/12/3% for one/two/three edges, and they shift linearly to 15/30/30% by level 100 before remaining capped. Each generated layout must pass validation and the solver before presentation.
 
-A path may encounter several yellow edges before an ordinary exit. Simulation must terminate if continuation creates a cycle or self-collision. Invalid content should be rejected before play. A defined runtime outcome is still needed for cycles introduced by later dynamic mechanics.
+A path may encounter several yellow edges before an ordinary exit. Simulation terminates on a continuation cycle or self-collision, and invalid content is rejected before play. Dynamic mechanics that could introduce new cycles remain outside the current campaign.
 
 ### 9.3 Other shapes and mechanics — Q19
 
@@ -249,7 +249,7 @@ For non-cube shapes, resolve surface grid alignment, exposed versus interior fac
 | AC8 | Dense selection and rendering remain usable on agreed real desktop and mobile targets in portrait and landscape. Record devices and measurements. |
 | AC9 | Progress is written to browser `localStorage` and resumes after refresh/reopen with the same level, removed arrows, lives, and red-arrow history. Reload during a move, background/resume, storage failure, changed level data, and rapid input follow the specified recovery policies without corrupting progression. |
 | AC10 | Reduced motion, directional cues, non-color failure feedback, and accessible menus work as specified. Any gameplay accessibility gaps are stated. |
-| AC11 | Engine fixtures demonstrate future endpoint selection and seam continuation boundaries without placing deferred mechanics in the MVP campaign. |
+| AC11 | Engine fixtures demonstrate future endpoint selection, and generated levels from level 11 can include solver-validated yellow continuation seams. |
 | AC12 | The project's actual formatting, lint, typecheck, tests, build, and relevant browser checks pass. Automated results and physical-device evidence are reported separately. |
 | AC13 | The PWA installs and launches standalone on supported target platforms. Closing/reopening it resumes local progress. Real-device checks include hardware two generations old, and installation is not required for normal browser play. |
 | AC14 | A small cube with few arrows demonstrates a visible touch on a blocked arrow, its contact/rebound/persistent red feedback, then a visible touch on another arrow that exits and disappears. The sequence cannot be skipped. Under the proposed demo-isolation policy, level 1 begins afterward with five lives and untouched arrows. |
@@ -284,8 +284,8 @@ Answer the blocking rules first. An unanswered proposal remains a proposal, even
 - **Q14 — Partially confirmed 2026-09-14:** Save progress in browser `localStorage` and allow PWA installation. Offline gameplay remains unanswered.
 - **Q15 — Hardware confirmed 2026-09-14:** Support mobile devices up to two generations old. Choose the exact representative models and OS/browser matrix before verification. Sound, haptics, keyboard gameplay, and nonvisual gameplay scope remain separate unanswered choices.
 - **Q16:** For blue/green arrows, does each color cover exactly half the total path length? What should the exact midpoint do? Does either half remain selectable when the other is hidden? Recommendation: equal surface-path halves, neutral midpoint, only exposed portions selectable.
-- **Q17:** Are yellow edges whole-edge or partial-edge rules? Do they work both ways? Can yellow markings be hidden behind the shape? Recommendation: whole-edge, reciprocal, visible using the same inspection rules as the shape.
-- **Q18:** If yellow edges produce a loop with no exit, should the move fail with a life loss or should such boards be prohibited? Recommendation: prohibit in shipped static content and keep a bounded runtime safeguard.
+- **Q17 — Implemented defaults 2026-09-15:** Yellow marks a whole physical edge and is reciprocal. The marking follows the cube edge and is inspected by rotating the cube; edge-lane paths do not use corner ties.
+- **Q18 — Implemented defaults 2026-09-15:** Reject continuation cycles during validation and report any runtime cycle as invalid content without charging a life.
 - **Q19:** Which non-cube shapes come first: rectangular boxes, joined cubes, carved/concave blocks, or arbitrary meshes? Recommendation: boxes, then grid-aligned compound solids.
 - **Q20 — Resolved 2026-09-15:** Progression is endless. Next always advances to the next logical level. A numeric level cube accepts Go or Enter for any unlocked safe-integer ID; there is no final campaign-complete screen.
 - **Q21 — Partially confirmed 2026-09-15:** Safe-arrow hints are approved as specified in section 5.6. Undo, scoring, stars, time limits, and rewards remain separate scope decisions.
@@ -294,7 +294,7 @@ Answer the blocking rules first. An unanswered proposal remains a proposal, even
 
 ### 11.4 Approval boundaries
 
-Q1–Q13 have owner answers; Q8 retains a tail-boundary clarification. Q13 confirms the demo sequence; its practice-state/lifecycle details are proposed. Q14 confirms `localStorage` and PWA installation. Q15 confirms mobile support through two prior hardware generations. Q20 is resolved by endless runtime progression. Resolve the Q8 boundary before implementing movement and the remaining demo, offline, platform/accessibility, and Q21 details before freezing broader release scope. Resolve Q16–Q19 and Q23 before implementing their deferred content. Q22 is resolved by the system-aware light/dark appearance feature described in U7.
+Q1–Q13 have owner answers; Q8 retains a tail-boundary clarification. Q13 confirms the demo sequence; its practice-state/lifecycle details are proposed. Q14 confirms `localStorage` and PWA installation. Q15 confirms mobile support through two prior hardware generations. Q20 is resolved by endless runtime progression. Q17/Q18 are implemented using the defaults documented in section 9.2, not owner answers. Resolve the Q8 boundary and remaining demo, offline, platform/accessibility, Q16, Q19, Q21, and Q23 details before freezing broader release scope. Q22 is resolved by the system-aware light/dark appearance feature described in U7.
 
 ## 12. Current deliverable status
 

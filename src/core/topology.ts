@@ -147,10 +147,7 @@ export function edgePoint(
   );
 }
 
-/**
- * Cross an authored body seam. Heads do not call this during ordinary MVP
- * movement; it is for validating and rendering the stored wrapped route.
- */
+/** Cross a cube seam and return the adjacent cell on the neighboring face. */
 export function stepAcrossSeam(
   cell: Cell,
   heading: Heading,
@@ -198,10 +195,14 @@ export function seamTransition(
   gridSize: number,
 ): { readonly cell: Cell; readonly heading: Heading } {
   const crossed = stepAcrossSeam(cell, heading, gridSize);
-  if (crossed.x === 0) return { cell: crossed, heading: "east" };
-  if (crossed.x === gridSize - 1) return { cell: crossed, heading: "west" };
-  if (crossed.y === 0) return { cell: crossed, heading: "south" };
-  return { cell: crossed, heading: "north" };
+  const inward = scale(basis(cell.face).normal, -1);
+  const entering = HEADINGS.find((candidate) =>
+    equalVector(faceHeadingVector(crossed.face, candidate), inward),
+  );
+  if (!entering) {
+    throw new Error("Cube seam has no inward continuation tangent.");
+  }
+  return { cell: crossed, heading: entering };
 }
 
 /** Advance an authored route through an on-face neighbor or a cube seam. */

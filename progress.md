@@ -4,13 +4,15 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 ## Runtime endless campaign
 
-The fixed level-2–10 catalog is superseded in production. Level 1 remains the unchanged authored teaching puzzle; every logical level at or above 2 is generated at runtime from a version-1 seed derived from its level number. Reverse construction, structural validation, and solver validation ensure retry and every player on the same number receive the same solvable puzzle. Early levels grow from 60 to 180 arrows; later levels cap at 240 arrows, 26 × 26 cells per face, 40 cells per path, and a three-life floor.
+The fixed level-2–10 catalog is superseded in production. Level 1 remains the unchanged authored teaching puzzle; every logical level at or above 2 is generated at runtime. Levels 2–10 retain their literal generator-v1 seeds and unchanged geometry. Levels above 10 use generator version 2, with a separate seeded stream for edge selection so layout retries retain the same wrapping seams. From level 11, generated levels may contain zero to three reciprocal whole-physical-edge yellow seams. The no-seam share stays at 25%; the one/two/three-seam weights shift from 60/12/3 at level 11 to 15/30/30 at level 100 and remain capped after that. Each chosen seam receives a 5/6/7-cell wrapping starter, its full head-exit ray is protected during reverse construction, and random target body lengths scale to 90/80/70% for one/two/three physical wrapping seams. Generated puzzles must pass structural validation and the solver before presentation.
 
-Generation runs through a Web Worker with a three-entry cache and a 12-second timeout. Request/retry/reset/restore revisions prevent stale or failed results from overwriting an accepted puzzle. Saves are v6 logical snapshots with generator metadata, not generated catalogs; reload regenerates through the worker. Valid v1–v5 level-one attempts remain exact. Older later-level attempts restart at the same ID under the new layout, preserving unlocks and showing a refresh message. The static campaign layouts and offline generator remain legacy test fixtures only and are not imported by production code.
+Generation runs through a Web Worker with a three-entry cache and a 12-second timeout. Request/retry/reset/restore revisions prevent stale or failed results from overwriting an accepted puzzle. Saves are v6 logical snapshots with generator metadata, not generated catalogs; reload regenerates through the worker. Valid v1–v5 level-one attempts remain exact. A v6 generator-v1 save resumes exactly through level 10 only when its seed matches; above level 10 the attempt refreshes at the same level while preserving unlocks and tutorial completion. New saves use generator version 2. The static campaign layouts and offline generator remain legacy test fixtures only and are not imported by production code.
 
-`make checkall` passed with 69 tests and 4,409 assertions. The final 120-level sweep validates solvability, bounded geometry, varied straight lengths, wrapping, and normalized shape diversity; its desktop benchmark averaged 44.6 ms per generation with a 236 ms worst case. Headed Chrome and WebKit passed progression through 1,000 to 1,001, shared geometry across sessions, retry/reload, numeric navigation, worker failure recovery, stale-request protection, reset during migration, hints, themes, celebrations, and touch controls. Root inspected generated layouts and the 320-pixel dock, and ran the web-game client. Generator-v1 geometry hashes guard reproducibility. Browser cleanup is bounded so a transport shutdown cannot leave verification hanging.
+Root verified the wrapping feature with `make checkall`: 81 tests, 123,284 assertions, formatting/lint/types/build/icon checks passed. Headed Chrome and WebKit passed yellow-edge counts, light/dark/mobile rendering, head-face changes during motion, collision penalties and free repeat failures, retry/reload, cleanup on unwrapped levels, generator-v1 migration, and existing campaign/input regressions. A live mouse click on level 11's wrapping starter crossed from front to right before rebounding and deducting exactly one life. Screenshots and the headed web-game client were inspected; the final diff review found no actionable issues.
 
-The entries below preserve implementation history. Statements there about fixed levels 2–10, a final campaign state, content versions 2–5, or prior browser passes apply only to the superseded catalog and must not be read as runtime-campaign verification.
+The 500-level generation sweep passed, with edge-count totals of 121/97/146/136 for zero/one/two/three seams, a 63.6 ms average, and 248.9 ms worst desktop generation time. The 120-level generation/solvability sweep and thirty consecutive early wrapping levels also pass. A separate 10,000-level edge-selection sample matches the late 25/15/30/30 distribution within two percentage points. Generator-v1 geometry hashes guard unchanged early levels, and a version-2 hash includes the selected edges. A [live yellow-edge view](docs/verification/wrapping-edges.png) is preserved with the source.
+
+The entries below preserve implementation history. Statements there about fixed levels 2–10, a final campaign state, content versions 2–5, or earlier deferred yellow edges describe the campaign at those dates and must not be read as current runtime behavior or as verification of the wrapping feature.
 
 ## Confetti speed tuning
 
@@ -91,7 +93,7 @@ Flat quads and triangular heads follow face planes and fold at seams. Moving bod
 ## Confirmed behavior
 
 - Level 1 is authored; levels 2 and above are deterministic, solver-validated runtime puzzles. Progression is endless, with an early 60–180 arrow ramp and later 240-arrow cap, 26 × 26 face grids, 40-cell paths, and a three-life floor.
-- Head advances forward; body follows its existing path and unwraps seams. Ordinary new head crossings exit.
+- Head advances forward; body follows its existing path and unwraps ordinary seams. A new head crossing continues only on a marked reciprocal yellow seam; ordinary crossings exit.
 - First failure per arrow costs one life and keeps it red until removed. Repeat failures of that arrow are free.
 - Reject self-contact levels. One active arrow at a time; extra taps ignored while orbit/zoom remain available.
 - Free orbit, wheel and pinch zoom, visible-face picking, faint unpickable far-side arrows, press highlight, ambiguous taps ignored.
@@ -102,7 +104,7 @@ Flat quads and triangular heads follow face planes and fold at seams. Moving bod
 ## Execution assumptions
 
 - User request on 2026-09-14 supersedes planning-only instructions in the original documents.
-- Implement current documented defaults for remaining MVP details. Offline gameplay, accounts, undo, sound assets, and later gameplay mechanics stay deferred. Safe-arrow hints were separately approved on 2026-09-15.
+- Implement current documented defaults for remaining MVP details. Yellow seams from level 11 use the documented whole-edge reciprocal rules and deterministic edge-count weights. Blue/green arrows, non-cube content, offline gameplay, accounts, undo, and sound assets remain deferred. Safe-arrow hints were separately approved on 2026-09-15.
 - A vacated tail cell is allowed only without simultaneous swept contact. Self-contact validation checks each arrow without other blockers.
 - Demo uses independent state, starts before first campaign play, saves completion only after both moves, and leaves level 1 untouched. Interrupted demo restarts if not completed.
 - Sequential unlock/replay of unlocked levels, bounded numeric Go/Enter navigation, no final campaign completion, reduced-motion presentation, accessible HTML controls.
@@ -146,4 +148,4 @@ Reserved ports: 8057 development and 8058 isolated browser verification. Registe
 - Verify real mobile/installed behavior where hardware is available; leave unsupported evidence criteria open.
 - Qualify physical two-generations-old devices, actual PWA install/relaunch and save transfer, context-loss recovery, performance, multi-tab saves, and broader accessibility separately.
 - Keep this file and the PRD/plan current with actual shipped state, limitations, and review findings.
-- No push/deployment without authorization. Later arrow/edge mechanics and non-cube content remain deferred.
+- Blue/green arrows and non-cube content remain deferred. No push/deployment without authorization.

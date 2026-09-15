@@ -7,10 +7,12 @@ import {
   MAX_LEVEL_ID,
   generateLevel,
   getLevelConfig,
+  getWrappingEdgePolicies,
+  getWrappingEdgeWeights,
   seedForLevel,
 } from "../src/content/procedural";
 import { simulateMove } from "../src/core/movement";
-import { headingBetween } from "../src/core/topology";
+import { headingBetween, oppositeHeading } from "../src/core/topology";
 import { solveLevel, validateLevel } from "../src/core/validation";
 
 function geometryHash(level: LevelDefinition): string {
@@ -22,6 +24,7 @@ function geometryHash(level: LevelDefinition): string {
         lives: level.lives,
         arrowScale: level.arrowScale,
         arrows: level.arrows,
+        ...(level.edgePolicies ? { edgePolicies: level.edgePolicies } : {}),
       }),
     )
     .digest("hex");
@@ -82,7 +85,7 @@ function normalizedShapeSignature(
 
 describe("runtime campaign generator", () => {
   test("has a versioned stable seed and rejects unsafe ids", () => {
-    expect(GENERATOR_VERSION).toBe(1);
+    expect(GENERATOR_VERSION).toBe(2);
     expect(seedForLevel(1_000_000)).toBe(seedForLevel(1_000_000));
     expect(seedForLevel(1_000_000)).not.toBe(seedForLevel(1_000_001));
     for (const id of [0, -1, 1.5, Number.MAX_SAFE_INTEGER, MAX_LEVEL_ID + 1])
@@ -96,7 +99,7 @@ describe("runtime campaign generator", () => {
     }
   });
 
-  test("freezes representative generator version one geometry", () => {
+  test("preserves early geometry and freezes version two wrapping layouts", () => {
     expect(geometryHash(generateLevel(2))).toBe(
       "9fb45c3beaf0cafeacb20f56ee1fdf45bcccb17769cbc2229a1521339e85b7fa",
     );
@@ -104,7 +107,7 @@ describe("runtime campaign generator", () => {
       "a1572c55ffc7ac95ef43344545191c17255a64a95a0a50169dd7a0ab85f3eec7",
     );
     expect(geometryHash(generateLevel(1_000))).toBe(
-      "5d6ce4bbf6950f7b50089e670813f91e3468555aa39209ba79768d4a46700420",
+      "220f2acef467091070da1f03114880920bc299eafd020ff193ef6e01877995b8",
     );
   });
 
@@ -164,7 +167,9 @@ describe("runtime campaign generator", () => {
   test("constructs a broad deterministic seeded sweep without quality collapse", () => {
     for (const id of diverseLevelIds()) {
       const level = generateLevel(id);
-      expect(seedForLevel(id)).toBe(`par-arrows:runtime:1:level:${id}`);
+      expect(seedForLevel(id)).toBe(
+        `par-arrows:runtime:${id <= 10 ? 1 : GENERATOR_VERSION}:level:${id}`,
+      );
       expect(validateLevel(level).valid).toBe(true);
       expect(level.gridSize).toBeLessThanOrEqual(26);
       expect(level.arrows.length).toBeLessThanOrEqual(240);
@@ -180,4 +185,83 @@ describe("runtime campaign generator", () => {
       for (const length of [2, 3, 4]) expect(lengths).toContain(length);
     }
   }, 20_000);
+
+  test("introduces wrapping after level ten and shifts probability toward more edges", () => {
+    for (let id = 1; id <= 10; id += 1) {
+      expect(getWrappingEdgeWeights(id)).toEqual([1, 0, 0, 0]);
+      expect(generateLevel(id).edgePolicies ?? []).toEqual([]);
+    }
+    expect(getWrappingEdgeWeights(11)).toEqual([0.25, 0.6, 0.12, 0.03]);
+    const final = getWrappingEdgeWeights(100);
+    expect(final[0]).toBe(0.25);
+    expect(final[1]).toBeCloseTo(0.15);
+    expect(final[2]).toBeCloseTo(0.3);
+    expect(final[3]).toBeCloseTo(0.3);
+    expect(getWrappingEdgeWeights(MAX_LEVEL_ID)).toEqual(final);
+    for (let id = 12; id <= 100; id += 1) {
+      const previous = getWrappingEdgeWeights(id - 1);
+      const current = getWrappingEdgeWeights(id);
+      expect(current[0]).toBe(0.25);
+      expect(
+        current.reduce((sum, probability) => sum + probability, 0),
+      ).toBeCloseTo(1);
+      expect(current[1]).toBeLessThan(previous[1]);
+      expect(current[2]).toBeGreaterThan(previous[2]);
+      expect(current[3]).toBeGreaterThan(previous[3]);
+    }
+  });
+
+  test("samples zero through three unique reciprocal physical edges with the intended late weights", () => {
+    const counts = [0, 0, 0, 0];
+    const physicalEdges = new Set<string>();
+    for (let id = 100; id < 10_100; id += 1) {
+      const policies = getWrappingEdgePolicies(id);
+      const count = policies.length / 2;
+      expect(Number.isInteger(count) && count >= 0 && count <= 3).toBe(true);
+      counts[count] = (counts[count] ?? 0) + 1;
+      expect(
+        new Set(policies.map((rule) => `${rule.face}:${rule.edge}`)).size,
+      ).toBe(policies.length);
+      for (const rule of policies) {
+        expect(rule.policy).toBe("continue");
+        expect(rule.neighbor).toBeDefined();
+        if (!rule.neighbor) throw new Error("Missing reciprocal edge.");
+        physicalEdges.add([rule.face, rule.neighbor.face].sort().join(":"));
+        expect(policies).toContainEqual({
+          face: rule.neighbor.face,
+          edge: oppositeHeading(rule.neighbor.entering),
+          policy: "continue",
+          neighbor: { face: rule.face, entering: oppositeHeading(rule.edge) },
+        });
+      }
+    }
+    expect(physicalEdges.size).toBe(12);
+    const expected = [0.25, 0.15, 0.3, 0.3];
+    counts.forEach((count, index) => {
+      expect(Math.abs(count / 10_000 - (expected[index] ?? 0))).toBeLessThan(
+        0.02,
+      );
+    });
+  });
+
+  test("generates playable head continuations without changing the seeded edge selection", () => {
+    const counts = new Set<number>();
+    for (let id = 11; id <= 40; id += 1) {
+      const level = generateLevel(id);
+      const policies = level.edgePolicies ?? [];
+      expect(policies).toEqual(getWrappingEdgePolicies(id));
+      counts.add(policies.length / 2);
+      if (policies.length === 0) continue;
+      expect(
+        level.arrows.some((arrow) => {
+          const result = simulateMove(level, [arrow.id], arrow.id);
+          return (
+            result.kind === "exit" &&
+            new Set(result.route.map((cell) => cell.face)).size > 1
+          );
+        }),
+      ).toBe(true);
+    }
+    expect([...counts].sort()).toEqual([0, 1, 2, 3]);
+  });
 });

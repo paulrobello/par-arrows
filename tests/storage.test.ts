@@ -92,6 +92,30 @@ function writeLegacyVersion(
   entries.set(CAMPAIGN_KEY, JSON.stringify({ ...savedJson(), contentVersion }));
 }
 
+function writeVersionOneGeneratorSave(
+  state: GameState,
+  unlockedLevelId = state.levelId,
+  tutorialComplete = true,
+): void {
+  expect(
+    saveCampaign({
+      currentLevelId: state.levelId,
+      unlockedLevelId,
+      tutorialComplete,
+      state,
+    }),
+  ).toBe(true);
+  entries.set(
+    CAMPAIGN_KEY,
+    JSON.stringify({
+      ...savedJson(),
+      contentVersion: 6,
+      generatorVersion: 1,
+      seed: `par-arrows:runtime:1:level:${state.levelId}`,
+    }),
+  );
+}
+
 function exitedState(level: LevelDefinition): GameState {
   const initial = createGameState(level);
   const arrow = initial.remainingIds[0];
@@ -121,7 +145,7 @@ describe("resumable campaign saves", () => {
     expect(save(state, 88)).toBe(true);
     expect(savedJson()).toMatchObject({
       contentVersion: 6,
-      generatorVersion: 1,
+      generatorVersion: 2,
       currentLevelId: 42,
       unlockedLevelId: 88,
     });
@@ -132,6 +156,32 @@ describe("resumable campaign saves", () => {
     expect(restored.contentUpdated).toBe(false);
     expect(restored.value?.state).toEqual(state);
     expect(restored.value?.level).toEqual(level);
+  });
+
+  test("restores an exact partial v6 generator-v1 attempt through level ten", async () => {
+    const level = levelFor(10);
+    const state = exitedState(level);
+    writeVersionOneGeneratorSave(state, 15, false);
+
+    const restored = await loadCampaign(resolveFixture);
+    expect(restored.recovered).toBe(false);
+    expect(restored.contentUpdated).toBe(false);
+    expect(restored.value?.state).toEqual(state);
+    expect(restored.value?.unlockedLevelId).toBe(15);
+    expect(restored.value?.tutorialComplete).toBe(false);
+  });
+
+  test("refreshes a v6 generator-v1 attempt above level ten", async () => {
+    const level = levelFor(11);
+    writeVersionOneGeneratorSave(exitedState(level), 17, false);
+
+    const restored = await loadCampaign(resolveFixture);
+    expect(restored.recovered).toBe(true);
+    expect(restored.contentUpdated).toBe(true);
+    expect(restored.value?.state).toEqual(createGameState(level));
+    expect(restored.value?.currentLevelId).toBe(11);
+    expect(restored.value?.unlockedLevelId).toBe(17);
+    expect(restored.value?.tutorialComplete).toBe(false);
   });
 
   test.each([1, 2, 3, 4, 5] as const)(
@@ -152,7 +202,7 @@ describe("resumable campaign saves", () => {
       expect(saveCampaign(restored.value)).toBe(true);
       expect(savedJson()).toMatchObject({
         contentVersion: 6,
-        generatorVersion: 1,
+        generatorVersion: 2,
       });
     },
   );

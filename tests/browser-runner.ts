@@ -19,6 +19,7 @@ import { solveLevel } from "../src/core/validation";
 import { arrowDimensions } from "../src/render/renderer";
 import { runHintChecks } from "./hints-browser";
 import { assertRuntimeCampaign } from "./runtime-browser";
+import { assertWrappingEdges } from "./wrapping-browser";
 import { LEVELS, waitForReady } from "./runtime-fixtures";
 
 interface Snapshot {
@@ -1260,6 +1261,10 @@ try {
   );
   await mobile.close();
   await assertRuntimeCampaign(browser, url, output);
+  await assertWrappingEdges(browser, url, output, {
+    movementLevelId: 11,
+    reboundLevelId: 11,
+  });
   await assertThemeBootstrap(browser);
   assert.deepEqual(failures, [], "Browser must not report uncaught errors");
   await Bun.write(

@@ -1,11 +1,5 @@
-import { simulateMove } from "./movement";
-import {
-  cellKey,
-  forwardInfo,
-  headingForPath,
-  linkKey,
-  seamTransition,
-} from "./topology";
+import { advanceHead, simulateMove } from "./movement";
+import { cellKey, headingForPath, linkKey, seamTransition } from "./topology";
 import type { ArrowDefinition, Cell, Endpoint, LevelDefinition } from "./types";
 
 export interface ValidationResult {
@@ -39,8 +33,17 @@ function selfContactError(
     return undefined;
   }
   let head: Cell = initialHead;
-  for (let step = 1; step <= level.gridSize; step += 1) {
-    const forward = forwardInfo(head, heading, level.gridSize);
+  let currentHeading = heading;
+  const route: Cell[] = [initialHead];
+  const visited = new Set<string>();
+  const maximumSteps = 6 * level.gridSize * level.gridSize * 4;
+  for (let step = 1; step <= maximumSteps; step += 1) {
+    const stateKey = `${cellKey(head)}:${currentHeading}`;
+    if (visited.has(stateKey)) {
+      return `Arrow ${arrow.id} has a nonterminating continuation loop from its ${endpoint} endpoint.`;
+    }
+    visited.add(stateKey);
+    const forward = advanceHead(level, head, currentHeading);
     if (forward.exits) {
       return undefined;
     }
@@ -48,13 +51,15 @@ function selfContactError(
     if (!next) {
       return `Arrow ${arrow.id} has an incomplete topology step.`;
     }
-    // The tail has already advanced `step` links, so its vacated cells are safe.
-    if (path.slice(step).some((cell) => cellKey(cell) === cellKey(next))) {
+    const movingBody = [...path, ...route.slice(1)].slice(1 - path.length);
+    if (movingBody.some((cell) => cellKey(cell) === cellKey(next))) {
       return `Arrow ${arrow.id} can contact its own body from its ${endpoint} endpoint.`;
     }
+    route.push(next);
     head = next;
+    currentHeading = forward.heading;
   }
-  return `Arrow ${arrow.id} did not reach an ordinary cube exit.`;
+  return `Arrow ${arrow.id} has a nonterminating continuation loop from its ${endpoint} endpoint.`;
 }
 
 /** Structural validation and independent full-motion self-contact checks. */

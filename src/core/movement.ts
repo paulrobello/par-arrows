@@ -11,6 +11,8 @@ import type {
   ArrowDefinition,
   Cell,
   Endpoint,
+  ForwardInfo,
+  Heading,
   LevelDefinition,
   MoveResult,
 } from "./types";
@@ -41,13 +43,38 @@ function invalid(
 }
 
 function edgePolicy(
-  level: LevelDefinition,
+  level: Pick<LevelDefinition, "edgePolicies">,
   cell: Cell,
   heading: "east" | "west" | "south" | "north",
 ) {
   return level.edgePolicies?.find(
     (rule) => rule.face === cell.face && rule.edge === heading,
   );
+}
+
+/** Resolve one head step, including a declared continuation across a seam. */
+export function advanceHead(
+  level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
+  cell: Cell,
+  heading: Heading,
+): ForwardInfo {
+  const forward = forwardInfo(cell, heading, level.gridSize);
+  if (
+    !forward.exits ||
+    edgePolicy(level, cell, heading)?.policy !== "continue"
+  ) {
+    return forward;
+  }
+  const transition = seamTransition(cell, heading, level.gridSize);
+  const neighbor = edgePolicy(level, cell, heading)?.neighbor;
+  if (
+    !neighbor ||
+    neighbor.face !== transition.cell.face ||
+    neighbor.entering !== transition.heading
+  ) {
+    return forward;
+  }
+  return { heading: transition.heading, next: transition.cell, exits: false };
 }
 
 /** Simulate one complete, renderer-independent arrow attempt without mutating state. */
@@ -101,22 +128,31 @@ export function simulateMove(
 
   const route: Cell[] = [initialHead];
   let current: Cell = initialHead;
+  let currentHeading = heading;
   let distance = 0;
-  // A valid cube path always reaches an ordinary edge within this bound.
-  const maximumSteps = level.gridSize + 1;
+  const visited = new Set<string>();
+  const maximumSteps = 6 * level.gridSize * level.gridSize * 4;
   for (let step = 1; step <= maximumSteps; step += 1) {
-    const forward = forwardInfo(current, heading, level.gridSize);
+    const stateKey = `${cellKey(current)}:${currentHeading}`;
+    if (visited.has(stateKey)) {
+      return invalid(
+        arrowId,
+        endpoint,
+        stateRevision,
+        "Move entered a nonterminating continuation cycle.",
+      );
+    }
+    visited.add(stateKey);
+    const forward = advanceHead(level, current, currentHeading);
     if (forward.exits) {
-      const policy = edgePolicy(level, current, heading);
-      if (policy?.policy === "continue") {
-        const expected = seamTransition(current, heading, level.gridSize);
+      const policy = edgePolicy(level, current, currentHeading);
+      if (policy?.policy === "continue")
         return invalid(
           arrowId,
           endpoint,
           stateRevision,
-          `Continuation edge ${current.face}:${heading} to ${expected.cell.face}:${expected.heading} is declared but not playable in the MVP.`,
+          "Continuation edge does not match its cube seam transition.",
         );
-      }
       return {
         arrowId,
         endpoint,
@@ -126,8 +162,8 @@ export function simulateMove(
         waypoints: route.map((cell) => ({ cell, phase: "surface" as const })),
         stateRevision,
         exit: {
-          edgePoint: edgePoint(current, heading, level.gridSize),
-          tangent: faceHeadingVector(current.face, heading),
+          edgePoint: edgePoint(current, currentHeading, level.gridSize),
+          tangent: faceHeadingVector(current.face, currentHeading),
         },
       };
     }
@@ -141,6 +177,15 @@ export function simulateMove(
       );
     }
     distance += 1;
+    const movingBody = [...path, ...route.slice(1)].slice(1 - path.length);
+    if (movingBody.some((cell) => cellKey(cell) === cellKey(next))) {
+      return invalid(
+        arrowId,
+        endpoint,
+        stateRevision,
+        "Move contacted its own moving body.",
+      );
+    }
     route.push(next);
     const blockerId = occupied.get(cellKey(next));
     if (blockerId) {
@@ -155,22 +200,26 @@ export function simulateMove(
         blockerId,
         contact: {
           cell: next,
-          point: [
-            (cellToWorld(current, level.gridSize)[0] +
-              cellToWorld(next, level.gridSize)[0]) /
-              2,
-            (cellToWorld(current, level.gridSize)[1] +
-              cellToWorld(next, level.gridSize)[1]) /
-              2,
-            (cellToWorld(current, level.gridSize)[2] +
-              cellToWorld(next, level.gridSize)[2]) /
-              2,
-          ],
+          point:
+            current.face !== next.face
+              ? edgePoint(current, currentHeading, level.gridSize)
+              : [
+                  (cellToWorld(current, level.gridSize)[0] +
+                    cellToWorld(next, level.gridSize)[0]) /
+                    2,
+                  (cellToWorld(current, level.gridSize)[1] +
+                    cellToWorld(next, level.gridSize)[1]) /
+                    2,
+                  (cellToWorld(current, level.gridSize)[2] +
+                    cellToWorld(next, level.gridSize)[2]) /
+                    2,
+                ],
           distance: distance - 0.5,
         },
       };
     }
     current = next;
+    currentHeading = forward.heading;
   }
   return invalid(
     arrowId,

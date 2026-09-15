@@ -8,6 +8,7 @@ import {
   ribbonSections,
   ribbonVertices,
   slicePath,
+  wrappingEdgeSegments,
 } from "../src/render/renderer";
 
 function vertices(values: Float32Array): readonly THREE.Vector3[] {
@@ -39,6 +40,66 @@ function expectEqualPoint(first: THREE.Vector3, second: THREE.Vector3): void {
 }
 
 describe("flat ribbon geometry", () => {
+  test("renders reciprocal continuation policies as one physical cube seam", () => {
+    const segments = wrappingEdgeSegments({
+      id: 11,
+      title: "Wrapped edge",
+      gridSize: 4,
+      lives: 1,
+      arrows: [],
+      edgePolicies: [
+        {
+          face: "front",
+          edge: "east",
+          policy: "continue",
+          neighbor: { face: "right", entering: "east" },
+        },
+        {
+          face: "right",
+          edge: "west",
+          policy: "continue",
+          neighbor: { face: "front", entering: "west" },
+        },
+      ],
+    });
+    expect(segments).toHaveLength(1);
+    expect(
+      segments[0]?.start.distanceTo(segments[0]?.end ?? new THREE.Vector3()),
+    ).toBeCloseTo(2, 5);
+    for (const point of [segments[0]?.start, segments[0]?.end]) {
+      expect(point?.x).toBeGreaterThan(1);
+      expect(point?.z).toBeGreaterThan(1);
+    }
+  });
+
+  test("keeps distinct continued cube edges separate", () => {
+    const segments = wrappingEdgeSegments({
+      id: 12,
+      title: "Wrapped corner",
+      gridSize: 4,
+      lives: 1,
+      arrows: [],
+      edgePolicies: [
+        {
+          face: "front",
+          edge: "east",
+          policy: "continue",
+          neighbor: { face: "right", entering: "east" },
+        },
+        {
+          face: "front",
+          edge: "north",
+          policy: "continue",
+          neighbor: { face: "top", entering: "north" },
+        },
+      ],
+    });
+    expect(segments).toHaveLength(2);
+    expect(
+      segments[0]?.start.distanceTo(segments[1]?.start ?? new THREE.Vector3()),
+    ).toBeGreaterThan(0.5);
+  });
+
   test("keeps a straight and bent front-face path planar", () => {
     const normal = new THREE.Vector3(0, 0, 1);
     const straight = ribbonVertices(
@@ -72,6 +133,19 @@ describe("flat ribbon geometry", () => {
     );
     expectFacePlane(front, new THREE.Vector3(0, 0, 1), 1.004);
     expectFacePlane(right, new THREE.Vector3(1, 0, 0), 1.004);
+  });
+
+  test("moves the active head onto the neighboring face after a seam", () => {
+    const boundary: Cell = { face: "front", x: 3, y: 2 };
+    const path = expandedPoints(
+      [boundary, stepAcrossSeam(boundary, "east", 4)],
+      4,
+    );
+    const movingHead = slicePath(path, 0.3, 0.2);
+    expect(path.segmentFaces).toEqual(["front", "right"]);
+    expect(movingHead.segmentFaces).toEqual(["right"]);
+    expect(movingHead.headFace).toBe("right");
+    expect(movingHead.points.at(-1)?.x).toBeCloseTo(1, 5);
   });
 
   test("preserves off-center lanes at front-right and top-back folds", () => {
