@@ -48,7 +48,7 @@ Use one active play session. Multi-tab save conflicts, physical-device performan
 
 `src/core` holds pure topology, movement, game state, and validation. `src/content` holds the fixed campaign and demo. The remaining `src` modules handle rendering, input, UI, storage, and installation. The renderer animates the core's outcome and does not decide life deductions.
 
-The [three supplied reference images](docs/references/README.md) are preserved as visual references, not runtime art. Project source uses the [MIT license](LICENSE); third-party references and dependencies retain their respective rights and licenses.
+The [supplied reference images](docs/references/README.md) are preserved as visual references, including dense multi-bend arrow layouts and the future yellow continuation edge. Project source uses the [MIT license](LICENSE); third-party references and dependencies retain their respective rights and licenses.
 
 ## Scope
 

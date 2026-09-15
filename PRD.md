@@ -27,6 +27,8 @@ The core experience should reward understanding the shape and removal order. Cam
 
 The reference images are visual evidence only. Their level number, stars, hint button, advertisements, counters, and power-up icons do not establish requirements. The owner has separately confirmed faint far-side arrows, selectable only after rotating them to an exposed face.
 
+The four additional photos supplied on 2026-09-14 are preserved as references 04–07. The owner highlighted arrow-path variety in the first three and explicitly described moving arrowheads turning onto the adjacent face at the yellow edge in the fourth. That movement rule comes from the owner's explanation; a still image alone does not demonstrate animation behavior.
+
 ## 3. Confirmed requirements
 
 | ID | Requirement |
@@ -34,7 +36,7 @@ The reference images are visual evidence only. Their level number, stars, hint b
 | R1 | Run in desktop and mobile web browsers with mouse and touch interaction. |
 | R2 | Provide level progression, beginning with a basic small cube. |
 | R3 | Place multiple black arrows across all six faces of early cubes. |
-| R4 | Arrows may have different lengths and may wrap across multiple faces. No one-face or fixed-length assumption may be built into the level model. |
+| R4 | Arrows may have different lengths, turn counts, and sequences of right-angle bends, and may wrap across multiple faces. Include short hooks, long runs, zigzags, and winding multi-bend paths as content complexity grows. No one-face or fixed-length assumption may be built into the level model. |
 | R5 | Clicking or touching an arrow attempts movement in its forward direction. |
 | R6 | An arrow that reaches an exit edge unobstructed flies off and is removed. |
 | R7 | An arrow that hits another arrow bounces back to its original position. Its first failure costs one life and makes it red until removed. Further failures by that same red arrow cost no additional lives. |
@@ -164,6 +166,8 @@ Keyboard puzzle navigation and a nonvisual equivalent of the spatial puzzle need
 
 These are authoring envelopes for playtesting, not generated layouts or promised achievable counts. Never fill a numeric quota with an invalid or unreadable arrangement. Later high-density stress fixtures should exceed the MVP campaign, with a provisional target of 150 arrows and 3,000 total path cells pending device measurements.
 
+References [04](docs/references/reference-04.jpeg), [05](docs/references/reference-05.jpeg), and [06](docs/references/reference-06.jpeg) establish the later visual direction: mix short and long arrows, single and multiple bends, hooked returns, stepped zigzags, and winding paths, with close spacing across multiple faces. Preserve each arrow's readable identity and validate self-contact and solvability. The pictured late-game density is a progression reference; level 1 keeps its simple teaching layout. Screenshot counters do not set campaign arrow quotas.
+
 ### 7.2 Solvability and authoring
 
 - L1: Every shipped level must validate and have a complete, zero-mistake removal sequence under the exact runtime rules. No randomized placement may ship without validation.
@@ -204,6 +208,8 @@ Define the two halves by distance along the full surface path, not by a screen-s
 ### 9.2 Yellow continuation edges — Q17, Q18
 
 An edge rule belongs to shape topology and maps a crossing position and direction onto the adjoining face. It is independent of camera orientation. Existing static path seams and future head-continuation rules must remain separate concepts.
+
+In [reference 07](docs/references/reference-07.jpeg), yellow highlights the special boundary. The owner confirms that a moving head reaching this boundary turns around the corner and keeps traveling along the next face; the body feeds behind it. At an ordinary boundary the advancing head exits. An arrow whose body already spans an ordinary seam can still unwrap without that seam being yellow. The yellow-edge mechanic remains deferred to later levels; adding this reference does not enable it in the current campaign.
 
 Pending owner choices: whether yellow applies to a whole physical edge or a segment, whether it is shared in both crossing directions, and how corner ties behave. Proposed first version: whole physical edge, reciprocal in both directions, right-angle face transition, and paths aligned to cross edges away from vertices.
 

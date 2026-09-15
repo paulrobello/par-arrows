@@ -8,6 +8,8 @@ Requirements source: [PRD.md](PRD.md)
 
 References: [gallery](docs/references/README.md)
 
+References 04–06 guide future content toward densely packed mixtures of straight, hooked, zigzag, and winding multi-bend paths with varied lengths and face spans. During later content work, compare turn variety, spacing, readability, and wrapping with these photos while preserving the simple opening level and validating every route. Reference 07 documents the owner's yellow-edge head-continuation rule: animate the head turning onto the adjacent face with its body following. Keep that future rule distinct from an existing body's ordinary-seam unwrapping. The new photos are reference material; yellow-edge runtime behavior remains outside the current campaign.
+
 The owner has requested implementation using Terra subagents and proper greenfield/Git setup. This supersedes the initial planning-only instruction. Remaining Q identifiers distinguish confirmed choices from the documented execution defaults in [progress.md](progress.md). No remote publication or deployment is included.
 
 ## 1. Delivery strategy

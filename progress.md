@@ -2,6 +2,10 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Additional arrow-variety and yellow-edge references
+
+The owner supplied four more photos on 2026-09-14: three show dense mixtures of varied-length hooks, zigzags, and winding multi-bend arrows, and the fourth shows a yellow wrapping edge. They are stored as references 04–07 alongside the original three. The PRD and implementation plan now capture the visual direction and the owner's explicit movement explanation: a head reaching a yellow edge turns onto the adjoining face while its body follows. Existing bodies may unwrap ordinary seams; ordinary new head crossings still exit. This update preserves reference material and design intent. It does not change current campaign layouts or ship the deferred yellow-edge mechanic. Root verified all four copies byte-for-byte, 360 × 778 dimensions, recorded SHA-256 hashes, local documentation links, and the full project gate with 43 tests / 806 assertions.
+
 ## Continuous rotation
 
 The owner requested rotation without axis stops. Replaced the camera's ±1.18-radian pitch clamp and fixed-up look-at calculation with cumulative normalized quaternion rotation. Mouse and touch drags now rotate around screen-relative axes through repeated full turns, including over the top and bottom. The original view, drag sensitivity, zoom bounds, and Reset View are preserved. Root verified the baseline camera mathematically, 43 unit tests / 806 assertions, the full gate, headed Chrome/WebKit regressions, and live desktop/mobile screenshots. Browser checks cover more than two full turns per direction, diagonal motion, unchanged lives/arrow state during dragging, selection after rotation, wheel/pinch zoom, and exact reset. See `docs/verification/continuous-rotation.png` for the live rotated view.
