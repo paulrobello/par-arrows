@@ -8,7 +8,7 @@ import {
   faceNormal,
   stepAcrossSeam,
 } from "../src/core/topology";
-import type { Cell, FaceId, MoveResult } from "../src/core/types";
+import type { Cell, FaceId, Heading, MoveResult } from "../src/core/types";
 import {
   arrowMotionDuration,
   arrowMotionTrack,
@@ -370,6 +370,67 @@ describe("flat ribbon geometry", () => {
     expectFacePlane(right, new THREE.Vector3(1, 0, 0), 1.004);
   });
 
+  test("closes every oriented cube fold at the shared lifted face intersection", () => {
+    const faces: readonly FaceId[] = [
+      "front",
+      "back",
+      "right",
+      "left",
+      "top",
+      "bottom",
+    ];
+    const headings: readonly Heading[] = ["east", "west", "south", "north"];
+    for (const size of [4, 26]) {
+      for (const face of faces) {
+        for (const heading of headings) {
+          for (const lane of [0, Math.floor(size / 2), size - 1]) {
+            const boundary: Cell = {
+              face,
+              x: heading === "east" ? size - 1 : heading === "west" ? 0 : lane,
+              y:
+                heading === "south" ? size - 1 : heading === "north" ? 0 : lane,
+            };
+            const neighbor = stepAcrossSeam(boundary, heading, size);
+            const path = expandedPoints([boundary, neighbor], size);
+            for (const offset of [0, 1 / size - 1e-8]) {
+              const slice = slicePath(path, offset, 2 / size - offset);
+              const sections = ribbonSections(
+                slice.points,
+                slice.segmentFaces,
+                0.025,
+              );
+              const before = sections[0];
+              const after = sections[1];
+              if (!before || !after)
+                throw new Error("Expected both sides of the cube fold.");
+              expectEqualPoint(before.end.left, after.start.left);
+              expectEqualPoint(before.end.right, after.start.right);
+              const firstNormal = new THREE.Vector3(...faceNormal(face));
+              const nextNormal = new THREE.Vector3(
+                ...faceNormal(neighbor.face),
+              );
+              const side = firstNormal.clone().cross(nextNormal);
+              for (const point of [before.end.left, before.end.right]) {
+                expect(point.dot(firstNormal)).toBeCloseTo(1.004, 7);
+                expect(point.dot(nextNormal)).toBeCloseTo(1.004, 7);
+              }
+              for (const section of [
+                before.start,
+                before.end,
+                after.start,
+                after.end,
+              ]) {
+                expect(
+                  section.right.clone().sub(section.left).dot(side),
+                ).toBeGreaterThan(0);
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
   test("moves the active head onto the neighboring face after a seam", () => {
     const boundary: Cell = { face: "front", x: 3, y: 2 };
     const path = expandedPoints(
@@ -442,11 +503,14 @@ describe("flat ribbon geometry", () => {
       sections[0]?.end.left ?? new THREE.Vector3(),
       sections[1]?.start.left ?? new THREE.Vector3(),
     );
-    expect(
-      sections[1]?.end.left.distanceTo(
-        sections[2]?.start.left ?? new THREE.Vector3(),
-      ),
-    ).toBeGreaterThan(0.001);
+    expectEqualPoint(
+      sections[1]?.end.left ?? new THREE.Vector3(),
+      sections[2]?.start.left ?? new THREE.Vector3(),
+    );
+    expectEqualPoint(
+      sections[1]?.end.right ?? new THREE.Vector3(),
+      sections[2]?.start.right ?? new THREE.Vector3(),
+    );
     expect(
       sliced.points
         .at(-1)

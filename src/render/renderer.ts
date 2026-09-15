@@ -231,7 +231,7 @@ function crossSection(
   };
 }
 
-/** Computes shared cross-sections for every same-face path joint. */
+/** Joins same-face turns and lifted cube folds with shared cross-sections. */
 export function ribbonSections(
   points: readonly THREE.Vector3[],
   segmentFaces: readonly Cell["face"][],
@@ -246,7 +246,7 @@ export function ribbonSections(
     const [nx, ny, nz] = faceNormal(face);
     const normal = new THREE.Vector3(nx, ny, nz);
     const tangent = end.clone().sub(start);
-    if (tangent.lengthSq() < 1e-10) {
+    if (tangent.lengthSq() === 0) {
       tangent.copy(
         normal
           .clone()
@@ -271,15 +271,31 @@ export function ribbonSections(
     const joint = points[index];
     const previousStart = points[index - 1];
     const nextEnd = points[index + 1];
-    if (
-      !previousFace ||
-      !nextFace ||
-      !joint ||
-      !previousStart ||
-      !nextEnd ||
-      previousFace !== nextFace
-    )
+    if (!previousFace || !nextFace || !joint || !previousStart || !nextEnd)
       continue;
+    if (previousFace !== nextFace) {
+      const previous = sections[index - 1];
+      const next = sections[index];
+      if (!previous || !next) continue;
+      const previousNormal = new THREE.Vector3(...faceNormal(previousFace));
+      const nextNormal = new THREE.Vector3(...faceNormal(nextFace));
+      const side = previousNormal
+        .clone()
+        .cross(nextNormal)
+        .multiplyScalar(width / 2);
+      // Both lifted face planes must meet at the same physical corner.
+      const center = joint
+        .clone()
+        .addScaledVector(previousNormal, 0.004)
+        .addScaledVector(nextNormal, 0.004);
+      const shared: RibbonCrossSection = {
+        left: center.clone().sub(side),
+        right: center.clone().add(side),
+      };
+      previous.end = shared;
+      next.start = shared;
+      continue;
+    }
     const [nx, ny, nz] = faceNormal(previousFace);
     const normal = new THREE.Vector3(nx, ny, nz);
     const incoming = joint.clone().sub(previousStart).normalize();

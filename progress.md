@@ -2,6 +2,12 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Solid arrow fills across cube folds
+
+The reported hairlines were gaps between independently lifted arrow sections at cube folds. Adjacent sections now share vertices at the intersection of both lifted face planes. Very short moving segments retain their real direction instead of using an arbitrary fallback. The previous test that expected separated seam ends now requires a closed join, with all 24 edge directions covered at two grid sizes and multiple lanes, including near-zero moving fragments.
+
+Root reproduced the issue in the previous renderer with a headed pixel check: 36 samples inside arrow fills showed blue or yellow edge colors. The corrected renderer passes the same pixel checks in Chrome and WebKit. Ordinary-edge and wrapping-edge close-ups were inspected, along with light/dark moving-arrow, rebound/retry/reload, and constant-speed checks and the headed web-game client. The full gate passed with 94 tests and 127,384 assertions.
+
 ## Edge colors beneath arrows
 
 Ordinary cube lines and yellow wrapping markers now draw between the cube surface and the arrows. Both edge materials share the transparent render pass and disable depth writes, so they cannot hide ribbon bodies or arrowheads. Explicit cube/edge ordering keeps the yellow marker bright above the translucent cube surface. Root inspected light/dark close-ups with both adjoining faces exposed, including a moving arrow crossing the seam. The full gate passed with 93 tests and 123,347 assertions; headed Chrome/WebKit wrapping checks passed visibility, head folding, collision/rebound, retry, reload, and unwrapped-level cleanup. The headed web-game preview was also inspected.
