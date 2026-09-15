@@ -61,7 +61,7 @@ The four additional photos supplied on 2026-09-14 are preserved as references 04
 | R26 | Include an onboarding demo on a small cube with only a few arrows. Show a touch on an arrow that fails, then a touch on an arrow that succeeds. The demo is non-skippable, consistent with the owner's preceding instruction. |
 | R27 | Render arrows as flat ribbons with flat arrowheads, following the surface and folding across face seams. |
 | R28 | Apply two successive 25% arrow-speed increases from the initial MVP, for a total multiplier of 1.5625. Current durations are 563.2 ms exits, 473.6 ms rebounds, and 70.4 ms reduced-motion transitions. Demo pauses are unchanged. |
-| R29 | Keep level 1 simple. From level 2 onward, straight arrows must visibly vary in length, and each level must include multiple arrows spanning cube edges. |
+| R29 | Keep level 1 simple. From level 2 onward, substantially increase arrow density and multi-bend zigzag complexity, mix different path shapes and straight-arrow lengths, and include multiple arrows spanning cube edges. |
 
 ## 4. MVP boundary
 
@@ -153,18 +153,18 @@ Keyboard puzzle navigation and a nonvisual equivalent of the spatial puzzle need
 
 ## 7. Campaign, difficulty, and fairness
 
-### 7.1 Confirmed content count and lives, proposed layout tuning — Q6, Q10
+### 7.1 Current campaign content and lives — Q6, Q10
 
-**Confirmed:** Ten curated cube levels with a solvability checker and the life schedule below. Grid sizes and arrow counts are proposed tuning targets. A logical face grid is independent of the displayed cube size.
+**Confirmed:** Ten curated cube levels with a solvability checker and the life schedule below. Content version 3 substantially increases density and multi-bend paths from level 2 onward. A logical face grid is independent of the displayed cube size.
 
-| Group | Suggested grid per face | Suggested arrows per level | Starting lives | Teaching goal |
+| Group | Grid per face | Arrows per level | Starting lives | Teaching goal |
 | --- | --- | --- | --- | --- |
-| Level 1 | 4 × 4 | 6–10 total, with arrows on all six faces | 5, confirmed | Tap, rotate, identify a clear exit. |
-| Levels 2–3 | 4 × 4 to 5 × 5 | 10–16 | 5, confirmed | Bent paths and blockers. |
-| Levels 4–6 | 5 × 5 to 6 × 6 | 16–26 | 4, confirmed | Wrapping routes and removal dependencies. |
-| Levels 7–10 | 6 × 6 to 8 × 8 | 26–42 | 3, confirmed | Denser combinations without new mechanics. |
+| Level 1 | 4 × 4 | 6 total, with arrows on all six faces | 5, confirmed | Tap, rotate, identify a clear exit. |
+| Levels 2–3 | 8 × 8 to 9 × 9 | 30–42 | 5, confirmed | Stepped zigzags, varied winding paths, and blockers. |
+| Levels 4–6 | 10 × 10 to 12 × 12 | 54–78 | 4, confirmed | Longer winding routes, wraps, and removal dependencies. |
+| Levels 7–10 | 12 × 12 to 14 × 14 | 84–90 | 3, confirmed | Dense combinations with up to 24 bends on one path. |
 
-These are authoring envelopes for playtesting, not generated layouts or promised achievable counts. Never fill a numeric quota with an invalid or unreadable arrangement. Later high-density stress fixtures should exceed the MVP campaign, with a provisional target of 150 arrows and 3,000 total path cells pending device measurements.
+These are the fixed authored layouts in content version 3. Every level validates and has a complete solution under the runtime rules. Never fill a numeric quota with an invalid or unreadable arrangement. Later high-density stress fixtures should exceed this campaign, with a provisional target of 150 arrows and 3,000 total path cells pending device measurements.
 
 References [04](docs/references/reference-04.jpeg), [05](docs/references/reference-05.jpeg), and [06](docs/references/reference-06.jpeg) establish the later visual direction: mix short and long arrows, single and multiple bends, hooked returns, stepped zigzags, and winding paths, with close spacing across multiple faces. Preserve each arrow's readable identity and validate self-contact and solvability. The pictured late-game density is a progression reference; level 1 keeps its simple teaching layout. Screenshot counters do not set campaign arrow quotas.
 

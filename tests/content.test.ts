@@ -5,15 +5,14 @@ import {
   DEMO_LEVEL,
   DEMO_SUCCESS_ID,
   LEVELS,
-  decodeCampaignArrow,
 } from "../src/content/levels";
+import { decodeRoute, type FrozenRoute } from "../src/content/campaign-layouts";
 import {
   applyMove,
   createGameState,
   simulateMove,
 } from "../src/core/game-state";
 import { solveLevel, validateLevel } from "../src/core/validation";
-import { headingForPath } from "../src/core/topology";
 
 function isStraightSurfaceArrow(
   path: readonly {
@@ -56,13 +55,14 @@ function visibleWrap(path: readonly { readonly face: string }[]): boolean {
   );
 }
 
-function hasRightAngleBend(
+function bendCount(
   path: readonly {
     readonly face: string;
     readonly x: number;
     readonly y: number;
   }[],
-): boolean {
+): number {
+  let bends = 0;
   for (let index = 2; index < path.length; index += 1) {
     const first = path[index - 2];
     const middle = path[index - 1];
@@ -81,9 +81,34 @@ function hasRightAngleBend(
       firstVector[0] * secondVector[0] + firstVector[1] * secondVector[1] ===
       0
     )
-      return true;
+      bends += 1;
   }
-  return false;
+  return bends;
+}
+
+function normalizedDirectionSignature(
+  path: readonly {
+    readonly face: string;
+    readonly x: number;
+    readonly y: number;
+  }[],
+): string {
+  const directions: string[] = [];
+  for (let index = 1; index < path.length; index += 1) {
+    const previous = path[index - 1];
+    const current = path[index];
+    if (!previous || !current || previous.face !== current.face) continue;
+    const direction =
+      current.x > previous.x
+        ? "E"
+        : current.x < previous.x
+          ? "W"
+          : current.y > previous.y
+            ? "S"
+            : "N";
+    if (directions.at(-1) !== direction) directions.push(direction);
+  }
+  return directions.join("");
 }
 
 function stableHash(value: unknown): string {
@@ -119,37 +144,79 @@ describe("curated campaign", () => {
     }
   });
 
-  test("uses varied straight lengths and substantial visible wraps after level 1", () => {
+  test("raises density with real zigzags, wraps, and varied authored route lengths", () => {
+    const campaignStraightLengths = new Set<number>();
     for (const level of LEVELS.slice(1)) {
-      const straightLengths = new Set(
-        level.arrows
-          .filter((arrow) => isStraightSurfaceArrow(arrow.path))
-          .map((arrow) => arrow.path.length),
-      );
+      const levelStraightLengths = new Set<number>();
+      for (const arrow of level.arrows) {
+        if (isStraightSurfaceArrow(arrow.path)) {
+          campaignStraightLengths.add(arrow.path.length);
+          levelStraightLengths.add(arrow.path.length);
+        }
+      }
       const wraps = level.arrows.filter((arrow) => substantialWrap(arrow.path));
-      for (const length of [2, 3, 4])
-        expect(straightLengths.has(length)).toBe(true);
+      const multiBend = level.arrows.filter(
+        (arrow) => bendCount(arrow.path) >= 3,
+      );
+      const initialState = createGameState(level);
+      const initiallyBlocked = level.arrows.filter(
+        (arrow) =>
+          simulateMove(level, initialState, arrow.id).kind === "blocked",
+      );
+      expect(level.arrows.length).toBeGreaterThanOrEqual(
+        level.id === 2 ? 30 : 42,
+      );
       expect(
-        new Set(level.arrows.map((arrow) => arrow.path.length)).size,
-      ).toBeGreaterThanOrEqual(4);
-      expect(wraps.length).toBeGreaterThanOrEqual(2);
+        level.arrows.reduce((total, arrow) => total + arrow.path.length, 0),
+      ).toBeGreaterThanOrEqual(level.id === 2 ? 200 : 300);
+      expect(wraps.length).toBeGreaterThanOrEqual(3);
       expect(wraps.some((arrow) => visibleWrap(arrow.path))).toBe(true);
+      expect(multiBend.length).toBeGreaterThanOrEqual(
+        Math.ceil(level.arrows.length * 0.4),
+      );
+      expect(initiallyBlocked.length).toBeGreaterThanOrEqual(
+        Math.ceil(level.arrows.length * 0.2),
+      );
+      expect(initiallyBlocked.some((arrow) => bendCount(arrow.path) >= 3)).toBe(
+        true,
+      );
+      expect(levelStraightLengths.size).toBeGreaterThanOrEqual(3);
       expect(
         new Set(
-          level.arrows.map((arrow) =>
-            headingForPath(arrow.path, level.gridSize),
-          ),
+          multiBend.map((arrow) => normalizedDirectionSignature(arrow.path)),
         ).size,
-      ).toBeGreaterThanOrEqual(2);
-      if (level.id >= 3)
-        expect(
-          level.arrows.some((arrow) => hasRightAngleBend(arrow.path)),
-        ).toBe(true);
+      ).toBeGreaterThanOrEqual(3);
       if (level.id >= 5)
-        expect(wraps.length).toBeGreaterThanOrEqual(
-          Math.ceil(level.arrows.length * 0.25),
-        );
+        expect(
+          new Set(
+            level.arrows.flatMap((arrow) =>
+              arrow.path.map((cell) => cell.face),
+            ),
+          ).size,
+        ).toBe(6);
     }
+    for (const length of [2, 3, 4])
+      expect(campaignStraightLengths.has(length)).toBe(true);
+    const finalLevel = LEVELS.at(-1);
+    if (!finalLevel) throw new Error("Expected final campaign level");
+    const finalMultiBend = finalLevel.arrows.filter(
+      (arrow) => bendCount(arrow.path) >= 3,
+    );
+    expect(finalLevel.arrows).toHaveLength(90);
+    expect(
+      finalLevel.arrows.reduce((total, arrow) => total + arrow.path.length, 0),
+    ).toBeGreaterThanOrEqual(850);
+    expect(finalMultiBend.length).toBeGreaterThanOrEqual(
+      Math.ceil(finalLevel.arrows.length * 0.5),
+    );
+    expect(
+      new Set(finalMultiBend.map((arrow) => bendCount(arrow.path))).size,
+    ).toBeGreaterThanOrEqual(3);
+    expect(
+      new Set(
+        finalMultiBend.map((arrow) => normalizedDirectionSignature(arrow.path)),
+      ).size,
+    ).toBeGreaterThanOrEqual(3);
   });
 
   test("adds three-face routes and semantic three-arrow removal chains in later levels", () => {
@@ -201,13 +268,13 @@ describe("curated campaign", () => {
 });
 
 describe("onboarding fixture", () => {
-  test("rejects malformed wrapped-route crossing counts without searching", () => {
-    expect(() => decodeCampaignArrow("l99-wrap-front-east-0-0", 4)).toThrow(
-      "requires 1-3 seam crossings",
-    );
-    expect(() => decodeCampaignArrow("l99-wrap-front-east-0-4", 4)).toThrow(
-      "requires 1-3 seam crossings",
-    );
+  test("rejects malformed frozen route tokens without searching", () => {
+    const malformed: FrozenRoute = {
+      id: "malformed",
+      start: ["front", 0, 0],
+      steps: "EX",
+    };
+    expect(() => decodeRoute(malformed, 4)).toThrow("invalid direction token");
   });
 
   test("preserves the baseline level-one and demo data", () => {

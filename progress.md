@@ -2,6 +2,10 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Dense zigzag campaign revision
+
+The owner requested substantially more density and zigzags immediately after level 1. Fixed routes now use 8–14-cell face grids and 30–90 arrows, with varied stepped/hooked/winding paths, 3–4 wrapped arrows per level, and meaningful removal dependencies. Level 2 has 18 multi-bend arrows and 10 initially blocked arrows; level 10 has 48 multi-bend arrows, up to 24 bends, and 22 initially blocked arrows. Level 1 and the demo retain their original definitions. Saved content advances to version 3: v1/v2 first-level attempts resume exactly, while older later-level attempts restart the revised layout with unlocks and onboarding preserved. Dense picking scales to grid spacing, invisible picker meshes are excluded from drawing, and flat ribbons use one rendering pass. Root verified 46 tests / 1,221 assertions, the full gate, headed Chrome/WebKit and repeated Chrome flows, real legacy-save migration, motion/desktop/mobile previews, and the web-game skill client. Review found no remaining issue in scope. Measurements and screenshots are in `docs/verification/dense-zigzags.md`.
+
 ## Additional arrow-variety and yellow-edge references
 
 The owner supplied four more photos on 2026-09-14: three show dense mixtures of varied-length hooks, zigzags, and winding multi-bend arrows, and the fourth shows a yellow wrapping edge. They are stored as references 04–07 alongside the original three. The PRD and implementation plan now capture the visual direction and the owner's explicit movement explanation: a head reaching a yellow edge turns onto the adjoining face while its body follows. Existing bodies may unwrap ordinary seams; ordinary new head crossings still exit. This update preserves reference material and design intent. It does not change current campaign layouts or ship the deferred yellow-edge mechanic. Root verified all four copies byte-for-byte, 360 × 778 dimensions, recorded SHA-256 hashes, local documentation links, and the full project gate with 43 tests / 806 assertions.

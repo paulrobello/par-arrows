@@ -107,9 +107,13 @@ Keep settings, lives, retry, level selection, and completion controls in HTML. S
 
 ### A7: Content tooling and persistence
 
+Content version 3 stores levels 2–10 as fixed start-cell and direction-string routes in `src/content/campaign-layouts.ts`. Runtime decoding only follows those authored steps; it performs no placement search. Edit the fixed routes directly and validate the complete campaign, including shape variety, per-level straight lengths, independent self-contact checks, initial blockers, and full solver replay. The campaign now grows from 30 arrows on an 8 × 8 grid at level 2 to 90 arrows on 14 × 14 grids at levels 9–10. Level 1 and the demo remain unchanged.
+
 Validate paths, occupancy, seams, arrow endpoints, mechanic versions, life budgets, absence of any possible self-contact, and solution reachability. Use the same movement implementation as runtime. Run self-contact checks independently of current blockers. Save complete successful removal sequences as reproducible evidence. Exhaustive state enumeration is appropriate for small fixtures, while larger levels need a validated solver strategy and search bounds.
 
 Persist progress through browser `localStorage`. Use one versioned logical snapshot containing unlocked levels, current level, remaining arrows, failed-arrow IDs, lives, and approved settings. Write each accepted move's final logical result before its animation, and write Retry/reset and completion/unlock changes when they occur. Do not defer saving until the page closes.
+
+For the version 3 content update, preserve valid level-one attempts from versions 1 and 2 exactly. Restart older attempts on levels 2–10 using the new layout and starting lives, retain unlocks and onboarding completion, and explain the content refresh through the existing status message.
 
 Restore the saved settled state on refresh/reopen in both browser and installed-PWA sessions. Reload must not turn red arrows black or charge their repeated collisions again. On content-version mismatch, restart the affected attempt while preserving compatible progression. Storage failures allow continued play with honest feedback. Decide multi-tab policy before enabling automatic attempt restoration. Verify save behavior when moving from browser play to installed launch on each target rather than assuming shared storage between contexts. Resolve any platform-specific transfer limitation before closing installation acceptance. Offline loading remains a separate open decision.
 

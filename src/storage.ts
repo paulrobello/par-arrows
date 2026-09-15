@@ -3,7 +3,7 @@ import type { GameState, LevelDefinition } from "./core/types";
 
 const STORAGE_KEY = "par-arrows:campaign:v1";
 const SETTINGS_KEY = "par-arrows:settings:v1";
-const CONTENT_VERSION = 2;
+const CONTENT_VERSION = 3;
 
 export interface CampaignSave {
   readonly currentLevelId: number;
@@ -100,7 +100,9 @@ export function loadCampaign(
       store.removeItem(STORAGE_KEY);
       return { value: undefined, recovered: true, contentUpdated: false };
     }
-    const legacyLevelOne = parsed.contentVersion === 1 && level.id === 1;
+    const legacyContent =
+      parsed.contentVersion === 1 || parsed.contentVersion === 2;
+    const legacyLevelOne = legacyContent && level.id === 1;
     const currentStateIsValid = isState(parsed.state, level);
     if (parsed.contentVersion === CONTENT_VERSION && currentStateIsValid) {
       return {
@@ -135,7 +137,7 @@ export function loadCampaign(
       return {
         value: recovered,
         recovered: true,
-        contentUpdated: parsed.contentVersion === 1 && level.id > 1,
+        contentUpdated: legacyContent && level.id > 1,
       };
     }
   } catch {

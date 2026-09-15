@@ -4,6 +4,8 @@ A desktop and mobile 3D arrow-removal puzzle with flat ribbon arrows. Rotate a c
 
 The initial ten-level MVP is implemented. See the [verification report](docs/verification/2026-09-14-mvp.md) for browser evidence and outstanding device qualification, [PRD.md](PRD.md) for product rules, and [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the delivery plan.
 
+The [dense zigzag revision](docs/verification/dense-zigzags.md) increases levels 2–10 to 30–90 arrows with substantially more bends and removal dependencies. Older attempts on these revised levels restart with their unlocks preserved; compatible level-one saves resume exactly.
+
 ## Develop
 
 Install Bun, then run from the repository root:
@@ -35,7 +37,7 @@ Install pre-commit and run `pre-commit install` to enable the pinned secret-scan
 - A press highlights its arrow. Ambiguous touches do nothing. Dragging and pinching do not activate arrows.
 - The first-run demo shows a failed move followed by a successful move before campaign play.
 - Ten curated cube levels use five, four, then three starting lives. Retry restores the same layout and full life budget.
-- Starting at level 2, short, medium, and long arrows mix with multiple paths wrapping over cube edges.
+- Starting at level 2, denser boards mix short and long arrows, winding zigzags, stepped bends, and paths wrapping over cube edges.
 - Progress, lives, and failed-arrow history are stored in browser `localStorage` for resume.
 
 PWA installation is supported where the browser provides it. A production installation needs a secure origin; local development can use localhost. Installation does not require an account. Offline gameplay is outside the current MVP scope.

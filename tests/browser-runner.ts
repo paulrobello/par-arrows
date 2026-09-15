@@ -135,6 +135,62 @@ async function assertVisibleArrows(page: Page, levelId: number): Promise<void> {
   );
 }
 
+async function assertDensePicking(
+  page: Page,
+  levelId: number,
+  touch = false,
+): Promise<void> {
+  await loadLevel(page, levelId);
+  await page.getByRole("button", { name: "Reset camera view" }).click();
+  const level = LEVELS.find((candidate) => candidate.id === levelId);
+  assert.ok(level);
+  const initial = await snapshot(page);
+  const pathLength = (id: string): number =>
+    level.arrows.find((arrow) => arrow.id === id)?.path.length ?? 0;
+  const candidates = [...initial.visibleProjectedArrowPositions]
+    .sort((left, right) => pathLength(right.id) - pathLength(left.id))
+    .slice(0, 4);
+  assert.equal(candidates.length, 4);
+  for (const [index, candidate] of candidates.entries()) {
+    await loadLevel(page, levelId);
+    const bounds = await page.locator("canvas").boundingBox();
+    assert.ok(bounds);
+    if (touch) {
+      await page.touchscreen.tap(
+        bounds.x + candidate.x,
+        bounds.y + candidate.y,
+      );
+    } else {
+      await clickArrow(page, candidate.id);
+    }
+    const expected = simulateMove(level, createGameState(level), candidate.id);
+    const moving = (await snapshot(page)).moving;
+    assert.equal(
+      moving?.arrowId,
+      candidate.id,
+      "Dense picking must select the intended arrow, not its neighbor",
+    );
+    assert.equal(moving?.kind, expected.kind);
+    if (index === 0) {
+      await advance(page, 170);
+      await page.screenshot({
+        path: `${output}/${touch ? "mobile" : "desktop"}-dense-motion-${levelId}.png`,
+      });
+    }
+    await advance(page);
+    const settled = await snapshot(page);
+    assert.equal(
+      settled.remainingIds.includes(candidate.id),
+      expected.kind !== "exit",
+    );
+    assert.equal(
+      settled.lives,
+      level.lives - (expected.kind === "blocked" ? 1 : 0),
+    );
+  }
+  await loadLevel(page, levelId);
+}
+
 function assertRotationStep(
   before: Snapshot,
   after: Snapshot,
@@ -152,7 +208,7 @@ function assertRotationStep(
   const angle = 2 * Math.acos(Math.min(1, Math.abs(dot)));
   assert.ok(
     Math.abs(angle - expected) < 0.002,
-    "Each drag step must rotate fully without a stop or pole flip",
+    `Each drag step must rotate fully without a stop or pole flip: got ${angle}, expected ${expected}`,
   );
   const positionDot =
     after.camera.position.reduce(
@@ -185,6 +241,30 @@ async function assertContinuousRotation(
 ): Promise<void> {
   const bounds = await page.locator("canvas").boundingBox();
   assert.ok(bounds);
+  await page.evaluate(() => {
+    const events: unknown[] = [];
+    Reflect.set(window, "rotationInputEvents", events);
+    for (const type of [
+      "pointerdown",
+      "pointermove",
+      "pointerup",
+      "pointercancel",
+      "gotpointercapture",
+      "lostpointercapture",
+    ]) {
+      document.addEventListener(type, (event) => {
+        const pointer = event as PointerEvent;
+        events.push({
+          type,
+          x: pointer.clientX,
+          y: pointer.clientY,
+          buttons: pointer.buttons,
+          target: (event.target as Element)?.tagName,
+        });
+        if (events.length > 30) events.shift();
+      });
+    }
+  });
   for (const [deltaX, deltaY] of directions) {
     for (let drag = 0; drag < 7; drag += 1) {
       const x = bounds.x + bounds.width / 2 - deltaX * 4;
@@ -193,6 +273,38 @@ async function assertContinuousRotation(
       let before = await snapshot(page);
       for (let step = 1; step <= 8; step += 1) {
         await gesture.move(x + deltaX * step, y + deltaY * step);
+        // Browser input dispatch may acknowledge before the page handles pointermove.
+        try {
+          await page.waitForFunction((previous) => {
+            const raw = window.render_game_to_text?.();
+            if (!raw) return false;
+            const orientation = JSON.parse(raw).camera.orientation as number[];
+            return orientation.some(
+              (value, index) => value !== previous[index],
+            );
+          }, before.camera.orientation);
+        } catch (error) {
+          await Bun.write(
+            `${output}/rotation-failure.json`,
+            JSON.stringify(
+              {
+                label,
+                deltaX,
+                deltaY,
+                drag,
+                step,
+                before,
+                after: await snapshot(page),
+                events: await page.evaluate(() =>
+                  Reflect.get(window, "rotationInputEvents"),
+                ),
+              },
+              null,
+              2,
+            ),
+          );
+          throw error;
+        }
         const after = await snapshot(page);
         assertRotationStep(before, after, deltaX, deltaY);
         before = after;
@@ -269,6 +381,7 @@ try {
   await assertCubeFits(page);
   await assertVisibleArrows(page, 2);
   await page.screenshot({ path: `${output}/desktop-level-2.png` });
+  await assertDensePicking(page, 2);
 
   await loadLevel(page, 3);
   const level = LEVELS.find((candidate) => candidate.id === 3);
@@ -459,6 +572,8 @@ try {
 
   await loadLevel(page, 10);
   await page.screenshot({ path: `${output}/desktop-level-10.png` });
+  await assertDensePicking(page, 10);
+  console.log("PASS dense level 2/10 pointer selection and long-path motion");
   const manifest = (await (
     await page.request.get("/manifest.webmanifest")
   ).json()) as {
@@ -551,18 +666,10 @@ try {
           });
         },
         move: async (x, y) => {
-          const previous = (await snapshot(touchPage)).camera.orientation;
           await client.send("Input.dispatchTouchEvent", {
             type: "touchMove",
             touchPoints: [{ x, y, id: 0 }],
           });
-          // Touch dispatch can acknowledge before the pointermove reaches the page.
-          await touchPage.waitForFunction((before) => {
-            const raw = window.render_game_to_text?.();
-            if (!raw) return false;
-            const orientation = JSON.parse(raw).camera.orientation as number[];
-            return orientation.some((value, index) => value !== before[index]);
-          }, previous);
         },
         end: async () => {
           await client.send("Input.dispatchTouchEvent", {
@@ -618,6 +725,14 @@ try {
     );
     assert.equal((await snapshot(touchPage)).lives, touchBefore.lives);
   }
+  await loadLevel(touchPage, 10);
+  await touchPage.getByRole("button", { name: "Reset camera view" }).click();
+  await assertCubeFits(touchPage);
+  await touchPage.screenshot({ path: `${output}/mobile-level-10.png` });
+  await assertDensePicking(touchPage, 10, true);
+  console.log(
+    "PASS dense mobile level 10 touch selection and long-path motion",
+  );
   await touchPage.setViewportSize({ width: 844, height: 390 });
   await touchPage.getByRole("button", { name: "Reset camera view" }).click();
   await assertCubeFits(touchPage);

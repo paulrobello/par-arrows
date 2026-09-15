@@ -10,6 +10,7 @@ import type {
 } from "../core/types";
 
 const PICK_RADIUS = 0.14;
+const PICK_LAYER = 1;
 
 interface SegmentVisual {
   readonly ribbon: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
@@ -383,6 +384,7 @@ export class PuzzleRenderer {
 
   constructor(container: HTMLElement) {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    this.raycaster.layers.set(PICK_LAYER);
     this.canvas = this.renderer.domElement;
     this.canvas.className = "game-canvas";
     this.renderer.setClearColor(0xe9f4f7, 1);
@@ -697,9 +699,11 @@ export class PuzzleRenderer {
     const pitch = 2 / gridSize;
     const ribbonWidth = pitch * 0.15;
     const headLength = pitch * 0.35;
+    const pickRadius = Math.min(PICK_RADIUS, pitch * 0.28);
     const material = new THREE.MeshBasicMaterial({
       color: 0x0b1015,
       transparent: true,
+      forceSinglePass: true,
     });
     const expanded = expandedPoints(arrow.path, gridSize);
     const segments: SegmentVisual[] = [];
@@ -711,13 +715,14 @@ export class PuzzleRenderer {
       const ribbon = new THREE.Mesh(makeRibbonGeometry(4), segmentMaterial);
       ribbon.frustumCulled = false;
       const picker = new THREE.Mesh(
-        new THREE.CylinderGeometry(PICK_RADIUS, PICK_RADIUS, 1, 8),
+        new THREE.CylinderGeometry(pickRadius, pickRadius, 1, 8),
         new THREE.MeshBasicMaterial({
           transparent: true,
           opacity: 0,
           depthWrite: false,
         }),
       );
+      picker.layers.set(PICK_LAYER);
       picker.userData.arrowId = arrow.id;
       picker.userData.face = expanded.segmentFaces[index];
       group.add(ribbon, picker);
