@@ -2,6 +2,12 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Consistent arrow movement speed
+
+The owner reported faster movement when an arrow starts farther from an edge. Exits previously used the same 563.2 ms duration for different travel distances, including flight extensions proportional to the raw path cell count. Normal exits and both rebound legs now use five cube-space units per second. The renderer and attempt controller share the same geometric distance calculation, including yellow seam turns. Off-cube travel is the actual body length plus two units, preserving speed across grid sizes and allowing the full arrow to clear. Reduced-motion transitions remain 70.4 ms. Level geometry, saves, penalties, and demo pauses are unchanged.
+
+Root verified `make checkall` with 86 tests and 123,301 assertions, plus headed Chrome and WebKit regression suites. The new browser check freezes the clock and measures the actual rendered head tip: near, distant, dense-grid, wrapped, outbound-blocked, and returning-blocked movement all measure five units per second within 0.000001. Near and far exit fixtures take 616.7 ms and 950.0 ms respectively. Existing browser timing checks now finish each move using its actual duration and accept an already-completed short rebound only when the intended arrow alone received the correct penalty. Completion, retry/reload, reduced motion, hints, input, and wrapping remain verified. Screenshots and the headed web-game client were inspected, and final diff review found no actionable issues.
+
 ## Runtime endless campaign
 
 The fixed level-2–10 catalog is superseded in production. Level 1 remains the unchanged authored teaching puzzle; every logical level at or above 2 is generated at runtime. Levels 2–10 retain their literal generator-v1 seeds and unchanged geometry. Levels above 10 use generator version 2, with a separate seeded stream for edge selection so layout retries retain the same wrapping seams. From level 11, generated levels may contain zero to three reciprocal whole-physical-edge yellow seams. The no-seam share stays at 25%; the one/two/three-seam weights shift from 60/12/3 at level 11 to 15/30/30 at level 100 and remain capped after that. Each chosen seam receives a 5/6/7-cell wrapping starter, its full head-exit ray is protected during reverse construction, and random target body lengths scale to 90/80/70% for one/two/three physical wrapping seams. Generated puzzles must pass structural validation and the solver before presentation.
@@ -80,9 +86,9 @@ The owner requested varied straight-arrow lengths and wrapping after the first l
 
 The owner supplied a close-up showing a notch where independent flat ribbon segments met at a right-angle bend. Terra implemented a shared mitered endpoint cross-section for adjacent segments on the same face. Exact inner/outer vertex tests cover left/right turns on all faces and tiny fractional moving segments. Straight ends and cube-edge folds retain their existing behavior, with the 1.5625 speed multiplier. Root verified the repaired close-up, 34 tests / 626 assertions, full project gate, headed Chrome/WebKit flows, and the skill's headed browser client. The fix was re-reviewed without remaining findings.
 
-## Latest speed tuning
+## Previous fixed-duration speed tuning
 
-The owner requested another 25% arrow-speed increase after the ribbon refinement. The multiplier is now 1.25 × 1.25 = 1.5625 relative to the initial MVP. Exits take 563.2 ms, rebounds 473.6 ms, and reduced-motion transitions 70.4 ms. Demo pauses are unchanged.
+The owner requested another 25% arrow-speed increase after the ribbon refinement. At that stage, the multiplier was 1.25 × 1.25 = 1.5625 relative to the initial MVP. Exits took 563.2 ms, rebounds 473.6 ms, and reduced-motion transitions 70.4 ms. The constant-speed update above supersedes those normal-movement durations. Demo pauses remain unchanged.
 
 ## Completed ribbon refinement
 

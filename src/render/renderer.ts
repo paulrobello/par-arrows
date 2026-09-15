@@ -399,6 +399,69 @@ function concatPaths(first: ExpandedPath, second: ExpandedPath): ExpandedPath {
   };
 }
 
+export interface ArrowMotionTrack {
+  readonly track: ExpandedPath;
+  readonly bodyLength: number;
+  /** Outbound surface and flight distance, or outbound distance for rebounds. */
+  readonly distance: number;
+}
+
+export function arrowMotionTrack(
+  path: ExpandedPath,
+  result: MoveResult,
+  gridSize: number,
+): ArrowMotionTrack {
+  const route = expandedPoints(result.route, gridSize);
+  const bodyLength = pathLength(path);
+  let track = concatPaths(path, route);
+  if (result.kind === "exit") {
+    const tail = track.points.at(-1) ?? new THREE.Vector3();
+    const lastFace =
+      track.segmentFaces.at(-1) ?? result.route.at(-1)?.face ?? "front";
+    const tangent = new THREE.Vector3(0, 0, 1);
+    const flightPoints = [tail];
+    if (result.exit) {
+      const [x, y, z] = result.exit.edgePoint;
+      const [tx, ty, tz] = result.exit.tangent;
+      const edge = new THREE.Vector3(x, y, z);
+      tangent.set(tx, ty, tz).normalize();
+      flightPoints.push(
+        edge,
+        edge.clone().addScaledVector(tangent, bodyLength + 2),
+      );
+    } else {
+      flightPoints.push(tail.clone().addScaledVector(tangent, bodyLength + 2));
+    }
+    track = concatPaths(track, {
+      points: flightPoints,
+      segmentFaces: Array.from(
+        { length: flightPoints.length - 1 },
+        () => lastFace,
+      ),
+    });
+  }
+  const distance =
+    result.kind === "exit"
+      ? pathLength(track) - bodyLength
+      : result.kind === "blocked"
+        ? Math.max(0, pathLength(route) - 1 / gridSize)
+        : 0;
+  return { track, bodyLength, distance };
+}
+
+const NORMAL_ARROW_SPEED = 5;
+const REDUCED_MOTION_DURATION = 110 / 1.5625;
+
+export function arrowMotionDuration(
+  distance: number,
+  kind: MoveResult["kind"],
+  reducedMotion = false,
+): number {
+  if (reducedMotion) return REDUCED_MOTION_DURATION;
+  const outboundAndReturn = kind === "blocked" ? 2 : 1;
+  return (distance * outboundAndReturn * 1000) / NORMAL_ARROW_SPEED;
+}
+
 function arrowFace(arrow: ArrowDefinition): Cell["face"] {
   return arrow.path.at(-1)?.face ?? "front";
 }
@@ -745,38 +808,14 @@ export class PuzzleRenderer {
           ? progress * 2
           : (1 - progress) * 2
         : progress;
-    const path = visual.path;
-    const route = expandedPoints(result.route, this.level.gridSize);
-    let track = concatPaths(path, route);
-    if (result.kind === "exit") {
-      const tail = track.points.at(-1) ?? new THREE.Vector3();
-      const lastFace = track.segmentFaces.at(-1) ?? arrowFace(visual.arrow);
-      const tangent = new THREE.Vector3(0, 0, 1);
-      const flightPoints = [tail];
-      if (result.exit) {
-        const [x, y, z] = result.exit.edgePoint;
-        const [tx, ty, tz] = result.exit.tangent;
-        flightPoints.push(new THREE.Vector3(x, y, z));
-        tangent.set(tx, ty, tz).normalize();
-      }
-      for (let index = 1; index <= visual.arrow.path.length + 3; index += 1) {
-        flightPoints.push(tail.clone().addScaledVector(tangent, index * 0.42));
-      }
-      track = concatPaths(track, {
-        points: flightPoints,
-        segmentFaces: Array.from(
-          { length: flightPoints.length - 1 },
-          () => lastFace,
-        ),
-      });
-    }
-    const total =
-      result.kind === "exit"
-        ? pathLength(track) - pathLength(path)
-        : result.distance * (2 / this.level.gridSize);
+    const { track, bodyLength, distance } = arrowMotionTrack(
+      visual.path,
+      result,
+      this.level.gridSize,
+    );
     this.updatePathVisual(
       visual,
-      slicePath(track, travel * total, pathLength(path)),
+      slicePath(track, travel * distance, bodyLength),
     );
     this.render();
   }
@@ -873,6 +912,24 @@ export class PuzzleRenderer {
     return this.visuals.get(arrowId)?.head.userData.face as
       | Cell["face"]
       | undefined;
+  }
+
+  arrowHeadPosition(
+    arrowId: string,
+  ): readonly [number, number, number] | undefined {
+    const head = this.visuals.get(arrowId)?.head;
+    if (!head) return undefined;
+    const position = head.geometry.getAttribute("position");
+    const tip = head.localToWorld(
+      new THREE.Vector3().fromBufferAttribute(position, 2),
+    );
+    return [tip.x, tip.y, tip.z];
+  }
+
+  motionDistance(arrowId: string, result: MoveResult): number {
+    const visual = this.visuals.get(arrowId);
+    if (!visual || !this.level) return 0;
+    return arrowMotionTrack(visual.path, result, this.level.gridSize).distance;
   }
 
   render(): void {

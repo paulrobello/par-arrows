@@ -1,9 +1,17 @@
 import { describe, expect, test } from "bun:test";
 import * as THREE from "three";
 
-import { faceNormal, stepAcrossSeam } from "../src/core/topology";
-import type { Cell, FaceId } from "../src/core/types";
+import { createGameState, simulateMove } from "../src/core/game-state";
 import {
+  edgePoint,
+  faceHeadingVector,
+  faceNormal,
+  stepAcrossSeam,
+} from "../src/core/topology";
+import type { Cell, FaceId, MoveResult } from "../src/core/types";
+import {
+  arrowMotionDuration,
+  arrowMotionTrack,
   expandedPoints,
   ribbonSections,
   ribbonVertices,
@@ -39,7 +47,234 @@ function expectEqualPoint(first: THREE.Vector3, second: THREE.Vector3): void {
   expect(first.z).toBeCloseTo(second.z, 7);
 }
 
+function result(
+  kind: MoveResult["kind"],
+  route: readonly Cell[],
+  edgePoint?: readonly [number, number, number],
+  tangent?: readonly [number, number, number],
+  distance = 0,
+): MoveResult {
+  return {
+    arrowId: "test",
+    endpoint: "head",
+    kind,
+    distance,
+    route,
+    waypoints: [],
+    stateRevision: 0,
+    ...(edgePoint && tangent ? { exit: { edgePoint, tangent } } : {}),
+  };
+}
+
+function polylineLength(points: readonly THREE.Vector3[]): number {
+  return points
+    .slice(1)
+    .reduce(
+      (total, point, index) => total + point.distanceTo(points[index] ?? point),
+      0,
+    );
+}
+
 describe("flat ribbon geometry", () => {
+  test("keeps near and far exits at the same five-unit world speed", () => {
+    const nearPath = expandedPoints(
+      [
+        { face: "front", x: 2, y: 1 },
+        { face: "front", x: 3, y: 1 },
+      ],
+      4,
+    );
+    const farPath = expandedPoints(
+      [
+        { face: "front", x: 0, y: 1 },
+        { face: "front", x: 1, y: 1 },
+      ],
+      4,
+    );
+    const near = arrowMotionTrack(
+      nearPath,
+      result(
+        "exit",
+        [{ face: "front", x: 3, y: 1 }],
+        edgePoint({ face: "front", x: 3, y: 1 }, "east", 4),
+        [1, 0, 0],
+      ),
+      4,
+    );
+    const far = arrowMotionTrack(
+      farPath,
+      result(
+        "exit",
+        [
+          { face: "front", x: 1, y: 1 },
+          { face: "front", x: 2, y: 1 },
+          { face: "front", x: 3, y: 1 },
+        ],
+        edgePoint({ face: "front", x: 3, y: 1 }, "east", 4),
+        [1, 0, 0],
+      ),
+      4,
+    );
+    for (const motion of [near, far]) {
+      const duration = arrowMotionDuration(motion.distance, "exit");
+      expect(motion.distance / (duration / 1000)).toBeCloseTo(5, 8);
+    }
+    expect(far.distance).toBeGreaterThan(near.distance);
+    const sampleDuration = 100;
+    expect(
+      near.distance *
+        (sampleDuration / arrowMotionDuration(near.distance, "exit")),
+    ).toBeCloseTo(
+      far.distance *
+        (sampleDuration / arrowMotionDuration(far.distance, "exit")),
+      8,
+    );
+    expect(arrowMotionDuration(far.distance, "exit")).toBeGreaterThan(
+      arrowMotionDuration(near.distance, "exit"),
+    );
+  });
+
+  test("bounds exit flight by actual body length plus two world units", () => {
+    for (const gridSize of [4, 8]) {
+      const path = expandedPoints(
+        [
+          { face: "front", x: gridSize - 3, y: 2 },
+          { face: "front", x: gridSize - 2, y: 2 },
+          { face: "front", x: gridSize - 1, y: 2 },
+        ],
+        gridSize,
+      );
+      const motion = arrowMotionTrack(
+        path,
+        result(
+          "exit",
+          [{ face: "front", x: gridSize - 1, y: 2 }],
+          edgePoint({ face: "front", x: gridSize - 1, y: 2 }, "east", gridSize),
+          [1, 0, 0],
+        ),
+        gridSize,
+      );
+      const end = motion.track.points.at(-1) ?? new THREE.Vector3();
+      const edge = new THREE.Vector3(
+        ...edgePoint(
+          { face: "front", x: gridSize - 1, y: 2 },
+          "east",
+          gridSize,
+        ),
+      );
+      expect(end.distanceTo(edge)).toBeCloseTo(motion.bodyLength + 2, 6);
+      expect(
+        motion.distance / (arrowMotionDuration(motion.distance, "exit") / 1000),
+      ).toBeCloseTo(5, 8);
+    }
+  });
+
+  test("measures a folded route along its world-space seam arc", () => {
+    const boundary: Cell = { face: "front", x: 3, y: 1 };
+    const across = stepAcrossSeam(boundary, "east", 4);
+    const routeCells = [
+      { face: "front", x: 2, y: 1 } as const,
+      boundary,
+      across,
+      ...[1, 2, 3].map((x): Cell => ({ face: "right", x, y: across.y })),
+    ];
+    const exitCell: Cell = { face: "right", x: 3, y: across.y };
+    const route = expandedPoints(routeCells, 4);
+    const path = expandedPoints(
+      [
+        { face: "front", x: 1, y: 1 },
+        { face: "front", x: 2, y: 1 },
+      ],
+      4,
+    );
+    const endpointArray = edgePoint(exitCell, "east", 4);
+    const tangent = faceHeadingVector("right", "east");
+    const motion = arrowMotionTrack(
+      path,
+      result("exit", routeCells, endpointArray, tangent, 2),
+      4,
+    );
+    expect(motion.distance).toBeCloseTo(
+      polylineLength(route.points) + 0.25 + motion.bodyLength + 2,
+      6,
+    );
+    expect(
+      motion.distance / (arrowMotionDuration(motion.distance, "exit") / 1000),
+    ).toBeCloseTo(5, 8);
+  });
+
+  test("reverses blocked motion at the same speed and preserves reduced motion timing", () => {
+    const route = expandedPoints(
+      [
+        { face: "front", x: 2, y: 1 },
+        { face: "front", x: 3, y: 1 },
+      ],
+      4,
+    );
+    const path = expandedPoints(
+      [
+        { face: "front", x: 1, y: 1 },
+        { face: "front", x: 2, y: 1 },
+      ],
+      4,
+    );
+    const blockedResult = result(
+      "blocked",
+      [
+        { face: "front", x: 2, y: 1 },
+        { face: "front", x: 3, y: 1 },
+      ],
+      undefined,
+      undefined,
+      0.5,
+    );
+    const motion = arrowMotionTrack(path, blockedResult, 4);
+    const duration = arrowMotionDuration(motion.distance, "blocked");
+    expect(motion.distance).toBeCloseTo(polylineLength(route.points) - 0.25, 7);
+    expect(motion.distance).toBeCloseTo(blockedResult.distance * (2 / 4), 7);
+    expect(motion.distance / (duration / 2000)).toBeCloseTo(5, 8);
+    expect(arrowMotionDuration(motion.distance, "blocked", true)).toBeCloseTo(
+      70.4,
+      8,
+    );
+  });
+
+  test("matches simulated blocker contact distance to the rendered route", () => {
+    const level = {
+      id: 13,
+      title: "Block contact",
+      gridSize: 4,
+      lives: 2,
+      arrows: [
+        {
+          id: "moving",
+          path: [
+            { face: "front", x: 1, y: 1 },
+            { face: "front", x: 2, y: 1 },
+          ],
+        },
+        {
+          id: "blocker",
+          path: [
+            { face: "front", x: 3, y: 1 },
+            { face: "front", x: 3, y: 2 },
+          ],
+        },
+      ],
+    } as const;
+    const move = simulateMove(level, createGameState(level), "moving");
+    const motion = arrowMotionTrack(
+      expandedPoints(level.arrows[0].path, level.gridSize),
+      move,
+      level.gridSize,
+    );
+    expect(move.kind).toBe("blocked");
+    expect(motion.distance).toBeCloseTo(
+      move.distance * (2 / level.gridSize),
+      8,
+    );
+  });
+
   test("renders reciprocal continuation policies as one physical cube seam", () => {
     const segments = wrappingEdgeSegments({
       id: 11,

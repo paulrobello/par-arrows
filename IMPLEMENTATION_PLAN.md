@@ -186,7 +186,7 @@ Acceptance:
 
 Depends on: P2, P3, and life/retry decisions.
 
-Deliverables: attempt controller, successful departure animation, collision/return/red feedback, five-life level 1, remaining count, failure/retry, completion, and reduced-motion behavior. The owner subsequently requested two successive 25% speed increases: divide original movement durations by 1.5625, keeping demo pauses unchanged.
+Deliverables: attempt controller, successful departure animation, collision/return/red feedback, five-life level 1, remaining count, failure/retry, completion, and reduced-motion behavior. Normal movement now uses five cube-space units per second; the same geometric travel distance drives rendering and duration. Exits continue beyond the edge by the actual world-space body length plus two units, and blocked moves travel out and back at the same speed. Reduced-motion transitions retain their 70.4 ms duration. This supersedes the earlier fixed durations and leaves demo pauses unchanged.
 
 Acceptance:
 

@@ -20,6 +20,7 @@ import { arrowDimensions } from "../src/render/renderer";
 import { runHintChecks } from "./hints-browser";
 import { assertRuntimeCampaign } from "./runtime-browser";
 import { assertWrappingEdges } from "./wrapping-browser";
+import { assertConsistentMotion } from "./motion-browser";
 import { LEVELS, waitForReady } from "./runtime-fixtures";
 
 interface Snapshot {
@@ -28,7 +29,12 @@ interface Snapshot {
   lives: number;
   remainingIds: string[];
   failedIds: string[];
-  moving: { arrowId: string; kind: string; elapsed: number } | null;
+  moving: {
+    arrowId: string;
+    kind: string;
+    elapsed: number;
+    duration: number;
+  } | null;
   celebration: { active: boolean; elapsed: number; duration: number };
   theme: {
     preference: "system" | "light" | "dark";
@@ -105,6 +111,12 @@ async function advance(page: Page, milliseconds = 1800): Promise<void> {
   await page.evaluate((amount) => window.advanceTime?.(amount), milliseconds);
 }
 
+async function finishMotion(page: Page): Promise<void> {
+  const moving = (await snapshot(page)).moving;
+  if (moving)
+    await advance(page, Math.max(0, moving.duration - moving.elapsed) + 16);
+}
+
 async function loadLevel(page: Page, levelId: number): Promise<void> {
   await page.evaluate(
     (id) => window.__PAR_ARROWS_TEST__?.loadLevel(id),
@@ -133,7 +145,15 @@ async function launchLastArrow(page: Page, levelId = 1): Promise<void> {
   await page.evaluate((ids) => {
     for (const [index, id] of ids.entries()) {
       window.__PAR_ARROWS_TEST__?.activate(id);
-      if (index < ids.length - 1) window.advanceTime?.(1000);
+      if (index < ids.length - 1) {
+        const moving = JSON.parse(
+          window.render_game_to_text?.() ?? "{}",
+        ).moving;
+        if (moving)
+          window.advanceTime?.(
+            Math.max(0, moving.duration - moving.elapsed) + 1,
+          );
+      }
     }
   }, solution);
 }
@@ -143,7 +163,7 @@ async function assertCelebration(page: Page, mobile = false): Promise<void> {
   assert.ok((await snapshot(page)).moving);
   assert.equal(await page.locator(".confetti-piece").count(), 0);
   assert.equal(await page.locator("#state-card").isVisible(), false);
-  await advance(page, 650);
+  await finishMotion(page);
   const count = await page.locator(".confetti-piece").count();
   assert.ok(count > 0 && count <= 64, "Victory has a bounded confetti burst");
   assert.equal(await page.locator(".state-card.is-won").isVisible(), true);
@@ -179,7 +199,7 @@ async function assertCelebration(page: Page, mobile = false): Promise<void> {
   if (mobile) return;
 
   await launchLastArrow(page);
-  await advance(page, 650);
+  await finishMotion(page);
   await page.locator("#settings-button").click();
   await page.getByLabel("Reduce movement").check();
   assert.equal(await page.locator(".confetti-piece").count(), 0);
@@ -191,7 +211,7 @@ async function assertCelebration(page: Page, mobile = false): Promise<void> {
   await page.locator("#settings-button").click();
 
   await launchLastArrow(page);
-  await advance(page, 650);
+  await finishMotion(page);
   assert.equal((await snapshot(page)).celebration.active, true);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.waitForFunction(
@@ -200,14 +220,14 @@ async function assertCelebration(page: Page, mobile = false): Promise<void> {
   assert.equal((await snapshot(page)).celebration.active, false);
   assert.equal(await page.locator(".state-card.is-celebrating").count(), 0);
   await launchLastArrow(page);
-  await advance(page, 650);
+  await finishMotion(page);
   assert.equal(await page.locator(".confetti-piece").count(), 0);
   assert.equal(await page.locator(".state-card.is-won").isVisible(), true);
   await page.emulateMedia({ reducedMotion: "no-preference" });
   assert.equal(await page.locator(".confetti-piece").count(), 0);
 
   await launchLastArrow(page, 10);
-  await advance(page, 650);
+  await finishMotion(page);
   assert.ok((await page.locator(".confetti-piece").count()) > 0);
   assert.match(await page.locator("#state-title").innerText(), /cube cleared/i);
   await page.screenshot({ path: `${output}/celebration-campaign.png` });
@@ -353,7 +373,7 @@ async function assertThemes(page: Page, mobile = false): Promise<void> {
   assert.deepEqual(afterTheme.moving, beforeTheme.moving);
   assert.deepEqual(afterTheme.camera, beforeTheme.camera);
   assert.deepEqual(afterTheme.remainingIds, beforeTheme.remainingIds);
-  await advance(page, 650);
+  await finishMotion(page);
   await page.locator("#theme-select").selectOption("light");
   await page.emulateMedia({ colorScheme: "light" });
   await page.emulateMedia({ colorScheme: "dark" });
@@ -376,7 +396,7 @@ async function assertThemes(page: Page, mobile = false): Promise<void> {
   });
   await page.locator("#settings-button").click();
   await launchLastArrow(page);
-  await advance(page, 650);
+  await finishMotion(page);
   await page.waitForTimeout(250);
   await page.screenshot({ path: `${output}/theme-${prefix}-dark-victory.png` });
   assert.equal(await page.locator(".state-card.is-won").isVisible(), true);
@@ -605,13 +625,30 @@ async function assertDensePicking(
       await clickArrow(page, candidate.id);
     }
     const expected = simulateMove(level, createGameState(level), candidate.id);
-    const moving = (await snapshot(page)).moving;
-    assert.equal(
-      moving?.arrowId,
-      candidate.id,
-      "Dense picking must select the intended arrow, not its neighbor",
-    );
-    assert.equal(moving?.kind, expected.kind);
+    const accepted = await snapshot(page);
+    const moving = accepted.moving;
+    if (moving) {
+      assert.equal(
+        moving.arrowId,
+        candidate.id,
+        "Dense picking must select the intended arrow, not its neighbor",
+      );
+      assert.equal(moving.kind, expected.kind);
+    } else if (expected.kind === "blocked") {
+      assert.deepEqual(
+        accepted.failedIds,
+        [candidate.id],
+        "A short completed rebound must belong to the tapped arrow",
+      );
+      assert.equal(accepted.lives, level.lives - 1);
+    } else {
+      assert.deepEqual(
+        accepted.remainingIds,
+        level.arrows
+          .filter((arrow) => arrow.id !== candidate.id)
+          .map((arrow) => arrow.id),
+      );
+    }
     if (index === 0) {
       await advance(page, 170);
       await page.screenshot({
@@ -1261,6 +1298,7 @@ try {
   );
   await mobile.close();
   await assertRuntimeCampaign(browser, url, output);
+  await assertConsistentMotion(browser, url, output);
   await assertWrappingEdges(browser, url, output, {
     movementLevelId: 11,
     reboundLevelId: 11,

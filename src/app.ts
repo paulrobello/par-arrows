@@ -16,21 +16,19 @@ import { applyMove, createGameState, simulateMove } from "./core/game-state";
 import type { GameState, LevelDefinition, MoveResult } from "./core/types";
 import { PointerInput } from "./input";
 import { PwaInstallPrompt } from "./pwa";
-import { PuzzleRenderer } from "./render/renderer";
+import { arrowMotionDuration, PuzzleRenderer } from "./render/renderer";
 import {
   clearCampaign,
+  type LoadedCampaign,
   loadCampaign,
   loadSettings,
-  type LoadedCampaign,
-  type StorageResult,
   type PlayerSettings,
+  type StorageResult,
   saveCampaign,
   saveSettings,
 } from "./storage";
 
 type AppMode = "demo" | "campaign";
-
-const ARROW_SPEED_MULTIPLIER = 1.5625;
 
 interface Motion {
   readonly result: MoveResult;
@@ -265,6 +263,9 @@ export class ParArrowsApp {
             arrowId: this.motion.result.arrowId,
             kind: this.motion.result.kind,
             headFace: this.renderer.arrowHeadFace(this.motion.result.arrowId),
+            headPosition: this.renderer.arrowHeadPosition(
+              this.motion.result.arrowId,
+            ),
             elapsed: Math.round(this.motion.elapsed),
             duration: this.motion.duration,
           }
@@ -454,12 +455,11 @@ export class ParArrowsApp {
       result,
       elapsed: 0,
       impactShown: false,
-      duration:
-        (this.settings.reducedMotion
-          ? 110
-          : result.kind === "blocked"
-            ? 740
-            : 880) / ARROW_SPEED_MULTIPLIER,
+      duration: arrowMotionDuration(
+        this.renderer.motionDistance(arrowId, result),
+        result.kind,
+        this.settings.reducedMotion,
+      ),
     };
     this.hintButton.disabled = true;
     this.renderer.setSelected(undefined);
