@@ -1,6 +1,6 @@
 # Par Arrows — Implementation Plan
 
-Status: **Initial MVP implemented; final device/release qualification remains open.**
+Status: **Runtime endless campaign implemented and browser-verified; physical-device qualification remains open.**
 
 Created: 2026-09-14
 
@@ -16,14 +16,14 @@ The owner has requested implementation using Terra subagents and proper greenfie
 
 Prove the surface movement rules with small deterministic cases before investing in dense art or a large campaign. Keep those rules independent of browser input, animation, and rendering. Build one complete playable cube, then add progression, content, and mobile hardening.
 
-The owner confirmed path-following movement, body unwrapping across ordinary seams, permanent red failure history with only one life penalty per arrow, free rotation with wheel/pinch zoom, same-layout unlimited retry, ten curated cube levels with a solvability checker, right-angle non-overlapping paths, and rejection of levels permitting self-contact. One arrow moves at a time, extra taps are ignored, rotation/zoom remain available, lives follow a five/four/three curve, Retry clears failure history, and reload restores the complete logical result. Press highlights selection; ambiguous taps do nothing. Q8's exact vacated-tail boundary remains open.
+The owner superseded the fixed ten-level catalog: level 1 remains the authored teaching cube; every level at or above 2 is a deterministic, solver-validated runtime puzzle derived from its logical level number. The same number yields the same puzzle for all players and on retry. Progression has no final level. Path-following movement, body unwrapping across ordinary seams, permanent red failure history with one life penalty per arrow, free rotation with wheel/pinch zoom, right-angle non-overlapping paths, and rejection of self-contact remain unchanged. One arrow moves at a time, extra taps are ignored, rotation/zoom remain available, lives floor at three, and reload restores complete logical state. Press highlights selection; ambiguous taps do nothing.
 
 ### Decision gates
 
 | Gate | Required decisions | Blocks |
 | --- | --- | --- |
 | G1: Rule agreement | Q1–Q3 and Q7–Q9 answered. Resolve the exact vacated-tail boundary in Q8. | Movement implementation and authoritative level format. |
-| G2: MVP scope | Q4–Q6 and Q10–Q13 confirmed. Q14 confirms `localStorage` and PWA installation; Q15 confirms mobile hardware up to two generations old. Resolve demo lifecycle details, offline scope, remaining platform/accessibility details, and Q20–Q21. | Onboarding lifecycle, offline/platform details, final progression scope. |
+| G2: MVP scope | Q4–Q6 and Q10–Q13 are resolved for the runtime campaign. Q14 confirms `localStorage` and PWA installation; Q15 confirms mobile hardware up to two generations old. Resolve demo lifecycle details, offline scope, remaining platform/accessibility details, and Q21. | Onboarding lifecycle and offline/platform details. |
 | G3: Visual direction | Q22. | Final visual acceptance, not neutral prototype geometry. |
 | G4: Deferred mechanics | Q16–Q19 and Q23, mechanic introduction order and level numbers. | Shipping bidirectional arrows, yellow edges, or non-cube content. |
 
@@ -41,7 +41,7 @@ Record owner answers and implementation defaults distinctly. Implementation auth
 | Browser tests | Playwright with real Chrome; real Safari and physical mobile checks. | Input, visibility, touch, resize, and rendering need actual browser evidence. |
 | Persistence | Browser `localStorage`, confirmed; versioned save adapter proposed. | Preserve progress for returning players without an account/backend dependency. |
 | Installation | PWA installation, confirmed; manifest, app icons, and standalone display configuration planned. | Launch from an installed icon while keeping browser play available. |
-| Content | Versioned level files plus validator and solution certificates. | Share one rules engine across authoring and play. |
+| Content | Authored level 1 plus deterministic runtime generation, validator, and solution certificates. | Keep generated play reproducible without a stored catalog. |
 
 Browser `localStorage` and PWA installation are owner-confirmed requirements. The remaining technology choices are architecture recommendations, not installed dependencies or pinned versions. Verify supported browser baselines and exact package versions against official documentation at P1. The generic frontend guide prefers Next.js when appropriate; this plan proposes Vite because the requested MVP has no server-rendered pages or backend requirements.
 
@@ -107,15 +107,15 @@ Keep settings, lives, retry, level selection, and completion controls in HTML. S
 
 ### A7: Content tooling and persistence
 
-Content version 5 stores levels 2–10 as fixed start-cell and direction-string routes in `src/content/campaign-layouts.ts`, decoded by `src/content/route-codec.ts`. Runtime performs no placement search. The independent offline generator, `scripts/generate-campaign.ts`, grows self-avoiding tails through free surface space while reserving clear head-exit rays, then validates the complete campaign and solver-replays it. Fixed seeds make authoring reproducible. Counts double to 60, 84, 108, 132, 156, 168, 180, 180, and 180 on grids ranging from 12 × 12 to 22 × 22. Level 1 and the demo retain their layouts. Presentation-only `arrowScale` metadata preserves the old physical sizing as grids become finer, and the renderer applies the requested 20% stroke-width increase to shafts and heads. Collision and picking remain tied to the logical grid.
+The production campaign imports the authored level 1 and generates every level at or above 2 through `content/procedural.ts`. Generator version 1 derives `seedForLevel` and a descriptor from the level number, reverse-constructs free surface paths, validates occupancy/self-contact/solvability, and returns only a puzzle matching the configured bounds: early growth from 60 to 180 arrows, then a 240-arrow cap, 26 × 26 cells per face, and 40 cells per path. `campaign-layouts.ts` and `levels.ts` and the offline generator remain legacy test fixtures only and are excluded from production imports.
 
-Apply the [reference complexity criteria](docs/references/arrow-complexity-study.md) to every content revision. `scripts/campaign-quality.ts` measures geometric repetition after rotation, reflection, reversal, and seam unfolding, along with run-length variety, interior heads, narrow winding strips, and face coverage. Version 5 tests enforce exact doubled counts, low repetition, and at least 90% of the doubled prior occupied-cell count. Compare complete faces with the references as a separate visual acceptance check. Current measurements and previews are in the [verification report](docs/verification/thicker-double-arrows.md).
+`level-loader` runs generation in a Web Worker, caches three results, and has a 12-second timeout. Request generations and reset/restore flows use revisions so stale results cannot replace a newer accepted puzzle. Keep the reference complexity criteria as visual guidance; generator validity is determined by the runtime validator and solver, not by a frozen catalog.
 
 Validate paths, occupancy, seams, arrow endpoints, mechanic versions, life budgets, absence of any possible self-contact, and solution reachability. Use the same movement implementation as runtime. Run self-contact checks independently of current blockers. Save complete successful removal sequences as reproducible evidence. Exhaustive state enumeration is appropriate for small fixtures, while larger levels need a validated solver strategy and search bounds.
 
-Persist progress through browser `localStorage`. Use a versioned logical snapshot containing unlocked levels, current level, remaining arrows, failed-arrow IDs, and lives. Store reduced-motion and System/Light/Dark settings separately so appearance changes preserve the active attempt. Apply the resolved theme before first paint, follow live system changes only in System mode, and retint existing renderer materials without recreating the puzzle. Write each accepted move's final logical result before its animation, and write Retry/reset and completion/unlock changes when they occur. Do not defer saving until the page closes.
+Persist progress through browser `localStorage` as schema v6. Store unlocked levels, current level, generator version and seed, remaining arrows, failed-arrow IDs, and lives, without a generated catalog. Store reduced-motion and System/Light/Dark settings separately so appearance changes preserve the active attempt. Write each accepted move's final logical result before its animation, and write Retry/reset and completion/unlock changes when they occur.
 
-For the version 5 content update, preserve valid level-one attempts from versions 1–4 exactly. Restart older attempts on levels 2–10 using the new layout and starting lives, retain unlocks and onboarding completion, and explain the content refresh through the existing status message.
+Valid v1–v5 level-one attempts resume exactly. Older attempts above level 1 regenerate the current layout for the same logical ID, retain unlocks and onboarding completion, and show the content-refresh message. Restoration is asynchronous and storage normalization remains pure; only the app commits an accepted restored state.
 
 Restore the saved settled state on refresh/reopen in both browser and installed-PWA sessions. Reload must not turn red arrows black or charge their repeated collisions again. On content-version mismatch, restart the affected attempt while preserving compatible progression. Storage failures allow continued play with honest feedback. Decide multi-tab policy before enabling automatic attempt restoration. Verify save behavior when moving from browser play to installed launch on each target rather than assuming shared storage between contexts. Resolve any platform-specific transfer limitation before closing installation acceptance. Offline loading remains a separate open decision.
 
@@ -133,7 +133,7 @@ Track phase execution in [progress.md](progress.md). Split phases into small, co
 
 Depends on: owner answers and separate implementation authorization.
 
-Deliverables: updated PRD decision statuses and movement examples; record the confirmed ten curated cube levels, five/four/three life curve, `localStorage` save/retry policy, and PWA installation. Select a concrete desktop/mobile test matrix including mobile hardware two generations old. Resolve remaining onboarding, offline, accessibility, and visual details.
+Historical deliverables: updated PRD decision statuses and movement examples; record the former ten curated cube levels, five/four/three life curve, `localStorage` save/retry policy, and PWA installation. The catalog/life assumptions are superseded by the runtime campaign; select a concrete desktop/mobile test matrix including mobile hardware two generations old and resolve remaining onboarding, offline, accessibility, and visual details.
 
 Acceptance:
 
@@ -201,16 +201,16 @@ This is the first playable milestone. Verify the full loop in a headed browser a
 
 Depends on: P4 and the approved content strategy.
 
-Deliverables: level validator/solver, solution evidence, a small-cube demo showing a failed touch followed by a successful touch, configured life curve, sequential unlocks, replay, campaign completion, versioned `localStorage` saves with automatic resume, and PWA manifest/icons/install guidance. Author the agreed number of levels in small batches.
+Deliverables: deterministic runtime generator and worker loader, validator/solver evidence, a small-cube demo showing a failed touch followed by a successful touch, endless sequential unlocks, replay, versioned `localStorage` saves with automatic resume, and PWA manifest/icons/install guidance. Level 1 remains authored; runtime generation begins at level 2.
 
-Q6 confirms ten curated cube levels. Procedural generation is outside this phase. If requested later, plan deterministic seeds, bounded generation attempts, solvability validation, fallback curated content, and difficulty calibration as separate work.
+The old Q6 fixed-catalog plan is superseded. Generation uses a level-number seed, bounded attempts, solver validation, and difficulty caps. It has no fallback curated production catalog.
 
 Acceptance:
 
-- P5.1: Every shipped level passes validation and its stored solution replays to an empty board under production rules.
-- P5.2: The progression curve is observable in actual levels, with arrows on all faces and growing density. Every level after level 1 includes varied straight-arrow lengths and several meaningful edge-spanning paths. Level 1 and the onboarding demo retain their simple layouts. Content updates preserve unlocked levels and restart only incompatible active attempts.
-- P5.3: Replay and retry do not relock progress. Final campaign completion does not point to a nonexistent next level.
-- P5.4: Verify `localStorage` contains the updated logical snapshot after successful removal, first collision, repeated red-arrow collision, Retry, and completion/unlock. Refresh/reopen restores the same progress, lives, and red-arrow history. Reload during success and failure, corrupt saves, denied storage, old schema/content, and multiple tabs follow the approved policy.
+- P5.1: Each generated level deterministically validates and its solver result clears the board under production rules before presentation.
+- P5.2: The progression curve is observable: 60–180 arrows early, then no more than 240 arrows, 26 × 26 cells per face, and 40 cells per path. Level 1 and the onboarding demo retain their simple layouts. A repeated level number yields the same puzzle for every player and retry.
+- P5.3: Replay and retry do not relock progress. Next advances from every completed level, with no final campaign state. Numeric Go/Enter navigation accepts only unlocked safe-integer IDs.
+- P5.4: Verify `localStorage` v6 contains generator metadata and updated logical state after successful removal, first collision, repeated red-arrow collision, Retry, and completion/unlock. Refresh/reopen regenerates the same current puzzle and restores progress, lives, and red-arrow history. Reload during success and failure, corrupt saves, denied storage, old schemas/content, and multiple tabs follow the approved policy.
 - P5.5: On a small cube with few arrows, visible touch cues first activate a blocked arrow that contacts, rebounds, and stays red, then activate another arrow that exits completely. The demo cannot be skipped. Verify the approved demo-state/lifecycle policy, including no unintended campaign penalties or overwritten saves. Hints remain disabled during the demo; campaign hints are approved separately. Rewards remain excluded.
 - P5.6: The manifest and icons validate, installation works on supported targets, standalone launch reaches the game, and closing/reopening the installed app resumes saved progress. Browser play still works without installation.
 - P5.7: Hint checks the current state for a safe exit, focuses the head face before flashing, and leaves saves/lives unchanged. Verify hidden and wrapped heads, extreme zoom, pole-facing views, slow pulses, reduced-motion steady emphasis, cancellation, theme changes, and the mobile dock.

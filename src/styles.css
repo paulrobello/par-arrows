@@ -446,14 +446,61 @@ button {
   padding: 0.25rem 0.55rem;
   border-left: 1px solid var(--divider);
 }
-.level-picker select {
-  max-width: 8rem;
+.level-picker label,
+.level-picker span {
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.level-picker div {
+  display: flex;
+  gap: 0.25rem;
+}
+.level-picker input {
+  width: 4.8rem;
   border: 0;
   background: transparent;
   color: var(--page-text);
   font-size: 0.72rem;
   font-weight: 750;
   outline: none;
+}
+.level-picker button {
+  border: 0;
+  border-radius: 0.35rem;
+  padding: 0.12rem 0.32rem;
+  background: var(--accent-soft);
+  color: var(--page-text);
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+.generation-layer {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.generation-layer[hidden] {
+  display: none;
+}
+.generation-card {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 12rem;
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 1rem;
+  background: var(--panel-background-solid);
+  box-shadow: 0 18px 48px var(--panel-shadow);
+  color: var(--page-text);
+  text-align: center;
+}
+.generation-card button {
+  margin-top: 0;
+  pointer-events: auto;
 }
 
 .settings-panel select {
@@ -595,6 +642,9 @@ input:focus-visible {
     min-width: 2.85rem;
     padding-inline: 0.34rem;
     font-size: 0.9rem;
+  }
+  .level-picker input {
+    width: 3.2rem;
   }
 }
 

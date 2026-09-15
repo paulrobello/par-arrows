@@ -1,8 +1,13 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
-import { type Browser, chromium, type Page, webkit } from "playwright";
+import {
+  type Browser,
+  type BrowserContext,
+  chromium,
+  type Page,
+  webkit,
+} from "playwright";
 import { PerspectiveCamera, Quaternion, Vector3 } from "three";
-import { LEVELS } from "../src/content/levels";
 import { createGameState, simulateMove } from "../src/core/game-state";
 import {
   cellToWorld,
@@ -13,6 +18,8 @@ import {
 import { solveLevel } from "../src/core/validation";
 import { arrowDimensions } from "../src/render/renderer";
 import { runHintChecks } from "./hints-browser";
+import { assertRuntimeCampaign } from "./runtime-browser";
+import { LEVELS, waitForReady } from "./runtime-fixtures";
 
 interface Snapshot {
   mode: string;
@@ -61,13 +68,31 @@ const server = Bun.spawn(
 const serverOutput = new Response(server.stdout).text();
 const serverErrors = new Response(server.stderr).text();
 let browser: Browser | undefined;
+let primaryContext: BrowserContext | undefined;
 const failures: string[] = [];
 const deadline = setTimeout(() => {
-  console.error("Browser verification exceeded its 120-second deadline.");
+  console.error("Browser verification exceeded its 180-second deadline.");
   server.kill();
   void browser?.close();
   process.exitCode = 1;
-}, 120_000);
+}, 180_000);
+
+async function closeWithinDeadline(promise: Promise<void>): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error("Browser cleanup exceeded 8 seconds.")),
+          8000,
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 async function snapshot(page: Page): Promise<Snapshot> {
   const raw = await page.evaluate(() => window.render_game_to_text?.());
@@ -146,6 +171,7 @@ async function assertCelebration(page: Page, mobile = false): Promise<void> {
     path: `${output}/celebration-${mobile ? "mobile" : "desktop"}.png`,
   });
   await page.getByRole("button", { name: "Next cube", exact: true }).click();
+  await waitForReady(page);
   assert.equal((await snapshot(page)).level.id, 2);
   assert.equal(await page.locator(".confetti-piece").count(), 0);
   assert.equal(await page.locator(".state-card.is-won").count(), 0);
@@ -182,19 +208,21 @@ async function assertCelebration(page: Page, mobile = false): Promise<void> {
   await launchLastArrow(page, 10);
   await advance(page, 650);
   assert.ok((await page.locator(".confetti-piece").count()) > 0);
-  assert.match(await page.locator("#state-title").innerText(), /campaign/i);
+  assert.match(await page.locator("#state-title").innerText(), /cube cleared/i);
   await page.screenshot({ path: `${output}/celebration-campaign.png` });
   await advance(page, 3500);
   assert.equal(await page.locator(".confetti-piece").count(), 0);
   assert.equal(await page.locator(".state-card.is-won").isVisible(), true);
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.__PAR_ARROWS_TEST__));
+  await waitForReady(page);
   assert.equal(await page.locator(".confetti-piece").count(), 0);
   assert.equal(await page.locator(".state-card.is-won").isVisible(), true);
-  await page.getByRole("button", { name: "Replay this cube" }).click();
+  await page.getByRole("button", { name: "Next cube", exact: true }).click();
+  await waitForReady(page);
+  assert.equal((await snapshot(page)).level.id, 11);
   assert.equal(await page.locator(".state-card.is-won").count(), 0);
   console.log(
-    "PASS victory timing, next/retry, expiry, saved win, final campaign, and reduced motion",
+    "PASS victory timing, next/retry, expiry, saved win, progression past level 10, and reduced motion",
   );
 }
 
@@ -220,8 +248,8 @@ async function assertCubeFits(page: Page): Promise<void> {
 }
 
 async function assertVisibleArrows(page: Page, levelId: number): Promise<void> {
-  const arrowPixels = await page.evaluate((id) => {
-    window.__PAR_ARROWS_TEST__?.loadLevel(id);
+  const arrowPixels = await page.evaluate(async (id) => {
+    await window.__PAR_ARROWS_TEST__?.loadLevel(id);
     const source = document.querySelector("canvas");
     if (!source) return 0;
     const probe = document.createElement("canvas");
@@ -334,7 +362,7 @@ async function assertThemes(page: Page, mobile = false): Promise<void> {
   await page.emulateMedia({ colorScheme: "light" });
   await assertTheme(page, "dark");
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.__PAR_ARROWS_TEST__));
+  await waitForReady(page);
   await assertTheme(page, "dark");
   assert.equal((await snapshot(page)).theme.preference, "dark");
   assert.deepEqual((await snapshot(page)).failedIds, before.failedIds);
@@ -352,6 +380,7 @@ async function assertThemes(page: Page, mobile = false): Promise<void> {
   await page.screenshot({ path: `${output}/theme-${prefix}-dark-victory.png` });
   assert.equal(await page.locator(".state-card.is-won").isVisible(), true);
   await page.getByRole("button", { name: "Next cube", exact: true }).click();
+  await waitForReady(page);
   await page.locator("#settings-button").click();
   await page.locator("#theme-select").selectOption("system");
   await assertTheme(page, "light");
@@ -408,7 +437,7 @@ async function assertThemeBootstrap(browser: Browser): Promise<void> {
   const page = await denied.newPage();
   observeErrors(page);
   await page.goto(url);
-  await page.waitForFunction(() => Boolean(window.__PAR_ARROWS_TEST__));
+  await waitForReady(page);
   await assertTheme(page, "dark");
   await page.locator("#settings-button").click();
   await page.locator("#theme-select").selectOption("light");
@@ -806,11 +835,12 @@ try {
     colorScheme: "light",
     viewport: { width: 1365, height: 900 },
   });
+  primaryContext = context;
   const page = await context.newPage();
   observeErrors(page);
   page.setDefaultTimeout(10_000);
   await page.goto(url);
-  await page.waitForFunction(() => Boolean(window.__PAR_ARROWS_TEST__));
+  await waitForReady(page);
 
   assert.equal((await snapshot(page)).mode, "demo");
   assert.equal(
@@ -868,7 +898,7 @@ try {
   await advance(page);
   assert.equal((await snapshot(page)).lives, once.lives);
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.__PAR_ARROWS_TEST__));
+  await waitForReady(page);
   const resumed = await snapshot(page);
   assert.equal(resumed.level.id, level.id);
   assert.equal(resumed.lives, once.lives);
@@ -970,9 +1000,10 @@ try {
     if (arrowId !== solution.at(-1)) await advance(page);
   }
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.__PAR_ARROWS_TEST__));
+  await waitForReady(page);
   assert.equal((await snapshot(page)).remainingIds.length, 0);
   await page.getByRole("button", { name: "Next cube" }).click();
+  await waitForReady(page);
   assert.equal((await snapshot(page)).level.id, 2);
   console.log(
     "PASS interrupted final exit persists win and unlocks next level",
@@ -1121,7 +1152,7 @@ try {
   const touchPage = await mobile.newPage();
   observeErrors(touchPage);
   await touchPage.goto(url);
-  await touchPage.waitForFunction(() => Boolean(window.__PAR_ARROWS_TEST__));
+  await waitForReady(touchPage);
   await assertThemes(touchPage, true);
   await runHintChecks(touchPage, output, true);
   await assertCelebration(touchPage, true);
@@ -1228,6 +1259,7 @@ try {
     `PASS emulated mobile portrait/landscape and ${engine === chromium ? "continuous touch rotation and two-pointer pinch without a move" : "WebKit touch activation"}`,
   );
   await mobile.close();
+  await assertRuntimeCampaign(browser, url, output);
   await assertThemeBootstrap(browser);
   assert.deepEqual(failures, [], "Browser must not report uncaught errors");
   await Bun.write(
@@ -1239,10 +1271,19 @@ try {
     ),
   );
 } finally {
-  clearTimeout(deadline);
-  await browser?.close();
-  server.kill();
-  await server.exited;
-  const logs = `${await serverOutput}\n${await serverErrors}`;
-  await Bun.write(`${output}/server.log`, logs);
+  try {
+    try {
+      if (primaryContext) await closeWithinDeadline(primaryContext.close());
+    } finally {
+      if (browser) await closeWithinDeadline(browser.close());
+    }
+  } finally {
+    server.kill();
+    const forceStop = setTimeout(() => server.kill("SIGKILL"), 2000);
+    await server.exited;
+    clearTimeout(forceStop);
+    const logs = `${await serverOutput}\n${await serverErrors}`;
+    await Bun.write(`${output}/server.log`, logs);
+    clearTimeout(deadline);
+  }
 }

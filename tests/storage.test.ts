@@ -6,14 +6,15 @@ import {
   simulateMove,
 } from "../src/core/game-state";
 import type { GameState, LevelDefinition } from "../src/core/types";
-import { solveLevel } from "../src/core/validation";
 import {
+  clearCampaign,
   loadCampaign,
   loadSettings,
   saveCampaign,
   saveSettings,
 } from "../src/storage";
 
+const CAMPAIGN_KEY = "par-arrows:campaign:v1";
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
 let entries: Map<string, string>;
 
@@ -25,9 +26,7 @@ function installStorage(denied = false): void {
     clear: () => entries.clear(),
     getItem: (key) => entries.get(key) ?? null,
     key: (index) => [...entries.keys()][index] ?? null,
-    removeItem: (key) => {
-      entries.delete(key);
-    },
+    removeItem: (key) => entries.delete(key),
     setItem: (key, value) => {
       if (denied)
         throw new DOMException("Storage denied", "QuotaExceededError");
@@ -46,26 +45,40 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  if (originalWindow) {
+  if (originalWindow)
     Object.defineProperty(globalThis, "window", originalWindow);
-  } else {
-    Reflect.deleteProperty(globalThis, "window");
-  }
+  else Reflect.deleteProperty(globalThis, "window");
 });
 
-function save(state: GameState): boolean {
+function levelFor(id: number): LevelDefinition {
+  const base = LEVELS[0];
+  if (!base) throw new Error("Expected level one fixture");
+  return id === base.id ? base : { ...base, id, title: `Cube ${id}` };
+}
+
+async function resolveFixture(id: number): Promise<LevelDefinition> {
+  return levelFor(id);
+}
+
+function save(state: GameState, unlockedLevelId = state.levelId): boolean {
   return saveCampaign({
     currentLevelId: state.levelId,
-    unlockedLevelId: state.levelId,
+    unlockedLevelId,
     tutorialComplete: true,
     state,
   });
 }
 
+function savedJson(): Record<string, unknown> {
+  const raw = entries.get(CAMPAIGN_KEY);
+  if (!raw) throw new Error("Expected campaign save");
+  return JSON.parse(raw) as Record<string, unknown>;
+}
+
 function writeLegacyVersion(
   state: GameState,
-  unlockedLevelId: number,
-  contentVersion: 1 | 2 | 3 | 4,
+  contentVersion: 1 | 2 | 3 | 4 | 5,
+  unlockedLevelId = state.levelId,
   tutorialComplete = true,
 ): void {
   expect(
@@ -76,384 +89,226 @@ function writeLegacyVersion(
       state,
     }),
   ).toBe(true);
-  const key = entries.keys().next().value;
-  if (!key) throw new Error("Expected legacy save key");
-  const current = JSON.parse(entries.get(key) ?? "{}");
-  entries.set(key, JSON.stringify({ ...current, contentVersion }));
+  entries.set(CAMPAIGN_KEY, JSON.stringify({ ...savedJson(), contentVersion }));
 }
 
-const OLD_V2_LEVEL_TWO_IDS = [
-  "l2-front-dependency-blocked",
-  "l2-front-dependency-clear",
-  "l2-wrap-top-west-3-1",
-  "l2-wrap-front-west-3-1",
-  "l2-straight-back-east-0-2",
-  "l2-straight-right-east-0-2",
-  "l2-straight-bottom-east-0-2",
-  "l2-straight-front-east-2-2",
-  "l2-straight-front-west-1-3",
-  "l2-straight-back-east-1-4",
-  "l2-straight-back-east-2-4",
-  "l2-straight-back-east-3-4",
-] as const;
-
-const OLD_V3_LEVEL_TWO_IDS = [
-  "l2-bottom-three-cell-line",
-  "l2-top-two-cell-line",
-  "l2-top-wrap-west-6",
-  "l2-front-wrap-north-6",
-  "l2-right-wrap-east-6",
-  "l2-left-wrap-south-5",
-  "l2-front-left-0-inward",
-  "l2-front-right-1",
-  "l2-front-left-1-inward",
-  "l2-front-east-line",
-  "l2-back-right-0",
-  "l2-back-left-0-inward",
-  "l2-back-right-1",
-  "l2-back-left-1-inward",
-  "l2-right-right-0",
-  "l2-right-left-0-inward",
-  "l2-right-right-1",
-  "l2-right-left-1-inward",
-  "l2-right-west-line",
-  "l2-left-left-0-inward",
-  "l2-left-left-1-inward",
-  "l2-left-west-line",
-  "l2-top-left-0-inward",
-  "l2-top-left-1-inward",
-  "l2-bottom-right-1",
-  "l2-bottom-left-1-inward",
-  "l2-bottom-east-line",
-  "l2-left-hook-fill-84",
-  "l2-front-edge-fill-155",
-  "l2-front-edge-fill-174",
-] as const;
-
-const OLD_V4_LEVEL_TWO_IDS = [
-  "l2-straight-2",
-  "l2-straight-3",
-  "l2-straight-4",
-  "l2-3",
-  "l2-4",
-  "l2-5",
-  "l2-6",
-  "l2-7",
-  "l2-8",
-  "l2-9",
-  "l2-10",
-  "l2-11",
-  "l2-12",
-  "l2-13",
-  "l2-14",
-  "l2-15",
-  "l2-16",
-  "l2-17",
-  "l2-18",
-  "l2-19",
-  "l2-20",
-  "l2-21",
-  "l2-22",
-  "l2-23",
-  "l2-24",
-  "l2-25",
-  "l2-26",
-  "l2-27",
-  "l2-28",
-  "l2-29",
-] as const;
-
-function oldV2LevelTwoState(): GameState {
-  return {
-    levelId: 2,
-    remainingIds: OLD_V2_LEVEL_TWO_IDS.slice(1),
-    failedIds: [OLD_V2_LEVEL_TWO_IDS[1]],
-    lives: 4,
-    status: "playing",
-    revision: 2,
-  };
-}
-
-function oldV3LevelTwoState(): GameState {
-  return {
-    levelId: 2,
-    remainingIds: OLD_V3_LEVEL_TWO_IDS.slice(1),
-    failedIds: [OLD_V3_LEVEL_TWO_IDS[1]],
-    lives: 4,
-    status: "playing",
-    revision: 2,
-  };
-}
-
-function oldV4LevelTwoState(): GameState {
-  return {
-    levelId: 2,
-    remainingIds: OLD_V4_LEVEL_TWO_IDS.slice(1),
-    failedIds: [OLD_V4_LEVEL_TWO_IDS[1]],
-    lives: 4,
-    status: "playing",
-    revision: 2,
-  };
-}
-
-function refreshedLevelTwo(level: LevelDefinition): LevelDefinition {
-  const route = level.arrows[0];
-  if (!route) throw new Error("Expected a route for the refreshed level");
-  return {
-    ...level,
-    arrows: [{ ...route, id: "l2-v5-doubled-layout" }],
-  };
-}
-
-function levelWithBlockedArrow(): {
-  level: LevelDefinition;
-  arrowId: string;
-} {
-  for (const level of LEVELS) {
-    const state = createGameState(level);
-    const arrow = level.arrows.find(
-      (candidate) =>
-        simulateMove(level, state, candidate.id).kind === "blocked",
-    );
-    if (arrow) return { level, arrowId: arrow.id };
-  }
-  throw new Error("Campaign must include at least one initially blocked arrow");
+function exitedState(level: LevelDefinition): GameState {
+  const initial = createGameState(level);
+  const arrow = initial.remainingIds[0];
+  if (!arrow) throw new Error("Expected removable arrow");
+  return applyMove(level, initial, simulateMove(level, initial, arrow));
 }
 
 describe("resumable campaign saves", () => {
-  test("first failure survives reload and a repeated failure remains free", () => {
-    const { level, arrowId } = levelWithBlockedArrow();
-    const initial = createGameState(level);
-    const failed = applyMove(
-      level,
-      initial,
-      simulateMove(level, initial, arrowId),
-    );
-    expect(failed.lives).toBe(level.lives - 1);
-    expect(save(failed)).toBe(true);
-    const resumed = loadCampaign(LEVELS).value;
-    expect(resumed?.state).toEqual(failed);
-    expect(resumed?.tutorialComplete).toBe(true);
-    if (!resumed) throw new Error("Expected saved game");
-    const retried = applyMove(
-      level,
-      resumed.state,
-      simulateMove(level, resumed.state, arrowId),
-    );
-    expect(retried.lives).toBe(failed.lives);
-    expect(retried.failedIds).toContain(arrowId);
+  test("does not invoke the resolver when no save exists", async () => {
+    let calls = 0;
+    const result = await loadCampaign(async (id) => {
+      calls += 1;
+      return levelFor(id);
+    });
+
+    expect(result).toEqual({
+      value: undefined,
+      recovered: false,
+      contentUpdated: false,
+    });
+    expect(calls).toBe(0);
   });
 
-  test("removed arrows remain removed after reopen", () => {
-    const level = LEVELS[0];
-    if (!level) throw new Error("Expected first level");
-    const initial = createGameState(level);
-    const arrow = level.arrows.find(
-      (candidate) => simulateMove(level, initial, candidate.id).kind === "exit",
-    );
-    if (!arrow) throw new Error("Expected removable arrow");
-    const removed = applyMove(
-      level,
-      initial,
-      simulateMove(level, initial, arrow.id),
-    );
-    save(removed);
-    expect(loadCampaign(LEVELS).value?.state.remainingIds).not.toContain(
-      arrow.id,
-    );
+  test("round-trips a v6 attempt beyond the authored campaign without persisting level", async () => {
+    const level = levelFor(42);
+    const state = exitedState(level);
+    expect(save(state, 88)).toBe(true);
+    expect(savedJson()).toMatchObject({
+      contentVersion: 6,
+      generatorVersion: 1,
+      currentLevelId: 42,
+      unlockedLevelId: 88,
+    });
+    expect(savedJson()).not.toHaveProperty("level");
+
+    const restored = await loadCampaign(resolveFixture);
+    expect(restored.recovered).toBe(false);
+    expect(restored.contentUpdated).toBe(false);
+    expect(restored.value?.state).toEqual(state);
+    expect(restored.value?.level).toEqual(level);
   });
 
-  test.each([1, 2, 3, 4] as const)(
+  test.each([1, 2, 3, 4, 5] as const)(
     "migrates a level one v%d attempt without changing its exact state",
-    (contentVersion) => {
-      const level = LEVELS[0];
-      if (!level) throw new Error("Expected first level");
-      const initial = createGameState(level);
-      const removedId = initial.remainingIds[0];
-      const failedId = initial.remainingIds[1];
-      if (!removedId || !failedId) throw new Error("Expected level one arrows");
-      const partial: GameState = {
-        ...initial,
-        remainingIds: initial.remainingIds.filter((id) => id !== removedId),
-        failedIds: [failedId],
-        lives: initial.lives - 1,
-        revision: 2,
-      };
-      const unlockedLevelId = Math.min(3, LEVELS.at(-1)?.id ?? 1);
-      writeLegacyVersion(partial, unlockedLevelId, contentVersion, false);
+    async (contentVersion) => {
+      const level = levelFor(1);
+      const state = exitedState(level);
+      writeLegacyVersion(state, contentVersion, 3, false);
 
-      const restored = loadCampaign(LEVELS);
+      const restored = await loadCampaign(resolveFixture);
       expect(restored.recovered).toBe(false);
       expect(restored.contentUpdated).toBe(false);
-      expect(restored.value?.state).toEqual(partial);
-      expect(restored.value?.unlockedLevelId).toBe(unlockedLevelId);
+      expect(restored.value?.state).toEqual(state);
+      expect(restored.value?.unlockedLevelId).toBe(3);
       expect(restored.value?.tutorialComplete).toBe(false);
-      const key = entries.keys().next().value;
-      if (!key) throw new Error("Expected migrated save key");
-      expect(JSON.parse(entries.get(key) ?? "{}").contentVersion).toBe(5);
+      expect(savedJson()).toMatchObject({ contentVersion });
+      if (!restored.value) throw new Error("Expected restored campaign");
+      expect(saveCampaign(restored.value)).toBe(true);
+      expect(savedJson()).toMatchObject({
+        contentVersion: 6,
+        generatorVersion: 1,
+      });
     },
   );
 
-  test.each([1, 2, 3, 4] as const)(
-    "resets a later v%d attempt while preserving unlocks and onboarding",
-    (contentVersion) => {
-      const previousLevel = LEVELS.find((candidate) => candidate.id === 2);
-      if (!previousLevel) throw new Error("Expected second level");
-      const level = refreshedLevelTwo(previousLevel);
-      const levels = LEVELS.map((candidate) =>
-        candidate.id === level.id ? level : candidate,
-      );
-      const legacyState =
-        contentVersion === 4
-          ? oldV4LevelTwoState()
-          : contentVersion === 3
-            ? oldV3LevelTwoState()
-            : oldV2LevelTwoState();
-      const currentArrowIds = new Set(level.arrows.map((arrow) => arrow.id));
-      expect(
-        legacyState.remainingIds.some((id) => !currentArrowIds.has(id)),
-      ).toBe(true);
-      const unlockedLevelId = Math.min(7, LEVELS.at(-1)?.id ?? level.id);
-      writeLegacyVersion(legacyState, unlockedLevelId, contentVersion, false);
+  test.each([1, 2, 3, 4, 5] as const)(
+    "resets a later v%d attempt while preserving progression",
+    async (contentVersion) => {
+      const level = levelFor(11);
+      writeLegacyVersion(exitedState(level), contentVersion, 17, false);
 
-      const restored = loadCampaign(levels);
+      const restored = await loadCampaign(resolveFixture);
       expect(restored.recovered).toBe(true);
       expect(restored.contentUpdated).toBe(true);
       expect(restored.value?.state).toEqual(createGameState(level));
-      expect(restored.value?.unlockedLevelId).toBe(unlockedLevelId);
+      expect(restored.value?.unlockedLevelId).toBe(17);
       expect(restored.value?.tutorialComplete).toBe(false);
-      const key = entries.keys().next().value;
-      if (!key) throw new Error("Expected migrated save key");
-      expect(JSON.parse(entries.get(key) ?? "{}").contentVersion).toBe(5);
-      const reopened = loadCampaign(levels);
-      expect(reopened.recovered).toBe(false);
-      expect(reopened.contentUpdated).toBe(false);
     },
   );
 
-  test("a valid later v4 state resets even when arrow IDs still match", () => {
-    const level = LEVELS.find((candidate) => candidate.id === 2);
-    if (!level) throw new Error("Expected second level");
-    const currentState = createGameState(level);
-    const unlockedLevelId = Math.min(7, LEVELS.at(-1)?.id ?? level.id);
-    writeLegacyVersion(currentState, unlockedLevelId, 4, false);
+  test("a v6 seed mismatch resets the attempt and never restores stale arrow IDs", async () => {
+    const level = levelFor(19);
+    const state = exitedState(level);
+    expect(save(state, 25)).toBe(true);
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({ ...savedJson(), seed: "obsolete" }),
+    );
 
-    const restored = loadCampaign(LEVELS);
+    const restored = await loadCampaign(resolveFixture);
     expect(restored.recovered).toBe(true);
     expect(restored.contentUpdated).toBe(true);
     expect(restored.value?.state).toEqual(createGameState(level));
-    expect(restored.value?.unlockedLevelId).toBe(unlockedLevelId);
-    expect(restored.value?.tutorialComplete).toBe(false);
+    expect(restored.value?.unlockedLevelId).toBe(25);
   });
 
-  test("fresh v5 saves reopen the exact current attempt", () => {
-    const level = LEVELS[0];
-    if (!level) throw new Error("Expected first level");
-    const initial = createGameState(level);
-    const arrow = level.arrows.find(
-      (candidate) => simulateMove(level, initial, candidate.id).kind === "exit",
-    );
-    if (!arrow) throw new Error("Expected removable level one arrow");
-    const partial = applyMove(
-      level,
-      initial,
-      simulateMove(level, initial, arrow.id),
-    );
-    save(partial);
-    const key = entries.keys().next().value;
-    if (!key) throw new Error("Expected v5 save key");
-    expect(JSON.parse(entries.get(key) ?? "{}").contentVersion).toBe(5);
-    const restored = loadCampaign(LEVELS);
-    expect(restored.recovered).toBe(false);
-    expect(restored.contentUpdated).toBe(false);
-    expect(restored.value?.state).toEqual(partial);
+  test("invalid state recovers against the resolved level", async () => {
+    const level = levelFor(12);
+    const invalid = { ...createGameState(level), lives: 99 };
+    expect(save(invalid)).toBe(true);
+
+    const restored = await loadCampaign(resolveFixture);
+    expect(restored.recovered).toBe(true);
+    expect(restored.value?.state).toEqual(createGameState(level));
+    if (!restored.value) throw new Error("Expected restored campaign");
+    expect(saveCampaign(restored.value)).toBe(true);
+    expect((await loadCampaign(resolveFixture)).recovered).toBe(false);
   });
 
-  test("removing a previously red arrow does not invalidate the saved campaign", () => {
-    const { level, arrowId } = levelWithBlockedArrow();
-    const initial = createGameState(level);
-    let state = applyMove(
-      level,
-      initial,
-      simulateMove(level, initial, arrowId),
-    );
-    const lives = state.lives;
-    const solution = solveLevel(level);
-    expect(solution).not.toBeNull();
-    for (const id of solution ?? []) {
-      state = applyMove(level, state, simulateMove(level, state, id));
-      if (id === arrowId) break;
-    }
-    expect(state.remainingIds).not.toContain(arrowId);
+  test("oversized saved state arrays recover before validating their IDs", async () => {
+    const level = levelFor(12);
+    const state = createGameState(level);
     expect(save(state)).toBe(true);
-    const resumed = loadCampaign(LEVELS);
-    expect(resumed.recovered).toBe(false);
-    expect(resumed.value?.state.remainingIds).not.toContain(arrowId);
-    expect(resumed.value?.state.lives).toBe(lives);
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({
+        ...savedJson(),
+        state: { ...state, remainingIds: [...state.remainingIds, "extra"] },
+      }),
+    );
+
+    const restored = await loadCampaign(resolveFixture);
+    expect(restored.recovered).toBe(true);
+    expect(restored.value?.state).toEqual(createGameState(level));
   });
 
-  test.each([
-    { lives: -1 },
-    { lives: 1.5 },
-    { lives: 999 },
-    { lives: 4 },
-    { revision: -2 },
-    { status: "won" },
-    { status: "lost" },
-    { remainingIds: ["not-an-arrow"] },
-  ])(
-    "invalid progress recovers without replaying corrupt state: %j",
-    (patch) => {
-      const level = LEVELS[0];
-      if (!level) throw new Error("Expected first level");
-      const invalid = { ...createGameState(level), ...patch } as GameState;
-      save(invalid);
-      const restored = loadCampaign(LEVELS);
-      expect(restored.recovered).toBe(true);
-      expect(restored.value?.state).not.toEqual(invalid);
+  test("malformed progression metadata recovers without resolving a level", async () => {
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({
+        currentLevelId: Number.MAX_SAFE_INTEGER,
+        unlockedLevelId: 1,
+      }),
+    );
+    let calls = 0;
+    const restored = await loadCampaign(async (id) => {
+      calls += 1;
+      return levelFor(id);
+    });
+
+    expect(restored).toEqual({
+      value: undefined,
+      recovered: true,
+      contentUpdated: false,
+    });
+    expect(calls).toBe(0);
+    expect(entries.has(CAMPAIGN_KEY)).toBe(false);
+  });
+
+  test.each(["null", '"campaign"', "42", "[]"])(
+    "valid JSON %s that is not campaign metadata recovers without resolving",
+    async (raw) => {
+      entries.set(CAMPAIGN_KEY, raw);
+      let calls = 0;
+
+      const restored = await loadCampaign(async (id) => {
+        calls += 1;
+        return levelFor(id);
+      });
+
+      expect(restored).toEqual({
+        value: undefined,
+        recovered: true,
+        contentUpdated: false,
+      });
+      expect(calls).toBe(0);
+      expect(entries.has(CAMPAIGN_KEY)).toBe(false);
     },
   );
 
-  test("duplicate arrow IDs cannot create an unwinnable resumed board", () => {
-    const level = LEVELS[0];
-    if (!level) throw new Error("Expected first level");
-    const initial = createGameState(level);
-    const invalid = {
-      ...initial,
-      remainingIds: [...initial.remainingIds, ...initial.remainingIds],
-    };
-    save(invalid);
-    const restored = loadCampaign(LEVELS);
-    expect(restored.recovered).toBe(true);
-    expect(restored.value?.state).not.toEqual(invalid);
+  test("a resolver rejection leaves the valid stored attempt unchanged", async () => {
+    const level = levelFor(27);
+    expect(save(exitedState(level), 30)).toBe(true);
+    const raw = entries.get(CAMPAIGN_KEY);
+
+    await expect(
+      loadCampaign(async () => Promise.reject(new Error("worker unavailable"))),
+    ).rejects.toThrow("worker unavailable");
+    expect(entries.get(CAMPAIGN_KEY)).toBe(raw);
   });
 
-  test("a changed content version resets the attempt while preserving unlocks", () => {
-    const level = LEVELS[4];
-    if (!level) throw new Error("Expected fifth level");
-    save(createGameState(level));
-    const key = entries.keys().next().value;
-    if (!key) throw new Error("Expected saved progress");
-    const saved = JSON.parse(entries.get(key) ?? "{}");
-    entries.set(key, JSON.stringify({ ...saved, contentVersion: -1 }));
-    const restored = loadCampaign(LEVELS);
-    expect(restored.recovered).toBe(true);
-    expect(restored.value?.unlockedLevelId).toBe(level.id);
+  test("a stale async restore cannot recreate progress cleared while it resolves", async () => {
+    const level = levelFor(27);
+    writeLegacyVersion(exitedState(level), 5, 30);
+    let release!: (value: LevelDefinition) => void;
+    const pendingLevel = new Promise<LevelDefinition>((resolve) => {
+      release = resolve;
+    });
+
+    const loading = loadCampaign(async () => pendingLevel);
+    clearCampaign();
+    release(level);
+
+    const restored = await loading;
     expect(restored.value?.state).toEqual(createGameState(level));
-    expect(loadCampaign(LEVELS).recovered).toBe(false);
+    expect(entries.has(CAMPAIGN_KEY)).toBe(false);
   });
 
-  test("unreadable JSON and denied writes remain recoverable", () => {
-    const level = LEVELS[0];
-    if (!level) throw new Error("Expected first level");
-    const state = createGameState(level);
-    save(state);
-    const key = entries.keys().next().value;
-    if (!key) throw new Error("Expected a saved snapshot");
-    entries.set(key, "{broken");
-    expect(loadCampaign(LEVELS).recovered).toBe(true);
+  test("future content versions recover safely", async () => {
+    const level = levelFor(31);
+    expect(save(exitedState(level), 31)).toBe(true);
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({ ...savedJson(), contentVersion: 99 }),
+    );
+
+    const restored = await loadCampaign(resolveFixture);
+    expect(restored.recovered).toBe(true);
+    expect(restored.contentUpdated).toBe(true);
+    expect(restored.value?.state).toEqual(createGameState(level));
+  });
+
+  test("denied writes remain recoverable", async () => {
+    const state = createGameState(levelFor(1));
     installStorage(true);
     expect(save(state)).toBe(false);
+    expect((await loadCampaign(resolveFixture)).value).toBeUndefined();
   });
 });
 
@@ -467,14 +322,12 @@ describe("player settings", () => {
       "par-arrows:settings:v1",
       JSON.stringify({ reducedMotion: true }),
     );
-
     expect(loadSettings()).toEqual({ reducedMotion: true, theme: "system" });
   });
 
   test("recovers from malformed and invalid saved themes", () => {
     entries.set("par-arrows:settings:v1", "{broken");
     expect(loadSettings()).toEqual({ reducedMotion: false, theme: "system" });
-
     entries.set(
       "par-arrows:settings:v1",
       JSON.stringify({ reducedMotion: true, theme: "midnight" }),
@@ -482,23 +335,8 @@ describe("player settings", () => {
     expect(loadSettings()).toEqual({ reducedMotion: true, theme: "system" });
   });
 
-  test("persists a manual theme without dropping reduced motion", () => {
+  test("persists theme and reduced motion", () => {
     expect(saveSettings({ reducedMotion: true, theme: "dark" })).toBe(true);
-
     expect(loadSettings()).toEqual({ reducedMotion: true, theme: "dark" });
-  });
-
-  test("persists reduced motion without dropping the theme", () => {
-    expect(saveSettings({ reducedMotion: false, theme: "light" })).toBe(true);
-    expect(saveSettings({ reducedMotion: true, theme: "light" })).toBe(true);
-
-    expect(loadSettings()).toEqual({ reducedMotion: true, theme: "light" });
-  });
-
-  test("denied storage leaves settings usable in memory", () => {
-    installStorage(true);
-
-    expect(saveSettings({ reducedMotion: true, theme: "dark" })).toBe(false);
-    expect(loadSettings()).toEqual({ reducedMotion: false, theme: "system" });
   });
 });

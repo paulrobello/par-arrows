@@ -40,7 +40,7 @@ The four additional photos supplied on 2026-09-14 are preserved as references 04
 | R5 | Clicking or touching an arrow attempts movement in its forward direction. |
 | R6 | An arrow that reaches an exit edge unobstructed flies off and is removed. |
 | R7 | An arrow that hits another arrow bounces back to its original position. Its first failure costs one life and makes it red until removed. Further failures by that same red arrow cost no additional lives. |
-| R8 | Level 1 starts with five lives. Later progression grants fewer lives according to the confirmed tiered schedule in R20. The life floor beyond the MVP remains open. |
+| R8 | Level 1 starts with five lives. Runtime levels have a deterministic per-level life budget that falls to three lives and never goes below that floor. |
 | R9 | Later levels can be much denser and need not use perfect cubes. |
 | R10 | Future double-ended arrows have blue and green halves. The half clicked determines travel direction. |
 | R11 | Future special edges are marked yellow. A head reaching one continues onto the adjoining face instead of flying off. |
@@ -48,11 +48,11 @@ The four additional photos supplied on 2026-09-14 are preserved as references 04
 | R13 | Movement follows the arrow's path: the tail follows the head. Existing wrapped bodies unwrap through ordinary seams; only a new head crossing determines exit versus continuation. |
 | R14 | Allow continuous rotation in every drag direction with no axis stops, including repeated turns over the top and bottom, plus mouse-wheel and pinch zoom. Far-side arrows remain faintly visible and become selectable only when rotated onto exposed faces. |
 | R15 | At zero lives, allow unlimited retries of the same puzzle, restoring its configured starting lives. |
-| R16 | The MVP contains ten curated cube levels and a solvability checker. |
+| R16 | Level 1 is the unchanged authored teaching cube. Every logical level at or above 2 is generated at runtime from its level number, validated for solvability, and is the same seeded puzzle for every player. |
 | R17 | Arrow paths use grid-aligned 90-degree turns, with no starting overlaps or overpasses. |
 | R18 | Reject any level where an arrow could contact its own body. Do not turn self-contact into an ordinary life-costing gameplay event. |
 | R19 | Only one arrow moves or rebounds at a time. Ignore additional arrow taps while rotation and zoom remain available. |
-| R20 | Levels 1–3 start with five lives, levels 4–6 with four, and levels 7–10 with three. Retry resets lives and red-arrow history. |
+| R20 | Runtime progression is endless. Difficulty grows from 60 to 180 arrows early, then caps at 240 arrows; grids grow to 26 × 26 cells per face and path length is bounded at 40. Lives never fall below three. Retry resets lives and red-arrow history. |
 | R21 | Refresh/reopen resumes the exact logical state, preserving removed arrows, lives, and failure history, including the result of an interrupted move. |
 | R22 | Highlight the selected arrow on press before release. Ambiguous taps do nothing so the player can zoom closer. |
 | R23 | Save player progress in browser `localStorage` so players can resume after refresh or reopening the game. |
@@ -62,7 +62,7 @@ The four additional photos supplied on 2026-09-14 are preserved as references 04
 | R27 | Render arrows as flat ribbons with flat arrowheads, following the surface and folding across face seams. |
 | R28 | Apply two successive 25% arrow-speed increases from the initial MVP, for a total multiplier of 1.5625. Current durations are 563.2 ms exits, 473.6 ms rebounds, and 70.4 ms reduced-motion transitions. Demo pauses are unchanged. |
 | R29 | Keep level 1 simple. From level 2 onward, substantially increase arrow density and multi-bend zigzag complexity, mix different path shapes and straight-arrow lengths, and include multiple arrows spanning cube edges. |
-| R30 | Make arrow shafts and heads 20% wider and double the version-4 arrow counts on levels 2–10 to 60, 84, 108, 132, 156, 168, 180, 180, and 180. Preserve the visible width increase when a finer grid is needed. Level 1 keeps its original six-arrow layout. |
+| R30 | Superseded catalog detail: make arrow shafts and heads 20% wider and double the version-4 counts on fixed levels 2–10. Keep it only as historical reference; current production difficulty is governed by R20. |
 | R31 | Support dark mode with system-preference detection and a persistent manual appearance control. |
 | R32 | Add a Hint button that finds a safely removable arrow, rotates the cube to expose it, and then flashes that arrow. |
 
@@ -72,10 +72,10 @@ The four additional photos supplied on 2026-09-14 are preserved as references 04
 
 - M1: One-direction arrows, black in light mode and ivory in dark mode, including bent paths and paths crossing cube faces.
 - M2: Rotatable cube, reliable selection, unobstructed exit animation, blocked rebound, red feedback, and life accounting.
-- M3: Ten curated cube levels with increasing density and the confirmed five/four/three starting-life curve.
-- M4: A small-cube onboarding demo showing a failed touch followed by a successful touch; level indicator, arrows-remaining count, lives display, restart, failure/retry, completion/next-level, and replay of unlocked levels.
-- M5: Exact logical progress resume from browser `localStorage`, including failed-arrow history, in the browser and installed PWA. Persist reduced-motion and System/Light/Dark appearance settings separately. Offline-play scope remains open.
-- M6: Validated levels with a demonstrated full-clear solution and desktop/mobile verification.
+- M3: The unchanged authored level 1, followed by endless deterministic runtime cube levels. A given level number always produces the same validated puzzle for every player.
+- M4: A small-cube onboarding demo showing a failed touch followed by a successful touch; level indicator, arrows-remaining count, lives display, restart, failure/retry, completion/next-level, and bounded numeric navigation to any unlocked level.
+- M5: Exact logical progress resume from browser `localStorage`, including failed-arrow history, in the browser and installed PWA. Saves store generator metadata and the logical state, not generated catalogs. Persist reduced-motion and System/Light/Dark appearance settings separately. Offline-play scope remains open.
+- M6: Runtime generation is deterministic, bounded, structurally validated, and solver-validated before a generated puzzle is presented. Desktop/mobile verification remains required.
 - M7: PWA installation and standalone launch, with real-device checks covering mobile hardware up to two generations old.
 - M8: A safe-arrow hint that reveals the arrow's head face before highlighting it, without making a move or spending a life.
 
@@ -124,13 +124,13 @@ Record failure history as logical per-arrow state; red is its visual expression.
 
 Life deduction occurs at the first logical impact for that arrow. Duplicate pointer events, rapid taps during movement, cancellation, camera drags, misses, and malformed input must not create extra deductions. An internal level-data or rendering failure must not charge a life. A level attempt's lives therefore measure distinct arrows failed, not total failed taps.
 
-**Confirmed:** At zero lives, retry restores the same layout and full starting lives, with unlimited attempts. A new level attempt clears every arrow's failure history and returns ordinary arrows to black. Levels 1–3 start with five lives, levels 4–6 with four, and levels 7–10 with three. Lives do not carry over because each level starts at its configured budget. At zero, finish the rebound feedback and show failure rather than allow further free probes.
+**Confirmed:** At zero lives, retry restores the same layout and full starting lives, with unlimited attempts. A new level attempt clears every arrow's failure history and returns ordinary arrows to black. Runtime level budgets reduce from the early game and floor at three lives. Lives do not carry over because each level starts at its configured budget. At zero, finish the rebound feedback and show failure rather than allow further free probes.
 
 ### 5.4 Completion, concurrency, and interruption — Q9, Q11
 
 **Confirmed:** Only one arrow attempt can run at a time. Additional arrow activations are ignored, not queued. Camera rotation and zoom remain available. This makes the rule outcome independent of rapid input timing.
 
-Completion happens after the last arrow has fully exited. Show a short completion state and an explicit Next button. There is no timer or move cap in the proposed MVP.
+Completion happens after the last arrow has fully exited. Show a short completion state and an explicit Next button. Next continues to the next logical level; there is no final level or campaign-complete terminal state.
 
 **Confirmed:** Reload/reopen resumes the exact logical state, including an interrupted move's result. Proposed implementation: save the complete logical result when the attempt is accepted, before presentation, and restore to a settled view of that result. Backgrounding pauses presentation; returning completes it once. An interrupted first collision still costs its one life; an interrupted collision by an already-red arrow costs none. Preserve failed-arrow history and never restore partially displaced geometry.
 
@@ -166,16 +166,17 @@ Keyboard puzzle navigation and a nonvisual equivalent of the spatial puzzle need
 
 ### 7.1 Current campaign content and lives — Q6, Q10
 
-**Confirmed:** Ten curated cube levels with a solvability checker and the life schedule below. Content version 5 doubles the previous arrow counts from level 2 onward while retaining irregular route composition and increasing stroke width by 20%. A logical face grid is independent of the displayed cube size.
+**Superseded historical policy:** the fixed ten-level, content-version-5 catalog described in earlier reports is retained only as historical reference and test fixtures. It is not a production import.
 
-| Group | Grid per face | Arrows per level | Starting lives | Teaching goal |
-| --- | --- | --- | --- | --- |
-| Level 1 | 4 × 4 | 6 total, with arrows on all six faces | 5, confirmed | Tap, rotate, identify a clear exit. |
-| Levels 2–3 | 12 × 12 to 13 × 13 | 60–84 | 5, confirmed | Stepped zigzags, varied winding paths, and blockers. |
-| Levels 4–6 | 15 × 15 to 18 × 18 | 108–156 | 4, confirmed | Longer winding routes, wraps, and removal dependencies. |
-| Levels 7–10 | 18 × 18 to 22 × 22 | 168–180 | 3, confirmed | Dense irregular paths with varied footprints and removal dependencies. |
+**Current policy:** level 1 remains the unchanged authored teaching cube. Each level number at or above 2 deterministically derives a version-1 seed and descriptor, then generates a reverse-constructed puzzle that is validated as solvable before use. A player retry and every player on the same level number receive the same puzzle.
 
-These are the fixed authored layouts in content version 5. Every level validates and has a complete solution under the runtime rules. Never fill a numeric quota with an invalid or unreadable arrangement. Later stress fixtures should exceed the 180-arrow campaign, with their budgets determined from device measurements. Current count, sizing, and verification evidence is in the [doubled campaign report](docs/verification/thicker-double-arrows.md).
+| Range | Generation bounds | Starting lives | Purpose |
+| --- | --- | --- | --- |
+| Level 1 | Authored 4 × 4 cube, 6 arrows | 5 | Teach tapping, rotation, and clear exits. |
+| Early runtime levels | 60–180 arrows with increasing grid/detail | Decreases toward 3 | Build density, wrapping, and removal dependencies. |
+| Later runtime levels | At most 240 arrows, 26 × 26 cells per face, and 40 cells per path | 3 floor | Continue endlessly within validated desktop bounds. |
+
+Generation uses a worker, caches the three most recent results, and times out after 12 seconds. A stale request, reset, or failed restore must never replace a newer accepted state. Never present an unvalidated puzzle merely to meet a count target.
 
 References [04](docs/references/reference-04.jpeg), [05](docs/references/reference-05.jpeg), and [06](docs/references/reference-06.jpeg) establish the later visual direction: mix short and long arrows, single and multiple bends, hooked returns, stepped zigzags, and winding paths, with close spacing across multiple faces. Preserve each arrow's readable identity and validate self-contact and solvability. The pictured late-game density is a progression reference; level 1 keeps its simple teaching layout. Screenshot counters do not set campaign arrow quotas.
 
@@ -266,14 +267,14 @@ Answer the blocking rules first. An unanswered proposal remains a proposal, even
 | Q3 | How long does collision red persist, and are repeat failures charged? | Red until removed; additional failures of that red arrow cost no extra lives. | Confirmed 2026-09-14. |
 | Q4 | Free orbit or fixed face views? Should far-side arrows be visible and selectable? | Free orbit, faint far-side arrows, exposed surfaces only selectable. Mouse-wheel and pinch zoom also requested. | Confirmed 2026-09-14. |
 | Q5 | What happens at zero lives? Does retry restore the same puzzle and full lives? | Unlimited retries of the same layout with full per-level lives. | Confirmed 2026-09-14. |
-| Q6 | How many MVP levels, and authored, generated, or both? | Ten curated cubes with a solvability checker. | Confirmed 2026-09-14. |
+| Q6 | How many MVP levels, and authored, generated, or both? | Superseded: the prior ten-curated-cube policy. Current: authored level 1 plus endless deterministic, solver-validated runtime generation for every level number at or above 2. | Superseded and replaced 2026-09-15. |
 
 ### 11.2 Movement and fairness edge cases
 
 - **Q7 — Confirmed 2026-09-14:** Grid-aligned 90-degree paths with no starting overlaps or overpasses. Adjacent lanes remain a proposed authoring convention.
 - **Q8 — Confirmed 2026-09-14:** Reject any level where an arrow could contact itself. Follow-up boundary still open: does a head entering an exactly vacated tail location count as forbidden contact when there is no simultaneous overlap? Proposed: no. Exterior-flight collision against later concave shapes also remains open; proposed: no further surface collision after departure.
 - **Q9 — Confirmed 2026-09-14:** One arrow attempt at a time; ignore further taps, with rotation and zoom still available.
-- **Q10 — Confirmed 2026-09-14:** Five lives for levels 1–3, four for 4–6, three for 7–10. Retry restores lives and clears red-arrow history. Beyond-MVP life reductions remain open.
+- **Q10 — Superseded 2026-09-15:** The former 1–10 tier curve is replaced by runtime level budgets that decline to a three-life floor. Retry restores lives and clears red-arrow history.
 - **Q11 — Confirmed 2026-09-14:** Resume exact logical state, including removed arrows, lives, red-arrow history, and the result of an interrupted move.
 - **Q12 — Confirmed 2026-09-14:** Highlight on press before release. Ambiguous taps do nothing; the player can zoom closer.
 - **Q13 — Confirmed 2026-09-14:** Include a demo showing a touch on an arrow that fails, followed by a touch on an arrow that succeeds, on a small cube with only a few arrows. Combined with the preceding “no skipable collision demo” instruction, the demo is non-skippable. Practice-state isolation and first-run/replay details are proposed in section 5.5.
@@ -286,17 +287,17 @@ Answer the blocking rules first. An unanswered proposal remains a proposal, even
 - **Q17:** Are yellow edges whole-edge or partial-edge rules? Do they work both ways? Can yellow markings be hidden behind the shape? Recommendation: whole-edge, reciprocal, visible using the same inspection rules as the shape.
 - **Q18:** If yellow edges produce a loop with no exit, should the move fail with a life loss or should such boards be prohibited? Recommendation: prohibit in shipped static content and keep a bounded runtime safeguard.
 - **Q19:** Which non-cube shapes come first: rectangular boxes, joined cubes, carved/concave blocks, or arbitrary meshes? Recommendation: boxes, then grid-aligned compound solids.
-- **Q20:** Is progression strictly sequential? Can players skip, replay, or reset it? What happens after the final MVP level? Recommendation: sequential unlocks, replay unlocked levels, explicit campaign-complete screen.
+- **Q20 — Resolved 2026-09-15:** Progression is endless. Next always advances to the next logical level. A numeric level cube accepts Go or Enter for any unlocked safe-integer ID; there is no final campaign-complete screen.
 - **Q21 — Partially confirmed 2026-09-15:** Safe-arrow hints are approved as specified in section 5.6. Undo, scoring, stars, time limits, and rewards remain separate scope decisions.
 - **Q22 — Confirmed 2026-09-15:** Preserve the pale light theme and add a dark theme with system detection and persistent manual selection. Both themes retain faint far-side arrows and readable arrow states.
 - **Q23:** For a blue/green arrow, is its first collision the only life penalty for the entire arrow, or can the other direction cost another life? Once red, how should the two selectable halves remain distinguishable? Recommendation: one penalty per whole arrow and persistent direction markers alongside red.
 
 ### 11.4 Approval boundaries
 
-Q1–Q13 have owner answers; Q8 retains a tail-boundary clarification. Q13 confirms the demo sequence; its practice-state/lifecycle details are proposed. Q14 confirms `localStorage` and PWA installation. Q15 confirms mobile support through two prior hardware generations. Resolve the Q8 boundary before implementing movement. Resolve the remaining demo lifecycle details, Q14's offline scope, Q15's remaining platform/accessibility details, Q20, and Q21 before freezing the remaining MVP scope. Resolve Q16–Q19 and Q23 before implementing their deferred content. Q22 is resolved by the system-aware light/dark appearance feature described in U7.
+Q1–Q13 have owner answers; Q8 retains a tail-boundary clarification. Q13 confirms the demo sequence; its practice-state/lifecycle details are proposed. Q14 confirms `localStorage` and PWA installation. Q15 confirms mobile support through two prior hardware generations. Q20 is resolved by endless runtime progression. Resolve the Q8 boundary before implementing movement and the remaining demo, offline, platform/accessibility, and Q21 details before freezing broader release scope. Resolve Q16–Q19 and Q23 before implementing their deferred content. Q22 is resolved by the system-aware light/dark appearance feature described in U7.
 
 ## 12. Current deliverable status
 
-- S1: Planning documents and original reference copies are preserved. The initial ten-level MVP is implemented.
+- S1: Planning documents and original reference copies are preserved. The former fixed ten-level catalog is superseded by runtime endless progression; level 1 remains authored.
 - S2: Project setup, core rules, content, rendering/input, local saves, and PWA installation support have passed the local checks described in the [verification report](docs/verification/2026-09-14-mvp.md).
 - S3: Physical-device performance, installed-app behavior, multi-tab save handling, and broader accessibility qualification remain open. Remote publication and deployment have not been requested.

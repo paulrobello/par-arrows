@@ -2,6 +2,16 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Runtime endless campaign
+
+The fixed level-2–10 catalog is superseded in production. Level 1 remains the unchanged authored teaching puzzle; every logical level at or above 2 is generated at runtime from a version-1 seed derived from its level number. Reverse construction, structural validation, and solver validation ensure retry and every player on the same number receive the same solvable puzzle. Early levels grow from 60 to 180 arrows; later levels cap at 240 arrows, 26 × 26 cells per face, 40 cells per path, and a three-life floor.
+
+Generation runs through a Web Worker with a three-entry cache and a 12-second timeout. Request/retry/reset/restore revisions prevent stale or failed results from overwriting an accepted puzzle. Saves are v6 logical snapshots with generator metadata, not generated catalogs; reload regenerates through the worker. Valid v1–v5 level-one attempts remain exact. Older later-level attempts restart at the same ID under the new layout, preserving unlocks and showing a refresh message. The static campaign layouts and offline generator remain legacy test fixtures only and are not imported by production code.
+
+`make checkall` passed with 69 tests and 4,409 assertions. The final 120-level sweep validates solvability, bounded geometry, varied straight lengths, wrapping, and normalized shape diversity; its desktop benchmark averaged 44.6 ms per generation with a 236 ms worst case. Headed Chrome and WebKit passed progression through 1,000 to 1,001, shared geometry across sessions, retry/reload, numeric navigation, worker failure recovery, stale-request protection, reset during migration, hints, themes, celebrations, and touch controls. Root inspected generated layouts and the 320-pixel dock, and ran the web-game client. Generator-v1 geometry hashes guard reproducibility. Browser cleanup is bounded so a transport shutdown cannot leave verification hanging.
+
+The entries below preserve implementation history. Statements there about fixed levels 2–10, a final campaign state, content versions 2–5, or prior browser passes apply only to the superseded catalog and must not be read as runtime-campaign verification.
+
 ## Confetti speed tuning
 
 The requested 25% speed increase divides confetti travel, stagger, and cleanup durations by 1.25: travel is now 1.96 seconds, stagger is 19.2 ms per group, and cleanup occurs at 2.08 seconds. The victory card retains its 440 ms entrance. Root verified computed animation timings and cleanup in headed Chrome/WebKit, inspected the rendered burst and web-game client, and passed the full gate (65 tests / 2,075 assertions). These timings supersede the initial celebration timings below.
@@ -80,7 +90,7 @@ Flat quads and triangular heads follow face planes and fold at seams. Moving bod
 
 ## Confirmed behavior
 
-- Ten curated cube levels and a solvability checker. Levels 1–3 have five lives, 4–6 four, 7–10 three.
+- Level 1 is authored; levels 2 and above are deterministic, solver-validated runtime puzzles. Progression is endless, with an early 60–180 arrow ramp and later 240-arrow cap, 26 × 26 face grids, 40-cell paths, and a three-life floor.
 - Head advances forward; body follows its existing path and unwraps seams. Ordinary new head crossings exit.
 - First failure per arrow costs one life and keeps it red until removed. Repeat failures of that arrow are free.
 - Reject self-contact levels. One active arrow at a time; extra taps ignored while orbit/zoom remain available.
@@ -95,7 +105,7 @@ Flat quads and triangular heads follow face planes and fold at seams. Moving bod
 - Implement current documented defaults for remaining MVP details. Offline gameplay, accounts, undo, sound assets, and later gameplay mechanics stay deferred. Safe-arrow hints were separately approved on 2026-09-15.
 - A vacated tail cell is allowed only without simultaneous swept contact. Self-contact validation checks each arrow without other blockers.
 - Demo uses independent state, starts before first campaign play, saves completion only after both moves, and leaves level 1 untouched. Interrupted demo restarts if not completed.
-- Sequential unlock/replay of unlocked levels, explicit final campaign completion, reduced-motion presentation, accessible HTML controls.
+- Sequential unlock/replay of unlocked levels, bounded numeric Go/Enter navigation, no final campaign completion, reduced-motion presentation, accessible HTML controls.
 
 ## Work and ownership
 

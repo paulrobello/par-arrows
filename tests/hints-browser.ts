@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import type { Page } from "playwright";
 import { PerspectiveCamera, Vector3 } from "three";
-import { LEVELS } from "../src/content/levels";
 import { createGameState, simulateMove } from "../src/core/game-state";
 import {
   cellToWorld,
@@ -11,6 +10,7 @@ import {
 } from "../src/core/topology";
 import type { GameState, LevelDefinition } from "../src/core/types";
 import { arrowDimensions } from "../src/render/renderer";
+import { LEVELS, waitForReady } from "./runtime-fixtures";
 
 interface HintSnapshot {
   level: { id: number };
@@ -285,7 +285,7 @@ export async function runHintChecks(
     );
   }, fixture);
   await page.reload();
-  await page.waitForFunction(() => Boolean(window.__PAR_ARROWS_TEST__));
+  await waitForReady(page);
   await page.locator("#settings-button").click();
   await page.getByLabel("Reduce movement").check();
   await page.locator("#settings-button").click();
@@ -337,6 +337,20 @@ export async function runHintChecks(
   await page.locator("#settings-button").click();
   if (mobile) {
     await page.setViewportSize({ width: 320, height: 720 });
+    assert.equal(
+      await page.evaluate(() =>
+        [
+          ...document.querySelectorAll(
+            ".control-dock button, .control-dock input",
+          ),
+        ].every((element) => {
+          const bounds = element.getBoundingClientRect();
+          return bounds.left >= 0 && bounds.right <= innerWidth;
+        }),
+      ),
+      true,
+      "Every dock control must remain inside a 320-pixel viewport",
+    );
     assert.equal(
       await page.evaluate(
         () => document.documentElement.scrollWidth > innerWidth,

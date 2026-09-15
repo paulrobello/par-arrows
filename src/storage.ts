@@ -1,15 +1,25 @@
+import {
+  GENERATOR_VERSION,
+  MAX_LEVEL_ID,
+  seedForLevel,
+} from "./content/procedural";
 import { createGameState } from "./core/game-state";
 import type { GameState, LevelDefinition } from "./core/types";
 
 const STORAGE_KEY = "par-arrows:campaign:v1";
 const SETTINGS_KEY = "par-arrows:settings:v1";
-const CONTENT_VERSION = 5;
+const CONTENT_VERSION = 6;
 
 export interface CampaignSave {
   readonly currentLevelId: number;
   readonly unlockedLevelId: number;
   readonly state: GameState;
   readonly tutorialComplete: boolean;
+}
+
+export interface LoadedCampaign extends CampaignSave {
+  /** Resolved for this session only. It is never written to local storage. */
+  readonly level: LevelDefinition;
 }
 
 export interface PlayerSettings {
@@ -22,6 +32,12 @@ export interface StorageResult<T> {
   readonly recovered: boolean;
   readonly contentUpdated: boolean;
 }
+
+type StoredCampaign = Partial<CampaignSave> & {
+  readonly contentVersion?: unknown;
+  readonly generatorVersion?: unknown;
+  readonly seed?: unknown;
+};
 
 const DEFAULT_SETTINGS: PlayerSettings = {
   reducedMotion: false,
@@ -36,17 +52,30 @@ function getStore(): Storage | undefined {
   }
 }
 
+function isLevelId(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value >= 1 &&
+    value <= MAX_LEVEL_ID
+  );
+}
+
 function isState(value: unknown, level: LevelDefinition): value is GameState {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
+  if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<GameState>;
   const ids = level.arrows.map((arrow) => arrow.id);
   const remaining = candidate.remainingIds;
   const failed = candidate.failedIds;
   const lives = candidate.lives;
   const revision = candidate.revision;
-  if (typeof lives !== "number" || typeof revision !== "number") {
+  if (typeof lives !== "number" || typeof revision !== "number") return false;
+  if (
+    !Array.isArray(remaining) ||
+    !Array.isArray(failed) ||
+    remaining.length > level.arrows.length ||
+    failed.length > level.arrows.length
+  ) {
     return false;
   }
   const validIds = (values: unknown[]): boolean =>
@@ -57,115 +86,148 @@ function isState(value: unknown, level: LevelDefinition): value is GameState {
     remaining?.length === 0 ? "won" : lives === 0 ? "lost" : "playing";
   return (
     candidate.levelId === level.id &&
-    Array.isArray(remaining) &&
-    Array.isArray(failed) &&
     validIds(remaining) &&
     validIds(failed) &&
     unique(remaining) &&
     unique(failed) &&
-    Number.isInteger(lives) &&
+    Number.isSafeInteger(lives) &&
     lives >= 0 &&
     lives <= level.lives &&
     lives === level.lives - failed.length &&
     !(remaining.length === 0 && lives === 0) &&
-    Number.isInteger(revision) &&
+    Number.isSafeInteger(revision) &&
     revision >= level.arrows.length - remaining.length + failed.length &&
     candidate.status === expectedStatus
   );
 }
 
-export function loadCampaign(
-  levels: readonly LevelDefinition[],
-): StorageResult<CampaignSave> {
+function removeStoredCampaign(store: Storage): void {
+  try {
+    store.removeItem(STORAGE_KEY);
+  } catch {
+    // Storage can be unavailable in private or embedded browser contexts.
+  }
+}
+
+function isLegacyContentVersion(value: unknown): boolean {
+  return (
+    value === 1 || value === 2 || value === 3 || value === 4 || value === 5
+  );
+}
+
+function hasMatchingGeneratorMetadata(
+  value: StoredCampaign,
+  levelId: number,
+): boolean {
+  return (
+    value.generatorVersion === GENERATOR_VERSION &&
+    value.seed === seedForLevel(levelId)
+  );
+}
+
+/**
+ * Restores persisted metadata then resolves the level. This does not write after
+ * awaiting the resolver, so callers can discard stale results before persisting.
+ */
+export async function loadCampaign(
+  resolveLevel: (id: number) => Promise<LevelDefinition>,
+): Promise<StorageResult<LoadedCampaign>> {
   const store = getStore();
   if (!store) {
     return { value: undefined, recovered: true, contentUpdated: false };
   }
+
+  let parsed: StoredCampaign | undefined;
   try {
     const raw = store.getItem(STORAGE_KEY);
     if (!raw) {
       return { value: undefined, recovered: false, contentUpdated: false };
     }
-    const parsed = JSON.parse(raw) as Partial<CampaignSave> & {
-      contentVersion?: unknown;
-    };
-    const level = levels.find(
-      (candidate) => candidate.id === parsed.currentLevelId,
-    );
-    const unlockedLevelId = parsed.unlockedLevelId;
-    if (
-      !level ||
-      typeof unlockedLevelId !== "number" ||
-      !Number.isInteger(unlockedLevelId) ||
-      unlockedLevelId < level.id ||
-      unlockedLevelId < 1 ||
-      unlockedLevelId > (levels.at(-1)?.id ?? 1)
-    ) {
-      store.removeItem(STORAGE_KEY);
+    const decoded: unknown = JSON.parse(raw);
+    if (!decoded || typeof decoded !== "object" || Array.isArray(decoded)) {
+      removeStoredCampaign(store);
       return { value: undefined, recovered: true, contentUpdated: false };
     }
-    const legacyContent =
-      parsed.contentVersion === 1 ||
-      parsed.contentVersion === 2 ||
-      parsed.contentVersion === 3 ||
-      parsed.contentVersion === 4;
-    const legacyLevelOne = legacyContent && level.id === 1;
-    const currentStateIsValid = isState(parsed.state, level);
-    if (parsed.contentVersion === CONTENT_VERSION && currentStateIsValid) {
-      return {
-        value: {
-          currentLevelId: level.id,
-          unlockedLevelId,
-          state: parsed.state,
-          tutorialComplete: parsed.tutorialComplete === true,
-        },
-        recovered: false,
-        contentUpdated: false,
-      };
-    }
-    if (legacyLevelOne && currentStateIsValid) {
-      const compatible: CampaignSave = {
-        currentLevelId: level.id,
+    parsed = decoded as StoredCampaign;
+  } catch {
+    removeStoredCampaign(store);
+    return { value: undefined, recovered: true, contentUpdated: false };
+  }
+
+  const { currentLevelId, unlockedLevelId } = parsed;
+  if (
+    !isLevelId(currentLevelId) ||
+    !isLevelId(unlockedLevelId) ||
+    unlockedLevelId < currentLevelId
+  ) {
+    removeStoredCampaign(store);
+    return { value: undefined, recovered: true, contentUpdated: false };
+  }
+
+  const level = await resolveLevel(currentLevelId);
+  if (level.id !== currentLevelId) {
+    throw new Error(
+      `Resolved level ${level.id} does not match ${currentLevelId}`,
+    );
+  }
+
+  const legacyContent = isLegacyContentVersion(parsed.contentVersion);
+  const exactCurrentContent =
+    parsed.contentVersion === CONTENT_VERSION &&
+    hasMatchingGeneratorMetadata(parsed, currentLevelId);
+  const currentStateIsValid = isState(parsed.state, level);
+  const compatible =
+    currentStateIsValid &&
+    (exactCurrentContent || (legacyContent && currentLevelId === 1));
+  const value: LoadedCampaign = compatible
+    ? {
+        currentLevelId,
         unlockedLevelId,
-        state: parsed.state,
+        state: parsed.state as GameState,
         tutorialComplete: parsed.tutorialComplete === true,
-      };
-      saveCampaign(compatible);
-      return { value: compatible, recovered: false, contentUpdated: false };
-    }
-    {
-      const recovered: CampaignSave = {
-        currentLevelId: level.id,
+        level,
+      }
+    : {
+        currentLevelId,
         unlockedLevelId,
         state: createGameState(level),
         tutorialComplete: parsed.tutorialComplete === true,
+        level,
       };
-      saveCampaign(recovered);
-      return {
-        value: recovered,
-        recovered: true,
-        contentUpdated: legacyContent && level.id > 1,
-      };
-    }
-  } catch {
-    try {
-      store.removeItem(STORAGE_KEY);
-    } catch {
-      // Storage can be unavailable in private or embedded browser contexts.
-    }
-    return { value: undefined, recovered: true, contentUpdated: false };
-  }
+
+  return {
+    value,
+    recovered: !compatible,
+    contentUpdated:
+      !compatible &&
+      (legacyContent ||
+        parsed.contentVersion !== CONTENT_VERSION ||
+        !hasMatchingGeneratorMetadata(parsed, currentLevelId)),
+  };
 }
 
 export function saveCampaign(value: CampaignSave): boolean {
   try {
     const store = getStore();
-    if (!store) {
+    if (
+      !store ||
+      !isLevelId(value.currentLevelId) ||
+      !isLevelId(value.unlockedLevelId) ||
+      value.unlockedLevelId < value.currentLevelId
+    ) {
       return false;
     }
     store.setItem(
       STORAGE_KEY,
-      JSON.stringify({ ...value, contentVersion: CONTENT_VERSION }),
+      JSON.stringify({
+        currentLevelId: value.currentLevelId,
+        unlockedLevelId: value.unlockedLevelId,
+        state: value.state,
+        tutorialComplete: value.tutorialComplete,
+        contentVersion: CONTENT_VERSION,
+        generatorVersion: GENERATOR_VERSION,
+        seed: seedForLevel(value.currentLevelId),
+      }),
     );
     return true;
   } catch {
