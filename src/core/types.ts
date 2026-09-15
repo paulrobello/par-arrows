@@ -92,6 +92,8 @@ export interface MoveResult {
   readonly contact?: ContactTrace;
   readonly exit?: ExitTrace;
   readonly reason?: string;
+  /** Per-arrow traces when a connected shared-tail group moves together. */
+  readonly members?: readonly MoveResult[];
 }
 
 export type Heading = "east" | "west" | "south" | "north";

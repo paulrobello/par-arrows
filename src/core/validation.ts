@@ -1,5 +1,6 @@
 import { advanceHead, simulateMove } from "./movement";
 import { cellKey, headingForPath, linkKey, seamTransition } from "./topology";
+import { overlappingArrowIds, sharedDirectedSegment } from "./overlap";
 import type { ArrowDefinition, Cell, Endpoint, LevelDefinition } from "./types";
 
 export interface ValidationResult {
@@ -119,8 +120,8 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
   }
 
   const ids = new Set<string>();
-  const cells = new Map<string, string>();
-  const links = new Map<string, string>();
+  const cells = new Map<string, string[]>();
+  const links = new Map<string, string[]>();
   for (const arrow of level.arrows) {
     if (!arrow.id || ids.has(arrow.id)) {
       errors.push(
@@ -144,14 +145,24 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
         );
       }
       const key = cellKey(cell);
-      const owner = cells.get(key);
-      if (owner) {
-        errors.push(
-          `Arrow ${arrow.id} overlaps cell ${key} already used by ${owner}.`,
-        );
-      } else {
-        cells.set(key, arrow.id);
+      const owners = cells.get(key) ?? [];
+      if (owners.includes(arrow.id)) {
+        errors.push(`Arrow ${arrow.id} overlaps its own cell ${key}.`);
       }
+      for (const owner of owners) {
+        const previous = level.arrows.find(
+          (candidate) => candidate.id === owner,
+        );
+        const segment = previous
+          ? sharedDirectedSegment(previous, arrow)
+          : undefined;
+        if (!segment?.cells.has(key)) {
+          errors.push(
+            `Arrow ${arrow.id} overlaps cell ${key} already used by ${owner}.`,
+          );
+        }
+      }
+      cells.set(key, [...owners, arrow.id]);
     }
     for (let index = 1; index < arrow.path.length; index += 1) {
       const previous = arrow.path[index - 1];
@@ -167,14 +178,25 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
         continue;
       }
       const key = linkKey(previous, current);
-      const owner = links.get(key);
-      if (owner) {
-        errors.push(
-          `Arrow ${arrow.id} overlaps link ${key} already used by ${owner}.`,
-        );
-      } else {
-        links.set(key, arrow.id);
+      const owners = links.get(key) ?? [];
+      if (owners.includes(arrow.id)) {
+        errors.push(`Arrow ${arrow.id} overlaps its own link ${key}.`);
       }
+      for (const owner of owners) {
+        const sharedOwner = level.arrows.find(
+          (candidate) => candidate.id === owner,
+        );
+        const segment = sharedOwner
+          ? sharedDirectedSegment(sharedOwner, arrow)
+          : undefined;
+        const directed = `${cellKey(previous)}>${cellKey(current)}`;
+        if (!segment?.links.has(directed)) {
+          errors.push(
+            `Arrow ${arrow.id} overlaps link ${key} already used by ${owner}.`,
+          );
+        }
+      }
+      links.set(key, [...owners, arrow.id]);
     }
     for (const endpoint of arrow.kind === "double"
       ? (["head", "tail"] as const)
@@ -182,6 +204,46 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
       const selfError = selfContactError(arrow, level, endpoint);
       if (selfError) {
         errors.push(selfError);
+      }
+    }
+  }
+  const checkedGroups = new Set<string>();
+  for (const arrow of level.arrows) {
+    const group = overlappingArrowIds(level, arrow.id);
+    if (group.length < 2) continue;
+    const groupKey = [...group].sort().join("|");
+    if (checkedGroups.has(groupKey)) continue;
+    checkedGroups.add(groupKey);
+    if (group.length > 3) {
+      errors.push(`Shared-tail group ${groupKey} has more than three arrows.`);
+    }
+    const members = level.arrows.filter((candidate) =>
+      group.includes(candidate.id),
+    );
+    if (members.some((member) => member.kind === "double")) {
+      errors.push(
+        `Shared-tail group ${groupKey} cannot contain double-ended arrows.`,
+      );
+    }
+    for (let firstIndex = 0; firstIndex < members.length; firstIndex += 1) {
+      const first = members[firstIndex];
+      if (!first) continue;
+      for (const second of members.slice(firstIndex + 1)) {
+        const firstRoute = simulateMove(level, [first.id], first.id);
+        const secondRoute = simulateMove(level, [second.id], second.id);
+        const firstTravel = firstRoute.route.map(cellKey);
+        const secondTravel = secondRoute.route.map(cellKey);
+        const secondBody = second.path.map(cellKey);
+        const firstBody = first.path.map(cellKey);
+        if (
+          firstTravel.some((key) => secondBody.includes(key)) ||
+          secondTravel.some((key) => firstBody.includes(key)) ||
+          firstTravel.some((key) => secondTravel.includes(key))
+        ) {
+          errors.push(
+            `Shared-tail group ${groupKey} has crossing or contacting travel paths.`,
+          );
+        }
       }
     }
   }
@@ -207,8 +269,15 @@ export function solveLevel(
     if (!clearId) {
       return undefined;
     }
+    const cleared = simulateMove(level, remainingIds, clearId);
+    const clearedIds = cleared.members?.map((member) => member.arrowId) ?? [
+      clearId,
+    ];
     solution.push(clearId);
-    remainingIds.splice(remainingIds.indexOf(clearId), 1);
+    for (const id of clearedIds) {
+      const index = remainingIds.indexOf(id);
+      if (index >= 0) remainingIds.splice(index, 1);
+    }
   }
   return solution;
 }

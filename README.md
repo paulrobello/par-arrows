@@ -1,8 +1,8 @@
 # Par Arrows
 
-A desktop and mobile 3D arrow-removal puzzle with flat ribbon arrows. Rotate a cube, find an unobstructed arrow, and send it off the surface. A first collision costs one life and marks that arrow red; further collisions by the same red arrow are free.
+A desktop and mobile 3D arrow-removal puzzle with flat ribbon arrows. Rotate a cube, find an unobstructed arrow, and send it off the surface. A first collision costs one life and marks that arrow red; further collisions by the same red arrow are free. Two or three arrows can share tail segments: touching any member moves the whole group, and an outside collision sends all members back red for one life. Their heads and travel paths stay separate.
 
-Level 1 is the authored teaching cube. Level 11 is a second authored, small teaching cube that introduces reciprocal yellow-edge wrapping; levels 2–10 and 12 onward are generated at runtime from their logical level numbers. The campaign continues indefinitely, and generated layouts are validated before play. See [PRD.md](PRD.md) for product rules and [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the runtime design.
+Level 1 is the authored teaching cube. Level 11 is a second authored, small teaching cube that introduces reciprocal yellow-edge wrapping; level 15 teaches overlapping tails, and levels 2–10, 12–14, and 16 onward are generated at runtime from their logical level numbers. The campaign continues indefinitely, and generated layouts are validated before play. See [PRD.md](PRD.md) for product rules and [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the runtime design.
 
 The former fixed ten-level catalog and its reports remain historical reference and test fixtures only. They are excluded from production imports.
 
@@ -22,11 +22,12 @@ Open [the local game](http://localhost:8057). The development server binds to lo
 Open these links to preview campaign content without unlocking it:
 
 - [Level 25](http://localhost:8057/?level=25) loads that level directly, regardless of campaign unlocks.
+- [Overlapping tails introduction](http://localhost:8057/?feature=overlap) opens cube 15, with a pair, a trio, and an outside blocker.
 - [First level with wrapping](http://localhost:8057/?feature=wrap) finds the first level containing a yellow physical edge.
 - [Level with exactly three wrapping edges](http://localhost:8057/?wraps=3) searches for an exact edge count.
 - [Three wrapping edges at or after level 50](http://localhost:8057/?level=50&wraps=3) searches from level 50 for an exact count.
 
-`feature` accepts `wrap`, `wrapping`, or `wraparound`, case-insensitively. `wraps` accepts `0`, `1`, `2`, or `3`. Only wrapping is supported today. A filter searches from level 1 unless `level` sets the starting point; Go and Next keep the filter active, and the resolved level is written into the URL for reloads. Searches inspect at most 1,000 candidates using edge-count metadata rather than generating and rendering every level. Levels must be safe integers from 1 through `Number.MAX_SAFE_INTEGER - 1`; malformed values, duplicate parameters, conflicting selectors, unknown features, and searches with no match show a clear error.
+`feature` accepts `overlap` or `overlapping` for linked tails, and `wrap`, `wrapping`, or `wraparound` for yellow edges, case-insensitively. `wraps` accepts `0`, `1`, `2`, or `3`. A filter searches from level 1 unless `level` sets the starting point; Go and Next keep the filter active, and the resolved level is written into the URL for reloads. Searches inspect at most 1,000 candidates using edge-count metadata rather than generating and rendering every level. Levels must be safe integers from 1 through `Number.MAX_SAFE_INTEGER - 1`; malformed values, duplicate parameters, conflicting selectors, unknown features, and searches with no match show a clear error.
 
 Using `level`, `feature`, or `wraps` opens a separate preview session, skips the onboarding demo, and never writes or deletes campaign saves during play, Retry, Next, Reset, or error handling. Use **Return to campaign** to leave preview. The existing `?test=1` flag only enables automation hooks; by itself it does not start preview mode.
 
@@ -47,11 +48,11 @@ Install pre-commit and run `pre-commit install` to enable the pinned secret-scan
 ## Controls and progress
 
 - Click or touch an arrow to attempt a move. Drag to rotate continuously in any direction, including over the top and bottom. Use the mouse wheel or pinch to zoom, and View to restore the starting angle.
-- A press highlights its arrow. Ambiguous touches do nothing. Dragging and pinching do not activate arrows.
+- A press highlights its arrow or connected tail group. Ambiguous touches do nothing. Dragging and pinching do not activate arrows.
 - The first-run demo shows a failed move followed by a successful move before campaign play.
-- Level 1 and the authored level 11 introduction have five lives. Runtime-generated levels are deterministic reverse-constructed puzzles, growing from 60 to 180 arrows early and then capped at 240 arrows, 26 × 26 cells per face, 40 cells per path, and a three-life floor.
+- The authored introductions at levels 1, 11, and 15 have five lives. Runtime-generated levels are deterministic reverse-constructed puzzles, growing from 60 to 180 arrows early and then capped at 240 arrows, 26 × 26 cells per face, 40 cells per path, and a three-life floor.
 - Retry restores the same layout and full life budget. Next continues to the next level; there is no final campaign screen. The numeric level control accepts Go or Enter for any unlocked safe-integer level.
-- Progress, lives, failed-arrow history, and generator metadata are stored as a v6 logical save in browser `localStorage`. Valid generator-v1 saves through level 10 resume exactly; generator-v1 attempts above level 10 refresh while preserving the level, unlocks, and tutorial completion. Level 11 uses a `:wrap-intro:1` seed suffix to refresh its prior generated attempt without changing generator version 2. Generated levels are regenerated by a worker on reload.
+- Progress, lives, failed-arrow history, and generator metadata are stored as a v7 logical save in browser `localStorage`. Stable older saves through level 14 resume exactly when their seeds match. Changed attempts from level 15 onward refresh while preserving the level, unlocks, and tutorial completion. Level 11 retains its version-2 `:wrap-intro:1` seed; level 15 and later content use generator version 3. Saved groups restore atomically and count as one failure for lives. Generated levels are regenerated by a worker on reload.
 
 PWA installation is supported where the browser provides it. A production installation needs a secure origin; local development can use localhost. Installation does not require an account. Offline gameplay is outside the current MVP scope.
 
@@ -67,4 +68,4 @@ The [supplied reference images](docs/references/README.md) are preserved as visu
 
 ## Scope
 
-Level 11 is an authored 4 × 4 cube with six short arrows, one on each face, and five lives. Its front-west/left-east yellow edge is a whole physical seam and works in both directions: two safe moves wrap across it, while the other four arrows exit through ordinary edges. A new head crossing an ordinary edge exits, while an existing arrow body can still unwrap across ordinary seams. Regular generated layouts resume at level 12. Their edge-count distribution keeps zero edges at 25%, with the remaining weights shifting toward 15% one edge, 30% two, and 30% three by level 100. Edge selection uses a separate seeded stream, so generation retries keep the same seams, and the solver validates each generated layout before play. Level 11 is exempt from random edge-count selection and generated density. Blue/green two-ended arrows, non-cube content, undo, accounts, cloud saves, and custom audio remain deferred. Hints, dark theme, and completion confetti remain available.
+Level 11 is an authored 4 × 4 cube with six short arrows, one on each face, and five lives. Its front-west/left-east yellow edge is a whole physical seam and works in both directions: two safe moves wrap across it, while the other four arrows exit through ordinary edges. A new head crossing an ordinary edge exits, while an existing arrow body can still unwrap across ordinary seams. Cube 15 introduces overlapping tails on a small authored cube. Levels 12–14 retain their original generated layouts; pairs and trios enter generated layouts at level 16. Their edge-count distribution keeps zero edges at 25%, with the remaining weights shifting toward 15% one edge, 30% two, and 30% three by level 100. Edge selection uses a separate seeded stream, so generation retries keep the same seams, and the solver validates each generated layout before play. The authored levels 11 and 15 are exempt from random edge-count selection and generated density. Blue/green two-ended arrows, non-cube content, undo, accounts, cloud saves, and custom audio remain deferred. Hints, dark theme, and completion confetti remain available.

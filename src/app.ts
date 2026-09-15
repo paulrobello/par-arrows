@@ -8,6 +8,7 @@ import {
   WRAP_INTRO_LEVEL,
 } from "./content/intro";
 import { LevelLoader } from "./content/level-loader";
+import { OVERLAP_INTRO_LEVEL } from "./content/overlap-intro";
 import {
   parseLevelPreview,
   resolveLevelPreview,
@@ -18,6 +19,7 @@ import {
   seedForLevel,
 } from "./content/procedural";
 import { applyMove, createGameState, simulateMove } from "./core/game-state";
+import { overlappingArrowIds } from "./core/overlap";
 import type { GameState, LevelDefinition, MoveResult } from "./core/types";
 import { PointerInput } from "./input";
 import { PwaInstallPrompt } from "./pwa";
@@ -319,10 +321,23 @@ export class ParArrowsApp {
       lives: this.displayedState.lives,
       remainingIds: this.displayedState.remainingIds,
       failedIds: this.displayedState.failedIds,
+      overlappingGroups: this.level.arrows
+        .map((arrow) => overlappingArrowIds(this.level, arrow.id))
+        .filter(
+          (ids, index) =>
+            ids.length > 1 && ids[0] === this.level.arrows[index]?.id,
+        ),
       moving: this.motion
         ? {
             arrowId: this.motion.result.arrowId,
             kind: this.motion.result.kind,
+            members: (this.motion.result.members ?? [this.motion.result]).map(
+              (member) => ({
+                arrowId: member.arrowId,
+                headFace: this.renderer.arrowHeadFace(member.arrowId),
+                headPosition: this.renderer.arrowHeadPosition(member.arrowId),
+              }),
+            ),
             headFace: this.renderer.arrowHeadFace(this.motion.result.arrowId),
             headPosition: this.renderer.arrowHeadPosition(
               this.motion.result.arrowId,
@@ -726,9 +741,15 @@ export class ParArrowsApp {
     this.livesLabel.textContent = String(this.displayedState.lives);
     this.arrowsLabel.textContent = `${this.displayedState.remainingIds.length} arrows`;
     this.tutorial.hidden = this.mode !== "demo";
-    this.requireElement("wrap-intro").hidden =
+    const mechanicIntro = this.requireElement("wrap-intro");
+    mechanicIntro.textContent =
+      this.level.id === OVERLAP_INTRO_LEVEL.id
+        ? "Overlapping tails move together. Tap any part. If one is blocked, the whole group returns red."
+        : "Yellow edges carry arrows onto the next face. Try an arrow pointing toward the yellow line.";
+    mechanicIntro.hidden =
       this.mode !== "campaign" ||
-      this.level.id !== WRAP_INTRO_LEVEL.id ||
+      (this.level.id !== WRAP_INTRO_LEVEL.id &&
+        this.level.id !== OVERLAP_INTRO_LEVEL.id) ||
       this.loading ||
       this.loadingError !== undefined ||
       this.preview.error !== undefined ||

@@ -44,14 +44,14 @@ The four additional photos supplied on 2026-09-14 are preserved as references 04
 | R9 | Later levels can be much denser and need not use perfect cubes. |
 | R10 | Future double-ended arrows have blue and green halves. The half clicked determines travel direction. |
 | R11 | Special physical cube edges are marked yellow. A head reaching one continues onto the adjoining face instead of flying off. |
-| R12 | The engine design must allow additional mechanics beyond R10 and R11. Level 11 is an authored, low-density introduction to yellow continuation edges; normal generated layouts resume at level 12. Blue/green two-ended arrows remain deferred. |
+| R12 | The engine design must allow additional mechanics beyond R10 and R11. Level 11 is an authored, low-density introduction to yellow continuation edges; level 15 introduces overlapping tails and overlapping groups enter generated layouts at level 16. Blue/green two-ended arrows remain deferred. |
 | R13 | Movement follows the arrow's path: the tail follows the head. Existing wrapped bodies unwrap through ordinary seams; only a new head crossing determines exit versus continuation. |
 | R14 | Allow continuous rotation in every drag direction with no axis stops, including repeated turns over the top and bottom, plus mouse-wheel and pinch zoom. Far-side arrows remain faintly visible and become selectable only when rotated onto exposed faces. |
 | R15 | At zero lives, allow unlimited retries of the same puzzle, restoring its configured starting lives. |
-| R16 | Level 1 is the unchanged authored teaching cube. Levels 2–10 and 12 onward are generated at runtime from their level number and validated for solvability; level 11 is an authored yellow-wrap introduction. A given generated level is the same seeded puzzle for every player. |
-| R17 | Arrow paths use grid-aligned 90-degree turns, with no starting overlaps or overpasses. |
+| R16 | Level 1 is the unchanged authored teaching cube. Levels 2–10, 12–14, and 16 onward are generated at runtime from their level number and validated for solvability; level 11 introduces yellow wrapping and level 15 introduces overlapping tails. A given generated level is the same seeded puzzle for every player. |
+| R17 | Arrow paths use grid-aligned 90-degree turns, with no crossings or overpasses, except the shared tail segments defined in R33. |
 | R18 | Reject any level where an arrow could contact its own body. Do not turn self-contact into an ordinary life-costing gameplay event. |
-| R19 | Only one arrow moves or rebounds at a time. Ignore additional arrow taps while rotation and zoom remain available. |
+| R19 | Only one arrow or connected tail group moves or rebounds at a time. Ignore additional arrow taps while rotation and zoom remain available. |
 | R20 | Runtime progression is endless. Difficulty grows from 60 to 180 arrows early, then caps at 240 arrows; grids grow to 26 × 26 cells per face and path length is bounded at 40. Lives never fall below three. Retry resets lives and red-arrow history. |
 | R21 | Refresh/reopen resumes the exact logical state, preserving removed arrows, lives, and failure history, including the result of an interrupted move. |
 | R22 | Highlight an unambiguous arrow on press only when a move can start. A valid tap activates the arrow captured on press; blank or ambiguous presses and drag/zoom/cancel gestures do nothing. |
@@ -65,6 +65,7 @@ The four additional photos supplied on 2026-09-14 are preserved as references 04
 | R30 | Superseded catalog detail: make arrow shafts and heads 20% wider and double the version-4 counts on fixed levels 2–10. Keep it only as historical reference; current production difficulty is governed by R20. |
 | R31 | Support dark mode with system-preference detection and a persistent manual appearance control. |
 | R32 | Add a Hint button that finds a safely removable arrow, rotates the cube to expose it, and then flashes that arrow. |
+| R33 | Two or three arrows may overlap along tail segments, with separate heads and no crossings. Touching any portion of any member activates the whole connected group. Members never collide with each other or cross each other's travel paths. If any member hits an outside arrow, all members rewind and remain red. |
 
 ## 4. MVP boundary
 
@@ -83,7 +84,7 @@ The count, curated source, life curve, exact resume behavior, browser `localStor
 
 ### 4.2 Deferred content and features
 
-- X1: Playable blue/green double-ended arrows remain deferred. Level 11 introduces yellow continuation edges in an authored teaching layout; generated layouts from level 12 onward use the rule contract recorded in section 9.2.
+- X1: Playable blue/green double-ended arrows remain deferred. Level 11 introduces yellow continuation edges in an authored teaching layout; generated layouts from level 12 onward, except authored level 15, use the rule contract recorded in section 9.2.
 - X2: Non-cube content. First extension candidate: rectangular cuboids, followed by grid-aligned compound solids. Arbitrary curved surfaces, holes, and concave shapes need a separate scope decision.
 - X3: Further unspecified mechanics. Provide explicit rule boundaries, not a general plugin or scripting platform.
 - X4: Accounts, cloud saves, leaderboards, monetization, advertisements, energy timers, purchases, and social features.
@@ -94,25 +95,25 @@ The count, curated source, life curve, exact resume behavior, browser `localStor
 
 ### 5.1 Arrow geometry and motion — Q1, Q2, Q7, Q8
 
-**Confirmed geometry:** Each arrow follows a continuous, grid-aligned path with right-angle turns and no starting overlaps or overpasses. Proposed representation: an ordered path from tail to head, rendered at consistent width with softened visual corners while logical paths remain exact.
+**Confirmed geometry:** Each arrow follows a continuous, grid-aligned path with right-angle turns and no crossings or overpasses, except the shared tail segments defined in R33. Proposed representation: an ordered path from tail to head, rendered at consistent width with softened visual corners while logical paths remain exact.
 
 **Confirmed movement:** On activation, the head moves straight forward in the local face plane. The body follows the head through the existing path, and the tail vacates it. Existing bends do not independently command new turns for the head. A static body may already span several faces, even when no yellow edges are present.
 
 At an ordinary edge reached by the head, the head departs along its current tangent into space. The rest of the body feeds along its stored route and follows off the shape. Existing body segments can unwrap across their original seams. Proposed exterior-flight rule: once departure starts, that arrow does not land on or collide with another face. This becomes relevant to later concave shapes and remains open in Q8.
 
-**Proposed boundary:** Unrestricted visual length does not mean an infinite path. Level validation will enforce finite, non-overlapping routes and explicit supported content budgets, without a fixed per-arrow length baked into the engine.
+**Proposed boundary:** Unrestricted visual length does not mean an infinite path. Level validation will enforce finite routes with only validated tail-group overlaps and explicit supported content budgets, without a fixed per-arrow length baked into the engine.
 
 ### 5.2 Collision — Q7, Q8, Q9
 
-**Proposed:** Contact with any occupied portion of another arrow blocks movement, regardless of arrow direction or which face owns that portion. Arrows do not push, cut through, jump over, or merge with each other.
+**Proposed:** Contact with any occupied portion of an arrow outside the active tail group blocks movement, regardless of arrow direction or which face owns that portion. Arrows do not push, cut through, jump over, or merge with each other.
 
 Collision uses logical surface occupancy and the swept movement path, not screen-space overlap. Two arrows projected on top of each other on different faces do not collide. Adjacent lanes remain passable even if thick rendering or touch targets overlap visually.
 
-**Proposed occupancy contract:** Paths occupy ordered face-cell centers and the grid links connecting them. Distinct arrows cannot share a cell or a connecting link, including endpoints. Connections across a face seam have one canonical link identity, regardless of traversal direction. Neighboring face cells remain distinct cells. A seam is not an extra turn or duplicated cell. Routes pass through edge lanes away from physical cube vertices. A shared logical path endpoint counts as contact; merely adjacent lanes do not. Logical cell/link contact drives the simulation and validator, while visual stroke thickness and expanded touch regions do not alter it. Test swept link traversal so crossing or opposite-direction motion cannot skip contact between cells.
+**Proposed occupancy contract:** Paths occupy ordered face-cell centers and the grid links connecting them. Distinct arrows cannot share a cell or connecting link except for a validated same-direction tail segment in a group of two or three. Heads remain separate, and point crossings are invalid. Connections across a face seam have one canonical link identity, regardless of traversal direction. Neighboring face cells remain distinct cells. A seam is not an extra turn or duplicated cell. Routes pass through edge lanes away from physical cube vertices. A shared logical path endpoint counts as contact; merely adjacent lanes do not. Logical cell/link contact drives the simulation and validator, while visual stroke thickness and expanded touch regions do not alter it. Test swept link traversal so crossing or opposite-direction motion cannot skip contact between cells.
 
 **Confirmed self-contact rule:** Reject levels where any arrow could contact its own body. Check the full motion, not just the initial layout. Validate each arrow with other arrows removed so an initial blocker cannot hide a later self-collision. Use simultaneous body/tail movement for geometric contact checks rather than treating the entire original path as permanently occupied. Proposed tie interpretation: a just-vacated tail location is not self-contact if there is no overlap during the continuous motion. This exact boundary remains to be confirmed.
 
-Initial self-intersections and overlapping starting paths are invalid authoring data. A runtime self-contact detected despite validation is a content error, must restore a stable state, and must not charge a life. For future bidirectional arrows, validate both directions before accepting their level.
+Initial self-intersections and starting overlaps outside the validated tail-group rule are invalid authoring data. A runtime self-contact detected despite validation is a content error, must restore a stable state, and must not charge a life. For future bidirectional arrows, validate both directions before accepting their level.
 
 An attempt is simulated before its result is committed. If blocked, animate to first contact and back, then restore the exact original path. If successful, animate the complete exit and remove the whole arrow. Animation frame rate must not change the result.
 
@@ -122,17 +123,25 @@ An attempt is simulated before its result is committed. If blocked, animate to f
 
 Record failure history as logical per-arrow state; red is its visual expression. Do not infer whether a penalty is owed from a material color. Proposed accessibility treatment: accompany red with a non-color marker or path treatment.
 
-Life deduction occurs at the first logical impact for that arrow. Duplicate pointer events, rapid taps during movement, cancellation, camera drags, misses, and malformed input must not create extra deductions. An internal level-data or rendering failure must not charge a life. A level attempt's lives therefore measure distinct arrows failed, not total failed taps.
+Life deduction occurs at the first logical impact for that arrow or connected group. Duplicate pointer events, rapid taps during movement, cancellation, camera drags, misses, and malformed input must not create extra deductions. An internal level-data or rendering failure must not charge a life. A level attempt's lives therefore measure distinct failed singleton arrows or connected groups, not total failed taps.
 
 **Confirmed:** At zero lives, retry restores the same layout and full starting lives, with unlimited attempts. A new level attempt clears every arrow's failure history and returns ordinary arrows to black. Runtime level budgets reduce from the early game and floor at three lives. Lives do not carry over because each level starts at its configured budget. At zero, finish the rebound feedback and show failure rather than allow further free probes.
 
 ### 5.4 Completion, concurrency, and interruption — Q9, Q11
 
-**Confirmed:** Only one arrow attempt can run at a time. Additional arrow activations are ignored, not queued. Camera rotation and zoom remain available. This makes the rule outcome independent of rapid input timing.
+**Confirmed:** Only one arrow or connected tail-group attempt can run at a time. Additional arrow activations are ignored, not queued. Camera rotation and zoom remain available. This makes the rule outcome independent of rapid input timing.
 
 Completion happens after the last arrow has fully exited. Show a short completion state and an explicit Next button. Next continues to the next logical level; there is no final level or campaign-complete terminal state.
 
 **Confirmed:** Reload/reopen resumes the exact logical state, including an interrupted move's result. Proposed implementation: save the complete logical result when the attempt is accepted, before presentation, and restore to a settled view of that result. Backgrounding pauses presentation; returning completes it once. An interrupted first collision still costs its one life; an interrupted collision by an already-red arrow costs none. Preserve failed-arrow history and never restore partially displaced geometry.
+
+### 5.4.1 Overlapping tails
+
+**Confirmed 2026-09-15:** Two or three arrows share a continuous tail segment in the same direction. Heads never overlap. Touching a shared tail, an individual body segment, or any member's head activates the entire connected group. Simple point crossings do not create a group. Validate the members' full future routes without outside blockers so no member can ever collide with another member or cross its path.
+
+Implementation defaults: group members travel at the same constant speed. At the earliest outside collision, all reverse together and restore their exact starting paths, including members with a clear exit. One life is charged on the group's first failure, all members become red, and further failures of that group are free. Successful attempts remove every member atomically. Selection and hints highlight the whole group. Saves must never restore only part of a group's removal or failure history.
+
+Cube 15 is a small authored introduction. Generated cubes from 16 onward include validated pairs and trios. `?feature=overlap` opens the first introduction without affecting campaign progress.
 
 ### 5.5 Onboarding demonstration — Q13
 
@@ -144,7 +153,7 @@ The preceding instruction rules out a skippable collision demo, and the owner ha
 
 ### 5.6 Safe-arrow hints
 
-**Confirmed 2026-09-15:** A Hint button finds an arrow that can safely exit, turns the cube to make it visible, and only then flashes it. The chosen arrow is checked against the current remaining arrows. For a wrapped arrow, focus on its actual head face.
+**Confirmed 2026-09-15:** A Hint button finds an arrow that can safely exit, turns the cube to make it visible, and only then flashes it. The chosen arrow or entire connected group is checked against the current remaining arrows; a hinted group highlights all its members. For a wrapped arrow, focus on its actual head face.
 
 Implementation defaults: hints are free and unlimited, with no progress, life, or failure-history changes. Focus takes 600 ms and returns to a fitted viewing distance; three slow highlight pulses follow over 2.4 seconds. Reduced-motion settings snap to the target view and use steady emphasis. Disable Hint during the demo, arrow movement, another hint, and won/lost states. Pressing the canvas, dragging, zooming, moving an arrow, resetting the view, retrying, or changing levels cancels the hint and restores normal/red arrow colors.
 
@@ -168,12 +177,13 @@ Keyboard puzzle navigation and a nonvisual equivalent of the spatial puzzle need
 
 **Superseded historical policy:** the fixed ten-level, content-version-5 catalog described in earlier reports is retained only as historical reference and test fixtures. It is not a production import.
 
-**Current policy:** level 1 remains the unchanged authored teaching cube. Levels 2–10 retain their version-1 seeds and geometry. Level 11 is an authored 4 × 4 cube with six short arrows, one per face, five lives, and a guaranteed reciprocal front-west/left-east yellow edge. Two safe moves wrap across that edge; the other four arrows exit through ordinary edges. This teaching layout is exempt from random edge-count selection and generated density. Normal generated layouts resume at level 12, with their existing version-2 generator and weighted edge distribution unchanged. Level 11's seed alone gains the `:wrap-intro:1` suffix so prior generated level-11 attempts refresh while unlocks and tutorial completion remain preserved. Each generated puzzle is reverse-constructed and validated as solvable before use. A player retry and every player on the same generated level number receive the same puzzle.
+**Current policy:** level 1 remains the unchanged authored teaching cube. Levels 2–10 retain their version-1 seeds and geometry; levels 12–14 retain their original version-2 layouts. Level 11 is an authored 4 × 4 cube with six short arrows, one per face, five lives, and a guaranteed reciprocal front-west/left-east yellow edge. Two safe moves wrap across that edge; the other four arrows exit through ordinary edges. This teaching layout is exempt from random edge-count selection and generated density. Level 15 is an authored 4 × 4 introduction with a pair, a trio, and one outside blocker, with five lives. Generated layouts with overlapping groups begin at level 16 using generator version 3 and validated tail groups. The yellow-edge weighting curve remains in place. Seeds through level 14 stay unchanged; affected older attempts from level 15 onward refresh while unlocks and tutorial completion remain preserved. Each generated puzzle is reverse-constructed and validated as solvable before use. A player retry and every player on the same generated level number receive the same puzzle.
 
 | Range | Generation bounds | Starting lives | Purpose |
 | --- | --- | --- | --- |
 | Level 1 | Authored 4 × 4 cube, 6 arrows | 5 | Teach tapping, rotation, and clear exits. |
 | Level 11 | Authored 4 × 4 cube, 6 short arrows, reciprocal front-west/left-east yellow edge | 5 | Introduce two safe head-wrap moves and four ordinary exits at low density. |
+| Level 15 | Authored 4 × 4 cube, linked pair and trio plus a blocker | 5 | Teach group activation and whole-group rewind. |
 | Early runtime levels | 60–180 arrows with increasing grid/detail | Decreases toward 3 | Build density, wrapping, and removal dependencies. |
 | Later runtime levels | At most 240 arrows, 26 × 26 cells per face, and 40 cells per path | 3 floor | Continue endlessly within validated desktop bounds. |
 
@@ -192,7 +202,7 @@ The owner identified stamped S-curve repetition in content version 3. Version 4 
 - L5: The onboarding demo shows a failed touch followed by a successful touch on a small cube with few arrows. Proposed isolation: demonstrate penalties in demo state while leaving campaign lives and progress untouched.
 - L6: Reject any arrow with possible self-contact over its full motion, including after other arrows are removed. A complete solution alone does not waive this constraint.
 
-Level 1 is authored; later progression is generated and checked at runtime. Player-facing editor tooling remains deferred. The solver/validator checks content independently of the approved player-facing Hint feature.
+Levels 1, 11, and 15 are authored; other levels are generated and checked at runtime. Player-facing editor tooling remains deferred. The solver/validator checks content independently of the approved player-facing Hint feature.
 
 ## 8. Save and platform expectations — Q11, Q14, Q15
 
@@ -224,9 +234,9 @@ Define the two halves by distance along the full surface path, not by a screen-s
 
 An edge rule belongs to shape topology and maps a crossing position and direction onto the adjoining face. It is independent of camera orientation. Existing static path seams and head-continuation rules remain separate concepts.
 
-In [reference 07](docs/references/reference-07.jpeg), yellow highlights the special boundary. The owner confirms that a moving head reaching this boundary turns around the corner and keeps traveling along the next face; the body feeds behind it. At an ordinary boundary the advancing head exits. An arrow whose body already spans an ordinary seam can still unwrap without that seam being yellow. Level 11 introduces the mechanic in a fixed authored six-arrow layout; level 1 and levels 2–10 retain their existing layouts and ordinary exits. Normal generated layouts with weighted yellow continuation edges begin at level 12.
+In [reference 07](docs/references/reference-07.jpeg), yellow highlights the special boundary. The owner confirms that a moving head reaching this boundary turns around the corner and keeps traveling along the next face; the body feeds behind it. At an ordinary boundary the advancing head exits. An arrow whose body already spans an ordinary seam can still unwrap without that seam being yellow. Level 11 introduces the mechanic in a fixed authored six-arrow layout; level 1 and levels 2–10 retain their existing layouts and ordinary exits. Generated layouts with weighted yellow continuation edges begin at level 12, with the authored overlap introduction at 15 as an exception.
 
-Implemented defaults: yellow marks a whole physical cube edge and applies reciprocally in both crossing directions. The transition is a right-angle face change with paths aligned away from vertices. Level 11 has one guaranteed reciprocal front-west/left-east edge, with two safe arrows wrapping across it and four arrows exiting ordinarily. Generated edge selection uses a separate deterministic stream from layout construction, so retries do not change the edge choices. From level 12, generated layouts retain the existing curve: zero edges remain at 25%, while the other edge-count weights shift toward 15% for one, 30% for two, and 30% for three edges by level 100, then stay capped. Level 11 is excluded from random edge-count and density selection. Each generated layout must pass validation and the solver before presentation.
+Implemented defaults: yellow marks a whole physical cube edge and applies reciprocally in both crossing directions. The transition is a right-angle face change with paths aligned away from vertices. Level 11 has one guaranteed reciprocal front-west/left-east edge, with two safe arrows wrapping across it and four arrows exiting ordinarily. Generated edge selection uses a separate deterministic stream from layout construction, so retries do not change the edge choices. Generated layouts from level 12 (except authored level 15) retain the existing curve: zero edges remain at 25%, while the other edge-count weights shift toward 15% for one, 30% for two, and 30% for three edges by level 100, then stay capped. Authored levels 11 and 15 are excluded from random edge-count and density selection. Each generated layout must pass validation and the solver before presentation.
 
 A path may encounter several yellow edges before an ordinary exit. Simulation terminates on a continuation cycle or self-collision, and invalid content is rejected before play. Dynamic mechanics that could introduce new cycles remain outside the current campaign.
 
@@ -250,7 +260,7 @@ For non-cube shapes, resolve surface grid alignment, exposed versus interior fac
 | AC8 | Dense selection and rendering remain usable on agreed real desktop and mobile targets in portrait and landscape. Record devices and measurements. |
 | AC9 | Progress is written to browser `localStorage` and resumes after refresh/reopen with the same level, removed arrows, lives, and red-arrow history. Reload during a move, background/resume, storage failure, changed level data, and rapid input follow the specified recovery policies without corrupting progression. |
 | AC10 | Reduced motion, directional cues, non-color failure feedback, and accessible menus work as specified. Any gameplay accessibility gaps are stated. |
-| AC11 | Engine fixtures demonstrate future endpoint selection. Level 11 introduces reciprocal yellow continuation in its authored six-arrow teaching layout, and generated layouts from level 12 onward retain solver-validated weighted yellow seams. |
+| AC11 | Engine fixtures demonstrate future endpoint selection. Level 11 introduces reciprocal yellow continuation in its authored six-arrow teaching layout, and generated layouts from level 12 onward, except authored level 15, retain solver-validated weighted yellow seams. |
 | AC12 | The project's actual formatting, lint, typecheck, tests, build, and relevant browser checks pass. Automated results and physical-device evidence are reported separately. |
 | AC13 | The PWA installs and launches standalone on supported target platforms. Closing/reopening it resumes local progress. Real-device checks include hardware two generations old, and installation is not required for normal browser play. |
 | AC14 | A small cube with few arrows demonstrates a visible touch on a blocked arrow, its contact/rebound/persistent red feedback, then a visible touch on another arrow that exits and disappears. The sequence cannot be skipped. Under the proposed demo-isolation policy, level 1 begins afterward with five lives and untouched arrows. |
@@ -268,13 +278,13 @@ Answer the blocking rules first. An unanswered proposal remains a proposal, even
 | Q3 | How long does collision red persist, and are repeat failures charged? | Red until removed; additional failures of that red arrow cost no extra lives. | Confirmed 2026-09-14. |
 | Q4 | Free orbit or fixed face views? Should far-side arrows be visible and selectable? | Free orbit, faint far-side arrows, exposed surfaces only selectable. Mouse-wheel and pinch zoom also requested. | Confirmed 2026-09-14. |
 | Q5 | What happens at zero lives? Does retry restore the same puzzle and full lives? | Unlimited retries of the same layout with full per-level lives. | Confirmed 2026-09-14. |
-| Q6 | How many MVP levels, and authored, generated, or both? | Superseded: the prior ten-curated-cube policy. Current: authored levels 1 and 11 plus endless deterministic, solver-validated runtime generation for levels 2–10 and 12 onward. | Superseded and replaced 2026-09-15. |
+| Q6 | How many MVP levels, and authored, generated, or both? | Superseded: the prior ten-curated-cube policy. Current: authored levels 1, 11, and 15 plus endless deterministic, solver-validated runtime generation for levels 2–10, 12–14, and 16 onward. | Superseded and replaced 2026-09-15. |
 
 ### 11.2 Movement and fairness edge cases
 
-- **Q7 — Confirmed 2026-09-14:** Grid-aligned 90-degree paths with no starting overlaps or overpasses. Adjacent lanes remain a proposed authoring convention.
+- **Q7 — Confirmed 2026-09-14:** Grid-aligned 90-degree paths with no crossings or overpasses, except the shared tail segments defined in R33. Adjacent lanes remain a proposed authoring convention.
 - **Q8 — Confirmed 2026-09-14:** Reject any level where an arrow could contact itself. Follow-up boundary still open: does a head entering an exactly vacated tail location count as forbidden contact when there is no simultaneous overlap? Proposed: no. Exterior-flight collision against later concave shapes also remains open; proposed: no further surface collision after departure.
-- **Q9 — Confirmed 2026-09-14:** One arrow attempt at a time; ignore further taps, with rotation and zoom still available.
+- **Q9 — Confirmed 2026-09-14:** One arrow or connected tail-group attempt at a time; ignore further taps, with rotation and zoom still available.
 - **Q10 — Superseded 2026-09-15:** The former 1–10 tier curve is replaced by runtime level budgets that decline to a three-life floor. Retry restores lives and clears red-arrow history.
 - **Q11 — Confirmed 2026-09-14:** Resume exact logical state, including removed arrows, lives, red-arrow history, and the result of an interrupted move.
 - **Q12 — Confirmed 2026-09-14:** Highlight on press before release. Ambiguous taps do nothing; the player can zoom closer.
@@ -303,4 +313,4 @@ Q1–Q13 have owner answers; Q8 retains a tail-boundary clarification. Q13 confi
 - S2: Project setup, core rules, content, rendering/input, local saves, and PWA installation support have passed the local checks described in the [verification report](docs/verification/2026-09-14-mvp.md).
 - S3: Physical-device performance, installed-app behavior, multi-tab save handling, and broader accessibility qualification remain open. Remote publication and deployment have not been requested.
 
-Development preview defaults: `?level=` opens any valid level without requiring an unlock; `?feature=wrap` (aliases `wrapping` and `wraparound`, case-insensitive) finds the first level with a yellow physical edge; `?wraps=0|1|2|3` selects an exact edge count. Combining a filter with `level` searches at or after that level, with a bounded 1,000-candidate search using edge-count metadata. These selectors start save-isolated preview, skip the demo, and preserve campaign storage through play, Retry, Next, Reset, and errors. Invalid, duplicate, conflicting, or unsupported selectors show a clear error. Bare `?test=1` remains automation-hooks-only. Verification is pending root's browser and combined-gate results.
+Development preview defaults: `?level=` opens any valid level without requiring an unlock; `?feature=overlap` (alias `overlapping`) opens the overlapping-tail introduction from cube 15; `?feature=wrap` (aliases `wrapping` and `wraparound`, case-insensitive) finds the first level with a yellow physical edge; `?wraps=0|1|2|3` selects an exact edge count. Combining a filter with `level` searches at or after that level, with a bounded 1,000-candidate search using edge-count metadata. These selectors start save-isolated preview, skip the demo, and preserve campaign storage through play, Retry, Next, Reset, and errors. Invalid, duplicate, conflicting, or unsupported selectors show a clear error. Bare `?test=1` remains automation-hooks-only. Verification is recorded in progress.md.

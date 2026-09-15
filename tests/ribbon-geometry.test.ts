@@ -78,6 +78,35 @@ function polylineLength(points: readonly THREE.Vector3[]): number {
 }
 
 describe("flat ribbon geometry", () => {
+  test("a short group member keeps its whole ribbon while traveling beside a longer member", () => {
+    const path = expandedPoints(
+      [
+        { face: "front", x: 0, y: 1 },
+        { face: "front", x: 1, y: 1 },
+      ],
+      4,
+    );
+    const move = result(
+      "exit",
+      [{ face: "front", x: 1, y: 1 }],
+      [1, 0.25, 1],
+      [1, 0, 0],
+    );
+    const { track, bodyLength } = arrowMotionTrack(path, move, 4, 8);
+    const start = slicePath(track, 0, bodyLength);
+    const outbound = slicePath(track, 7, bodyLength);
+    const returning = slicePath(track, 3, bodyLength);
+    expect(polylineLength(outbound.points)).toBeCloseTo(bodyLength, 7);
+    expect(polylineLength(returning.points)).toBeCloseTo(bodyLength, 7);
+    expectEqualPoint(
+      start.points[0] as THREE.Vector3,
+      path.points[0] as THREE.Vector3,
+    );
+    expect((outbound.points.at(-1) as THREE.Vector3).x).toBeGreaterThan(
+      (returning.points.at(-1) as THREE.Vector3).x,
+    );
+  });
+
   test("dims hidden wrapping edges and keeps visible faces and outlines bright", () => {
     const faces: readonly FaceId[] = [
       "front",

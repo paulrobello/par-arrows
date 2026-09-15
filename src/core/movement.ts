@@ -16,6 +16,7 @@ import type {
   LevelDefinition,
   MoveResult,
 } from "./types";
+import { overlappingArrowIds } from "./overlap";
 
 function orientedPath(
   arrow: ArrowDefinition,
@@ -78,12 +79,13 @@ export function advanceHead(
 }
 
 /** Simulate one complete, renderer-independent arrow attempt without mutating state. */
-export function simulateMove(
+function simulateSingle(
   level: LevelDefinition,
   remainingIds: readonly string[],
   arrowId: string,
   endpoint: Endpoint = "head",
   stateRevision = 0,
+  ignoredIds: ReadonlySet<string> = new Set(),
 ): MoveResult {
   const arrow = level.arrows.find((candidate) => candidate.id === arrowId);
   if (!arrow || !remainingIds.includes(arrowId)) {
@@ -119,7 +121,11 @@ export function simulateMove(
 
   const occupied = new Map<string, string>();
   for (const other of level.arrows) {
-    if (other.id !== arrowId && remainingIds.includes(other.id)) {
+    if (
+      other.id !== arrowId &&
+      !ignoredIds.has(other.id) &&
+      remainingIds.includes(other.id)
+    ) {
       for (const cell of other.path) {
         occupied.set(cellKey(cell), other.id);
       }
@@ -227,4 +233,67 @@ export function simulateMove(
     stateRevision,
     "Move exceeded the cube topology safety bound.",
   );
+}
+
+/** Simulate every member of a shared-tail group as one connected move. */
+export function simulateMove(
+  level: LevelDefinition,
+  remainingIds: readonly string[],
+  arrowId: string,
+  endpoint: Endpoint = "head",
+  stateRevision = 0,
+): MoveResult {
+  const ids = overlappingArrowIds(level, arrowId).filter((id) =>
+    remainingIds.includes(id),
+  );
+  if (ids.length <= 1) {
+    return simulateSingle(
+      level,
+      remainingIds,
+      arrowId,
+      endpoint,
+      stateRevision,
+    );
+  }
+  const ignored = new Set(ids);
+  const members = ids.map((id) =>
+    simulateSingle(
+      level,
+      remainingIds,
+      id,
+      id === arrowId ? endpoint : "head",
+      stateRevision,
+      ignored,
+    ),
+  );
+  const clicked = members.find((member) => member.arrowId === arrowId);
+  if (!clicked) {
+    return simulateSingle(
+      level,
+      remainingIds,
+      arrowId,
+      endpoint,
+      stateRevision,
+    );
+  }
+  const kind = members.some((member) => member.kind === "invalid")
+    ? "invalid"
+    : members.some((member) => member.kind === "blocked")
+      ? "blocked"
+      : "exit";
+  const invalidMember = members.find((member) => member.kind === "invalid");
+  return {
+    ...clicked,
+    kind,
+    ...(invalidMember?.reason ? { reason: invalidMember.reason } : {}),
+    distance:
+      kind === "blocked"
+        ? Math.min(
+            ...members
+              .filter((member) => member.kind === "blocked")
+              .map((member) => member.distance),
+          )
+        : Math.max(...members.map((member) => member.distance)),
+    members,
+  };
 }

@@ -1,22 +1,28 @@
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import type { LevelDefinition } from "../src/core/types";
 import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "../src/content/intro";
+import { OVERLAP_INTRO_LEVEL } from "../src/content/overlap-intro";
 import {
   GENERATOR_VERSION,
-  MAX_LEVEL_ID,
   generateLevel,
   getLevelConfig,
   getWrappingEdgePolicies,
   getWrappingEdgeWeights,
+  MAX_LEVEL_ID,
   seedForLevel,
 } from "../src/content/procedural";
-import { simulateMove } from "../src/core/movement";
+import {
+  applyMove,
+  createGameState,
+  simulateMove as simulateGameMove,
+} from "../src/core/game-state";
+import { simulateMove as simulateCoreMove } from "../src/core/movement";
 import {
   headingBetween,
   oppositeHeading,
   seamTransition,
 } from "../src/core/topology";
+import type { LevelDefinition } from "../src/core/types";
 import { solveLevel, validateLevel } from "../src/core/validation";
 
 function geometryHash(level: LevelDefinition): string {
@@ -45,8 +51,10 @@ function diverseLevelIds(): readonly number[] {
     8,
     9,
     10,
-    12,
     13,
+    14,
+    16,
+    18,
     100,
     1_000,
     1_000_000,
@@ -88,7 +96,7 @@ function normalizedShapeSignature(
 
 describe("runtime campaign generator", () => {
   test("has a versioned stable seed and rejects unsafe ids", () => {
-    expect(GENERATOR_VERSION).toBe(2);
+    expect(GENERATOR_VERSION).toBe(3);
     expect(seedForLevel(1_000_000)).toBe(seedForLevel(1_000_000));
     expect(seedForLevel(1_000_000)).not.toBe(seedForLevel(1_000_001));
     for (const id of [0, -1, 1.5, Number.MAX_SAFE_INTEGER, MAX_LEVEL_ID + 1])
@@ -97,12 +105,12 @@ describe("runtime campaign generator", () => {
 
   test("keeps level one unchanged and regenerates every later id identically", () => {
     expect(generateLevel(1)).toEqual(LEVEL_ONE);
-    for (const id of [2, 10, 12, 100, 1_000, 1_000_000]) {
+    for (const id of [2, 10, 12, 14, 15, 16, 100, 1_000, 1_000_000]) {
       expect(generateLevel(id)).toEqual(generateLevel(id));
     }
   });
 
-  test("preserves early geometry and freezes version two wrapping layouts", () => {
+  test("preserves legacy geometry through level fourteen and authors level fifteen", () => {
     expect(geometryHash(generateLevel(2))).toBe(
       "9fb45c3beaf0cafeacb20f56ee1fdf45bcccb17769cbc2229a1521339e85b7fa",
     );
@@ -115,16 +123,16 @@ describe("runtime campaign generator", () => {
     expect(geometryHash(generateLevel(13))).toBe(
       "d98224a1a930e1a8aaa002f96b0f176e127b8798cad9ba7ba52ae97ebc6c5978",
     );
-    expect(geometryHash(generateLevel(100))).toBe(
-      "57c8bcddc17af4bf2724948a5be32ab3f687f2c397029460400114ad20b6c590",
+    expect(geometryHash(generateLevel(14))).toBe(
+      "a6ffcb9c0e43197eff41005a73699e7a518a88d4f078b060649f0a0882a718e9",
     );
-    expect(geometryHash(generateLevel(1_000))).toBe(
-      "220f2acef467091070da1f03114880920bc299eafd020ff193ef6e01877995b8",
-    );
+    expect(generateLevel(15)).toBe(OVERLAP_INTRO_LEVEL);
+    expect(getWrappingEdgeWeights(15)).toEqual([1, 0, 0, 0]);
+    expect(getWrappingEdgePolicies(15)).toEqual([]);
   });
 
   test("builds bounded valid levels with reverse construction certificates", () => {
-    const layouts = [2, 3, 7, 10, 12, 1_000, 1_000_000].map(generateLevel);
+    const layouts = [2, 3, 7, 10, 14, 16, 1_000, 1_000_000].map(generateLevel);
     expect(
       new Set(layouts.map((level) => JSON.stringify(level.arrows))).size,
     ).toBe(layouts.length);
@@ -155,13 +163,27 @@ describe("runtime campaign generator", () => {
       expect(Math.max(...shapeCopies.values())).toBeLessThanOrEqual(
         Math.max(6, Math.ceil(level.arrows.length * 0.03)),
       );
-      const remaining = level.arrows.map((arrow) => arrow.id);
+      let certificateState = createGameState(level);
       for (const arrow of [...level.arrows].reverse()) {
-        expect(simulateMove(level, remaining, arrow.id).kind).toBe("exit");
-        remaining.splice(remaining.indexOf(arrow.id), 1);
+        if (!certificateState.remainingIds.includes(arrow.id)) continue;
+        const result = simulateGameMove(level, certificateState, arrow.id);
+        expect(result.kind).toBe("exit");
+        certificateState = applyMove(level, certificateState, result);
       }
-      if ([2, 10, 12].includes(level.id))
-        expect(solveLevel(level)).toHaveLength(level.arrows.length);
+      expect(certificateState.status).toBe("won");
+      expect(certificateState.lives).toBe(level.lives);
+      if ([2, 10].includes(level.id)) {
+        let state = createGameState(level);
+        const solution = solveLevel(level);
+        if (!solution) throw new Error("Expected a generated solution.");
+        for (const arrowId of solution) {
+          const result = simulateGameMove(level, state, arrowId);
+          expect(result.kind).toBe("exit");
+          state = applyMove(level, state, result);
+        }
+        expect(state.status).toBe("won");
+        expect(state.lives).toBe(level.lives);
+      }
     }
   });
 
@@ -180,7 +202,7 @@ describe("runtime campaign generator", () => {
     for (const id of diverseLevelIds()) {
       const level = generateLevel(id);
       expect(seedForLevel(id)).toBe(
-        `par-arrows:runtime:${id <= 10 ? 1 : GENERATOR_VERSION}:level:${id}`,
+        `par-arrows:runtime:${id <= 10 ? 1 : id <= 14 ? 2 : 3}:level:${id}`,
       );
       expect(validateLevel(level).valid).toBe(true);
       expect(level.gridSize).toBeLessThanOrEqual(26);
@@ -214,8 +236,12 @@ describe("runtime campaign generator", () => {
     expect(final[3]).toBeCloseTo(0.3);
     expect(getWrappingEdgeWeights(MAX_LEVEL_ID)).toEqual(final);
     for (let id = 12; id <= 100; id += 1) {
-      const previous = getWrappingEdgeWeights(id - 1);
       const current = getWrappingEdgeWeights(id);
+      if (id === 15) {
+        expect(current).toEqual([1, 0, 0, 0]);
+        continue;
+      }
+      const previous = getWrappingEdgeWeights(id === 16 ? 14 : id - 1);
       expect(current[0]).toBe(0.25);
       expect(
         current.reduce((sum, probability) => sum + probability, 0),
@@ -268,7 +294,7 @@ describe("runtime campaign generator", () => {
     expect(validateLevel(level)).toEqual({ valid: true, errors: [] });
     const allIds = level.arrows.map((arrow) => arrow.id);
     for (const arrow of level.arrows) {
-      expect(simulateMove(level, allIds, arrow.id).kind).toBe("exit");
+      expect(simulateCoreMove(level, allIds, arrow.id).kind).toBe("exit");
     }
 
     const frontArrow = level.arrows.find(
@@ -281,8 +307,8 @@ describe("runtime campaign generator", () => {
     const leftBoundary = leftArrow?.path[1];
     if (!frontArrow || !leftArrow || !frontBoundary || !leftBoundary)
       throw new Error("Wrap intro arrows are missing their boundary cells.");
-    const frontMove = simulateMove(level, allIds, frontArrow.id);
-    const leftMove = simulateMove(level, allIds, leftArrow.id);
+    const frontMove = simulateCoreMove(level, allIds, frontArrow.id);
+    const leftMove = simulateCoreMove(level, allIds, leftArrow.id);
     expect(frontMove.route).toContainEqual(
       seamTransition(frontBoundary, "west", 4).cell,
     );
@@ -345,7 +371,7 @@ describe("runtime campaign generator", () => {
       if (policies.length === 0) continue;
       expect(
         level.arrows.some((arrow) => {
-          const result = simulateMove(level, [arrow.id], arrow.id);
+          const result = simulateCoreMove(level, [arrow.id], arrow.id);
           return (
             result.kind === "exit" &&
             new Set(result.route.map((cell) => cell.face)).size > 1

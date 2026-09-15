@@ -2,6 +2,14 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Overlapping tails
+
+Requested 2026-09-15: two or three arrows share tail segments, with separate heads and no crossing travel paths. Touching any portion activates the whole connected group. Any outside collision rewinds all members and turns them red. The first group failure costs one life; repeat failures are free. The owner clarified that the mechanic starts at cube 15 with a level-1-style 4 × 4 cube, six arrows and five lives. The pair and its blocker occupy the front face; a trio occupies the left face. Generated groups start at cube 16. Layouts/seeds through cube 14 stay unchanged. New v7 saves preserve compatible older attempts through cube 14; affected later attempts refresh while unlocks and onboarding remain intact.
+
+Root verified `make checkall`: 125 tests and 129,138 assertions pass. A direct comparison against the original checkout confirmed exact level definitions for every level from 1 through 14. Headed Chrome and WebKit checks pass actual individual head, unique branch and shared-tail taps, native mobile touch, equal-speed group rewind, exact restoration, whole-group hints, retry, level 14 → 15 → 16 progression, and interrupted successful/blocked group saves. Light/dark desktop/mobile and red-group screenshots were inspected. The headed web-game client also passed with cube 15 visible. Parsight was refreshed and callers of the group helper were checked across movement, validation, state, saves, app, renderer and tests.
+
+Broader browser runs passed the existing demo, gestures, dense picking, themes, hints, runtime generation/storage, wrap introduction, motion and seam-fill checks. They exposed outdated preview/save fixture assertions, which were corrected; the preview, wrapping and overlap suites then passed in separate final Chrome/WebKit runs. No single final monolithic browser run is claimed. The existing full-run and physical-device qualification cards remain separate. Independent diff review found no production defect; its certificate-test finding was fixed by replaying actual whole-group state transitions.
+
 ## First yellow-wrap introduction
 
 The owner requested a small level like level 1 when yellow wrapping first appears. Cube 11 is now an authored 4 × 4 cube with six short arrows, five lives, and one yellow edge visible from the initial camera. Two arrows demonstrate continuation onto the neighboring face; the others use ordinary exits. All six moves are safe with the full board occupied. A nonblocking instruction explains the yellow edge and moves aside in short landscape windows. Cube 1 and the original demo remain unchanged, and cube 12 onward retains existing layouts and weights. Only cube 11 receives a revised seed, so its older attempt refreshes while unlocks and tutorial completion survive.
@@ -138,10 +146,10 @@ Flat quads and triangular heads follow face planes and fold at seams. Moving bod
 
 ## Confirmed behavior
 
-- Levels 1 and 11 are authored teaching cubes; levels 2–10 and 12 onward are deterministic, solver-validated runtime puzzles. Progression is endless, with an early 60–180 arrow ramp and later 240-arrow cap, 26 × 26 face grids, 40-cell paths, and a three-life floor for generated puzzles.
+- Levels 1, 11, and 15 are authored teaching cubes; levels 2–10, 12–14, and 16 onward are deterministic, solver-validated runtime puzzles. Progression is endless, with an early 60–180 arrow ramp and later 240-arrow cap, 26 × 26 face grids, 40-cell paths, and a three-life floor for generated puzzles.
 - Head advances forward; body follows its existing path and unwraps ordinary seams. A new head crossing continues only on a marked reciprocal yellow seam; ordinary crossings exit.
-- First failure per arrow costs one life and keeps it red until removed. Repeat failures of that arrow are free.
-- Reject self-contact levels. One active arrow at a time; extra taps ignored while orbit/zoom remain available.
+- First failure per arrow or connected tail group costs one life and keeps every member red until removed. Repeat failures are free.
+- Reject self-contact and crossing group travel routes. One active arrow or connected group at a time; extra taps ignored while orbit/zoom remain available.
 - Free orbit, wheel and pinch zoom, visible-face picking, faint unpickable far-side arrows, press highlight, ambiguous taps ignored.
 - Retry restores the same layout/full lives and clears failed-arrow history. localStorage resumes exact logical progress, including interrupted move results.
 - Installable PWA. Support target includes mobile devices up to two prior hardware generations; physical-device proof is still outstanding.
@@ -150,7 +158,7 @@ Flat quads and triangular heads follow face planes and fold at seams. Moving bod
 ## Execution assumptions
 
 - User request on 2026-09-14 supersedes planning-only instructions in the original documents.
-- Implement current documented defaults for remaining MVP details. Cube 11 introduces one fixed whole-edge reciprocal yellow seam; generated cubes from 12 onward use the established deterministic edge-count weights. Blue/green arrows, non-cube content, offline gameplay, accounts, undo, and sound assets remain deferred. Safe-arrow hints were separately approved on 2026-09-15.
+- Implement current documented defaults for remaining MVP details. Cube 11 introduces one fixed whole-edge reciprocal yellow seam; cube 15 introduces overlapping tails; generated cubes from 16 onward use the established deterministic edge-count weights and tail groups. Blue/green arrows, non-cube content, offline gameplay, accounts, undo, and sound assets remain deferred. Safe-arrow hints were separately approved on 2026-09-15.
 - A vacated tail cell is allowed only without simultaneous swept contact. Self-contact validation checks each arrow without other blockers.
 - Demo uses independent state, starts before first campaign play, saves completion only after both moves, and leaves level 1 untouched. Interrupted demo restarts if not completed.
 - Sequential unlock/replay of unlocked levels, bounded numeric Go/Enter navigation, no final campaign completion, reduced-motion presentation, accessible HTML controls.

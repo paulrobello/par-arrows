@@ -12,6 +12,7 @@ import {
   createGameState,
   simulateMove,
 } from "../src/core/game-state";
+import { overlappingArrowIds } from "../src/core/overlap";
 import { solveLevel } from "../src/core/validation";
 
 const CAMPAIGN_KEY = "par-arrows:campaign:v1";
@@ -68,7 +69,7 @@ export async function assertLevelPreview(
     unlockedLevelId: 3,
     state: campaignState,
     tutorialComplete: true,
-    contentVersion: 6,
+    contentVersion: 7,
     generatorVersion: GENERATOR_VERSION,
     seed: seedForLevel(2),
   });
@@ -147,7 +148,10 @@ export async function assertLevelPreview(
       window.__PAR_ARROWS_TEST__?.activate(id);
       window.advanceTime?.(100);
     }, blockedPreview.id);
-    assert.deepEqual((await state(page)).failedIds, [blockedPreview.id]);
+    assert.deepEqual(
+      (await state(page)).failedIds,
+      overlappingArrowIds(testLevel, blockedPreview.id),
+    );
     await assertSaveUnchanged();
     await page.locator('[data-action="retry"]').first().click();
     assert.deepEqual((await state(page)).failedIds, []);

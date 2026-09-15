@@ -39,6 +39,12 @@ describe("test-level URL previews", () => {
         feature: "wrap",
       });
     }
+    for (const feature of ["overlap", "OVERLAPPING"]) {
+      expect(parseLevelPreview(`?feature=${feature}`)).toMatchObject({
+        active: true,
+        feature: "overlap",
+      });
+    }
   });
 
   test("rejects unsupported features, malformed selectors, duplicates and conflicts", () => {
@@ -113,6 +119,29 @@ describe("test-level URL previews", () => {
     );
     expect(selected.resolvedLevelId).toBe(8);
     expect(calls).toEqual([8]);
+  });
+
+  test("overlap previews begin at the authored introduction or later", () => {
+    expect(
+      resolveLevelPreview(parseLevelPreview("?feature=overlap"), 1),
+    ).toMatchObject({ resolvedLevelId: 15 });
+    expect(
+      resolveLevelPreview(parseLevelPreview("?level=10&feature=overlap"), 10),
+    ).toMatchObject({ requestedLevelId: 10, resolvedLevelId: 15 });
+    expect(
+      resolveLevelPreview(parseLevelPreview("?feature=overlap"), 18),
+    ).toMatchObject({ resolvedLevelId: 18 });
+  });
+
+  test("wrap selectors use the authored overlap introduction's empty policy metadata", () => {
+    expect(
+      resolveLevelPreview(parseLevelPreview("?level=15&wraps=0"), 15)
+        .resolvedLevelId,
+    ).toBe(15);
+    expect(
+      resolveLevelPreview(parseLevelPreview("?level=15&feature=wrap"), 15)
+        .resolvedLevelId,
+    ).toBeGreaterThan(15);
   });
 
   test("bounds filtered searches to 1000 ids and stays within MAX_LEVEL_ID", () => {

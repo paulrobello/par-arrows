@@ -3,6 +3,7 @@
   "files": {
     "includes": [
       "**",
+      "!.claude",
       "!dist",
       "!node_modules",
       "!playwright-report",

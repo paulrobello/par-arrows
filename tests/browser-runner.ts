@@ -19,6 +19,7 @@ import { solveLevel } from "../src/core/validation";
 import { arrowDimensions } from "../src/render/renderer";
 import { runHintChecks } from "./hints-browser";
 import { assertConsistentMotion } from "./motion-browser";
+import { assertOverlapIntro } from "./overlap-browser";
 import { assertLevelPreview } from "./preview-browser";
 import { assertRuntimeCampaign } from "./runtime-browser";
 import { LEVELS, waitForReady } from "./runtime-fixtures";
@@ -81,6 +82,7 @@ const serverErrors = new Response(server.stderr).text();
 let browser: Browser | undefined;
 let primaryContext: BrowserContext | undefined;
 const failures: string[] = [];
+const OVERLAP_ONLY_COMPLETE = Symbol("overlap-only-complete");
 const deadline = setTimeout(() => {
   console.error("Browser verification exceeded its 180-second deadline.");
   server.kill();
@@ -884,6 +886,20 @@ try {
   await page.goto(url);
   await waitForReady(page);
 
+  if (process.env.OVERLAP_ONLY === "1") {
+    await assertOverlapIntro(browser, url, output);
+    assert.deepEqual(failures, [], "Browser must not report uncaught errors");
+    await Bun.write(
+      `${output}/overlap-summary.json`,
+      JSON.stringify(
+        { passed: true, browser: engine.name(), physicalDevice: false },
+        null,
+        2,
+      ),
+    );
+    throw OVERLAP_ONLY_COMPLETE;
+  }
+
   assert.equal((await snapshot(page)).mode, "demo");
   assert.equal(
     await page.getByRole("button", { name: "Hint", exact: true }).isDisabled(),
@@ -1308,8 +1324,8 @@ try {
   await assertSeamFills(browser, url, output);
   await assertLevelPreview(browser, url, output);
   await assertWrappingEdges(browser, url, output, {
-    movementLevelId: 44,
-    reboundLevelId: 44,
+    movementLevelId: 26,
+    reboundLevelId: 26,
   });
   await assertThemeBootstrap(browser);
   assert.deepEqual(failures, [], "Browser must not report uncaught errors");
@@ -1321,6 +1337,8 @@ try {
       2,
     ),
   );
+} catch (error) {
+  if (error !== OVERLAP_ONLY_COMPLETE) throw error;
 } finally {
   try {
     try {

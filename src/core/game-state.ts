@@ -1,4 +1,5 @@
 import { simulateMove as simulate } from "./movement";
+import { overlappingArrowIds } from "./overlap";
 import type { Endpoint, GameState, LevelDefinition, MoveResult } from "./types";
 
 export function createGameState(level: LevelDefinition): GameState {
@@ -50,9 +51,20 @@ export function applyMove(
   if (!state.remainingIds.includes(result.arrowId)) {
     return state;
   }
+  const groupIds = overlappingArrowIds(level, result.arrowId);
+  if (groupIds.some((id) => !state.remainingIds.includes(id))) {
+    return state;
+  }
+  if (
+    result.members &&
+    (result.members.length !== groupIds.length ||
+      result.members.some((member) => !groupIds.includes(member.arrowId)))
+  ) {
+    return state;
+  }
   if (result.kind === "exit") {
     const remainingIds = state.remainingIds.filter(
-      (id) => id !== result.arrowId,
+      (id) => !groupIds.includes(id),
     );
     return {
       ...state,
@@ -61,10 +73,14 @@ export function applyMove(
       revision: state.revision + 1,
     };
   }
-  const hasFailed = state.failedIds.includes(result.arrowId);
+  const failedGroup = groupIds;
+  const hasFailed = failedGroup.every((id) => state.failedIds.includes(id));
   const failedIds = hasFailed
     ? state.failedIds
-    : [...state.failedIds, result.arrowId];
+    : [
+        ...state.failedIds,
+        ...failedGroup.filter((id) => !state.failedIds.includes(id)),
+      ];
   const lives = hasFailed ? state.lives : Math.max(0, state.lives - 1);
   return {
     ...state,

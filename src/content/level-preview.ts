@@ -3,7 +3,7 @@ import { getWrappingEdgePolicies, MAX_LEVEL_ID } from "./procedural";
 export interface LevelPreview {
   readonly active: boolean;
   readonly requestedLevelId?: number;
-  readonly feature?: "wrap";
+  readonly feature?: "wrap" | "overlap";
   readonly wraps?: number;
   readonly resolvedLevelId?: number;
   readonly error?: string;
@@ -45,11 +45,13 @@ export function parseLevelPreview(search: string): LevelPreview {
   }
 
   const rawFeature = params.get("feature");
-  let feature: "wrap" | undefined;
+  let feature: "wrap" | "overlap" | undefined;
   if (rawFeature !== null) {
     const normalized = rawFeature.toLowerCase();
     if (["wrap", "wrapping", "wraparound"].includes(normalized)) {
       feature = "wrap";
+    } else if (["overlap", "overlapping"].includes(normalized)) {
+      feature = "overlap";
     } else {
       return { active: true, error: `Unknown test feature: ${rawFeature}.` };
     }
@@ -106,13 +108,21 @@ export function resolveLevelPreview(
   }
 
   const requiresWrap = preview.feature === "wrap" || (preview.wraps ?? 0) > 0;
-  const startLevelId = requiresWrap ? Math.max(11, fromLevelId) : fromLevelId;
+  const startLevelId =
+    preview.feature === "overlap"
+      ? Math.max(15, fromLevelId)
+      : requiresWrap
+        ? Math.max(11, fromLevelId)
+        : fromLevelId;
   const finalLevelId = Math.min(
     MAX_LEVEL_ID,
     startLevelId + Math.min(MAX_SEARCH_LEVELS - 1, MAX_LEVEL_ID - startLevelId),
   );
   for (let levelId = startLevelId; levelId <= finalLevelId; levelId += 1) {
-    const physicalWraps = getPolicies(levelId).length / 2;
+    const physicalWraps =
+      preview.feature === "wrap" || preview.wraps !== undefined
+        ? getPolicies(levelId).length / 2
+        : 0;
     if (
       (preview.feature !== "wrap" || physicalWraps >= 1) &&
       (preview.wraps === undefined || physicalWraps === preview.wraps)

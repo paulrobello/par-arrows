@@ -205,7 +205,7 @@ export async function assertWrappingEdges(
     const movementLevel = generateLevel(fixtures.movementLevelId);
     const movementArrow = crossingArrow(fixtures.movementLevelId);
     await loadLevel(page, fixtures.movementLevelId);
-    await assertEdgeDimming(page, 52, fixtures.movementLevelId, output);
+    await assertEdgeDimming(page, 26, fixtures.movementLevelId, output);
     const expectedEdges =
       (movementLevel.edgePolicies ?? []).filter(
         (policy) => policy.policy === "continue",
@@ -265,7 +265,7 @@ export async function assertWrappingEdges(
           revision,
         };
         saved.tutorialComplete = true;
-        saved.contentVersion = 6;
+        saved.contentVersion = 7;
         saved.generatorVersion = generatorVersion;
         saved.seed = seed;
         localStorage.setItem(key, JSON.stringify(saved));

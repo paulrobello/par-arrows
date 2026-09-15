@@ -4,11 +4,12 @@ import {
   seedForLevel,
 } from "./content/procedural";
 import { createGameState } from "./core/game-state";
+import { overlappingArrowIds } from "./core/overlap";
 import type { GameState, LevelDefinition } from "./core/types";
 
 const STORAGE_KEY = "par-arrows:campaign:v1";
 const SETTINGS_KEY = "par-arrows:settings:v1";
-const CONTENT_VERSION = 6;
+const CONTENT_VERSION = 7;
 
 export interface CampaignSave {
   readonly currentLevelId: number;
@@ -82,6 +83,31 @@ function isState(value: unknown, level: LevelDefinition): value is GameState {
     values.every((id) => typeof id === "string" && ids.includes(id));
   const unique = (values: unknown[]): boolean =>
     new Set(values).size === values.length;
+  const remainingIds = new Set(remaining as string[]);
+  const failedIds = new Set(failed as string[]);
+  const overlapGroups = new Map<string, readonly string[]>();
+  for (const id of ids) {
+    const group = overlappingArrowIds(level, id);
+    if (group.length > 1) overlapGroups.set(group[0] as string, group);
+  }
+  const completeForGroups = (values: ReadonlySet<string>): boolean =>
+    [...overlapGroups.values()].every((group) => {
+      const membersPresent = group.filter((id) => values.has(id)).length;
+      return membersPresent === 0 || membersPresent === group.length;
+    });
+  if (!completeForGroups(remainingIds) || !completeForGroups(failedIds))
+    return false;
+  const groupedIds = new Set([...overlapGroups.values()].flat());
+  const removedLogicalCount =
+    ids.filter((id) => !groupedIds.has(id) && !remainingIds.has(id)).length +
+    [...overlapGroups.values()].filter(
+      (group) => !remainingIds.has(group[0] as string),
+    ).length;
+  const failedLogicalCount =
+    (failed as string[]).filter((id) => !groupedIds.has(id)).length +
+    [...overlapGroups.values()].filter((group) =>
+      failedIds.has(group[0] as string),
+    ).length;
   const expectedStatus =
     remaining?.length === 0 ? "won" : lives === 0 ? "lost" : "playing";
   return (
@@ -93,10 +119,10 @@ function isState(value: unknown, level: LevelDefinition): value is GameState {
     Number.isSafeInteger(lives) &&
     lives >= 0 &&
     lives <= level.lives &&
-    lives === level.lives - failed.length &&
+    lives === level.lives - failedLogicalCount &&
     !(remaining.length === 0 && lives === 0) &&
     Number.isSafeInteger(revision) &&
-    revision >= level.arrows.length - remaining.length + failed.length &&
+    revision >= removedLogicalCount + failedLogicalCount &&
     candidate.status === expectedStatus
   );
 }
@@ -111,7 +137,12 @@ function removeStoredCampaign(store: Storage): void {
 
 function isLegacyContentVersion(value: unknown): boolean {
   return (
-    value === 1 || value === 2 || value === 3 || value === 4 || value === 5
+    value === 1 ||
+    value === 2 ||
+    value === 3 ||
+    value === 4 ||
+    value === 5 ||
+    value === 6
   );
 }
 
@@ -123,7 +154,9 @@ function hasMatchingGeneratorMetadata(
   return (
     seedMatches &&
     (value.generatorVersion === GENERATOR_VERSION ||
-      (levelId <= 10 && value.generatorVersion === 1))
+      (levelId <= 10 &&
+        (value.generatorVersion === 1 || value.generatorVersion === 2)) ||
+      (levelId <= 14 && value.generatorVersion === 2))
   );
 }
 
@@ -180,7 +213,11 @@ export async function loadCampaign(
   const currentStateIsValid = isState(parsed.state, level);
   const compatible =
     currentStateIsValid &&
-    (exactCurrentContent || (legacyContent && currentLevelId === 1));
+    (exactCurrentContent ||
+      (parsed.contentVersion === 6 &&
+        currentLevelId <= 14 &&
+        hasMatchingGeneratorMetadata(parsed, currentLevelId)) ||
+      (legacyContent && currentLevelId === 1));
   const value: LoadedCampaign = compatible
     ? {
         currentLevelId,

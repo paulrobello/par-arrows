@@ -1,0 +1,105 @@
+import { describe, expect, test } from "bun:test";
+import { OVERLAP_INTRO_LEVEL } from "../src/content/overlap-intro";
+import {
+  generateLevel,
+  getLevelConfig,
+  seedForLevel,
+} from "../src/content/procedural";
+import {
+  applyMove,
+  createGameState,
+  simulateMove,
+} from "../src/core/game-state";
+import { overlappingArrowIds } from "../src/core/overlap";
+import { solveLevel, validateLevel } from "../src/core/validation";
+
+function replay(
+  level: ReturnType<typeof generateLevel>,
+  ids: readonly string[],
+): void {
+  let state = createGameState(level);
+  for (const arrowId of ids) {
+    const result = simulateMove(level, state, arrowId);
+    expect(result.kind).toBe("exit");
+    state = applyMove(level, state, result);
+  }
+  expect(state.status).toBe("won");
+  expect(state.lives).toBe(level.lives);
+}
+
+describe("overlapping-tail level content", () => {
+  test("the compact authored lesson teaches pair failure, removal, and retry", () => {
+    const level = OVERLAP_INTRO_LEVEL;
+    expect(getLevelConfig(15)).toEqual({
+      gridSize: 4,
+      arrowCount: 6,
+      lives: 5,
+      arrowScale: 1,
+    });
+    expect(level.id).toBe(15);
+    expect(seedForLevel(15)).toBe(
+      "par-arrows:runtime:3:level:15:overlap-intro:1",
+    );
+    expect(validateLevel(level)).toEqual({ valid: true, errors: [] });
+    expect(overlappingArrowIds(level, "overlap-intro-pair-a")).toEqual([
+      "overlap-intro-pair-a",
+      "overlap-intro-pair-b",
+    ]);
+    expect(overlappingArrowIds(level, "overlap-intro-trio-a")).toEqual([
+      "overlap-intro-trio-a",
+      "overlap-intro-trio-b",
+      "overlap-intro-trio-c",
+    ]);
+
+    let state = createGameState(level);
+    const failedPair = simulateMove(level, state, "overlap-intro-pair-b");
+    expect(failedPair.kind).toBe("blocked");
+    expect(failedPair.members).toHaveLength(2);
+    state = applyMove(level, state, failedPair);
+    expect(state.failedIds).toEqual([
+      "overlap-intro-pair-a",
+      "overlap-intro-pair-b",
+    ]);
+    expect(state.lives).toBe(level.lives - 1);
+
+    const removeBlocker = simulateMove(level, state, "overlap-intro-blocker");
+    expect(removeBlocker.kind).toBe("exit");
+    state = applyMove(level, state, removeBlocker);
+    const retry = simulateMove(level, state, "overlap-intro-pair-a");
+    expect(retry.kind).toBe("exit");
+    expect(retry.members).toHaveLength(2);
+    state = applyMove(level, state, retry);
+    expect(state.remainingIds).not.toContain("overlap-intro-pair-a");
+    expect(state.remainingIds).not.toContain("overlap-intro-pair-b");
+
+    const solution = solveLevel(level);
+    if (!solution)
+      throw new Error("Expected the overlap lesson to be solvable.");
+    replay(level, solution);
+  });
+
+  test("generated levels 16+ seed deterministic pair and trio groups", () => {
+    for (const [id, expectedSize] of [
+      [16, 2],
+      [18, 3],
+    ] as const) {
+      const level = generateLevel(id);
+      const group = overlappingArrowIds(level, level.arrows[0]?.id ?? "");
+      expect(group).toHaveLength(expectedSize);
+      expect(level.arrows).toHaveLength(getLevelConfig(id).arrowCount);
+      expect(level).toEqual(generateLevel(id));
+      expect(seedForLevel(id)).toBe(`par-arrows:runtime:3:level:${id}`);
+      expect(validateLevel(level)).toEqual({ valid: true, errors: [] });
+
+      let state = createGameState(level);
+      for (const arrow of [...level.arrows].reverse()) {
+        if (!state.remainingIds.includes(arrow.id)) continue;
+        const result = simulateMove(level, state, arrow.id);
+        expect(result.kind).toBe("exit");
+        state = applyMove(level, state, result);
+      }
+      expect(state.status).toBe("won");
+      expect(state.lives).toBe(level.lives);
+    }
+  }, 20_000);
+});

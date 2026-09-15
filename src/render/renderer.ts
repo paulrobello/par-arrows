@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+import { overlappingArrowIds } from "../core/overlap";
 import { cellToWorld, faceHeadingVector, faceNormal } from "../core/topology";
 import type {
   ArrowDefinition,
@@ -437,6 +438,7 @@ export function arrowMotionTrack(
   path: ExpandedPath,
   result: MoveResult,
   gridSize: number,
+  minimumDistance = 0,
 ): ArrowMotionTrack {
   const route = expandedPoints(result.route, gridSize);
   const bodyLength = pathLength(path);
@@ -454,7 +456,9 @@ export function arrowMotionTrack(
       tangent.set(tx, ty, tz).normalize();
       flightPoints.push(
         edge,
-        edge.clone().addScaledVector(tangent, bodyLength + 2),
+        edge
+          .clone()
+          .addScaledVector(tangent, Math.max(bodyLength + 2, minimumDistance)),
       );
     } else {
       flightPoints.push(tail.clone().addScaledVector(tangent, bodyLength + 2));
@@ -825,8 +829,7 @@ export class PuzzleRenderer {
   }
 
   animate(arrowId: string, result: MoveResult, progress: number): void {
-    const visual = this.visuals.get(arrowId);
-    if (!visual || !this.level) {
+    if (!this.level) {
       return;
     }
     const travel =
@@ -835,25 +838,35 @@ export class PuzzleRenderer {
           ? progress * 2
           : (1 - progress) * 2
         : progress;
-    const { track, bodyLength, distance } = arrowMotionTrack(
-      visual.path,
-      result,
-      this.level.gridSize,
-    );
-    this.updatePathVisual(
-      visual,
-      slicePath(track, travel * distance, bodyLength),
-    );
+    const distance = this.motionDistance(arrowId, result);
+    for (const member of result.members ?? [result]) {
+      const visual = this.visuals.get(member.arrowId);
+      if (!visual) continue;
+      const { track, bodyLength } = arrowMotionTrack(
+        visual.path,
+        member,
+        this.level.gridSize,
+        distance,
+      );
+      this.updatePathVisual(
+        visual,
+        slicePath(track, travel * distance, bodyLength),
+      );
+    }
     this.render();
   }
 
   settle(arrowId: string): void {
-    const visual = this.visuals.get(arrowId);
-    if (visual) {
-      this.updatePathVisual(visual, {
-        ...visual.path,
-        headFace: visual.path.segmentFaces.at(-1),
-      });
+    for (const id of this.level
+      ? overlappingArrowIds(this.level, arrowId)
+      : [arrowId]) {
+      const visual = this.visuals.get(id);
+      if (visual) {
+        this.updatePathVisual(visual, {
+          ...visual.path,
+          headFace: visual.path.segmentFaces.at(-1),
+        });
+      }
     }
     this.render();
   }
@@ -966,6 +979,18 @@ export class PuzzleRenderer {
   }
 
   motionDistance(arrowId: string, result: MoveResult): number {
+    if (result.members) {
+      const members =
+        result.kind === "blocked"
+          ? result.members.filter((member) => member.kind === "blocked")
+          : result.members;
+      const distances = members.map((member) =>
+        this.motionDistance(member.arrowId, member),
+      );
+      return result.kind === "blocked"
+        ? Math.min(...distances)
+        : Math.max(...distances);
+    }
     const visual = this.visuals.get(arrowId);
     if (!visual || !this.level) return 0;
     return arrowMotionTrack(visual.path, result, this.level.gridSize).distance;
@@ -973,6 +998,14 @@ export class PuzzleRenderer {
 
   render(): void {
     this.updateCamera();
+    const selectedIds =
+      this.level && this.selectedId
+        ? overlappingArrowIds(this.level, this.selectedId)
+        : [];
+    const hintedIds =
+      this.level && this.hintFocus && this.hintLit
+        ? overlappingArrowIds(this.level, this.hintFocus.arrowId)
+        : [];
     for (const child of this.wrappingEdgesGroup.children) {
       const mesh = child as THREE.Mesh<
         THREE.BufferGeometry,
@@ -984,14 +1017,13 @@ export class PuzzleRenderer {
       );
     }
     for (const visual of this.visuals.values()) {
-      const activeColor =
-        visual.arrow.id === this.hintFocus?.arrowId && this.hintLit
+      const activeColor = hintedIds.includes(visual.arrow.id)
+        ? this.palette.selected
+        : selectedIds.includes(visual.arrow.id)
           ? this.palette.selected
-          : visual.arrow.id === this.selectedId
-            ? this.palette.selected
-            : this.state?.failedIds.includes(visual.arrow.id)
-              ? this.palette.failed
-              : this.palette.arrow;
+          : this.state?.failedIds.includes(visual.arrow.id)
+            ? this.palette.failed
+            : this.palette.arrow;
       for (const segment of visual.segments) {
         const face = segment.picker.userData.face as Cell["face"] | undefined;
         const [nx, ny, nz] = face ? faceNormal(face) : [0, 0, 0];
@@ -1247,8 +1279,12 @@ export class PuzzleRenderer {
   }
 
   private applySelection(): void {
+    const selectedIds =
+      this.level && this.selectedId
+        ? overlappingArrowIds(this.level, this.selectedId)
+        : [];
     for (const [id, visual] of this.visuals) {
-      const selected = id === this.selectedId;
+      const selected = selectedIds.includes(id);
       visual.material.color.set(
         selected
           ? this.palette.selected

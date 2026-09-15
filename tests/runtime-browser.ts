@@ -10,6 +10,7 @@ import {
   createGameState,
   simulateMove,
 } from "../src/core/game-state";
+import { overlappingArrowIds } from "../src/core/overlap";
 import { waitForReady } from "./runtime-fixtures";
 
 const KEY = "par-arrows:campaign:v1";
@@ -70,6 +71,7 @@ export async function assertRuntimeCampaign(
       "blocked",
   );
   assert.ok(blocked);
+  const blockedIds = overlappingArrowIds(twelve, blocked.id);
   await page.evaluate((id) => {
     window.__PAR_ARROWS_TEST__?.activate(id);
     window.advanceTime?.(1000);
@@ -78,7 +80,7 @@ export async function assertRuntimeCampaign(
   assert.ok(saved);
   await page.reload();
   await waitForReady(page);
-  assert.deepEqual((await state(page)).failedIds, [blocked.id]);
+  assert.deepEqual((await state(page)).failedIds, blockedIds);
   assert.equal((await state(page)).lives, twelve.lives - 1);
   assert.deepEqual(
     await page.evaluate(() => window.__PAR_ARROWS_TEST__?.getLevel()),
@@ -122,11 +124,10 @@ export async function assertRuntimeCampaign(
   );
   assert.ok(thousand.gridSize <= 26 && thousand.arrows.length <= 240);
   await page.screenshot({ path: `${output}/runtime-cube-1000-mobile.png` });
-  const safe = thousand.arrows.find(
-    (arrow) =>
-      simulateMove(thousand, createGameState(thousand), arrow.id).kind ===
-      "exit",
-  );
+  const safe = thousand.arrows.find((arrow) => {
+    const move = simulateMove(thousand, createGameState(thousand), arrow.id);
+    return move.kind === "exit" && (move.members?.length ?? 1) === 1;
+  });
   assert.ok(safe);
   await page.evaluate(
     ({ key, arrowId, count }) => {
@@ -310,7 +311,7 @@ export async function assertRuntimeCampaign(
   await failedPage.locator('[data-action="generation-retry"]').click();
   await waitForReady(failedPage);
   assert.equal((await state(failedPage)).level.id, 12);
-  assert.deepEqual((await state(failedPage)).failedIds, [blocked.id]);
+  assert.deepEqual((await state(failedPage)).failedIds, blockedIds);
   assert.equal((await state(failedPage)).lives, twelve.lives - 1);
   await failed.close();
 

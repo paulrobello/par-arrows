@@ -1,3 +1,5 @@
+import { advanceHead, simulateMove } from "../core/movement";
+import { overlappingArrowIds } from "../core/overlap";
 import {
   cellKey,
   oppositeHeading,
@@ -12,11 +14,11 @@ import type {
   Heading,
   LevelDefinition,
 } from "../core/types";
-import { advanceHead, simulateMove } from "../core/movement";
 import { validateLevel } from "../core/validation";
 import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "./intro";
+import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
 
-export const GENERATOR_VERSION = 2;
+export const GENERATOR_VERSION = 3;
 export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
 
 const FACES: readonly FaceId[] = [
@@ -40,7 +42,10 @@ export interface LevelConfig {
 export function seedForLevel(id: number): string {
   assertLevelId(id);
   if (id === 11) return "par-arrows:runtime:2:level:11:wrap-intro:1";
-  return `par-arrows:runtime:${id <= 10 ? 1 : GENERATOR_VERSION}:level:${id}`;
+  if (id <= 10) return `par-arrows:runtime:1:level:${id}`;
+  if (id <= 14) return `par-arrows:runtime:2:level:${id}`;
+  if (id === 15) return "par-arrows:runtime:3:level:15:overlap-intro:1";
+  return `par-arrows:runtime:${GENERATOR_VERSION}:level:${id}`;
 }
 
 export function getWrappingEdgeWeights(
@@ -49,6 +54,7 @@ export function getWrappingEdgeWeights(
   assertLevelId(id);
   if (id <= 10) return [1, 0, 0, 0];
   if (id === 11) return [0, 1, 0, 0];
+  if (id === 15) return [1, 0, 0, 0];
   const progress = Math.min(1, (id - 11) / 89);
   return [
     0.25,
@@ -63,6 +69,7 @@ export function getWrappingEdgePolicies(
   id: number,
 ): readonly EdgePolicyDefinition[] {
   if (id === 11) return WRAP_INTRO_LEVEL.edgePolicies ?? [];
+  if (id === 15) return [];
   const weights = getWrappingEdgeWeights(id);
   if (id <= 10) return [];
   const rng = new Rng(hashSeed(`${seedForLevel(id)}:edges`));
@@ -116,6 +123,9 @@ export function getWrappingEdgePolicies(
 export function getLevelConfig(id: number): LevelConfig {
   assertLevelId(id);
   if (id === 1 || id === 11) {
+    return { gridSize: 4, arrowCount: 6, lives: 5, arrowScale: 1 };
+  }
+  if (id === 15) {
     return { gridSize: 4, arrowCount: 6, lives: 5, arrowScale: 1 };
   }
   const early = [0, 60, 84, 108, 132, 156, 168, 180, 180, 180];
@@ -301,6 +311,68 @@ function candidate(
   return backwards.length >= 2 ? backwards.reverse() : undefined;
 }
 
+function overlapStarter(
+  id: number,
+  size: number,
+  rng: Rng,
+  level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
+  occupied: ReadonlySet<string>,
+): readonly ArrowDefinition[] | undefined {
+  const trio = id % 3 === 0;
+  for (let attempt = 0; attempt < 32; attempt += 1) {
+    const face = rng.pick(shuffledFaces(rng));
+    const x = 1 + rng.int(size - 5);
+    const y = 1 + rng.int(size - 3);
+    const paths: readonly (readonly Cell[])[] = [
+      [
+        { face, x, y },
+        { face, x: x + 1, y },
+        { face, x: x + 1, y: y - 1 },
+        { face, x: x + 2, y: y - 1 },
+      ],
+      [
+        { face, x, y },
+        { face, x: x + 1, y },
+        { face, x: x + 1, y: y + 1 },
+        { face, x: x + 2, y: y + 1 },
+      ],
+      [
+        { face, x, y },
+        { face, x: x + 1, y },
+        { face, x: x + 2, y },
+        { face, x: x + 3, y },
+      ],
+    ];
+    const selected = trio ? paths : [paths[0], paths[1]];
+    if (
+      selected.some(
+        (path) => !path || path.some((cell) => occupied.has(cellKey(cell))),
+      )
+    )
+      continue;
+    const arrows = selected.map((path, index) => ({
+      id: `r${id}-overlap-${index}`,
+      path: path as readonly Cell[],
+    }));
+    const groupCells = new Set(
+      arrows.flatMap((arrow) => arrow.path.map(cellKey)),
+    );
+    const hasClearTrajectories = arrows.every((arrow) => {
+      const head = arrow.path[arrow.path.length - 1];
+      if (!head) return false;
+      const ray = exitRay(level, head, "east");
+      return (
+        ray.length > 0 &&
+        ray.slice(1).every((cell) => !groupCells.has(cellKey(cell))) &&
+        !ray.some((cell) => occupied.has(cellKey(cell)))
+      );
+    });
+    if (!hasClearTrajectories) continue;
+    return arrows;
+  }
+  return undefined;
+}
+
 function validateGenerated(
   level: LevelDefinition,
   certificate: readonly string[],
@@ -308,8 +380,10 @@ function validateGenerated(
   if (!validateLevel(level).valid) return false;
   let remaining = level.arrows.map((arrow) => arrow.id);
   for (const arrowId of certificate) {
+    if (!remaining.includes(arrowId)) continue;
     if (simulateMove(level, remaining, arrowId).kind !== "exit") return false;
-    remaining = remaining.filter((id) => id !== arrowId);
+    const clearedIds = overlappingArrowIds(level, arrowId);
+    remaining = remaining.filter((id) => !clearedIds.includes(id));
   }
   return remaining.length === 0;
 }
@@ -323,6 +397,7 @@ export function generateLevel(id: number): LevelDefinition {
   assertLevelId(id);
   if (id === 1) return LEVEL_ONE;
   if (id === 11) return WRAP_INTRO_LEVEL;
+  if (id === 15) return OVERLAP_INTRO_LEVEL;
   const config = getLevelConfig(id);
   const baseSeed = hashSeed(seedForLevel(id));
   const edgePolicies = getWrappingEdgePolicies(id);
@@ -340,6 +415,21 @@ export function generateLevel(id: number): LevelDefinition {
     } as const;
     const faces = shuffledFaces(rng);
     const headingOffset = rng.int(HEADINGS.length);
+    if (id >= 16) {
+      const group = overlapStarter(
+        id,
+        config.gridSize,
+        rng,
+        candidateLevel,
+        occupied,
+      );
+      if (!group || !validateLevel({ ...candidateLevel, arrows: group }).valid)
+        continue;
+      for (const arrow of group) {
+        for (const cell of arrow.path) occupied.add(cellKey(cell));
+        arrows.push(arrow);
+      }
+    }
     for (const [index, length] of [2, 3, 4].entries()) {
       const face = faces[index];
       const heading = HEADINGS.map(
@@ -361,10 +451,7 @@ export function generateLevel(id: number): LevelDefinition {
         length,
         occupied,
       );
-      if (!path)
-        throw new Error(
-          "Seeded straight-arrow starters unexpectedly overlapped.",
-        );
+      if (!path) continue construction;
       const arrow: ArrowDefinition = {
         id: `r${id}-straight-${length}`,
         path,
