@@ -2,6 +2,12 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Completed ribbon refinement
+
+The owner requested flat ribbon arrows and 25% faster movement after the initial MVP. Terra implemented the ribbon geometry in an isolated `feat/flat-ribbons` worktree. Root integrated speed tuning and verification. Normal exits now take 704 ms instead of 880 ms, rebounds 592 ms instead of 740 ms, and reduced-motion transitions 88 ms instead of 110 ms. Demo pauses and core rules are unchanged.
+
+Flat quads and triangular heads follow face planes and fold at seams. Moving body slices retain all turns/seams, begin at the original pose, and keep the head connected. Review corrected winding/culling, off-center seam coordinates, inactive picker filtering, and fractional-slice point/face alignment. Actual dark canvas pixels are now asserted in browser checks so invisible hit targets cannot mask missing visible arrows. Full gate: 31 tests / 492 assertions. Headed Chrome and WebKit production flows, the skill's headed browser client, and inspected desktop/mobile/motion screenshots pass.
+
 ## Confirmed behavior
 
 - Ten curated cube levels and a solvability checker. Levels 1–3 have five lives, 4–6 four, 7–10 three.

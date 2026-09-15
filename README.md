@@ -1,6 +1,6 @@
 # Par Arrows
 
-A desktop and mobile 3D arrow-removal puzzle. Rotate a cube, find an unobstructed arrow, and send it off the surface. A first collision costs one life and marks that arrow red; further collisions by the same red arrow are free.
+A desktop and mobile 3D arrow-removal puzzle with flat ribbon arrows. Rotate a cube, find an unobstructed arrow, and send it off the surface. A first collision costs one life and marks that arrow red; further collisions by the same red arrow are free.
 
 The initial ten-level MVP is implemented. See the [verification report](docs/verification/2026-09-14-mvp.md) for browser evidence and outstanding device qualification, [PRD.md](PRD.md) for product rules, and [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the delivery plan.
 

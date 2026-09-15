@@ -105,6 +105,36 @@ async function assertCubeFits(page: Page): Promise<void> {
   );
 }
 
+async function assertVisibleArrows(page: Page, levelId: number): Promise<void> {
+  const darkPixels = await page.evaluate((id) => {
+    window.__PAR_ARROWS_TEST__?.loadLevel(id);
+    const source = document.querySelector("canvas");
+    if (!source) return 0;
+    const probe = document.createElement("canvas");
+    probe.width = source.width;
+    probe.height = source.height;
+    const context = probe.getContext("2d");
+    if (!context) return 0;
+    context.drawImage(source, 0, 0);
+    const pixels = context.getImageData(0, 0, probe.width, probe.height).data;
+    let dark = 0;
+    for (let index = 0; index < pixels.length; index += 4) {
+      if (
+        (pixels[index] ?? 255) < 80 &&
+        (pixels[index + 1] ?? 255) < 80 &&
+        (pixels[index + 2] ?? 255) < 80 &&
+        (pixels[index + 3] ?? 0) > 128
+      )
+        dark += 1;
+    }
+    return dark;
+  }, levelId);
+  assert.ok(
+    darkPixels > 80,
+    "The actual canvas must contain visible black arrows, not only invisible hit targets",
+  );
+}
+
 try {
   await mkdir(output, { recursive: true });
   const startupDeadline = Date.now() + 15_000;
@@ -153,6 +183,7 @@ try {
   await page.getByRole("button", { name: "Start level 1" }).click();
   assert.equal((await snapshot(page)).lives, 5);
   assert.deepEqual((await snapshot(page)).failedIds, []);
+  await assertVisibleArrows(page, 1);
   await page.screenshot({ path: `${output}/desktop-level-1.png` });
   console.log(
     "PASS demo: blocked touch, persistent red, then exit; campaign starts clean",
@@ -327,6 +358,7 @@ try {
   await touchPage.goto(url);
   await touchPage.waitForFunction(() => Boolean(window.__PAR_ARROWS_TEST__));
   await loadLevel(touchPage, 3);
+  await assertVisibleArrows(touchPage, 3);
   await assertCubeFits(touchPage);
   await touchPage.screenshot({ path: `${output}/mobile-portrait.png` });
   const touchBefore = await snapshot(touchPage);

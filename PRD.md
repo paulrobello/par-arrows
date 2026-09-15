@@ -57,6 +57,8 @@ The reference images are visual evidence only. Their level number, stars, hint b
 | R24 | Support installation as a progressive web app (PWA) and launching from its installed icon. |
 | R25 | Support mobile devices up to two hardware generations old, including the current generation and the previous two. Select concrete representative devices for verification. |
 | R26 | Include an onboarding demo on a small cube with only a few arrows. Show a touch on an arrow that fails, then a touch on an arrow that succeeds. The demo is non-skippable, consistent with the owner's preceding instruction. |
+| R27 | Render arrows as flat ribbons with flat arrowheads, following the surface and folding across face seams. |
+| R28 | Increase arrow movement speed by 25% relative to the initial MVP. Divide movement durations by 1.25; demo pauses are unchanged. |
 
 ## 4. MVP boundary
 

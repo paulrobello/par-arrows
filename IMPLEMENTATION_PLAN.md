@@ -89,7 +89,7 @@ The controller rejects additional arrow activations during an active attempt whi
 
 ### A5: Renderer and camera
 
-Generate shape surfaces and elevated arrow geometry from authoritative definitions. Keep path widths, arrowheads, joins, seam continuity, face offsets, and depth behavior consistent. Use a picking representation separate from thin visible lines so touch can remain usable without changing the puzzle's collision widths.
+Generate shape surfaces and flat arrow ribbons from authoritative definitions. Paths and triangular heads lie on the face planes with only a small offset to prevent depth flicker, and ribbons fold at face seams. Keep widths, joins, seam continuity, face offsets, and depth behavior consistent. Use a picking representation separate from thin visible ribbons so touch can remain usable without changing the puzzle's collision widths.
 
 Render the confirmed faint far-side arrows in a controlled pass and exclude them from picking. Avoid relying on translucent-object draw order for correctness. Mobile verification must inspect back-face leakage, z-fighting, line flicker, and misleading overlaps at grazing angles.
 
@@ -176,7 +176,7 @@ Acceptance:
 
 Depends on: P2, P3, and life/retry decisions.
 
-Deliverables: attempt controller, successful departure animation, collision/return/red feedback, five-life level 1, remaining count, failure/retry, completion, and reduced-motion behavior.
+Deliverables: attempt controller, successful departure animation, collision/return/red feedback, five-life level 1, remaining count, failure/retry, completion, and reduced-motion behavior. The owner subsequently requested 25% faster arrow movement: divide the original movement durations by 1.25, keeping demo pauses unchanged.
 
 Acceptance:
 

@@ -1,12 +1,12 @@
 import "@fontsource-variable/manrope";
 
-import { applyMove, createGameState, simulateMove } from "./core/game-state";
 import {
   DEMO_BLOCKED_ID,
   DEMO_LEVEL,
   DEMO_SUCCESS_ID,
   LEVELS,
 } from "./content/levels";
+import { applyMove, createGameState, simulateMove } from "./core/game-state";
 import type { GameState, LevelDefinition, MoveResult } from "./core/types";
 import { PointerInput } from "./input";
 import { PwaInstallPrompt } from "./pwa";
@@ -15,12 +15,14 @@ import {
   clearCampaign,
   loadCampaign,
   loadSettings,
+  type PlayerSettings,
   saveCampaign,
   saveSettings,
-  type PlayerSettings,
 } from "./storage";
 
 type AppMode = "demo" | "campaign" | "complete";
+
+const ARROW_SPEED_MULTIPLIER = 1.25;
 
 interface Motion {
   readonly result: MoveResult;
@@ -161,6 +163,7 @@ export class ParArrowsApp {
             arrowId: this.motion.result.arrowId,
             kind: this.motion.result.kind,
             elapsed: Math.round(this.motion.elapsed),
+            duration: this.motion.duration,
           }
         : null,
       camera: this.renderer.cameraDiagnostics(),
@@ -272,11 +275,12 @@ export class ParArrowsApp {
       result,
       elapsed: 0,
       impactShown: false,
-      duration: this.settings.reducedMotion
-        ? 110
-        : result.kind === "blocked"
-          ? 740
-          : 880,
+      duration:
+        (this.settings.reducedMotion
+          ? 110
+          : result.kind === "blocked"
+            ? 740
+            : 880) / ARROW_SPEED_MULTIPLIER,
     };
     this.renderer.setSelected(undefined);
     this.renderer.animate(arrowId, result, 0);
