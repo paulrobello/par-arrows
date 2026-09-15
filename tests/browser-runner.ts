@@ -379,6 +379,14 @@ try {
   assert.ok(ready, "Isolated server must start within 15 seconds");
   browser = await engine.launch({
     headless: false,
+    ...(engine === chromium && process.env.PAR_ARROWS_TEST_WINDOW_POSITION
+      ? {
+          args: [
+            `--window-position=${process.env.PAR_ARROWS_TEST_WINDOW_POSITION}`,
+            "--disable-backgrounding-occluded-windows",
+          ],
+        }
+      : {}),
     ...(process.platform === "darwin" && engine === chromium
       ? { channel: "chrome" }
       : {}),

@@ -67,6 +67,7 @@ export class PointerInput {
   };
 
   private readonly onPointerMove = (event: PointerEvent): void => {
+    if (event.pointerType === "mouse" && (event.buttons & 1) === 0) return;
     if (this.touches.has(event.pointerId)) {
       this.touches.set(event.pointerId, event);
     }

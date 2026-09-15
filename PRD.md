@@ -155,20 +155,20 @@ Keyboard puzzle navigation and a nonvisual equivalent of the spatial puzzle need
 
 ### 7.1 Current campaign content and lives — Q6, Q10
 
-**Confirmed:** Ten curated cube levels with a solvability checker and the life schedule below. Content version 3 substantially increases density and multi-bend paths from level 2 onward. A logical face grid is independent of the displayed cube size.
+**Confirmed:** Ten curated cube levels with a solvability checker and the life schedule below. Content version 4 uses irregular route composition with low repeated-shape frequency from level 2 onward. A logical face grid is independent of the displayed cube size.
 
 | Group | Grid per face | Arrows per level | Starting lives | Teaching goal |
 | --- | --- | --- | --- | --- |
 | Level 1 | 4 × 4 | 6 total, with arrows on all six faces | 5, confirmed | Tap, rotate, identify a clear exit. |
 | Levels 2–3 | 8 × 8 to 9 × 9 | 30–42 | 5, confirmed | Stepped zigzags, varied winding paths, and blockers. |
 | Levels 4–6 | 10 × 10 to 12 × 12 | 54–78 | 4, confirmed | Longer winding routes, wraps, and removal dependencies. |
-| Levels 7–10 | 12 × 12 to 14 × 14 | 84–90 | 3, confirmed | Dense combinations with up to 24 bends on one path. |
+| Levels 7–10 | 12 × 12 to 14 × 14 | 84–90 | 3, confirmed | Dense irregular paths with varied footprints and removal dependencies. |
 
-These are the fixed authored layouts in content version 3. Every level validates and has a complete solution under the runtime rules. Never fill a numeric quota with an invalid or unreadable arrangement. Later high-density stress fixtures should exceed this campaign, with a provisional target of 150 arrows and 3,000 total path cells pending device measurements.
+These are the fixed authored layouts in content version 4. Every level validates and has a complete solution under the runtime rules. Never fill a numeric quota with an invalid or unreadable arrangement. Later high-density stress fixtures should exceed this campaign, with a provisional target of 150 arrows and 3,000 total path cells pending device measurements.
 
 References [04](docs/references/reference-04.jpeg), [05](docs/references/reference-05.jpeg), and [06](docs/references/reference-06.jpeg) establish the later visual direction: mix short and long arrows, single and multiple bends, hooked returns, stepped zigzags, and winding paths, with close spacing across multiple faces. Preserve each arrow's readable identity and validate self-contact and solvability. The pictured late-game density is a progression reference; level 1 keeps its simple teaching layout. Screenshot counters do not set campaign arrow quotas.
 
-**Visual acceptance remains open:** the owner identified that content version 3 still repeats stamped S curves. The [reference complexity study](docs/references/arrow-complexity-study.md) confirms a dominant repeated footprint and regular bands. Future content must vary run lengths and turn sequences within paths, route footprints, endpoint placement, and how neighboring paths fit together. Higher arrow counts or bend totals alone do not satisfy this requirement.
+The owner identified stamped S-curve repetition in content version 3. Version 4 addresses the [reference complexity criteria](docs/references/arrow-complexity-study.md) with paths grown around neighboring routes, varied footprints and run lengths, and distributed heads. Automated checks count rotated, mirrored, reversed, and seam-crossing copies together; whole-board visual review remains required. Higher arrow counts or bend totals alone do not satisfy the requirement. See the [comparison and verification report](docs/verification/irregular-routes.md).
 
 ### 7.2 Solvability and authoring
 

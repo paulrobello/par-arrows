@@ -2,9 +2,13 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Irregular route composition
+
+Content version 4 replaces stamped bands with deterministic reverse-constructed paths grown through free surface space. Level 10 retains 90 arrows and 882 occupied cells, with 67 distinct geometries among 68 multi-bend arrows, a maximum of two copies, 55 interior heads, and 46 initially blocked arrows. Root compared the level-2/10 and mobile layouts with the supplied references. The independent offline generator reproduces identical frozen output even when the output file is absent. Shape tests normalize copies through rotation, reflection, reversal, and face unfolding. Versions 1–3 preserve compatible level-one state and refresh later attempts without losing unlocks. Full gate: 53 tests / 1,372 assertions; headed Chrome/WebKit and dense mobile interactions pass. An input trace also exposed unpressed hover movement entering drag calculations, now covered by a failing-then-passing regression and a primary-button guard. Details and previews: `docs/verification/irregular-routes.md`.
+
 ## Reference complexity study
 
-The owner identified that most arrows still appear stamped from the same S curve. A live/reference comparison and normalized footprint analysis confirmed the gap: level 10 has only eight distinct single-face footprints across 87 arrows, including 29 copies of the same S. The references vary run lengths within arrows, broad and compact footprints, endpoint locations, and paths fitted around neighboring routes. The earlier density/bend-count checks did not establish that visual variety. The findings and next-revision criteria are recorded in `docs/references/arrow-complexity-study.md`, and the PRD/plan now leave visual acceptance open. This turn changes documentation only.
+The owner identified stamped S-curve repetition in version 3. The study found only eight distinct single-face footprints across 87 level-10 arrows, including 29 copies of the same S. The references vary run lengths within arrows, broad and compact footprints, endpoint locations, and paths fitted around neighboring routes. The earlier density/bend-count checks did not establish that visual variety. The study recorded corrected criteria in `docs/references/arrow-complexity-study.md`; the subsequent version-4 implementation is described above.
 
 ## Vertical drag direction correction
 

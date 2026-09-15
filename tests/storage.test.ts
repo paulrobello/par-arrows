@@ -60,7 +60,7 @@ function save(state: GameState): boolean {
 function writeLegacyVersion(
   state: GameState,
   unlockedLevelId: number,
-  contentVersion: 1 | 2,
+  contentVersion: 1 | 2 | 3,
   tutorialComplete = true,
 ): void {
   expect(
@@ -92,11 +92,55 @@ const OLD_V2_LEVEL_TWO_IDS = [
   "l2-straight-back-east-3-4",
 ] as const;
 
+const OLD_V3_LEVEL_TWO_IDS = [
+  "l2-bottom-three-cell-line",
+  "l2-top-two-cell-line",
+  "l2-top-wrap-west-6",
+  "l2-front-wrap-north-6",
+  "l2-right-wrap-east-6",
+  "l2-left-wrap-south-5",
+  "l2-front-left-0-inward",
+  "l2-front-right-1",
+  "l2-front-left-1-inward",
+  "l2-front-east-line",
+  "l2-back-right-0",
+  "l2-back-left-0-inward",
+  "l2-back-right-1",
+  "l2-back-left-1-inward",
+  "l2-right-right-0",
+  "l2-right-left-0-inward",
+  "l2-right-right-1",
+  "l2-right-left-1-inward",
+  "l2-right-west-line",
+  "l2-left-left-0-inward",
+  "l2-left-left-1-inward",
+  "l2-left-west-line",
+  "l2-top-left-0-inward",
+  "l2-top-left-1-inward",
+  "l2-bottom-right-1",
+  "l2-bottom-left-1-inward",
+  "l2-bottom-east-line",
+  "l2-left-hook-fill-84",
+  "l2-front-edge-fill-155",
+  "l2-front-edge-fill-174",
+] as const;
+
 function oldV2LevelTwoState(): GameState {
   return {
     levelId: 2,
     remainingIds: OLD_V2_LEVEL_TWO_IDS.slice(1),
     failedIds: [OLD_V2_LEVEL_TWO_IDS[1]],
+    lives: 4,
+    status: "playing",
+    revision: 2,
+  };
+}
+
+function oldV3LevelTwoState(): GameState {
+  return {
+    levelId: 2,
+    remainingIds: OLD_V3_LEVEL_TWO_IDS.slice(1),
+    failedIds: [OLD_V3_LEVEL_TWO_IDS[1]],
     lives: 4,
     status: "playing",
     revision: 2,
@@ -170,7 +214,7 @@ describe("resumable campaign saves", () => {
     );
   });
 
-  test.each([1, 2] as const)(
+  test.each([1, 2, 3] as const)(
     "migrates a level one v%d attempt without changing its exact state",
     (contentVersion) => {
       const level = LEVELS[0];
@@ -196,11 +240,11 @@ describe("resumable campaign saves", () => {
       expect(restored.value?.unlockedLevelId).toBe(unlockedLevelId);
       const key = entries.keys().next().value;
       if (!key) throw new Error("Expected migrated save key");
-      expect(JSON.parse(entries.get(key) ?? "{}").contentVersion).toBe(3);
+      expect(JSON.parse(entries.get(key) ?? "{}").contentVersion).toBe(4);
     },
   );
 
-  test.each([1, 2] as const)(
+  test.each([1, 2, 3] as const)(
     "resets a later v%d attempt while preserving unlocks and onboarding",
     (contentVersion) => {
       const previousLevel = LEVELS.find((candidate) => candidate.id === 2);
@@ -209,7 +253,8 @@ describe("resumable campaign saves", () => {
       const levels = LEVELS.map((candidate) =>
         candidate.id === level.id ? level : candidate,
       );
-      const legacyState = oldV2LevelTwoState();
+      const legacyState =
+        contentVersion === 3 ? oldV3LevelTwoState() : oldV2LevelTwoState();
       const currentArrowIds = new Set(level.arrows.map((arrow) => arrow.id));
       expect(
         legacyState.remainingIds.some((id) => !currentArrowIds.has(id)),
@@ -225,14 +270,14 @@ describe("resumable campaign saves", () => {
       expect(restored.value?.tutorialComplete).toBe(false);
       const key = entries.keys().next().value;
       if (!key) throw new Error("Expected migrated save key");
-      expect(JSON.parse(entries.get(key) ?? "{}").contentVersion).toBe(3);
+      expect(JSON.parse(entries.get(key) ?? "{}").contentVersion).toBe(4);
       const reopened = loadCampaign(levels);
       expect(reopened.recovered).toBe(false);
       expect(reopened.contentUpdated).toBe(false);
     },
   );
 
-  test("fresh v3 saves reopen the exact current attempt", () => {
+  test("fresh v4 saves reopen the exact current attempt", () => {
     const level = LEVELS[0];
     if (!level) throw new Error("Expected first level");
     const initial = createGameState(level);
@@ -247,8 +292,8 @@ describe("resumable campaign saves", () => {
     );
     save(partial);
     const key = entries.keys().next().value;
-    if (!key) throw new Error("Expected v3 save key");
-    expect(JSON.parse(entries.get(key) ?? "{}").contentVersion).toBe(3);
+    if (!key) throw new Error("Expected v4 save key");
+    expect(JSON.parse(entries.get(key) ?? "{}").contentVersion).toBe(4);
     const restored = loadCampaign(LEVELS);
     expect(restored.recovered).toBe(false);
     expect(restored.contentUpdated).toBe(false);

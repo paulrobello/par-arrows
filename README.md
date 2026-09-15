@@ -4,7 +4,7 @@ A desktop and mobile 3D arrow-removal puzzle with flat ribbon arrows. Rotate a c
 
 The initial ten-level MVP is implemented. See the [verification report](docs/verification/2026-09-14-mvp.md) for browser evidence and outstanding device qualification, [PRD.md](PRD.md) for product rules, and [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the delivery plan.
 
-The [dense zigzag revision](docs/verification/dense-zigzags.md) increases levels 2–10 to 30–90 arrows with substantially more bends and removal dependencies. Older attempts on these revised levels restart with their unlocks preserved; compatible level-one saves resume exactly.
+The [irregular route revision](docs/verification/irregular-routes.md) replaces repeated S bands on levels 2–10 while retaining 30–90 arrows and dense layouts. Paths fit around neighboring routes, with varied shapes and removal dependencies. Older attempts on revised levels restart with their unlocks preserved; compatible level-one saves resume exactly.
 
 ## Develop
 

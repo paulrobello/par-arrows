@@ -29,12 +29,34 @@ function pointer(x: number, y: number): Partial<PointerEvent> {
     pointerId: 1,
     pointerType: "mouse",
     button: 0,
+    buttons: 1,
     clientX: x,
     clientY: y,
   };
 }
 
 describe("PointerInput", () => {
+  test("ignores unpressed hover events interleaved with a captured mouse drag", () => {
+    const element = new MockElement();
+    const orbit: Array<readonly [number, number]> = [];
+    new PointerInput(element as unknown as HTMLElement, {
+      pick: () => "arrow-a",
+      onPress: () => {},
+      onTap: () => {},
+      onOrbit: (x, y) => orbit.push([x, y]),
+      onZoom: () => {},
+    });
+    element.emit("pointerdown", pointer(10, 10));
+    element.emit("pointermove", { ...pointer(500, 500), buttons: 0 });
+    element.emit("pointermove", pointer(30, 10));
+    element.emit("pointermove", { ...pointer(100, 300), buttons: 0 });
+    element.emit("pointermove", pointer(50, 30));
+    expect(orbit).toEqual([
+      [20, 0],
+      [20, 20],
+    ]);
+  });
+
   test("enters drag once then forwards every subsequent pointer delta", () => {
     const element = new MockElement();
     const orbit: Array<readonly [number, number]> = [];

@@ -1,12 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
+import { analyzeLevel } from "../scripts/campaign-quality";
+import { decodeRoute, type FrozenRoute } from "../src/content/campaign-layouts";
 import {
   DEMO_BLOCKED_ID,
   DEMO_LEVEL,
   DEMO_SUCCESS_ID,
   LEVELS,
 } from "../src/content/levels";
-import { decodeRoute, type FrozenRoute } from "../src/content/campaign-layouts";
 import {
   applyMove,
   createGameState,
@@ -86,36 +87,48 @@ function bendCount(
   return bends;
 }
 
-function normalizedDirectionSignature(
-  path: readonly {
-    readonly face: string;
-    readonly x: number;
-    readonly y: number;
-  }[],
-): string {
-  const directions: string[] = [];
-  for (let index = 1; index < path.length; index += 1) {
-    const previous = path[index - 1];
-    const current = path[index];
-    if (!previous || !current || previous.face !== current.face) continue;
-    const direction =
-      current.x > previous.x
-        ? "E"
-        : current.x < previous.x
-          ? "W"
-          : current.y > previous.y
-            ? "S"
-            : "N";
-    if (directions.at(-1) !== direction) directions.push(direction);
-  }
-  return directions.join("");
-}
-
 function stableHash(value: unknown): string {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
 describe("curated campaign", () => {
+  test("replaces repeated bands with diverse geometry and distributed interior heads", () => {
+    const previousCells = [263, 315, 451, 555, 679, 681, 772, 916, 890];
+    for (const [index, level] of LEVELS.slice(1).entries()) {
+      const quality = analyzeLevel(level);
+      expect(quality.cells).toBeGreaterThanOrEqual(
+        Math.ceil((previousCells[index] ?? 0) * 0.9),
+      );
+      expect(quality.uniqueUnfoldedBends).toBeGreaterThanOrEqual(
+        Math.ceil(quality.multiBend * 0.8),
+      );
+      expect(quality.maxUnfoldedCopies).toBeLessThanOrEqual(
+        Math.max(2, Math.floor(quality.multiBend * 0.15)),
+      );
+      expect(quality.uniqueBendFootprints).toBeGreaterThanOrEqual(
+        Math.ceil(quality.singleFaceMultiBend * 0.75),
+      );
+      expect(quality.maxBendCopies).toBeLessThanOrEqual(
+        Math.max(2, Math.floor(quality.singleFaceMultiBend * 0.15)),
+      );
+      expect(quality.irregularRuns).toBeGreaterThanOrEqual(
+        Math.ceil(quality.multiBend * 0.1),
+      );
+      expect(quality.narrowWinders).toBeLessThanOrEqual(
+        Math.floor(quality.multiBend * 0.1),
+      );
+      expect(quality.interiorHeads).toBeGreaterThanOrEqual(
+        Math.ceil(quality.arrows * 0.3),
+      );
+      expect(quality.initiallyBlocked).toBeGreaterThanOrEqual(
+        Math.ceil(quality.arrows * 0.25),
+      );
+      for (const occupied of Object.values(quality.faceCells))
+        expect(occupied).toBeGreaterThanOrEqual(
+          Math.ceil(level.gridSize ** 2 * 0.5),
+        );
+    }
+  });
   test("contains ten valid, face-spanning levels with the configured life curve", () => {
     expect(LEVELS).toHaveLength(10);
     for (const level of LEVELS) {
@@ -181,11 +194,6 @@ describe("curated campaign", () => {
         true,
       );
       expect(levelStraightLengths.size).toBeGreaterThanOrEqual(3);
-      expect(
-        new Set(
-          multiBend.map((arrow) => normalizedDirectionSignature(arrow.path)),
-        ).size,
-      ).toBeGreaterThanOrEqual(3);
       if (level.id >= 5)
         expect(
           new Set(
@@ -211,11 +219,6 @@ describe("curated campaign", () => {
     );
     expect(
       new Set(finalMultiBend.map((arrow) => bendCount(arrow.path))).size,
-    ).toBeGreaterThanOrEqual(3);
-    expect(
-      new Set(
-        finalMultiBend.map((arrow) => normalizedDirectionSignature(arrow.path)),
-      ).size,
     ).toBeGreaterThanOrEqual(3);
   });
 
