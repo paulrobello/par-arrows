@@ -25,6 +25,13 @@ interface ThemePalette {
   readonly farSide: number;
 }
 
+interface HintFocus {
+  readonly arrowId: string;
+  readonly fromOrientation: THREE.Quaternion;
+  readonly targetOrientation: THREE.Quaternion;
+  readonly fromDistance: number;
+}
+
 const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
   light: {
     background: 0xe9f4f7,
@@ -428,6 +435,8 @@ export class PuzzleRenderer {
   private level: LevelDefinition | undefined;
   private state: GameState | undefined;
   private selectedId: string | undefined;
+  private hintFocus: HintFocus | undefined;
+  private hintLit = false;
   private readonly orientation = INITIAL_CAMERA_ORIENTATION.clone();
   private distance = 7.5;
   private fitDistance = 7.5;
@@ -462,6 +471,7 @@ export class PuzzleRenderer {
   }
 
   setLevel(level: LevelDefinition, state: GameState): void {
+    this.clearHint();
     this.clearArrows();
     this.level = level;
     this.state = state;
@@ -530,6 +540,60 @@ export class PuzzleRenderer {
   resetView(): void {
     this.orientation.copy(INITIAL_CAMERA_ORIENTATION);
     this.distance = this.fitDistance;
+    this.render();
+  }
+
+  /** Focuses the chosen arrow's actual head face, without changing game state. */
+  beginHint(arrowId: string): boolean {
+    const visual = this.visuals.get(arrowId);
+    const face = visual?.head.userData.face as Cell["face"] | undefined;
+    if (!visual || !face || !visual.group.visible) {
+      return false;
+    }
+    const [x, y, z] = faceNormal(face);
+    const normal = new THREE.Vector3(x, y, z);
+    const targetCamera = new THREE.PerspectiveCamera();
+    targetCamera.position.copy(normal);
+    targetCamera.up.set(
+      0,
+      Math.abs(normal.y) > 0.9 ? 0 : 1,
+      Math.abs(normal.y) > 0.9 ? -1 : 0,
+    );
+    targetCamera.lookAt(0, 0, 0);
+    this.hintFocus = {
+      arrowId,
+      fromOrientation: this.orientation.clone(),
+      targetOrientation: targetCamera.quaternion.clone(),
+      fromDistance: this.distance,
+    };
+    this.hintLit = false;
+    this.render();
+    return true;
+  }
+
+  animateHintFocus(progress: number): void {
+    const hint = this.hintFocus;
+    if (!hint) return;
+    this.orientation
+      .copy(hint.fromOrientation)
+      .slerp(hint.targetOrientation, clamp(progress, 0, 1));
+    this.distance = THREE.MathUtils.lerp(
+      hint.fromDistance,
+      this.fitDistance,
+      clamp(progress, 0, 1),
+    );
+    this.render();
+  }
+
+  flashHint(on: boolean): void {
+    if (!this.hintFocus) return;
+    this.hintLit = on;
+    this.render();
+  }
+
+  clearHint(): void {
+    this.hintFocus = undefined;
+    this.hintLit = false;
     this.render();
   }
 
@@ -759,11 +823,13 @@ export class PuzzleRenderer {
     this.updateCamera();
     for (const visual of this.visuals.values()) {
       const activeColor =
-        visual.arrow.id === this.selectedId
+        visual.arrow.id === this.hintFocus?.arrowId && this.hintLit
           ? this.palette.selected
-          : this.state?.failedIds.includes(visual.arrow.id)
-            ? this.palette.failed
-            : this.palette.arrow;
+          : visual.arrow.id === this.selectedId
+            ? this.palette.selected
+            : this.state?.failedIds.includes(visual.arrow.id)
+              ? this.palette.failed
+              : this.palette.arrow;
       for (const segment of visual.segments) {
         const face = segment.picker.userData.face as Cell["face"] | undefined;
         const [nx, ny, nz] = face ? faceNormal(face) : [0, 0, 0];

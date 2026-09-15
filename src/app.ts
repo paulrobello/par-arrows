@@ -35,8 +35,18 @@ interface Celebration {
   elapsed: number;
 }
 
+interface Hint {
+  readonly arrowId: string;
+  phase: "rotating" | "flashing";
+  elapsed: number;
+  lit: boolean;
+}
+
 const CELEBRATION_DURATION = 2600;
 const CONFETTI_COUNT = 56;
+const HINT_FOCUS_DURATION = 600;
+const HINT_FLASH_DURATION = 2400;
+const HINT_FLASH_HALF_PULSE = 400;
 
 export class ParArrowsApp {
   private readonly root: HTMLElement;
@@ -54,6 +64,8 @@ export class ParArrowsApp {
   private readonly installButton: HTMLButtonElement;
   private readonly installHint: HTMLElement;
   private readonly settingsButton: HTMLButtonElement;
+  private readonly hintButton: HTMLButtonElement;
+  private readonly hintStatus: HTMLElement;
   private readonly reducedMotion: HTMLInputElement;
   private readonly themeSelect: HTMLSelectElement;
   private readonly celebrationLayer: HTMLElement;
@@ -72,6 +84,7 @@ export class ParArrowsApp {
   private settings: PlayerSettings = loadSettings();
   private motion: Motion | undefined;
   private celebration: Celebration | undefined;
+  private hint: Hint | undefined;
   private demoStage: "observe" | "pause" | "ready" = "observe";
   private demoElapsed = 0;
   private animationFrame = 0;
@@ -106,6 +119,7 @@ export class ParArrowsApp {
         </section>
         <nav class="control-dock" aria-label="Puzzle controls">
           <button class="dock-button" data-action="reset" type="button" aria-label="Reset camera view">⌖<span>View</span></button>
+          <button class="dock-button" id="hint-button" data-action="hint" type="button" aria-label="Hint">✦<span>Hint</span></button>
           <button class="dock-button" data-action="retry" type="button">↻<span>Retry</span></button>
           <label class="level-picker"><span>Cube</span><select id="level-select" aria-label="Choose an unlocked cube"></select></label>
           <button class="dock-button" id="settings-button" type="button" aria-expanded="false">☼<span>Settings</span></button>
@@ -117,6 +131,7 @@ export class ParArrowsApp {
           <p id="install-hint" hidden></p>
         </aside>
         <p class="gesture-help">Drag to orbit · <span class="zoom-help-mouse">Mouse wheel to zoom</span><span class="zoom-help-touch">Pinch to zoom</span> · press an exposed arrow to move it</p>
+        <p class="screenreader-status" id="hint-status" aria-live="polite"></p>
         <div class="storage-note" id="storage-note" role="status"></div>
       </main>`;
     this.stage = this.requireElement("game-stage");
@@ -135,6 +150,8 @@ export class ParArrowsApp {
     this.settingsButton = this.requireElement(
       "settings-button",
     ) as HTMLButtonElement;
+    this.hintButton = this.requireElement("hint-button") as HTMLButtonElement;
+    this.hintStatus = this.requireElement("hint-status");
     this.reducedMotion = this.requireElement(
       "reduced-motion",
     ) as HTMLInputElement;
@@ -146,10 +163,19 @@ export class ParArrowsApp {
     this.applyTheme();
     this.input = new PointerInput(this.renderer.canvas, {
       pick: (x, y) => this.renderer.pick(x, y),
-      onPress: (id) => this.renderer.setSelected(id),
+      onPress: (id) => {
+        this.cancelHint();
+        this.renderer.setSelected(id);
+      },
       onTap: (id) => this.attempt(id),
-      onOrbit: (x, y) => this.renderer.orbit(x, y),
-      onZoom: (amount) => this.renderer.zoom(amount),
+      onOrbit: (x, y) => {
+        this.cancelHint();
+        this.renderer.orbit(x, y);
+      },
+      onZoom: (amount) => {
+        this.cancelHint();
+        this.renderer.zoom(amount);
+      },
     });
     this.bindControls();
     this.systemMotionPreference.addEventListener(
@@ -181,6 +207,7 @@ export class ParArrowsApp {
       this.handleThemePreference,
     );
     this.clearCelebration();
+    this.cancelHint();
     this.input.dispose();
     this.renderer.dispose();
   }
@@ -214,6 +241,14 @@ export class ParArrowsApp {
             duration: CELEBRATION_DURATION,
           }
         : { active: false, elapsed: 0, duration: CELEBRATION_DURATION },
+      hint: this.hint
+        ? {
+            arrowId: this.hint.arrowId,
+            phase: this.hint.phase,
+            elapsed: Math.round(this.hint.elapsed),
+            lit: this.hint.lit,
+          }
+        : null,
       theme: {
         preference: this.settings.theme,
         resolved: this.resolvedTheme(),
@@ -237,6 +272,7 @@ export class ParArrowsApp {
     this.state = createGameState(level);
     this.displayedState = this.state;
     this.motion = undefined;
+    this.cancelHint();
     this.clearCelebration();
     this.tutorialComplete = true;
     this.unlockedLevelId = Math.max(this.unlockedLevelId, level.id);
@@ -255,6 +291,7 @@ export class ParArrowsApp {
     this.demoStage = "observe";
     this.demoElapsed = 0;
     this.motion = undefined;
+    this.cancelHint();
     this.clearCelebration();
     this.renderer.setLevel(DEMO_LEVEL, this.state);
     this.renderUi();
@@ -301,6 +338,10 @@ export class ParArrowsApp {
       }
       return;
     }
+    if (this.hint) {
+      this.updateHint(delta);
+      return;
+    }
     if (this.mode === "demo" && this.demoStage !== "ready") {
       this.demoElapsed += delta;
       if (this.demoStage === "observe" && this.demoElapsed >= 800) {
@@ -314,6 +355,7 @@ export class ParArrowsApp {
   }
 
   private attempt(arrowId: string, scripted = false): void {
+    this.cancelHint();
     if (this.motion || (this.mode === "demo" && !scripted)) {
       return;
     }
@@ -343,6 +385,7 @@ export class ParArrowsApp {
             ? 740
             : 880) / ARROW_SPEED_MULTIPLIER,
     };
+    this.hintButton.disabled = true;
     this.renderer.setSelected(undefined);
     this.renderer.animate(arrowId, result, 0);
   }
@@ -406,6 +449,7 @@ export class ParArrowsApp {
     this.level = LEVELS[0] as LevelDefinition;
     this.state = createGameState(this.level);
     this.displayedState = this.state;
+    this.cancelHint();
     this.unlockedLevelId = Math.max(this.unlockedLevelId, 1);
     this.renderer.setLevel(this.level, this.state);
     this.persist();
@@ -417,6 +461,7 @@ export class ParArrowsApp {
       return;
     }
     this.motion = undefined;
+    this.cancelHint();
     this.clearCelebration();
     this.state = createGameState(this.level);
     this.displayedState = this.state;
@@ -453,6 +498,11 @@ export class ParArrowsApp {
     this.arrowsLabel.textContent = `${this.displayedState.remainingIds.length} arrows`;
     this.tutorial.hidden = this.mode !== "demo";
     this.levelSelect.disabled = this.mode !== "campaign";
+    this.hintButton.disabled =
+      this.mode !== "campaign" ||
+      this.motion !== undefined ||
+      this.hint !== undefined ||
+      this.state.status !== "playing";
     if (this.mode === "demo") {
       this.tutorialCopy.textContent =
         this.demoStage === "observe"
@@ -532,6 +582,8 @@ export class ParArrowsApp {
       const action =
         target.closest<HTMLElement>("[data-action]")?.dataset.action;
       if (action === "reset") this.renderer.resetView();
+      if (action === "reset") this.cancelHint();
+      if (action === "hint") this.beginHint();
       if (action === "retry") this.retry();
       if (action === "next")
         this.selectLevel(
@@ -554,6 +606,7 @@ export class ParArrowsApp {
       saveSettings(this.settings);
       if (this.shouldReduceMotion()) {
         this.clearCelebration();
+        this.snapHintForReducedMotion();
         this.renderUi();
       }
     });
@@ -583,6 +636,7 @@ export class ParArrowsApp {
   private readonly handleMotionPreference = (): void => {
     if (this.shouldReduceMotion()) {
       this.clearCelebration();
+      this.snapHintForReducedMotion();
       this.renderUi();
     }
   };
@@ -618,6 +672,75 @@ export class ParArrowsApp {
 
   private shouldReduceMotion(): boolean {
     return this.settings.reducedMotion || this.systemMotionPreference.matches;
+  }
+
+  private beginHint(): void {
+    if (
+      this.mode !== "campaign" ||
+      this.motion ||
+      this.hint ||
+      this.state.status !== "playing"
+    ) {
+      return;
+    }
+    const arrowId = this.state.remainingIds.find(
+      (id) => simulateMove(this.level, this.state, id).kind === "exit",
+    );
+    if (!arrowId || !this.renderer.beginHint(arrowId)) {
+      return;
+    }
+    this.hint = {
+      arrowId,
+      phase: this.shouldReduceMotion() ? "flashing" : "rotating",
+      elapsed: 0,
+      lit: this.shouldReduceMotion(),
+    };
+    if (this.shouldReduceMotion()) {
+      this.renderer.animateHintFocus(1);
+      this.renderer.flashHint(true);
+    }
+    this.hintStatus.textContent = "Showing a safe arrow.";
+    this.renderUi();
+  }
+
+  private updateHint(delta: number): void {
+    const hint = this.hint;
+    if (!hint) return;
+    hint.elapsed += delta;
+    if (hint.phase === "rotating") {
+      const progress = Math.min(1, hint.elapsed / HINT_FOCUS_DURATION);
+      this.renderer.animateHintFocus(progress);
+      if (progress < 1) return;
+      hint.phase = "flashing";
+      hint.elapsed = 0;
+    }
+    const lit = this.shouldReduceMotion()
+      ? true
+      : Math.floor(hint.elapsed / HINT_FLASH_HALF_PULSE) % 2 === 0;
+    if (lit !== hint.lit) {
+      hint.lit = lit;
+      this.renderer.flashHint(lit);
+    }
+    if (hint.elapsed >= HINT_FLASH_DURATION) {
+      this.cancelHint();
+    }
+  }
+
+  private snapHintForReducedMotion(): void {
+    if (!this.hint) return;
+    this.hint.phase = "flashing";
+    this.hint.elapsed = 0;
+    this.hint.lit = true;
+    this.renderer.animateHintFocus(1);
+    this.renderer.flashHint(true);
+  }
+
+  private cancelHint(): void {
+    if (!this.hint) return;
+    this.hint = undefined;
+    this.renderer.clearHint();
+    this.hintStatus.textContent = "";
+    this.renderUi();
   }
 
   private startCelebration(): void {

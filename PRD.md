@@ -64,6 +64,7 @@ The four additional photos supplied on 2026-09-14 are preserved as references 04
 | R29 | Keep level 1 simple. From level 2 onward, substantially increase arrow density and multi-bend zigzag complexity, mix different path shapes and straight-arrow lengths, and include multiple arrows spanning cube edges. |
 | R30 | Make arrow shafts and heads 20% wider and double the version-4 arrow counts on levels 2–10 to 60, 84, 108, 132, 156, 168, 180, 180, and 180. Preserve the visible width increase when a finer grid is needed. Level 1 keeps its original six-arrow layout. |
 | R31 | Support dark mode with system-preference detection and a persistent manual appearance control. |
+| R32 | Add a Hint button that finds a safely removable arrow, rotates the cube to expose it, and then flashes that arrow. |
 
 ## 4. MVP boundary
 
@@ -76,6 +77,7 @@ The four additional photos supplied on 2026-09-14 are preserved as references 04
 - M5: Exact logical progress resume from browser `localStorage`, including failed-arrow history, in the browser and installed PWA. Persist reduced-motion and System/Light/Dark appearance settings separately. Offline-play scope remains open.
 - M6: Validated levels with a demonstrated full-clear solution and desktop/mobile verification.
 - M7: PWA installation and standalone launch, with real-device checks covering mobile hardware up to two generations old.
+- M8: A safe-arrow hint that reveals the arrow's head face before highlighting it, without making a move or spending a life.
 
 The count, curated source, life curve, exact resume behavior, browser `localStorage`, solvability checker, PWA installation, and mobile hardware age target are confirmed. Other progression, interface, and platform details below remain proposals where labeled.
 
@@ -85,7 +87,7 @@ The count, curated source, life curve, exact resume behavior, browser `localStor
 - X2: Non-cube content. First extension candidate: rectangular cuboids, followed by grid-aligned compound solids. Arbitrary curved surfaces, holes, and concave shapes need a separate scope decision.
 - X3: Further unspecified mechanics. Provide explicit rule boundaries, not a general plugin or scripting platform.
 - X4: Accounts, cloud saves, leaderboards, monetization, advertisements, energy timers, purchases, and social features.
-- X5: Undo, hints, rewards, stars, scoring, daily challenges, and a player-facing level editor unless separately approved.
+- X5: Undo, paid/limited hint economies, rewards, stars, scoring, daily challenges, and a player-facing level editor unless separately approved.
 - X6: Offline gameplay and custom audio assets until their scope is decided. PWA installation is included in the MVP.
 
 ## 5. Core rules requiring confirmation
@@ -139,6 +141,12 @@ Completion happens after the last arrow has fully exited. Show a short completio
 Proposed presentation: an animated hand or touch indicator makes each press and release clear. Use one fixed, readable camera view where both chosen arrows and the blocker can be seen. First, the blocked arrow advances to contact, rebounds to its exact starting path, and remains red. Then the second arrow advances unobstructed, flies off, and is fully removed. Keep the failed arrow red throughout the second action. Prefer making the second arrow the first arrow's blocker so the relationship is easy to understand. Do not add a third demonstration move to the requested sequence.
 
 The preceding instruction rules out a skippable collision demo, and the owner has now specified its content: show the complete sequence without a Skip control. Proposed lifecycle: run before the first campaign attempt, offer Start after completion, record completion locally, and do not repeat it on every resume. Keep this practice board separate from the ten campaign levels, with no campaign life or progress changes. If the demo displays lives, demonstrate the first-failure deduction using a demo-only counter. Level 1 still starts untouched with five lives. Exact arrow count, demonstration timing, replay access, and reduced-motion presentation remain implementation/design details to resolve.
+
+### 5.6 Safe-arrow hints
+
+**Confirmed 2026-09-15:** A Hint button finds an arrow that can safely exit, turns the cube to make it visible, and only then flashes it. The chosen arrow is checked against the current remaining arrows. For a wrapped arrow, focus on its actual head face.
+
+Implementation defaults: hints are free and unlimited, with no progress, life, or failure-history changes. Focus takes 600 ms and returns to a fitted viewing distance; three slow highlight pulses follow over 2.4 seconds. Reduced-motion settings snap to the target view and use steady emphasis. Disable Hint during the demo, arrow movement, another hint, and won/lost states. Pressing the canvas, dragging, zooming, moving an arrow, resetting the view, retrying, or changing levels cancels the hint and restores normal/red arrow colors.
 
 ## 6. Camera, input, and readability — Q4, Q12
 
@@ -279,7 +287,7 @@ Answer the blocking rules first. An unanswered proposal remains a proposal, even
 - **Q18:** If yellow edges produce a loop with no exit, should the move fail with a life loss or should such boards be prohibited? Recommendation: prohibit in shipped static content and keep a bounded runtime safeguard.
 - **Q19:** Which non-cube shapes come first: rectangular boxes, joined cubes, carved/concave blocks, or arbitrary meshes? Recommendation: boxes, then grid-aligned compound solids.
 - **Q20:** Is progression strictly sequential? Can players skip, replay, or reset it? What happens after the final MVP level? Recommendation: sequential unlocks, replay unlocked levels, explicit campaign-complete screen.
-- **Q21:** Do hints, undo, scoring, stars, time limits, or rewards belong in the MVP? Recommendation: none until the core rules are proven.
+- **Q21 — Partially confirmed 2026-09-15:** Safe-arrow hints are approved as specified in section 5.6. Undo, scoring, stars, time limits, and rewards remain separate scope decisions.
 - **Q22 — Confirmed 2026-09-15:** Preserve the pale light theme and add a dark theme with system detection and persistent manual selection. Both themes retain faint far-side arrows and readable arrow states.
 - **Q23:** For a blue/green arrow, is its first collision the only life penalty for the entire arrow, or can the other direction cost another life? Once red, how should the two selectable halves remain distinguishable? Recommendation: one penalty per whole arrow and persistent direction markers alongside red.
 

@@ -2,6 +2,10 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Safe-arrow hints
+
+Added a free Hint button that checks the current puzzle for an unobstructed exit, rotates to the chosen arrow's actual head face over 600 ms, then highlights it with three slow pulses over 2.4 seconds. Reduced-motion preferences snap the view and use steady emphasis. Camera framing returns to a fitted distance; hints never move an arrow, spend lives, change failure history, or write progress. Canvas interaction, zoom, camera reset, retry, level changes, and disposal cancel the effect. Hint is disabled during the demo, arrow motion, another hint, and terminal states. Root verified the full gate (65 tests / 2,075 assertions), headed Chrome/WebKit desktop/mobile flows, all six head faces, hidden/extreme-zoom views, wrapped previously failed arrows, safe hinted-arrow activation, light/dark themes, native two-pointer pinch and cancellation events, and a 320-pixel-wide dock. Screenshots and the web-game client were inspected. Review findings about immediate disabled-state updates and unnecessary simulations were corrected. No content or save-version changes.
+
 ## System-aware light and dark themes
 
 Settings now offers System (default), Light, and Dark, persisted alongside reduced motion. System mode follows live OS changes; manual choices override the OS until System is selected again. A guarded early HTML bootstrap applies the initial appearance before the app bundle loads. Existing renderer materials retint in place, preserving camera, selection, active motion, failed-arrow history, and progress. The dark palette uses a slate cube, ivory arrows, coral failures, cyan selection, and faint blue-gray far-side paths. HTML surfaces, controls, native selects, browser theme color, and victory cards follow the resolved theme. Settings overlays the gesture hint cleanly on mobile. Legacy/malformed/denied storage is safe. Root verified 65 tests / 2,075 assertions, full gate, headed Chrome/WebKit desktop/mobile theme and gameplay flows, startup before bundle execution, persistence, motion-preserving changes, and inspected dark dense/failed/selected/settings/victory views. The web-game skill client also passed. Campaign content and save versions are unchanged.
@@ -84,7 +88,7 @@ Flat quads and triangular heads follow face planes and fold at seams. Moving bod
 ## Execution assumptions
 
 - User request on 2026-09-14 supersedes planning-only instructions in the original documents.
-- Implement current documented defaults for remaining MVP details. Offline gameplay, accounts, hints, undo, sound assets, and later gameplay mechanics stay deferred.
+- Implement current documented defaults for remaining MVP details. Offline gameplay, accounts, undo, sound assets, and later gameplay mechanics stay deferred. Safe-arrow hints were separately approved on 2026-09-15.
 - A vacated tail cell is allowed only without simultaneous swept contact. Self-contact validation checks each arrow without other blockers.
 - Demo uses independent state, starts before first campaign play, saves completion only after both moves, and leaves level 1 untouched. Interrupted demo restarts if not completed.
 - Sequential unlock/replay of unlocked levels, explicit final campaign completion, reduced-motion presentation, accessible HTML controls.

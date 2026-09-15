@@ -12,6 +12,7 @@ import {
 } from "../src/core/topology";
 import { solveLevel } from "../src/core/validation";
 import { arrowDimensions } from "../src/render/renderer";
+import { runHintChecks } from "./hints-browser";
 
 interface Snapshot {
   mode: string;
@@ -812,6 +813,10 @@ try {
   await page.waitForFunction(() => Boolean(window.__PAR_ARROWS_TEST__));
 
   assert.equal((await snapshot(page)).mode, "demo");
+  assert.equal(
+    await page.getByRole("button", { name: "Hint", exact: true }).isDisabled(),
+    true,
+  );
   assert.equal(await page.getByRole("button", { name: /skip/i }).count(), 0);
   await page.screenshot({ path: `${output}/demo-start.png` });
   await advance(page, 1700);
@@ -994,6 +999,10 @@ try {
     await advance(page);
   }
   assert.equal((await snapshot(page)).lives, 0);
+  assert.equal(
+    await page.getByRole("button", { name: "Hint", exact: true }).isDisabled(),
+    true,
+  );
   assert.equal(await page.locator(".confetti-piece").count(), 0);
   assert.equal(await page.locator(".state-card.is-won").count(), 0);
   await page.getByRole("button", { name: "Retry cube", exact: true }).click();
@@ -1100,6 +1109,7 @@ try {
   assert.equal(await page.locator('link[rel="manifest"]').count(), 1);
   console.log("PASS PWA manifest and installation assets");
   await assertThemes(page);
+  await runHintChecks(page, output);
 
   const mobile = await browser.newContext({
     colorScheme: "light",
@@ -1113,6 +1123,7 @@ try {
   await touchPage.goto(url);
   await touchPage.waitForFunction(() => Boolean(window.__PAR_ARROWS_TEST__));
   await assertThemes(touchPage, true);
+  await runHintChecks(touchPage, output, true);
   await assertCelebration(touchPage, true);
   await loadLevel(touchPage, 3);
   await assertVisibleArrows(touchPage, 3);
