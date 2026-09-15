@@ -445,7 +445,7 @@ export class PuzzleRenderer {
   orbit(deltaX: number, deltaY: number): void {
     const angle = Math.hypot(deltaX, deltaY) * 0.012;
     if (angle === 0) return;
-    const axis = new THREE.Vector3(deltaY, -deltaX, 0).normalize();
+    const axis = new THREE.Vector3(-deltaY, -deltaX, 0).normalize();
     this.orientation
       .multiply(new THREE.Quaternion().setFromAxisAngle(axis, angle))
       .normalize();

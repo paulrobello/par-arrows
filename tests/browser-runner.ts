@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { type Browser, chromium, type Page, webkit } from "playwright";
+import { Quaternion } from "three";
 import { LEVELS } from "../src/content/levels";
 import { createGameState, simulateMove } from "../src/core/game-state";
 import { solveLevel } from "../src/core/validation";
@@ -206,6 +207,20 @@ function assertRotationStep(
   );
   const expected = Math.hypot(deltaX, deltaY) * 0.012;
   const angle = 2 * Math.acos(Math.min(1, Math.abs(dot)));
+  const localRotation = new Quaternion()
+    .fromArray(before.camera.orientation)
+    .invert()
+    .multiply(new Quaternion().fromArray(orientation));
+  if (deltaY !== 0)
+    assert.ok(
+      localRotation.x * deltaY < 0,
+      `Vertical drag direction mismatch: deltaY=${deltaY}, local=${JSON.stringify(localRotation.toArray())}, angle=${angle}`,
+    );
+  if (deltaX !== 0)
+    assert.ok(
+      localRotation.y * deltaX < 0,
+      "Horizontal drag direction must remain unchanged",
+    );
   assert.ok(
     Math.abs(angle - expected) < 0.002,
     `Each drag step must rotate fully without a stop or pole flip: got ${angle}, expected ${expected}`,
@@ -306,7 +321,30 @@ async function assertContinuousRotation(
           throw error;
         }
         const after = await snapshot(page);
-        assertRotationStep(before, after, deltaX, deltaY);
+        try {
+          assertRotationStep(before, after, deltaX, deltaY);
+        } catch (error) {
+          await Bun.write(
+            `${output}/rotation-failure.json`,
+            JSON.stringify(
+              {
+                label,
+                deltaX,
+                deltaY,
+                drag,
+                step,
+                before,
+                after,
+                events: await page.evaluate(() =>
+                  Reflect.get(window, "rotationInputEvents"),
+                ),
+              },
+              null,
+              2,
+            ),
+          );
+          throw error;
+        }
         before = after;
       }
       await gesture.end();

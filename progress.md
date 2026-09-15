@@ -2,6 +2,10 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Vertical drag direction correction
+
+The owner reported reversed vertical rotation. Inverted only the vertical component of the camera-local drag axis, preserving horizontal direction, sensitivity, unrestricted turns, and reset/zoom behavior. Browser rotation checks now assert the signed local rotation for mouse and touch, so a direction reversal cannot pass merely because the amount of rotation is correct. Root verified the full gate, headed Chrome/WebKit and repeated Chrome checks, and the web-game skill client. A live downward drag moved the visible front arrow down from screen y=284 to y=310, confirming the rendered direction.
+
 ## Dense zigzag campaign revision
 
 The owner requested substantially more density and zigzags immediately after level 1. Fixed routes now use 8–14-cell face grids and 30–90 arrows, with varied stepped/hooked/winding paths, 3–4 wrapped arrows per level, and meaningful removal dependencies. Level 2 has 18 multi-bend arrows and 10 initially blocked arrows; level 10 has 48 multi-bend arrows, up to 24 bends, and 22 initially blocked arrows. Level 1 and the demo retain their original definitions. Saved content advances to version 3: v1/v2 first-level attempts resume exactly, while older later-level attempts restart the revised layout with unlocks and onboarding preserved. Dense picking scales to grid spacing, invisible picker meshes are excluded from drawing, and flat ribbons use one rendering pass. Root verified 46 tests / 1,221 assertions, the full gate, headed Chrome/WebKit and repeated Chrome flows, real legacy-save migration, motion/desktop/mobile previews, and the web-game skill client. Review found no remaining issue in scope. Measurements and screenshots are in `docs/verification/dense-zigzags.md`.
