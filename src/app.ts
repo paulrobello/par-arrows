@@ -96,7 +96,7 @@ export class ParArrowsApp {
           <button id="install-button" type="button" hidden>Install app</button>
           <p id="install-hint" hidden></p>
         </aside>
-        <p class="gesture-help">Drag to orbit · scroll or pinch to zoom · press an exposed arrow to move it</p>
+        <p class="gesture-help">Drag to orbit · <span class="zoom-help-mouse">Mouse wheel to zoom</span><span class="zoom-help-touch">Pinch to zoom</span> · press an exposed arrow to move it</p>
         <div class="storage-note" id="storage-note" role="status"></div>
       </main>`;
     this.stage = this.requireElement("game-stage");

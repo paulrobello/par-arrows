@@ -342,6 +342,19 @@ button {
   color: #a74b42;
 }
 
+.zoom-help-touch {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .zoom-help-mouse {
+    display: none;
+  }
+  .zoom-help-touch {
+    display: inline;
+  }
+}
+
 @media (max-width: 640px) {
   .hud {
     top: max(0.8rem, env(safe-area-inset-top));

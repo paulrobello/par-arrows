@@ -2,6 +2,10 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Device-specific zoom hint
+
+The gesture hint shows only “Mouse wheel to zoom” for a mouse/trackpad primary pointer and only “Pinch to zoom” for a coarse touch primary pointer. CSS updates the hint when the pointer capability changes, independent of viewport width. Headed Chrome and WebKit checks passed for desktop, phone, tablet, and narrow desktop views, with inspected desktop/mobile screenshots and no page errors. The web-game skill client and full gate also passed (59 tests / 2,064 assertions).
+
 ## Arrowhead selection repair
 
 The owner reported that clicks on arrowheads did not register. Body cylinders were the only raycast targets. Visible head triangles now retain their drawing layer and join the picking layer, with arrow identity, current face, and refreshed geometry bounds. A 1.5 CSS-pixel head-only fallback handles narrow tip/edge taps after normal ray hits miss; it rejects hidden, clipped, inactive, and ambiguous heads. Head opacity uses the transformed geometry center so grazing back-facing heads agree with their ghosted bodies. Root reproduced the missed `l2-straight-2` tip click before the fix, then verified tip/wing mouse and touch activation, hidden-head exclusion, and extra-head-tap rejection during motion in headed Chrome/WebKit. A live press highlighted the intended head and release launched its arrow. Full gate: 59 tests / 2,064 assertions, with browser and web-game skill checks also passing. Level data and save versions are unchanged.
