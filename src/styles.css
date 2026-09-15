@@ -185,6 +185,85 @@ button {
   transform: translate(-50%, -50%);
   text-align: center;
 }
+
+.celebration-layer {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.5rem;
+  height: 0.82rem;
+  border-radius: 0.1rem;
+  background: var(--confetti-color);
+  opacity: 0;
+  animation: confetti-burst 2.45s cubic-bezier(0.12, 0.7, 0.25, 1)
+    var(--confetti-delay) forwards;
+}
+
+.victory-emblem {
+  display: none;
+  width: 2.45rem;
+  height: 2.45rem;
+  margin: 0 auto 0.6rem;
+  place-items: center;
+  border: 1px solid rgb(240 174 48 / 45%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff8c7, #f2b53b 72%);
+  box-shadow: 0 0.45rem 1.3rem rgb(224 161 36 / 26%);
+  color: #71430c;
+  font-size: 1.35rem;
+}
+
+.state-card.is-won {
+  border-color: rgb(240 174 48 / 48%);
+  box-shadow: 0 20px 54px rgb(224 161 36 / 22%);
+}
+
+.state-card.is-won .victory-emblem {
+  display: grid;
+}
+
+.state-card.is-celebrating {
+  animation: victory-card-pop 440ms cubic-bezier(0.18, 0.9, 0.28, 1.15) both;
+}
+
+@keyframes confetti-burst {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--confetti-angle)) translateY(0) rotate(0deg);
+  }
+  8% {
+    opacity: 1;
+  }
+  72% {
+    opacity: 1;
+    transform: rotate(var(--confetti-angle))
+      translateY(calc(var(--confetti-distance) * -1)) rotate(430deg);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--confetti-angle))
+      translateY(calc(var(--confetti-distance) * -1.35)) rotate(620deg);
+  }
+}
+
+@keyframes victory-card-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
 .tutorial-kicker {
   color: #1687b7;
   font-size: 0.58rem;
@@ -460,7 +539,9 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .touch-cue {
+  .touch-cue,
+  .state-card.is-celebrating,
+  .confetti-piece {
     animation: none;
   }
 }

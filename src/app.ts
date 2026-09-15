@@ -31,6 +31,13 @@ interface Motion {
   impactShown: boolean;
 }
 
+interface Celebration {
+  elapsed: number;
+}
+
+const CELEBRATION_DURATION = 2600;
+const CONFETTI_COUNT = 56;
+
 export class ParArrowsApp {
   private readonly root: HTMLElement;
   private readonly renderer: PuzzleRenderer;
@@ -48,6 +55,10 @@ export class ParArrowsApp {
   private readonly installHint: HTMLElement;
   private readonly settingsButton: HTMLButtonElement;
   private readonly reducedMotion: HTMLInputElement;
+  private readonly celebrationLayer: HTMLElement;
+  private readonly systemMotionPreference = window.matchMedia(
+    "(prefers-reduced-motion: reduce)",
+  );
   private mode: AppMode = "campaign";
   private level: LevelDefinition = LEVELS[0] as LevelDefinition;
   private state: GameState = createGameState(LEVELS[0] as LevelDefinition);
@@ -56,6 +67,7 @@ export class ParArrowsApp {
   private tutorialComplete = false;
   private settings: PlayerSettings = loadSettings();
   private motion: Motion | undefined;
+  private celebration: Celebration | undefined;
   private demoStage: "observe" | "pause" | "ready" = "observe";
   private demoElapsed = 0;
   private animationFrame = 0;
@@ -78,8 +90,10 @@ export class ParArrowsApp {
             <button class="primary-button" id="start-button" type="button" hidden>Start level 1</button>
           </div>
           <div class="touch-cue" id="touch-cue" aria-hidden="true"><span></span></div>
+          <div class="celebration-layer" id="celebration-layer" aria-hidden="true"></div>
           <div class="state-card" id="state-card" hidden>
             <div class="tutorial-kicker" id="state-kicker">CLEAR</div>
+            <div class="victory-emblem" aria-hidden="true">★</div>
             <h2 id="state-title">Path complete</h2>
             <p id="state-copy">The next cube is ready.</p>
             <button class="primary-button" id="state-button" type="button">Next cube</button>
@@ -118,6 +132,7 @@ export class ParArrowsApp {
     this.reducedMotion = this.requireElement(
       "reduced-motion",
     ) as HTMLInputElement;
+    this.celebrationLayer = this.requireElement("celebration-layer");
     this.reducedMotion.checked = this.settings.reducedMotion;
     this.renderer = new PuzzleRenderer(this.stage);
     this.input = new PointerInput(this.renderer.canvas, {
@@ -128,6 +143,10 @@ export class ParArrowsApp {
       onZoom: (amount) => this.renderer.zoom(amount),
     });
     this.bindControls();
+    this.systemMotionPreference.addEventListener(
+      "change",
+      this.handleMotionPreference,
+    );
     this.restore();
     this.installPrompt = new PwaInstallPrompt((available, ios) =>
       this.updateInstallPrompt(available, ios),
@@ -140,6 +159,11 @@ export class ParArrowsApp {
 
   dispose(): void {
     cancelAnimationFrame(this.animationFrame);
+    this.systemMotionPreference.removeEventListener(
+      "change",
+      this.handleMotionPreference,
+    );
+    this.clearCelebration();
     this.input.dispose();
     this.renderer.dispose();
   }
@@ -166,6 +190,13 @@ export class ParArrowsApp {
             duration: this.motion.duration,
           }
         : null,
+      celebration: this.celebration
+        ? {
+            active: true,
+            elapsed: Math.round(this.celebration.elapsed),
+            duration: CELEBRATION_DURATION,
+          }
+        : { active: false, elapsed: 0, duration: CELEBRATION_DURATION },
       camera: this.renderer.cameraDiagnostics(),
       visibleProjectedArrowPositions: this.renderer
         .projectedArrows()
@@ -185,6 +216,7 @@ export class ParArrowsApp {
     this.state = createGameState(level);
     this.displayedState = this.state;
     this.motion = undefined;
+    this.clearCelebration();
     this.tutorialComplete = true;
     this.unlockedLevelId = Math.max(this.unlockedLevelId, level.id);
     this.renderer.setLevel(level, this.state);
@@ -202,6 +234,7 @@ export class ParArrowsApp {
     this.demoStage = "observe";
     this.demoElapsed = 0;
     this.motion = undefined;
+    this.clearCelebration();
     this.renderer.setLevel(DEMO_LEVEL, this.state);
     this.renderUi();
   }
@@ -217,6 +250,13 @@ export class ParArrowsApp {
   };
 
   private update(delta: number): void {
+    if (this.celebration) {
+      this.celebration.elapsed += delta;
+      if (this.celebration.elapsed >= CELEBRATION_DURATION) {
+        this.clearCelebration();
+        this.renderUi();
+      }
+    }
     if (this.motion) {
       this.motion.elapsed += delta;
       const progress = Math.min(1, this.motion.elapsed / this.motion.duration);
@@ -303,6 +343,7 @@ export class ParArrowsApp {
         Math.min(LEVELS.at(-1)?.id ?? this.level.id, this.level.id + 1),
       );
       this.persist();
+      this.startCelebration();
     }
     this.renderUi();
   }
@@ -355,6 +396,7 @@ export class ParArrowsApp {
       return;
     }
     this.motion = undefined;
+    this.clearCelebration();
     this.state = createGameState(this.level);
     this.displayedState = this.state;
     this.renderer.setLevel(this.level, this.state);
@@ -430,19 +472,29 @@ export class ParArrowsApp {
     const title = this.requireElement("state-title");
     const copy = this.requireElement("state-copy");
     const button = this.requireElement("state-button") as HTMLButtonElement;
+    const won = this.mode === "campaign" && this.state.status === "won";
+    card.classList.toggle("is-won", won);
+    card.classList.toggle(
+      "is-celebrating",
+      won && this.celebration !== undefined,
+    );
     card.hidden =
       this.mode !== "campaign" ||
       this.motion !== undefined ||
       this.state.status === "playing";
-    if (this.state.status === "won") {
+    if (won) {
       const final = this.level.id === LEVELS.at(-1)?.id;
-      title.textContent = final ? "Campaign complete" : "Path complete";
+      this.requireElement("state-kicker").textContent = final
+        ? "ALL CUBES CLEARED"
+        : "NICE WORK";
+      title.textContent = final ? "Campaign complete!" : "Cube cleared!";
       copy.textContent = final
-        ? "Every cube has been cleared."
-        : "A new cube is unlocked.";
+        ? `You found every open way. All ${LEVELS.length} cubes are complete.`
+        : "Every arrow is free. Your next cube is ready.";
       button.textContent = final ? "Replay this cube" : "Next cube";
       button.dataset.action = final ? "retry" : "next";
     } else if (this.state.status === "lost") {
+      this.requireElement("state-kicker").textContent = "TRY AGAIN";
       title.textContent = "Try that cube again";
       copy.textContent = "A retry restores its full set of lives.";
       button.textContent = "Retry cube";
@@ -476,6 +528,10 @@ export class ParArrowsApp {
     this.reducedMotion.addEventListener("change", () => {
       this.settings = { reducedMotion: this.reducedMotion.checked };
       saveSettings(this.settings);
+      if (this.shouldReduceMotion()) {
+        this.clearCelebration();
+        this.renderUi();
+      }
     });
     this.installButton.addEventListener(
       "click",
@@ -488,6 +544,55 @@ export class ParArrowsApp {
           : this.root.requestFullscreen());
       }
     });
+  }
+
+  private readonly handleMotionPreference = (): void => {
+    if (this.shouldReduceMotion()) {
+      this.clearCelebration();
+      this.renderUi();
+    }
+  };
+
+  private shouldReduceMotion(): boolean {
+    return this.settings.reducedMotion || this.systemMotionPreference.matches;
+  }
+
+  private startCelebration(): void {
+    this.clearCelebration();
+    if (this.shouldReduceMotion()) {
+      return;
+    }
+    this.celebration = { elapsed: 0 };
+    const colors = [
+      "#f05c62",
+      "#f4b942",
+      "#30a8a1",
+      "#496be3",
+      "#ca5fbe",
+      "#ef7c43",
+    ];
+    const fragment = document.createDocumentFragment();
+    for (let index = 0; index < CONFETTI_COUNT; index += 1) {
+      const piece = document.createElement("span");
+      const angle = (index * 137.508) % 360;
+      const distance = 15 + ((index * 29) % 42);
+      piece.className = "confetti-piece";
+      piece.style.setProperty("--confetti-angle", `${angle}deg`);
+      piece.style.setProperty("--confetti-distance", `${distance}vmin`);
+      piece.style.setProperty("--confetti-delay", `${(index % 7) * 24}ms`);
+      piece.style.setProperty(
+        "--confetti-color",
+        colors[index % colors.length] as string,
+      );
+      fragment.append(piece);
+    }
+    this.celebrationLayer.replaceChildren(fragment);
+  }
+
+  private clearCelebration(): void {
+    this.celebration = undefined;
+    this.celebrationLayer.replaceChildren();
+    this.requireElement("state-card").classList.remove("is-celebrating");
   }
 
   private installPrompt: PwaInstallPrompt | undefined;

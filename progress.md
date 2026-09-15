@@ -2,6 +2,10 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Level-completion celebration
+
+Campaign wins now celebrate after the final arrow settles with a 56-piece multicolor confetti burst, a gold star emblem, a brief card entrance/glow, and distinct cube/campaign completion messages. Effects expire after 2.6 seconds and never intercept controls. Next, Retry, level changes, reset, and disposal remove transient effects. In-game and system reduced-motion preferences suppress motion and stop an active burst; restored wins show only the static success card. Headed Chrome/WebKit tests cover final-arrow timing, Next during the burst, expiry, loss/demo exclusion, saved wins, final campaign, and both reduced-motion settings including live toggles. Root inspected desktop/mobile celebrations and corrected mobile particle layering. Full gate passes with 59 tests / 2,064 assertions; the web-game skill client also passes. No content or save-version changes.
+
 ## Device-specific zoom hint
 
 The gesture hint shows only “Mouse wheel to zoom” for a mouse/trackpad primary pointer and only “Pinch to zoom” for a coarse touch primary pointer. CSS updates the hint when the pointer capability changes, independent of viewport width. Headed Chrome and WebKit checks passed for desktop, phone, tablet, and narrow desktop views, with inspected desktop/mobile screenshots and no page errors. The web-game skill client and full gate also passed (59 tests / 2,064 assertions).

@@ -20,6 +20,7 @@ interface Snapshot {
   remainingIds: string[];
   failedIds: string[];
   moving: { arrowId: string; kind: string; elapsed: number } | null;
+  celebration: { active: boolean; elapsed: number; duration: number };
   camera: {
     orientation: [number, number, number, number];
     position: [number, number, number];
@@ -90,6 +91,106 @@ async function clickArrow(page: Page, arrowId: string): Promise<void> {
   const bounds = await page.locator("canvas").boundingBox();
   assert.ok(bounds);
   await page.mouse.click(bounds.x + point.x, bounds.y + point.y);
+}
+
+async function launchLastArrow(page: Page, levelId = 1): Promise<void> {
+  const level = LEVELS.find((candidate) => candidate.id === levelId);
+  assert.ok(level);
+  const solution = solveLevel(level);
+  assert.ok(solution);
+  await loadLevel(page, levelId);
+  await page.evaluate((ids) => {
+    for (const [index, id] of ids.entries()) {
+      window.__PAR_ARROWS_TEST__?.activate(id);
+      if (index < ids.length - 1) window.advanceTime?.(1000);
+    }
+  }, solution);
+}
+
+async function assertCelebration(page: Page, mobile = false): Promise<void> {
+  await launchLastArrow(page);
+  assert.ok((await snapshot(page)).moving);
+  assert.equal(await page.locator(".confetti-piece").count(), 0);
+  assert.equal(await page.locator("#state-card").isVisible(), false);
+  await advance(page, 650);
+  const count = await page.locator(".confetti-piece").count();
+  assert.ok(count > 0 && count <= 64, "Victory has a bounded confetti burst");
+  assert.equal(await page.locator(".state-card.is-won").isVisible(), true);
+  assert.equal(await page.locator(".victory-emblem").isVisible(), true);
+  assert.equal(
+    await page
+      .locator(".celebration-layer")
+      .evaluate((element) => getComputedStyle(element).pointerEvents),
+    "none",
+  );
+  assert.ok(
+    await page.evaluate(() => {
+      const layer = document.querySelector(".celebration-layer");
+      const card = document.querySelector("#state-card");
+      return (
+        layer &&
+        card &&
+        Number(getComputedStyle(layer).zIndex) >
+          Number(getComputedStyle(card).zIndex)
+      );
+    }),
+    "Confetti must remain visible over the wide mobile completion card",
+  );
+  await page.waitForTimeout(250);
+  await page.screenshot({
+    path: `${output}/celebration-${mobile ? "mobile" : "desktop"}.png`,
+  });
+  await page.getByRole("button", { name: "Next cube", exact: true }).click();
+  assert.equal((await snapshot(page)).level.id, 2);
+  assert.equal(await page.locator(".confetti-piece").count(), 0);
+  assert.equal(await page.locator(".state-card.is-won").count(), 0);
+  if (mobile) return;
+
+  await launchLastArrow(page);
+  await advance(page, 650);
+  await page.locator("#settings-button").click();
+  await page.getByLabel("Reduce movement").check();
+  assert.equal(await page.locator(".confetti-piece").count(), 0);
+  await launchLastArrow(page);
+  await advance(page, 150);
+  assert.equal(await page.locator(".confetti-piece").count(), 0);
+  assert.equal(await page.locator(".victory-emblem").isVisible(), true);
+  await page.getByLabel("Reduce movement").uncheck();
+  await page.locator("#settings-button").click();
+
+  await launchLastArrow(page);
+  await advance(page, 650);
+  assert.equal((await snapshot(page)).celebration.active, true);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.waitForFunction(
+    () => document.querySelectorAll(".confetti-piece").length === 0,
+  );
+  assert.equal((await snapshot(page)).celebration.active, false);
+  assert.equal(await page.locator(".state-card.is-celebrating").count(), 0);
+  await launchLastArrow(page);
+  await advance(page, 650);
+  assert.equal(await page.locator(".confetti-piece").count(), 0);
+  assert.equal(await page.locator(".state-card.is-won").isVisible(), true);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  assert.equal(await page.locator(".confetti-piece").count(), 0);
+
+  await launchLastArrow(page, 10);
+  await advance(page, 650);
+  assert.ok((await page.locator(".confetti-piece").count()) > 0);
+  assert.match(await page.locator("#state-title").innerText(), /campaign/i);
+  await page.screenshot({ path: `${output}/celebration-campaign.png` });
+  await advance(page, 3500);
+  assert.equal(await page.locator(".confetti-piece").count(), 0);
+  assert.equal(await page.locator(".state-card.is-won").isVisible(), true);
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__PAR_ARROWS_TEST__));
+  assert.equal(await page.locator(".confetti-piece").count(), 0);
+  assert.equal(await page.locator(".state-card.is-won").isVisible(), true);
+  await page.getByRole("button", { name: "Replay this cube" }).click();
+  assert.equal(await page.locator(".state-card.is-won").count(), 0);
+  console.log(
+    "PASS victory timing, next/retry, expiry, saved win, final campaign, and reduced motion",
+  );
 }
 
 function observeErrors(page: Page): void {
@@ -548,6 +649,7 @@ try {
   await advance(page, 4000);
   const completedDemo = await snapshot(page);
   assert.ok(completedDemo.remainingIds.length < failedDemo.remainingIds.length);
+  assert.equal(await page.locator(".confetti-piece").count(), 0);
   await page.getByRole("button", { name: "Start level 1" }).click();
   assert.equal((await snapshot(page)).lives, 5);
   assert.deepEqual((await snapshot(page)).failedIds, []);
@@ -695,6 +797,8 @@ try {
   console.log(
     "PASS interrupted final exit persists win and unlocks next level",
   );
+  assert.equal(await page.locator(".confetti-piece").count(), 0);
+  await assertCelebration(page);
 
   await loadLevel(page, 7);
   const failureLevel = LEVELS.find((candidate) => candidate.id === 7);
@@ -715,6 +819,8 @@ try {
     await advance(page);
   }
   assert.equal((await snapshot(page)).lives, 0);
+  assert.equal(await page.locator(".confetti-piece").count(), 0);
+  assert.equal(await page.locator(".state-card.is-won").count(), 0);
   await page.getByRole("button", { name: "Retry cube", exact: true }).click();
   assert.equal((await snapshot(page)).lives, failureLevel.lives);
   assert.deepEqual((await snapshot(page)).failedIds, []);
@@ -829,6 +935,7 @@ try {
   observeErrors(touchPage);
   await touchPage.goto(url);
   await touchPage.waitForFunction(() => Boolean(window.__PAR_ARROWS_TEST__));
+  await assertCelebration(touchPage, true);
   await loadLevel(touchPage, 3);
   await assertVisibleArrows(touchPage, 3);
   await assertCubeFits(touchPage);
