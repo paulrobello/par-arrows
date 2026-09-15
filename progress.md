@@ -2,6 +2,10 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Edge colors beneath arrows
+
+Ordinary cube lines and yellow wrapping markers now draw between the cube surface and the arrows. Both edge materials share the transparent render pass and disable depth writes, so they cannot hide ribbon bodies or arrowheads. Explicit cube/edge ordering keeps the yellow marker bright above the translucent cube surface. Root inspected light/dark close-ups with both adjoining faces exposed, including a moving arrow crossing the seam. The full gate passed with 93 tests and 123,347 assertions; headed Chrome/WebKit wrapping checks passed visibility, head folding, collision/rebound, retry, reload, and unwrapped-level cleanup. The headed web-game preview was also inspected.
+
 ## URL-driven level preview
 
 Test URLs open any valid level directly or filter by wrapping seams. `feature=wrap` (also `wrapping` and `wraparound`, case-insensitive) finds the first level with at least one seam; `wraps=0|1|2|3` requests an exact seam count. Combining either filter with `level` searches at or after the starting level and checks no more than 1,000 candidates using edge-count metadata. Levels must be from 1 through `Number.MAX_SAFE_INTEGER - 1`; invalid numbers, duplicate parameters, conflicting selectors, and unknown features produce a clear error. These selectors start a preview that skips the demo and never writes or deletes campaign saves; Return to campaign exits it. Go and Next preserve the filter and update the URL to the resolved level. Bare `?test=1` remains automation-hooks-only.

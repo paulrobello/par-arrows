@@ -995,13 +995,18 @@ export class PuzzleRenderer {
       new THREE.BoxGeometry(2, 2, 2),
       this.cubeMaterial,
     );
+    cube.renderOrder = -2;
+    // Edge colors share the transparent pass, between the cube and arrows.
     this.edgeMaterial = new THREE.LineBasicMaterial({
       color: this.palette.edges,
+      transparent: true,
+      depthWrite: false,
     });
     const edges = new THREE.LineSegments(
       new THREE.EdgesGeometry(cube.geometry),
       this.edgeMaterial,
     );
+    edges.renderOrder = -1;
     this.cubeGroup.add(cube, edges);
   }
 
@@ -1012,6 +1017,8 @@ export class PuzzleRenderer {
     const material = new THREE.MeshBasicMaterial({
       color,
       toneMapped: false,
+      transparent: true,
+      depthWrite: false,
     });
     for (const { start, end } of segments) {
       const direction = end.clone().sub(start);
@@ -1024,6 +1031,7 @@ export class PuzzleRenderer {
         ),
         material,
       );
+      mesh.renderOrder = -1;
       mesh.position.copy(start).add(end).multiplyScalar(0.5);
       mesh.quaternion.setFromUnitVectors(
         new THREE.Vector3(0, 1, 0),
