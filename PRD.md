@@ -44,7 +44,7 @@ The reference images are visual evidence only. Their level number, stars, hint b
 | R11 | Future special edges are marked yellow. A head reaching one continues onto the adjoining face instead of flying off. |
 | R12 | The engine design must allow additional mechanics beyond R10 and R11. These two mechanics are introduced at later levels, after the basic gameplay MVP. |
 | R13 | Movement follows the arrow's path: the tail follows the head. Existing wrapped bodies unwrap through ordinary seams; only a new head crossing determines exit versus continuation. |
-| R14 | Allow free rotation, mouse-wheel zoom, and pinch zoom. Far-side arrows remain faintly visible and become selectable only when rotated onto exposed faces. |
+| R14 | Allow continuous rotation in every drag direction with no axis stops, including repeated turns over the top and bottom, plus mouse-wheel and pinch zoom. Far-side arrows remain faintly visible and become selectable only when rotated onto exposed faces. |
 | R15 | At zero lives, allow unlimited retries of the same puzzle, restoring its configured starting lives. |
 | R16 | The MVP contains ten curated cube levels and a solvability checker. |
 | R17 | Arrow paths use grid-aligned 90-degree turns, with no starting overlaps or overpasses. |
@@ -140,7 +140,7 @@ The preceding instruction rules out a skippable collision demo, and the owner ha
 
 Free rotation, faint noninteractive far-side arrows, mouse-wheel/pinch zoom, press highlighting, and ignoring ambiguous taps are confirmed. Other details below are proposed:
 
-- U1: Free orbit with a useful initial three-quarter view, mouse-wheel zoom on desktop, pinch zoom on touch devices, and a reset-view control. Proposed near/far zoom limits prevent clipping through the shape or losing it from view. Both portrait and landscape layouts must keep the cube and essential controls reachable.
+- U1: Continuous orbit in every drag direction with no angle stops or abrupt flips over the poles. The owner confirmed unrestricted rotation on 2026-09-14. Keep a useful initial three-quarter view, mouse-wheel zoom on desktop, pinch zoom on touch devices, and a reset-view control. Near/far zoom limits prevent clipping through the shape or losing it from view. Both portrait and landscape layouts must keep the cube and essential controls reachable.
 - U2: A drag beginning over an arrow rotates the cube once it crosses a small screen-space threshold. Activation occurs on pointer release only if the gesture remained a tap. A pinch cancels any pending arrow tap. Pointer cancellation and loss of focus never activate an arrow.
 - U3: Render faint, noninteractive far-side arrows through the shape. Only the nearest exposed surface can be selected. Ghost lines are never independent click targets. Exact opacity and colors remain a visual design choice.
 - U4: Proposed implementation: enlarge arrow selection regions without changing collision geometry. Confirmed behavior: if there is no unambiguous visible arrow, do nothing and let the player zoom closer. Dense levels need zoom before shrinking targets beyond usability.

@@ -38,8 +38,8 @@ export interface ProjectedArrow {
 }
 
 export interface CameraDiagnostics {
-  readonly yaw: number;
-  readonly pitch: number;
+  readonly orientation: readonly [number, number, number, number];
+  readonly position: readonly [number, number, number];
   readonly distance: number;
   readonly cubeScreenBounds: {
     readonly left: number;
@@ -48,6 +48,10 @@ export interface CameraDiagnostics {
     readonly bottom: number;
   };
 }
+
+const INITIAL_CAMERA_ORIENTATION = new THREE.Quaternion().setFromEuler(
+  new THREE.Euler(-0.43, -0.72, 0, "YXZ"),
+);
 
 function clamp(value: number, lower: number, upper: number): number {
   return Math.min(upper, Math.max(lower, value));
@@ -372,8 +376,7 @@ export class PuzzleRenderer {
   private level: LevelDefinition | undefined;
   private state: GameState | undefined;
   private selectedId: string | undefined;
-  private yaw = -0.72;
-  private pitch = 0.43;
+  private readonly orientation = INITIAL_CAMERA_ORIENTATION.clone();
   private distance = 7.5;
   private fitDistance = 7.5;
   private hasFitted = false;
@@ -438,8 +441,12 @@ export class PuzzleRenderer {
   }
 
   orbit(deltaX: number, deltaY: number): void {
-    this.yaw -= deltaX * 0.012;
-    this.pitch = clamp(this.pitch - deltaY * 0.012, -1.18, 1.18);
+    const angle = Math.hypot(deltaX, deltaY) * 0.012;
+    if (angle === 0) return;
+    const axis = new THREE.Vector3(deltaY, -deltaX, 0).normalize();
+    this.orientation
+      .multiply(new THREE.Quaternion().setFromAxisAngle(axis, angle))
+      .normalize();
     this.render();
   }
 
@@ -453,8 +460,7 @@ export class PuzzleRenderer {
   }
 
   resetView(): void {
-    this.yaw = -0.72;
-    this.pitch = 0.43;
+    this.orientation.copy(INITIAL_CAMERA_ORIENTATION);
     this.distance = this.fitDistance;
     this.render();
   }
@@ -597,8 +603,17 @@ export class PuzzleRenderer {
     const width = this.canvas.clientWidth;
     const height = this.canvas.clientHeight;
     return {
-      yaw: this.yaw,
-      pitch: this.pitch,
+      orientation: [
+        this.orientation.x,
+        this.orientation.y,
+        this.orientation.z,
+        this.orientation.w,
+      ],
+      position: [
+        this.camera.position.x,
+        this.camera.position.y,
+        this.camera.position.z,
+      ],
       distance: this.distance,
       cubeScreenBounds: {
         left: Math.round(
@@ -845,13 +860,10 @@ export class PuzzleRenderer {
   }
 
   private updateCamera(): void {
-    const planar = Math.cos(this.pitch) * this.distance;
-    this.camera.position.set(
-      Math.sin(this.yaw) * planar,
-      Math.sin(this.pitch) * this.distance,
-      Math.cos(this.yaw) * planar,
-    );
-    this.camera.lookAt(0, 0, 0);
+    this.camera.quaternion.copy(this.orientation);
+    this.camera.position
+      .set(0, 0, this.distance)
+      .applyQuaternion(this.orientation);
     this.camera.updateMatrixWorld();
   }
 

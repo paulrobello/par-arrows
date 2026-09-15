@@ -89,6 +89,8 @@ The controller rejects additional arrow activations during an active attempt whi
 
 ### A5: Renderer and camera
 
+Use a cumulative normalized camera quaternion for continuous screen-relative drag rotation. Derive both camera position and orientation from it so repeated vertical turns pass through the poles without a world-up flip. Keep zoom distance separately bounded and reset to the original orientation and fitted distance.
+
 Generate shape surfaces and flat arrow ribbons from authoritative definitions. Paths and triangular heads lie on the face planes with only a small offset to prevent depth flicker, and ribbons fold at face seams. Keep widths, joins, seam continuity, face offsets, and depth behavior consistent. Use a picking representation separate from thin visible ribbons so touch can remain usable without changing the puzzle's collision widths.
 
 Render the confirmed faint far-side arrows in a controlled pass and exclude them from picking. Avoid relying on translucent-object draw order for correctness. Mobile verification must inspect back-face leakage, z-fighting, line flicker, and misleading overlaps at grazing angles.

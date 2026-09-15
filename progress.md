@@ -2,6 +2,12 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Continuous rotation
+
+The owner requested rotation without axis stops. Replaced the camera's ±1.18-radian pitch clamp and fixed-up look-at calculation with cumulative normalized quaternion rotation. Mouse and touch drags now rotate around screen-relative axes through repeated full turns, including over the top and bottom. The original view, drag sensitivity, zoom bounds, and Reset View are preserved. Root verified the baseline camera mathematically, 43 unit tests / 806 assertions, the full gate, headed Chrome/WebKit regressions, and live desktop/mobile screenshots. Browser checks cover more than two full turns per direction, diagonal motion, unchanged lives/arrow state during dragging, selection after rotation, wheel/pinch zoom, and exact reset. See `docs/verification/continuous-rotation.png` for the live rotated view.
+
+The Chrome touch regression waits for each native pointer event to affect camera diagnostics because the browser can acknowledge touch dispatch before delivering the event. A probe confirmed delayed event delivery, and both final browser suites passed. The web-game skill client also completed onboarding into playable level 1 without errors. Terra reviewed the actual rotation diff without findings.
+
 ## Favicon and installation icon suite
 
 The owner requested a complete icon set. The suite now includes SVG and multi-frame ICO favicons, PNG favicons from 16 to 128 pixels, an opaque 180-pixel Apple touch icon, and separate standard/maskable PWA icons at 192 and 512 pixels. The artwork uses the game's cube and flat arrows, with a simplified browser mark. Original SVGs and a pinned Sharp generator are checked in, with regeneration through `make icons`. Root verified byte-identical regeneration, native-size and mask previews, 43 tests / 806 assertions, the full gate, and headed Chrome/WebKit asset and gameplay checks. See `docs/icons.md` and `docs/icon-preview.html` for the inventory and visual review.

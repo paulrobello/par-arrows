@@ -13,8 +13,8 @@ interface Snapshot {
   failedIds: string[];
   moving: { arrowId: string; kind: string; elapsed: number } | null;
   camera: {
-    yaw: number;
-    pitch: number;
+    orientation: [number, number, number, number];
+    position: [number, number, number];
     distance: number;
     cubeScreenBounds: {
       left: number;
@@ -135,6 +135,82 @@ async function assertVisibleArrows(page: Page, levelId: number): Promise<void> {
   );
 }
 
+function assertRotationStep(
+  before: Snapshot,
+  after: Snapshot,
+  deltaX: number,
+  deltaY: number,
+): void {
+  const orientation = after.camera.orientation;
+  assert.ok(Math.abs(Math.hypot(...orientation) - 1) < 1e-8);
+  const dot = orientation.reduce(
+    (sum, value, index) =>
+      sum + value * (before.camera.orientation[index] ?? 0),
+    0,
+  );
+  const expected = Math.hypot(deltaX, deltaY) * 0.012;
+  const angle = 2 * Math.acos(Math.min(1, Math.abs(dot)));
+  assert.ok(
+    Math.abs(angle - expected) < 0.002,
+    "Each drag step must rotate fully without a stop or pole flip",
+  );
+  const positionDot =
+    after.camera.position.reduce(
+      (sum, value, index) => sum + value * (before.camera.position[index] ?? 0),
+      0,
+    ) /
+    (before.camera.distance * after.camera.distance);
+  assert.ok(
+    Math.abs(positionDot - Math.cos(expected)) < 0.002,
+    "Camera must orbit the cube, including at the poles",
+  );
+  assert.equal(after.camera.distance, before.camera.distance);
+  assert.equal(after.lives, before.lives);
+  assert.deepEqual(after.remainingIds, before.remainingIds);
+  assert.deepEqual(after.failedIds, before.failedIds);
+  assert.equal(after.moving, null);
+}
+
+interface DragGesture {
+  start(x: number, y: number): Promise<void>;
+  move(x: number, y: number): Promise<void>;
+  end(): Promise<void>;
+}
+
+async function assertContinuousRotation(
+  page: Page,
+  gesture: DragGesture,
+  directions: readonly (readonly [number, number])[],
+  label: string,
+): Promise<void> {
+  const bounds = await page.locator("canvas").boundingBox();
+  assert.ok(bounds);
+  for (const [deltaX, deltaY] of directions) {
+    for (let drag = 0; drag < 7; drag += 1) {
+      const x = bounds.x + bounds.width / 2 - deltaX * 4;
+      const y = bounds.y + bounds.height / 2 - deltaY * 4;
+      await gesture.start(x, y);
+      let before = await snapshot(page);
+      for (let step = 1; step <= 8; step += 1) {
+        await gesture.move(x + deltaX * step, y + deltaY * step);
+        const after = await snapshot(page);
+        assertRotationStep(before, after, deltaX, deltaY);
+        before = after;
+      }
+      await gesture.end();
+      assert.deepEqual(
+        (await snapshot(page)).remainingIds,
+        before.remainingIds,
+      );
+      if (drag === 1 && deltaY > 0) {
+        await page.screenshot({
+          path: `${output}/${label}-rotation-${deltaX}-${deltaY}.png`,
+        });
+      }
+    }
+  }
+}
+
 try {
   await mkdir(output, { recursive: true });
   const startupDeadline = Date.now() + 15_000;
@@ -244,21 +320,65 @@ try {
   );
   await page.mouse.up();
   const afterOrbit = await snapshot(page);
-  assert.notEqual(afterOrbit.camera.yaw, beforeGesture.camera.yaw);
+  assert.notDeepEqual(
+    afterOrbit.camera.orientation,
+    beforeGesture.camera.orientation,
+  );
   assert.equal(afterOrbit.lives, beforeGesture.lives);
   assert.deepEqual(afterOrbit.remainingIds, beforeGesture.remainingIds);
+  await assertContinuousRotation(
+    page,
+    {
+      start: async (x, y) => {
+        await page.mouse.move(x, y);
+        await page.mouse.down();
+      },
+      move: async (x, y) => {
+        await page.mouse.move(x, y);
+      },
+      end: async () => {
+        await page.mouse.up();
+      },
+    },
+    [
+      [20, 0],
+      [-20, 0],
+      [0, 20],
+      [0, -20],
+      [20, 20],
+      [-20, -20],
+    ],
+    "desktop",
+  );
+  const rotated = await snapshot(page);
+  const clearAfterRotation = rotated.visibleProjectedArrowPositions.find(
+    (candidate) =>
+      simulateMove(level, initialState, candidate.id).kind === "exit",
+  );
+  assert.ok(
+    clearAfterRotation,
+    "A rotated visible face must expose a selectable clear arrow",
+  );
+  await clickArrow(page, clearAfterRotation.id);
+  await advance(page);
+  assert.ok(
+    !(await snapshot(page)).remainingIds.includes(clearAfterRotation.id),
+  );
   await page.mouse.wheel(0, -240);
   const afterZoom = await snapshot(page);
   assert.notEqual(afterZoom.camera.distance, afterOrbit.camera.distance);
   assert.equal(afterZoom.lives, beforeGesture.lives);
   await page.getByRole("button", { name: "Reset camera view" }).click();
+  const resetCamera = (await snapshot(page)).camera;
+  assert.deepEqual(resetCamera.orientation, beforeGesture.camera.orientation);
+  assert.equal(resetCamera.distance, beforeGesture.camera.distance);
   await page.locator('[data-action="retry"]').first().click();
   const retried = await snapshot(page);
   assert.equal(retried.lives, level.lives);
   assert.deepEqual(retried.failedIds, []);
   assert.equal(retried.remainingIds.length, level.arrows.length);
   console.log(
-    "PASS orbit, wheel zoom, view reset, and same-layout retry without unintended moves",
+    "PASS continuous full-turn orbit on both axes and diagonals, rotated picking, wheel zoom, view reset, and retry",
   );
 
   await loadLevel(page, 1);
@@ -421,6 +541,42 @@ try {
   assert.ok(touchBounds);
   if (engine === chromium) {
     const client = await mobile.newCDPSession(touchPage);
+    await assertContinuousRotation(
+      touchPage,
+      {
+        start: async (x, y) => {
+          await client.send("Input.dispatchTouchEvent", {
+            type: "touchStart",
+            touchPoints: [{ x, y, id: 0 }],
+          });
+        },
+        move: async (x, y) => {
+          const previous = (await snapshot(touchPage)).camera.orientation;
+          await client.send("Input.dispatchTouchEvent", {
+            type: "touchMove",
+            touchPoints: [{ x, y, id: 0 }],
+          });
+          // Touch dispatch can acknowledge before the pointermove reaches the page.
+          await touchPage.waitForFunction((before) => {
+            const raw = window.render_game_to_text?.();
+            if (!raw) return false;
+            const orientation = JSON.parse(raw).camera.orientation as number[];
+            return orientation.some((value, index) => value !== before[index]);
+          }, previous);
+        },
+        end: async () => {
+          await client.send("Input.dispatchTouchEvent", {
+            type: "touchEnd",
+            touchPoints: [],
+          });
+        },
+      },
+      [
+        [0, 20],
+        [0, -20],
+      ],
+      "mobile",
+    );
     const centerX = touchBounds.x + touchBounds.width / 2;
     const centerY = touchBounds.y + touchBounds.height / 2;
     await client.send("Input.dispatchTouchEvent", {
@@ -475,7 +631,7 @@ try {
     "Landscape layout must not overflow horizontally",
   );
   console.log(
-    `PASS emulated mobile portrait/landscape and ${engine === chromium ? "two-pointer pinch without a move" : "WebKit touch activation"}`,
+    `PASS emulated mobile portrait/landscape and ${engine === chromium ? "continuous touch rotation and two-pointer pinch without a move" : "WebKit touch activation"}`,
   );
   await mobile.close();
   assert.deepEqual(failures, [], "Browser must not report uncaught errors");

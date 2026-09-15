@@ -31,7 +31,7 @@ Install pre-commit and run `pre-commit install` to enable the pinned secret-scan
 
 ## Controls and progress
 
-- Click or touch an arrow to attempt a move. Drag to rotate, use the mouse wheel or pinch to zoom.
+- Click or touch an arrow to attempt a move. Drag to rotate continuously in any direction, including over the top and bottom. Use the mouse wheel or pinch to zoom, and View to restore the starting angle.
 - A press highlights its arrow. Ambiguous touches do nothing. Dragging and pinching do not activate arrows.
 - The first-run demo shows a failed move followed by a successful move before campaign play.
 - Ten curated cube levels use five, four, then three starting lives. Retry restores the same layout and full life budget.
