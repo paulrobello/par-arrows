@@ -23,6 +23,7 @@ import { assertWrappingEdges } from "./wrapping-browser";
 import { assertConsistentMotion } from "./motion-browser";
 import { assertLevelPreview } from "./preview-browser";
 import { assertSeamFills } from "./seam-fill-browser";
+import { assertReliableTaps } from "./tap-browser";
 import { LEVELS, waitForReady } from "./runtime-fixtures";
 
 interface Snapshot {
@@ -1301,6 +1302,7 @@ try {
   await mobile.close();
   await assertRuntimeCampaign(browser, url, output);
   await assertConsistentMotion(browser, url, output);
+  await assertReliableTaps(browser, url, output);
   await assertSeamFills(browser, url, output);
   await assertLevelPreview(browser, url, output);
   await assertWrappingEdges(browser, url, output, {

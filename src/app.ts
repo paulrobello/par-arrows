@@ -206,9 +206,14 @@ export class ParArrowsApp {
     this.renderer = new PuzzleRenderer(this.stage);
     this.applyTheme();
     this.input = new PointerInput(this.renderer.canvas, {
-      pick: (x, y) => this.renderer.pick(x, y),
+      pick: (x, y) =>
+        this.loading ||
+        this.loadingError ||
+        this.motion ||
+        this.mode !== "campaign"
+          ? undefined
+          : this.renderer.pick(x, y),
       onPress: (id) => {
-        if (this.loading) return;
         this.cancelHint();
         this.renderer.setSelected(id);
       },
@@ -288,6 +293,7 @@ export class ParArrowsApp {
     return JSON.stringify({
       mode: this.mode,
       level: { id: this.level.id, title: this.level.title },
+      selectedArrowId: this.renderer.selectedArrowId(),
       preview: {
         active: this.preview.active,
         ...(this.preview.active

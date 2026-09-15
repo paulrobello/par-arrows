@@ -2,6 +2,12 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Reliable arrow press and release
+
+The owner reported that about 20% of intended arrow taps highlighted on press but failed to activate. Root reproduced a missed release in the prior implementation at a 5-pixel left/down displacement, inside the 9 CSS-pixel drag threshold; the overall reported rate was not measured. Input now captures an unambiguous arrow on primary pointerdown and activates that same arrow on a matching release below the threshold, even if release lands on whitespace or an adjacent narrow hit target. Blank or ambiguous presses do nothing; crossing the drag threshold, zoom/pinch, cancellation, lost pointer capture, or blur cancels activation. Press highlighting appears only when movement can start; orbit and zoom remain available during an active move. Mouse and pen non-primary buttons are excluded on both press and release.
+
+Root verified the full gate with 106 tests and 127,404 assertions. Headed Chrome passed eleven release offsets with mouse and native touch, plus drag, wheel, pinch, and busy-state feedback checks. WebKit passed the same mouse offset/feedback checks and its existing native-touch gameplay regressions. Both full browser suites passed. The headed web-game client repeated a drifting tap on the wrapping starter and confirmed activation with only one life charged across repeat failures. Final review found no remaining actionable issues.
+
 ## Solid arrow fills across cube folds
 
 The reported hairlines were gaps between independently lifted arrow sections at cube folds. Adjacent sections now share vertices at the intersection of both lifted face planes. Very short moving segments retain their real direction instead of using an arbitrary fallback. The previous test that expected separated seam ends now requires a closed join, with all 24 edge directions covered at two grid sizes and multiple lanes, including near-zero moving fragments.

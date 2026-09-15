@@ -1,11 +1,28 @@
 import { describe, expect, test } from "bun:test";
-
+import type { PointerInputHandlers } from "../src/input";
 import { PointerInput } from "../src/input";
 
 type Listener = (event: PointerEvent) => void;
 
+class MockWindow {
+  private readonly listeners = new Map<string, () => void>();
+
+  addEventListener(type: string, listener: () => void): void {
+    this.listeners.set(type, listener);
+  }
+
+  removeEventListener(type: string): void {
+    this.listeners.delete(type);
+  }
+
+  emit(type: string): void {
+    this.listeners.get(type)?.();
+  }
+}
+
 class MockElement {
   private readonly listeners = new Map<string, Listener>();
+  readonly ownerDocument = { defaultView: new MockWindow() };
 
   addEventListener(type: string, listener: Listener): void {
     this.listeners.set(type, listener);
@@ -17,22 +34,43 @@ class MockElement {
 
   setPointerCapture(): void {}
 
-  emit(type: string, event: Partial<PointerEvent>): void {
+  emit(type: string, event: object): void {
     const listener = this.listeners.get(type);
     if (!listener) throw new Error(`No ${type} listener`);
     listener(event as PointerEvent);
   }
 }
 
-function pointer(x: number, y: number): Partial<PointerEvent> {
+function pointer(
+  x: number,
+  y: number,
+  pointerId = 1,
+  pointerType = "mouse",
+  button = 0,
+): Partial<PointerEvent> {
   return {
-    pointerId: 1,
-    pointerType: "mouse",
-    button: 0,
+    pointerId,
+    pointerType,
+    button,
     buttons: 1,
     clientX: x,
     clientY: y,
   };
+}
+
+function harness(pick: PointerInputHandlers["pick"] = () => "arrow-a") {
+  const element = new MockElement();
+  const taps: string[] = [];
+  const presses: Array<string | undefined> = [];
+  const zooms: number[] = [];
+  const input = new PointerInput(element as unknown as HTMLElement, {
+    pick,
+    onPress: (id) => presses.push(id),
+    onTap: (id) => taps.push(id),
+    onOrbit: () => {},
+    onZoom: (delta) => zooms.push(delta),
+  });
+  return { element, input, taps, presses, zooms };
 }
 
 describe("PointerInput", () => {
@@ -78,5 +116,134 @@ describe("PointerInput", () => {
       [1, 0],
       [1, 1],
     ]);
+  });
+
+  test("activates the press target after small release jitter without repicking", () => {
+    let picks = 0;
+    const { element, taps } = harness(() => {
+      picks += 1;
+      return picks === 1 ? "arrow-a" : "arrow-b";
+    });
+
+    element.emit("pointerdown", pointer(10, 10));
+    element.emit("pointermove", pointer(14, 12));
+    element.emit("pointerup", pointer(15, 13));
+
+    expect(picks).toBe(1);
+    expect(taps).toEqual(["arrow-a"]);
+  });
+
+  test("rejects a release at the drag threshold even without a move event", () => {
+    const { element, taps } = harness();
+    element.emit("pointerdown", pointer(10, 10));
+    element.emit("pointerup", pointer(19, 10));
+    expect(taps).toEqual([]);
+  });
+
+  test("does not activate after dragging out and back to the press point", () => {
+    const { element, taps } = harness();
+    element.emit("pointerdown", pointer(10, 10));
+    element.emit("pointermove", pointer(19, 10));
+    element.emit("pointermove", pointer(10, 10));
+    element.emit("pointerup", pointer(10, 10));
+    expect(taps).toEqual([]);
+  });
+
+  test("does not activate a blank press", () => {
+    const { element, taps } = harness(() => undefined);
+    element.emit("pointerdown", pointer(10, 10));
+    element.emit("pointerup", pointer(10, 10));
+    expect(taps).toEqual([]);
+  });
+
+  test("ignores an unrelated pointerup while preserving the active press", () => {
+    const { element, taps } = harness();
+    element.emit("pointerdown", pointer(10, 10));
+    element.emit("pointerup", pointer(10, 10, 2, "touch"));
+    element.emit("pointerup", pointer(10, 10, 1, "mouse"));
+    expect(taps).toEqual(["arrow-a"]);
+  });
+
+  test("ignores non-primary mouse buttons", () => {
+    const { element, taps, presses } = harness();
+    element.emit("pointerdown", pointer(10, 10, 1, "mouse", 2));
+    element.emit("pointerup", pointer(10, 10, 1, "mouse", 2));
+    expect(presses).toEqual([]);
+    expect(taps).toEqual([]);
+  });
+
+  test("rejects a non-primary mouse release and clears the active press", () => {
+    const { element, taps, presses } = harness();
+    element.emit("pointerdown", pointer(10, 10));
+    element.emit("pointerup", pointer(10, 10, 1, "mouse", 2));
+    element.emit("pointerup", pointer(10, 10));
+    expect(taps).toEqual([]);
+    expect(presses).toEqual(["arrow-a", undefined]);
+  });
+
+  test("ignores non-primary pen buttons while preserving touch input", () => {
+    const { element, taps, presses } = harness();
+    element.emit("pointerdown", pointer(10, 10, 1, "pen", 2));
+    element.emit("pointerup", pointer(10, 10, 1, "pen", 2));
+    expect(presses).toEqual([]);
+    expect(taps).toEqual([]);
+
+    element.emit("pointerdown", pointer(10, 10, 2, "touch"));
+    element.emit("pointerup", pointer(10, 10, 2, "touch"));
+    expect(taps).toEqual(["arrow-a"]);
+  });
+
+  test("multi-touch pinch cancels the pending tap and keeps zoom behavior", () => {
+    const { element, taps, zooms } = harness();
+    element.emit("pointerdown", pointer(0, 0, 1, "touch"));
+    element.emit("pointerdown", pointer(10, 0, 2, "touch"));
+    element.emit("pointermove", pointer(20, 0, 2, "touch"));
+    element.emit("pointerup", pointer(20, 0, 2, "touch"));
+    element.emit("pointerup", pointer(0, 0, 1, "touch"));
+    expect(zooms).toEqual([-18]);
+    expect(taps).toEqual([]);
+  });
+
+  test("pointer cancellation and lost capture cancel the pending tap", () => {
+    for (const eventType of ["pointercancel", "lostpointercapture"]) {
+      const { element, taps } = harness();
+      element.emit("pointerdown", pointer(10, 10));
+      element.emit(eventType, pointer(10, 10));
+      element.emit("pointerup", pointer(10, 10));
+      expect(taps).toEqual([]);
+    }
+  });
+
+  test("wheel zoom cancels the pending tap while retaining zoom", () => {
+    const priorWheelEvent = globalThis.WheelEvent;
+    Object.defineProperty(globalThis, "WheelEvent", {
+      configurable: true,
+      value: { DOM_DELTA_LINE: 1, DOM_DELTA_PAGE: 2 },
+    });
+    try {
+      const { element, taps, zooms } = harness();
+      element.emit("pointerdown", pointer(10, 10));
+      element.emit("wheel", {
+        deltaY: 12,
+        deltaMode: 0,
+        preventDefault: () => {},
+      });
+      element.emit("pointerup", pointer(10, 10));
+      expect(zooms).toEqual([12]);
+      expect(taps).toEqual([]);
+    } finally {
+      Object.defineProperty(globalThis, "WheelEvent", {
+        configurable: true,
+        value: priorWheelEvent,
+      });
+    }
+  });
+
+  test("window blur cancels the pending tap", () => {
+    const { element, taps } = harness();
+    element.emit("pointerdown", pointer(10, 10));
+    element.ownerDocument.defaultView.emit("blur");
+    element.emit("pointerup", pointer(10, 10));
+    expect(taps).toEqual([]);
   });
 });

@@ -924,6 +924,10 @@ export class PuzzleRenderer {
     return this.wrappingEdgesGroup.children.length;
   }
 
+  selectedArrowId(): string | undefined {
+    return this.selectedId;
+  }
+
   arrowHeadFace(arrowId: string): Cell["face"] | undefined {
     return this.visuals.get(arrowId)?.head.userData.face as
       | Cell["face"]

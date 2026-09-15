@@ -10,6 +10,8 @@ interface ActivePointer {
   readonly id: number;
   readonly x: number;
   readonly y: number;
+  readonly pressX: number;
+  readonly pressY: number;
   readonly arrowId: string | undefined;
   readonly dragging: boolean;
 }
@@ -21,11 +23,14 @@ export class PointerInput {
   private active: ActivePointer | undefined;
   private pinchDistance: number | undefined;
   private readonly touches = new Map<number, PointerEvent>();
+  private readonly view: Window | null;
 
   constructor(
     private readonly element: HTMLElement,
     private readonly handlers: PointerInputHandlers,
   ) {
+    this.view = element.ownerDocument?.defaultView ?? null;
+    this.view?.addEventListener("blur", this.cancel);
     element.addEventListener("pointerdown", this.onPointerDown);
     element.addEventListener("pointermove", this.onPointerMove);
     element.addEventListener("pointerup", this.onPointerUp);
@@ -35,6 +40,7 @@ export class PointerInput {
   }
 
   dispose(): void {
+    this.view?.removeEventListener("blur", this.cancel);
     this.element.removeEventListener("pointerdown", this.onPointerDown);
     this.element.removeEventListener("pointermove", this.onPointerMove);
     this.element.removeEventListener("pointerup", this.onPointerUp);
@@ -44,7 +50,7 @@ export class PointerInput {
   }
 
   private readonly onPointerDown = (event: PointerEvent): void => {
-    if (event.pointerType === "mouse" && event.button !== 0) {
+    if (event.button !== 0) {
       return;
     }
     this.touches.set(event.pointerId, event);
@@ -60,6 +66,8 @@ export class PointerInput {
       id: event.pointerId,
       x: event.clientX,
       y: event.clientY,
+      pressX: event.clientX,
+      pressY: event.clientY,
       arrowId,
       dragging: false,
     };
@@ -104,15 +112,19 @@ export class PointerInput {
 
   private readonly onPointerUp = (event: PointerEvent): void => {
     const active = this.active;
+    const trackedTouch = this.touches.has(event.pointerId);
+    if (active?.id !== event.pointerId && !trackedTouch) return;
     this.touches.delete(event.pointerId);
     this.pinchDistance = undefined;
+    if (active?.id !== event.pointerId) return;
     this.active = undefined;
     this.handlers.onPress(undefined);
-    const releasedArrowId = this.handlers.pick(event.clientX, event.clientY);
     if (
-      active?.id === event.pointerId &&
       active.arrowId &&
-      releasedArrowId === active.arrowId
+      !active.dragging &&
+      event.button === 0 &&
+      Math.hypot(event.clientX - active.pressX, event.clientY - active.pressY) <
+        TAP_THRESHOLD
     ) {
       this.handlers.onTap(active.arrowId);
     }
@@ -127,6 +139,7 @@ export class PointerInput {
 
   private readonly onWheel = (event: WheelEvent): void => {
     event.preventDefault();
+    this.cancel();
     const multiplier =
       event.deltaMode === WheelEvent.DOM_DELTA_LINE
         ? 18
