@@ -22,7 +22,7 @@ import {
 
 type AppMode = "demo" | "campaign" | "complete";
 
-const ARROW_SPEED_MULTIPLIER = 1.25;
+const ARROW_SPEED_MULTIPLIER = 1.5625;
 
 interface Motion {
   readonly result: MoveResult;

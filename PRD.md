@@ -58,7 +58,7 @@ The reference images are visual evidence only. Their level number, stars, hint b
 | R25 | Support mobile devices up to two hardware generations old, including the current generation and the previous two. Select concrete representative devices for verification. |
 | R26 | Include an onboarding demo on a small cube with only a few arrows. Show a touch on an arrow that fails, then a touch on an arrow that succeeds. The demo is non-skippable, consistent with the owner's preceding instruction. |
 | R27 | Render arrows as flat ribbons with flat arrowheads, following the surface and folding across face seams. |
-| R28 | Increase arrow movement speed by 25% relative to the initial MVP. Divide movement durations by 1.25; demo pauses are unchanged. |
+| R28 | Apply two successive 25% arrow-speed increases from the initial MVP, for a total multiplier of 1.5625. Current durations are 563.2 ms exits, 473.6 ms rebounds, and 70.4 ms reduced-motion transitions. Demo pauses are unchanged. |
 
 ## 4. MVP boundary
 

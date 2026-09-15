@@ -176,7 +176,7 @@ Acceptance:
 
 Depends on: P2, P3, and life/retry decisions.
 
-Deliverables: attempt controller, successful departure animation, collision/return/red feedback, five-life level 1, remaining count, failure/retry, completion, and reduced-motion behavior. The owner subsequently requested 25% faster arrow movement: divide the original movement durations by 1.25, keeping demo pauses unchanged.
+Deliverables: attempt controller, successful departure animation, collision/return/red feedback, five-life level 1, remaining count, failure/retry, completion, and reduced-motion behavior. The owner subsequently requested two successive 25% speed increases: divide original movement durations by 1.5625, keeping demo pauses unchanged.
 
 Acceptance:
 

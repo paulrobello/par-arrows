@@ -2,9 +2,13 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Latest speed tuning
+
+The owner requested another 25% arrow-speed increase after the ribbon refinement. The multiplier is now 1.25 × 1.25 = 1.5625 relative to the initial MVP. Exits take 563.2 ms, rebounds 473.6 ms, and reduced-motion transitions 70.4 ms. Demo pauses are unchanged.
+
 ## Completed ribbon refinement
 
-The owner requested flat ribbon arrows and 25% faster movement after the initial MVP. Terra implemented the ribbon geometry in an isolated `feat/flat-ribbons` worktree. Root integrated speed tuning and verification. Normal exits now take 704 ms instead of 880 ms, rebounds 592 ms instead of 740 ms, and reduced-motion transitions 88 ms instead of 110 ms. Demo pauses and core rules are unchanged.
+The owner requested flat ribbon arrows and an initial 25% speed increase after the MVP. Terra implemented the ribbon geometry in an isolated `feat/flat-ribbons` worktree. That first speed increase changed exits from 880 ms to 704 ms, rebounds from 740 ms to 592 ms, and reduced-motion transitions from 110 ms to 88 ms. The later tuning above supersedes those durations. Demo pauses and core rules are unchanged.
 
 Flat quads and triangular heads follow face planes and fold at seams. Moving body slices retain all turns/seams, begin at the original pose, and keep the head connected. Review corrected winding/culling, off-center seam coordinates, inactive picker filtering, and fractional-slice point/face alignment. Actual dark canvas pixels are now asserted in browser checks so invisible hit targets cannot mask missing visible arrows. Full gate: 31 tests / 492 assertions. Headed Chrome and WebKit production flows, the skill's headed browser client, and inspected desktop/mobile/motion screenshots pass.
 
