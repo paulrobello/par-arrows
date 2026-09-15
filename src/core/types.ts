@@ -33,6 +33,8 @@ export interface LevelDefinition {
   readonly title: string;
   readonly gridSize: number;
   readonly lives: number;
+  /** Presentation-only sizing relative to grid spacing; defaults to 1. */
+  readonly arrowScale?: number;
   readonly arrows: readonly ArrowDefinition[];
   readonly edgePolicies?: readonly EdgePolicyDefinition[];
 }

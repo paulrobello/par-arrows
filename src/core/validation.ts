@@ -1,9 +1,9 @@
 import { simulateMove } from "./movement";
 import {
   cellKey,
+  forwardInfo,
   headingForPath,
   linkKey,
-  forwardInfo,
   seamTransition,
 } from "./topology";
 import type { ArrowDefinition, Cell, Endpoint, LevelDefinition } from "./types";
@@ -68,6 +68,12 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
   }
   if (!Number.isInteger(level.lives) || level.lives < 1) {
     errors.push("Lives must be a positive integer.");
+  }
+  if (
+    level.arrowScale !== undefined &&
+    (!Number.isFinite(level.arrowScale) || level.arrowScale <= 0)
+  ) {
+    errors.push("Arrow display scale must be a positive finite number.");
   }
   const edgePolicies = new Set<string>();
   for (const edge of level.edgePolicies ?? []) {

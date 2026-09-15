@@ -3,7 +3,7 @@ import type { GameState, LevelDefinition } from "./core/types";
 
 const STORAGE_KEY = "par-arrows:campaign:v1";
 const SETTINGS_KEY = "par-arrows:settings:v1";
-const CONTENT_VERSION = 4;
+const CONTENT_VERSION = 5;
 
 export interface CampaignSave {
   readonly currentLevelId: number;
@@ -103,7 +103,8 @@ export function loadCampaign(
     const legacyContent =
       parsed.contentVersion === 1 ||
       parsed.contentVersion === 2 ||
-      parsed.contentVersion === 3;
+      parsed.contentVersion === 3 ||
+      parsed.contentVersion === 4;
     const legacyLevelOne = legacyContent && level.id === 1;
     const currentStateIsValid = isState(parsed.state, level);
     if (parsed.contentVersion === CONTENT_VERSION && currentStateIsValid) {

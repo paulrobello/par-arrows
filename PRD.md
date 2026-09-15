@@ -62,6 +62,7 @@ The four additional photos supplied on 2026-09-14 are preserved as references 04
 | R27 | Render arrows as flat ribbons with flat arrowheads, following the surface and folding across face seams. |
 | R28 | Apply two successive 25% arrow-speed increases from the initial MVP, for a total multiplier of 1.5625. Current durations are 563.2 ms exits, 473.6 ms rebounds, and 70.4 ms reduced-motion transitions. Demo pauses are unchanged. |
 | R29 | Keep level 1 simple. From level 2 onward, substantially increase arrow density and multi-bend zigzag complexity, mix different path shapes and straight-arrow lengths, and include multiple arrows spanning cube edges. |
+| R30 | Make arrow shafts and heads 20% wider and double the version-4 arrow counts on levels 2–10 to 60, 84, 108, 132, 156, 168, 180, 180, and 180. Preserve the visible width increase when a finer grid is needed. Level 1 keeps its original six-arrow layout. |
 
 ## 4. MVP boundary
 
@@ -155,16 +156,16 @@ Keyboard puzzle navigation and a nonvisual equivalent of the spatial puzzle need
 
 ### 7.1 Current campaign content and lives — Q6, Q10
 
-**Confirmed:** Ten curated cube levels with a solvability checker and the life schedule below. Content version 4 uses irregular route composition with low repeated-shape frequency from level 2 onward. A logical face grid is independent of the displayed cube size.
+**Confirmed:** Ten curated cube levels with a solvability checker and the life schedule below. Content version 5 doubles the previous arrow counts from level 2 onward while retaining irregular route composition and increasing stroke width by 20%. A logical face grid is independent of the displayed cube size.
 
 | Group | Grid per face | Arrows per level | Starting lives | Teaching goal |
 | --- | --- | --- | --- | --- |
 | Level 1 | 4 × 4 | 6 total, with arrows on all six faces | 5, confirmed | Tap, rotate, identify a clear exit. |
-| Levels 2–3 | 8 × 8 to 9 × 9 | 30–42 | 5, confirmed | Stepped zigzags, varied winding paths, and blockers. |
-| Levels 4–6 | 10 × 10 to 12 × 12 | 54–78 | 4, confirmed | Longer winding routes, wraps, and removal dependencies. |
-| Levels 7–10 | 12 × 12 to 14 × 14 | 84–90 | 3, confirmed | Dense irregular paths with varied footprints and removal dependencies. |
+| Levels 2–3 | 12 × 12 to 13 × 13 | 60–84 | 5, confirmed | Stepped zigzags, varied winding paths, and blockers. |
+| Levels 4–6 | 15 × 15 to 18 × 18 | 108–156 | 4, confirmed | Longer winding routes, wraps, and removal dependencies. |
+| Levels 7–10 | 18 × 18 to 22 × 22 | 168–180 | 3, confirmed | Dense irregular paths with varied footprints and removal dependencies. |
 
-These are the fixed authored layouts in content version 4. Every level validates and has a complete solution under the runtime rules. Never fill a numeric quota with an invalid or unreadable arrangement. Later high-density stress fixtures should exceed this campaign, with a provisional target of 150 arrows and 3,000 total path cells pending device measurements.
+These are the fixed authored layouts in content version 5. Every level validates and has a complete solution under the runtime rules. Never fill a numeric quota with an invalid or unreadable arrangement. Later stress fixtures should exceed the 180-arrow campaign, with their budgets determined from device measurements. Current count, sizing, and verification evidence is in the [doubled campaign report](docs/verification/thicker-double-arrows.md).
 
 References [04](docs/references/reference-04.jpeg), [05](docs/references/reference-05.jpeg), and [06](docs/references/reference-06.jpeg) establish the later visual direction: mix short and long arrows, single and multiple bends, hooked returns, stepped zigzags, and winding paths, with close spacing across multiple faces. Preserve each arrow's readable identity and validate self-contact and solvability. The pictured late-game density is a progression reference; level 1 keeps its simple teaching layout. Screenshot counters do not set campaign arrow quotas.
 

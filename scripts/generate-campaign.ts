@@ -32,15 +32,87 @@ const FACES: readonly FaceId[] = [
 ];
 const HEADINGS: readonly Heading[] = ["east", "west", "south", "north"];
 const CONFIG = [
-  { id: 2, size: 8, lives: 5, count: 30, cells: 250, seed: 0x24f1 },
-  { id: 3, size: 9, lives: 5, count: 42, cells: 300, seed: 0x35f1 },
-  { id: 4, size: 10, lives: 4, count: 54, cells: 420, seed: 0x46f1 },
-  { id: 5, size: 11, lives: 4, count: 66, cells: 510, seed: 0x57f1 },
-  { id: 6, size: 12, lives: 4, count: 78, cells: 620, seed: 0x68f1 },
-  { id: 7, size: 12, lives: 3, count: 84, cells: 620, seed: 0x79f1 },
-  { id: 8, size: 13, lives: 3, count: 90, cells: 710, seed: 0x8af1 },
-  { id: 9, size: 14, lives: 3, count: 90, cells: 830, seed: 0x9bf1 },
-  { id: 10, size: 14, lives: 3, count: 90, cells: 850, seed: 0xacf1 },
+  {
+    id: 2,
+    size: 12,
+    oldSize: 8,
+    lives: 5,
+    count: 60,
+    cells: 540,
+    seed: 0x24f1,
+  },
+  {
+    id: 3,
+    size: 13,
+    oldSize: 9,
+    lives: 5,
+    count: 84,
+    cells: 694,
+    seed: 0x35f1,
+  },
+  {
+    id: 4,
+    size: 15,
+    oldSize: 10,
+    lives: 4,
+    count: 108,
+    cells: 892,
+    seed: 0x46f1,
+  },
+  {
+    id: 5,
+    size: 16,
+    oldSize: 11,
+    lives: 4,
+    count: 132,
+    cells: 1090,
+    seed: 0x57f1,
+  },
+  {
+    id: 6,
+    size: 18,
+    oldSize: 12,
+    lives: 4,
+    count: 156,
+    cells: 1308,
+    seed: 0x68f1,
+  },
+  {
+    id: 7,
+    size: 18,
+    oldSize: 12,
+    lives: 3,
+    count: 168,
+    cells: 1330,
+    seed: 0x79f1,
+  },
+  {
+    id: 8,
+    size: 20,
+    oldSize: 13,
+    lives: 3,
+    count: 180,
+    cells: 1556,
+    seed: 0x8af1,
+  },
+  {
+    id: 9,
+    size: 21,
+    oldSize: 14,
+    lives: 3,
+    count: 180,
+    cells: 1662,
+    seed: 0x9bf1,
+  },
+  {
+    id: 10,
+    size: 22,
+    oldSize: 14,
+    lives: 3,
+    count: 180,
+    cells: 1764,
+    seed: 0xacf1,
+  },
 ] as const;
 
 class Rng {
@@ -204,6 +276,7 @@ function buildLevel(config: (typeof CONFIG)[number]): LevelDefinition {
     title: `Cube ${config.id}`,
     gridSize: config.size,
     lives: config.lives,
+    arrowScale: config.size / config.oldSize,
     arrows,
   };
   if (
@@ -223,13 +296,14 @@ const data = layouts.map((level) => ({
   title: level.title,
   gridSize: level.gridSize,
   lives: level.lives,
+  arrowScale: level.arrowScale,
   routes: level.arrows.map((arrow) => ({
     id: arrow.id,
     start: [arrow.path[0]?.face, arrow.path[0]?.x, arrow.path[0]?.y],
     steps: routeSteps(arrow.path, level.gridSize),
   })),
 }));
-const source = `import type { LevelDefinition } from "../core/types";\nimport { decodeRoute, type FrozenRoute } from "./route-codec";\nexport { decodeRoute, type FrozenRoute } from "./route-codec";\n\ninterface FrozenLayout { readonly id: number; readonly title: string; readonly gridSize: number; readonly lives: number; readonly routes: readonly FrozenRoute[]; }\nconst FROZEN_LAYOUTS: readonly FrozenLayout[] = ${JSON.stringify(data)};\nexport const CAMPAIGN_LAYOUTS: readonly LevelDefinition[] = FROZEN_LAYOUTS.map((layout) => ({ ...layout, arrows: layout.routes.map((route) => ({ id: route.id, path: decodeRoute(route, layout.gridSize) })) }));\n`;
+const source = `import type { LevelDefinition } from "../core/types";\nimport { decodeRoute, type FrozenRoute } from "./route-codec";\nexport { decodeRoute, type FrozenRoute } from "./route-codec";\n\ninterface FrozenLayout { readonly id: number; readonly title: string; readonly gridSize: number; readonly lives: number; readonly arrowScale: number; readonly routes: readonly FrozenRoute[]; }\nconst FROZEN_LAYOUTS: readonly FrozenLayout[] = ${JSON.stringify(data)};\nexport const CAMPAIGN_LAYOUTS: readonly LevelDefinition[] = FROZEN_LAYOUTS.map((layout) => ({ ...layout, arrows: layout.routes.map((route) => ({ id: route.id, path: decodeRoute(route, layout.gridSize) })) }));\n`;
 await writeFile(output, source);
 const formatter = Bun.spawn([
   resolve(import.meta.dirname, "../node_modules/.bin/biome"),

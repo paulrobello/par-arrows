@@ -2,6 +2,10 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Thicker arrows and doubled counts
+
+Content version 5 applies the requested 20% increase to shaft/head widths and exactly doubles counts from level 2: 60, 84, 108, 132, 156, 168, 180, 180, and 180. Grids range from 12 to 22 cells per face. Presentation-only `arrowScale` metadata preserves each level's prior physical pitch, so the finer grids do not cancel the visible thickness increase. Level 1 and the demo retain their layout hashes and receive the global width increase. Irregularity, wraps, blockers, and complete solutions remain validated. Legacy level-one saves from versions 1–4 resume exactly; later attempts refresh while preserving unlocks. Root verified 59 tests / 2,064 assertions, full gate, headed Chrome/WebKit mobile/desktop flows, actual v4-to-v5 save migration, an approximately 20.4% increase in rasterized dark-arrow coverage at a fixed pose, and byte-identical missing-output regeneration. See `docs/verification/thicker-double-arrows.md` for exact metrics and previews.
+
 ## Irregular route composition
 
 Content version 4 replaces stamped bands with deterministic reverse-constructed paths grown through free surface space. Level 10 retains 90 arrows and 882 occupied cells, with 67 distinct geometries among 68 multi-bend arrows, a maximum of two copies, 55 interior heads, and 46 initially blocked arrows. Root compared the level-2/10 and mobile layouts with the supplied references. The independent offline generator reproduces identical frozen output even when the output file is absent. Shape tests normalize copies through rotation, reflection, reversal, and face unfolding. Versions 1–3 preserve compatible level-one state and refresh later attempts without losing unlocks. Full gate: 53 tests / 1,372 assertions; headed Chrome/WebKit and dense mobile interactions pass. An input trace also exposed unpressed hover movement entering drag calculations, now covered by a failing-then-passing regression and a primary-button guard. Details and previews: `docs/verification/irregular-routes.md`.

@@ -12,6 +12,20 @@ import type {
 const PICK_RADIUS = 0.14;
 const PICK_LAYER = 1;
 
+export function arrowDimensions(
+  gridSize: number,
+  arrowScale = 1,
+): {
+  readonly ribbonWidth: number;
+  readonly headLength: number;
+} {
+  const displayPitch = (2 / gridSize) * arrowScale;
+  return {
+    ribbonWidth: displayPitch * 0.15 * 1.2,
+    headLength: displayPitch * 0.35,
+  };
+}
+
 interface SegmentVisual {
   readonly ribbon: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
   readonly picker: THREE.Mesh<THREE.CylinderGeometry, THREE.MeshBasicMaterial>;
@@ -413,7 +427,7 @@ export class PuzzleRenderer {
     this.level = level;
     this.state = state;
     for (const arrow of level.arrows) {
-      const visual = this.createArrow(arrow, level.gridSize);
+      const visual = this.createArrow(arrow, level.gridSize, level.arrowScale);
       this.visuals.set(arrow.id, visual);
       this.arrowsGroup.add(visual.group);
       this.pickers.push(...visual.pickers);
@@ -694,11 +708,14 @@ export class PuzzleRenderer {
     this.cubeGroup.add(cube, edges);
   }
 
-  private createArrow(arrow: ArrowDefinition, gridSize: number): ArrowVisual {
+  private createArrow(
+    arrow: ArrowDefinition,
+    gridSize: number,
+    arrowScale = 1,
+  ): ArrowVisual {
     const group = new THREE.Group();
     const pitch = 2 / gridSize;
-    const ribbonWidth = pitch * 0.15;
-    const headLength = pitch * 0.35;
+    const { ribbonWidth, headLength } = arrowDimensions(gridSize, arrowScale);
     const pickRadius = Math.min(PICK_RADIUS, pitch * 0.28);
     const material = new THREE.MeshBasicMaterial({
       color: 0x0b1015,

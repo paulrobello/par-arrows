@@ -4,7 +4,7 @@ A desktop and mobile 3D arrow-removal puzzle with flat ribbon arrows. Rotate a c
 
 The initial ten-level MVP is implemented. See the [verification report](docs/verification/2026-09-14-mvp.md) for browser evidence and outstanding device qualification, [PRD.md](PRD.md) for product rules, and [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the delivery plan.
 
-The [irregular route revision](docs/verification/irregular-routes.md) replaces repeated S bands on levels 2–10 while retaining 30–90 arrows and dense layouts. Paths fit around neighboring routes, with varied shapes and removal dependencies. Older attempts on revised levels restart with their unlocks preserved; compatible level-one saves resume exactly.
+The [latest campaign revision](docs/verification/thicker-double-arrows.md) makes arrows 20% thicker and doubles counts on levels 2–10 to 60–180 arrows. Paths retain the irregular composition and removal dependencies. Older attempts on revised levels restart with their unlocks preserved; compatible level-one saves resume exactly.
 
 ## Develop
 

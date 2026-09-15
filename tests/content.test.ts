@@ -93,11 +93,16 @@ function stableHash(value: unknown): string {
 
 describe("curated campaign", () => {
   test("replaces repeated bands with diverse geometry and distributed interior heads", () => {
-    const previousCells = [263, 315, 451, 555, 679, 681, 772, 916, 890];
+    const previousCells = [270, 347, 446, 545, 654, 665, 778, 831, 882];
+    const doubledCounts = [60, 84, 108, 132, 156, 168, 180, 180, 180];
     for (const [index, level] of LEVELS.slice(1).entries()) {
       const quality = analyzeLevel(level);
+      const expectedCount = doubledCounts[index];
+      if (expectedCount === undefined)
+        throw new Error("Missing doubled level count.");
+      expect(level.arrows.length).toBe(expectedCount);
       expect(quality.cells).toBeGreaterThanOrEqual(
-        Math.ceil((previousCells[index] ?? 0) * 0.9),
+        Math.ceil((previousCells[index] ?? 0) * 1.8),
       );
       expect(quality.uniqueUnfoldedBends).toBeGreaterThanOrEqual(
         Math.ceil(quality.multiBend * 0.8),
@@ -177,11 +182,11 @@ describe("curated campaign", () => {
           simulateMove(level, initialState, arrow.id).kind === "blocked",
       );
       expect(level.arrows.length).toBeGreaterThanOrEqual(
-        level.id === 2 ? 30 : 42,
+        level.id === 2 ? 60 : 84,
       );
       expect(
         level.arrows.reduce((total, arrow) => total + arrow.path.length, 0),
-      ).toBeGreaterThanOrEqual(level.id === 2 ? 200 : 300);
+      ).toBeGreaterThanOrEqual(level.id === 2 ? 400 : 600);
       expect(wraps.length).toBeGreaterThanOrEqual(3);
       expect(wraps.some((arrow) => visibleWrap(arrow.path))).toBe(true);
       expect(multiBend.length).toBeGreaterThanOrEqual(
@@ -210,10 +215,10 @@ describe("curated campaign", () => {
     const finalMultiBend = finalLevel.arrows.filter(
       (arrow) => bendCount(arrow.path) >= 3,
     );
-    expect(finalLevel.arrows).toHaveLength(90);
+    expect(finalLevel.arrows).toHaveLength(180);
     expect(
       finalLevel.arrows.reduce((total, arrow) => total + arrow.path.length, 0),
-    ).toBeGreaterThanOrEqual(850);
+    ).toBeGreaterThanOrEqual(1700);
     expect(finalMultiBend.length).toBeGreaterThanOrEqual(
       Math.ceil(finalLevel.arrows.length * 0.5),
     );
