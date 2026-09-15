@@ -2,6 +2,10 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Arrowhead selection repair
+
+The owner reported that clicks on arrowheads did not register. Body cylinders were the only raycast targets. Visible head triangles now retain their drawing layer and join the picking layer, with arrow identity, current face, and refreshed geometry bounds. A 1.5 CSS-pixel head-only fallback handles narrow tip/edge taps after normal ray hits miss; it rejects hidden, clipped, inactive, and ambiguous heads. Head opacity uses the transformed geometry center so grazing back-facing heads agree with their ghosted bodies. Root reproduced the missed `l2-straight-2` tip click before the fix, then verified tip/wing mouse and touch activation, hidden-head exclusion, and extra-head-tap rejection during motion in headed Chrome/WebKit. A live press highlighted the intended head and release launched its arrow. Full gate: 59 tests / 2,064 assertions, with browser and web-game skill checks also passing. Level data and save versions are unchanged.
+
 ## Thicker arrows and doubled counts
 
 Content version 5 applies the requested 20% increase to shaft/head widths and exactly doubles counts from level 2: 60, 84, 108, 132, 156, 168, 180, 180, and 180. Grids range from 12 to 22 cells per face. Presentation-only `arrowScale` metadata preserves each level's prior physical pitch, so the finer grids do not cancel the visible thickness increase. Level 1 and the demo retain their layout hashes and receive the global width increase. Irregularity, wraps, blockers, and complete solutions remain validated. Legacy level-one saves from versions 1–4 resume exactly; later attempts refresh while preserving unlocks. Root verified 59 tests / 2,064 assertions, full gate, headed Chrome/WebKit mobile/desktop flows, actual v4-to-v5 save migration, an approximately 20.4% increase in rasterized dark-arrow coverage at a fixed pose, and byte-identical missing-output regeneration. See `docs/verification/thicker-double-arrows.md` for exact metrics and previews.

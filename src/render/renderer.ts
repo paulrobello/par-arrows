@@ -11,6 +11,7 @@ import type {
 
 const PICK_RADIUS = 0.14;
 const PICK_LAYER = 1;
+const HEAD_PICK_MARGIN_PX = 1.5;
 
 export function arrowDimensions(
   gridSize: number,
@@ -431,6 +432,7 @@ export class PuzzleRenderer {
       this.visuals.set(arrow.id, visual);
       this.arrowsGroup.add(visual.group);
       this.pickers.push(...visual.pickers);
+      this.pickers.push(visual.head);
     }
     this.updateState(state);
     this.render();
@@ -514,7 +516,62 @@ export class PuzzleRenderer {
         );
       });
     const id = hit?.object.userData.arrowId as string | undefined;
-    return id && this.state.remainingIds.includes(id) ? id : undefined;
+    if (id && this.state.remainingIds.includes(id)) return id;
+
+    const pointer = new THREE.Vector3(
+      clientX - bounds.left,
+      clientY - bounds.top,
+      0,
+    );
+    const nearbyHeads: string[] = [];
+    for (const [arrowId, visual] of this.visuals) {
+      if (
+        !visual.head.visible ||
+        !visual.group.visible ||
+        !this.state.remainingIds.includes(arrowId)
+      )
+        continue;
+      const face = visual.head.userData.face as Cell["face"] | undefined;
+      const center = visual.head.geometry.boundingSphere?.center;
+      if (!face || !center) continue;
+      const worldCenter = visual.head.localToWorld(center.clone());
+      const projectedCenter = worldCenter.clone().project(this.camera);
+      if (
+        !projectedCenter.toArray().every(Number.isFinite) ||
+        projectedCenter.z < -1 ||
+        projectedCenter.z > 1
+      )
+        continue;
+      const [nx, ny, nz] = faceNormal(face);
+      if (
+        new THREE.Vector3(nx, ny, nz).dot(
+          this.camera.position.clone().sub(worldCenter),
+        ) <= 0.04
+      )
+        continue;
+      const positions = visual.head.geometry.getAttribute("position");
+      const points = [0, 1, 2].map((index) => {
+        const projected = visual.head
+          .localToWorld(
+            new THREE.Vector3().fromBufferAttribute(positions, index),
+          )
+          .project(this.camera);
+        return new THREE.Vector3(
+          ((projected.x + 1) * bounds.width) / 2,
+          ((1 - projected.y) * bounds.height) / 2,
+          0,
+        );
+      });
+      const [a, b, c] = points;
+      if (!a || !b || !c) continue;
+      const closest = new THREE.Triangle(a, b, c).closestPointToPoint(
+        pointer,
+        new THREE.Vector3(),
+      );
+      if (closest.distanceToSquared(pointer) <= HEAD_PICK_MARGIN_PX ** 2)
+        nearbyHeads.push(arrowId);
+    }
+    return nearbyHeads.length === 1 ? nearbyHeads[0] : undefined;
   }
 
   animate(arrowId: string, result: MoveResult, progress: number): void {
@@ -667,11 +724,15 @@ export class PuzzleRenderer {
         segment.material.opacity = exposed ? 1 : 0.32;
         segment.material.color.set(exposed ? activeColor : 0x6f9fb2);
       }
-      const headFace = visual.arrow.path.at(-1)?.face;
+      const headFace = visual.head.userData.face as Cell["face"] | undefined;
       const [nx, ny, nz] = headFace ? faceNormal(headFace) : [0, 0, 0];
+      const headCenter = visual.head.localToWorld(
+        visual.head.geometry.boundingSphere?.center.clone() ??
+          new THREE.Vector3(),
+      );
       visual.material.opacity =
         new THREE.Vector3(nx, ny, nz).dot(
-          this.camera.position.clone().sub(visual.head.position),
+          this.camera.position.clone().sub(headCenter),
         ) > 0
           ? 1
           : 0.32;
@@ -754,6 +815,8 @@ export class PuzzleRenderer {
     material.side = THREE.DoubleSide;
     const head = new THREE.Mesh(makeHeadGeometry(), material);
     head.frustumCulled = false;
+    head.layers.enable(PICK_LAYER);
+    head.userData.arrowId = arrow.id;
     group.add(head);
     const visual: ArrowVisual = {
       arrow,
@@ -849,6 +912,9 @@ export class PuzzleRenderer {
     ) as THREE.BufferAttribute;
     headAttribute.array.set(headVertices);
     headAttribute.needsUpdate = true;
+    visual.head.geometry.computeBoundingBox();
+    visual.head.geometry.computeBoundingSphere();
+    visual.head.userData.face = face;
     visual.head.visible = path.points.length > 1;
   }
 

@@ -1,10 +1,17 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { type Browser, chromium, type Page, webkit } from "playwright";
-import { Quaternion } from "three";
+import { PerspectiveCamera, Quaternion, Vector3 } from "three";
 import { LEVELS } from "../src/content/levels";
 import { createGameState, simulateMove } from "../src/core/game-state";
+import {
+  cellToWorld,
+  faceHeadingVector,
+  faceNormal,
+  headingForPath,
+} from "../src/core/topology";
 import { solveLevel } from "../src/core/validation";
+import { arrowDimensions } from "../src/render/renderer";
 
 interface Snapshot {
   mode: string;
@@ -133,6 +140,133 @@ async function assertVisibleArrows(page: Page, levelId: number): Promise<void> {
   assert.ok(
     darkPixels > 80,
     "The actual canvas must contain visible black arrows, not only invisible hit targets",
+  );
+}
+
+async function assertArrowheadPicking(
+  page: Page,
+  levelId: number,
+  touch = false,
+): Promise<void> {
+  await loadLevel(page, levelId);
+  await page.getByRole("button", { name: "Reset camera view" }).click();
+  if (touch && engine === chromium) {
+    const distance = (await snapshot(page)).camera.distance;
+    await page.mouse.move(195, 420);
+    await page.mouse.wheel(0, -10000);
+    await page.waitForFunction((previous) => {
+      const raw = window.render_game_to_text?.();
+      return raw && JSON.parse(raw).camera.distance < previous;
+    }, distance);
+  }
+  const level = LEVELS.find((candidate) => candidate.id === levelId);
+  const bounds = await page.locator("canvas").boundingBox();
+  assert.ok(level && bounds);
+  const current = await snapshot(page);
+  const camera = new PerspectiveCamera(
+    32,
+    bounds.width / bounds.height,
+    0.1,
+    40,
+  );
+  camera.position.fromArray(current.camera.position);
+  camera.quaternion.fromArray(current.camera.orientation);
+  camera.updateMatrixWorld();
+  const { ribbonWidth, headLength } = arrowDimensions(
+    level.gridSize,
+    level.arrowScale,
+  );
+  const samples = level.arrows.map((arrow) => {
+    const head = arrow.path.at(-1);
+    const heading = headingForPath(arrow.path, level.gridSize);
+    assert.ok(head && heading);
+    const normal = new Vector3(...faceNormal(head.face));
+    const direction = new Vector3(...faceHeadingVector(head.face, heading));
+    const side = normal.clone().cross(direction).normalize();
+    const base = new Vector3(
+      ...cellToWorld(head, level.gridSize),
+    ).addScaledVector(normal, 0.005);
+    const facing = normal.dot(camera.position.clone().sub(base)) > 0.04;
+    const points = [
+      [0.82, 0],
+      [0.12, -0.75],
+      [0.12, 0.75],
+    ].map(([along = 0, across = 0]) => {
+      const projected = base
+        .clone()
+        .addScaledVector(direction, headLength * along)
+        .addScaledVector(side, ribbonWidth * 0.8 * across * (1 - along))
+        .project(camera);
+      return {
+        x: bounds.x + ((projected.x + 1) * bounds.width) / 2,
+        y: bounds.y + ((1 - projected.y) * bounds.height) / 2,
+      };
+    });
+    return { id: arrow.id, facing, points };
+  });
+  const inside = (sample: (typeof samples)[number]): boolean =>
+    sample.points.every(
+      (point) =>
+        point.x > bounds.x + 25 &&
+        point.x < bounds.x + bounds.width - 25 &&
+        point.y > bounds.y + 100 &&
+        point.y < bounds.y + bounds.height - 110,
+    );
+  const target = samples.find((sample) => sample.facing && inside(sample));
+  assert.ok(
+    target,
+    "A visible arrowhead must be available for tip and wing checks",
+  );
+  for (const [index, point] of target.points.entries()) {
+    await loadLevel(page, levelId);
+    if (touch) await page.touchscreen.tap(point.x, point.y);
+    else await page.mouse.click(point.x, point.y);
+    const moving = (await snapshot(page)).moving;
+    assert.equal(
+      moving?.arrowId,
+      target.id,
+      `Arrowhead ${index === 0 ? "tip" : "wing"} must activate ${target.id}`,
+    );
+    assert.equal(
+      moving?.kind,
+      simulateMove(level, createGameState(level), target.id).kind,
+    );
+    if (index === 0) {
+      const other: (typeof samples)[number] | undefined = samples.find(
+        (sample) => sample.facing && sample.id !== target.id && inside(sample),
+      );
+      const secondaryPoint: { x: number; y: number } | undefined =
+        other?.points[0];
+      assert.ok(
+        secondaryPoint,
+        "A second exposed head is needed for the busy-input check",
+      );
+      if (touch) await page.touchscreen.tap(secondaryPoint.x, secondaryPoint.y);
+      else await page.mouse.click(secondaryPoint.x, secondaryPoint.y);
+      assert.equal(
+        (await snapshot(page)).moving?.arrowId,
+        target.id,
+        "Another head tap cannot launch a second moving arrow",
+      );
+    }
+    await advance(page);
+  }
+  await loadLevel(page, levelId);
+  const hidden = samples.find((sample) => !sample.facing && inside(sample));
+  assert.ok(hidden, "A far-side head must be available for exclusion checks");
+  const point = hidden.points[0];
+  assert.ok(point);
+  if (touch) await page.touchscreen.tap(point.x, point.y);
+  else await page.mouse.click(point.x, point.y);
+  assert.notEqual(
+    (await snapshot(page)).moving?.arrowId,
+    hidden.id,
+    "A ghosted head cannot be selected through the cube",
+  );
+  await loadLevel(page, levelId);
+  await page.getByRole("button", { name: "Reset camera view" }).click();
+  console.log(
+    `PASS ${touch ? "touch" : "mouse"} arrowhead tip/wing activation and far-side exclusion on level ${levelId}`,
   );
 }
 
@@ -427,6 +561,7 @@ try {
   await assertCubeFits(page);
   await assertVisibleArrows(page, 2);
   await page.screenshot({ path: `${output}/desktop-level-2.png` });
+  await assertArrowheadPicking(page, 2);
   await assertDensePicking(page, 2);
 
   await loadLevel(page, 3);
@@ -618,6 +753,7 @@ try {
 
   await loadLevel(page, 10);
   await page.screenshot({ path: `${output}/desktop-level-10.png` });
+  await assertArrowheadPicking(page, 10);
   await assertDensePicking(page, 10);
   console.log("PASS dense level 2/10 pointer selection and long-path motion");
   const manifest = (await (
@@ -775,6 +911,7 @@ try {
   await touchPage.getByRole("button", { name: "Reset camera view" }).click();
   await assertCubeFits(touchPage);
   await touchPage.screenshot({ path: `${output}/mobile-level-10.png` });
+  await assertArrowheadPicking(touchPage, 10, true);
   await assertDensePicking(touchPage, 10, true);
   console.log(
     "PASS dense mobile level 10 touch selection and long-path motion",
