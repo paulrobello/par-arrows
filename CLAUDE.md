@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Par Arrows is a 3D arrow-removal puzzle game (desktop and mobile web). Rotate a cube, click an unobstructed arrow, and it flies off the surface; a first collision costs a life and marks that arrow red. TypeScript, three.js, Vite, and the Bun toolchain, with no UI framework.
+Par Arrows is a 3D arrow-removal puzzle game (desktop and mobile web). Rotate a cube and tap an unobstructed arrow to send it off the surface. Two or three arrows with overlapping tails form a group that moves together. A first collision costs one life and marks the arrow or entire group red. TypeScript, three.js, Vite, and the Bun toolchain, with no UI framework.
 
 ## Commands
 
@@ -45,11 +45,17 @@ The layering is the central design constraint:
 
 ### Domain model (`src/core/types.ts`)
 
-A level is a cube of `FaceId` faces, each an integer cell grid. Arrows are ordered `Cell` paths with a head (active) and tail. Moves resolve to `exit` (arrow leaves via an edge), `blocked` (first collision: costs one life, arrow turns red; further collisions by the same red arrow are free), or `invalid`. `EdgePolicyDefinition` declares boundary rules; `policy: "continue"` is a wrapping (yellow) edge where a moving head wraps to a neighbor face instead of exiting.
+A level is a cube of `FaceId` faces, each an integer cell grid. Arrows are ordered `Cell` paths with a head (active) and tail. Moves resolve to `exit` (the arrow or whole group leaves), `blocked` (first collision costs one life and turns the arrow or whole group red, with repeated failures free), or `invalid`. `EdgePolicyDefinition` declares boundary rules. Its `policy: "continue"` is a wrapping (yellow) edge where a moving head wraps to a neighbor face instead of exiting.
 
 ### Overlapping tails
 
-`core/overlap.ts` derives groups of two or three from shared directed non-head segments. Point crossings, head overlap, opposite-direction overlap, and intersecting future member routes are invalid. `simulateMove` supplies aggregate success/failure plus per-member `members` traces. The renderer uses equal travel distance for every member and reverses the whole group at the earliest outside contact. `applyMove`, solver certificates, hints, and saved-state validation treat groups atomically. Cube 15 teaches the mechanic; generated cubes from 16 onward include pairs/trios. `?feature=overlap` opens a save-isolated introduction.
+**Gameplay rules:** Two or three single-ended arrows may share a continuous tail segment in the same direction. Arrowheads must remain separate. A point crossing does not create a group. Tapping any exposed portion of any member, including its head, individual body or shared tail, activates every connected member at once. Members never block each other or cross each other's travel paths.
+
+If any member hits an outside arrow, every member reverses together at the earliest contact, returns to its exact starting path and stays red, including members whose own exits were clear. The first failure costs one life for the whole group; repeated failures are free. A successful attempt removes every member together. Only one arrow or group attempt runs at a time, while orbit and zoom remain available. Press selection and safe hints highlight the entire group.
+
+**Introduction:** Level 15 uses a level-1-style 4 × 4 cube with six arrows, five lives and no yellow wrapping edges. A pair and its removable blocker occupy the front face; a trio occupies the left face. Levels 1–14 retain their original layouts. Generated levels from 16 onward include pairs/trios. `?feature=overlap` opens the introduction without changing campaign saves.
+
+**Implementation:** `src/core/overlap.ts` derives connected groups from shared directed non-head links, including staggered tails. Validation rejects groups larger than three, shared heads, point crossings, opposite-direction overlap, double-ended members and intersecting future member routes, even when an outside blocker initially hides the problem. `simulateMove` supplies aggregate success/failure plus per-member `members` traces. The renderer uses equal travel distance for every member. `applyMove`, solver certificates and saved-state validation handle whole groups atomically. Reload must never restore partial group removal or failure history.
 
 ### Generation and seeds
 
@@ -62,5 +68,6 @@ Levels 1, 11, and 15 are authored. Levels 2–10 use generator v1 seeds, levels 
 ### Tests
 
 - Unit tests (`tests/*.test.ts`) run under Bun and cover core, content, procedural, storage, icons, and geometry.
-- Browser assertions live in `tests/*-browser.ts` modules (runtime, tap, motion, wrapping, wrap-intro, seam-fill, preview, hints) orchestrated by `tests/browser-runner.ts`, which drives a headed Playwright browser against the production build.
+- Overlap coverage lives in `tests/overlap.test.ts`, `tests/overlap-content.test.ts`, and the group cases in `tests/storage.test.ts`. Verify individual head/body/shared-tail taps, a blocked nonclicked member, synchronized red rewind, free repeats, interrupted saves, and level 14 → 15 → 16 progression with `tests/overlap-browser.ts`. Run `OVERLAP_ONLY=1 make browser-test` for the focused headed suite, adding `BROWSER_ENGINE=webkit` for WebKit.
+- Browser assertions live in `tests/*-browser.ts` modules (runtime, tap, motion, wrapping, wrap-intro, overlap, seam-fill, preview, hints) orchestrated by `tests/browser-runner.ts`, which drives a headed Playwright browser against the production build.
 - `scripts/generate-campaign.ts` and `campaign-quality.ts` operate on the former fixed catalog — historical reference and test fixtures only, excluded from production imports.
