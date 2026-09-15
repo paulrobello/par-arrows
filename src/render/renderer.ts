@@ -107,12 +107,122 @@ function makeHeadGeometry(): THREE.BufferGeometry {
   return geometry;
 }
 
+export interface RibbonCrossSection {
+  readonly left: THREE.Vector3;
+  readonly right: THREE.Vector3;
+}
+
+interface SegmentCrossSections {
+  start: RibbonCrossSection;
+  end: RibbonCrossSection;
+}
+
+function crossSection(
+  point: THREE.Vector3,
+  normal: THREE.Vector3,
+  tangent: THREE.Vector3,
+  width: number,
+): RibbonCrossSection {
+  const side = normal
+    .clone()
+    .cross(tangent)
+    .normalize()
+    .multiplyScalar(width / 2);
+  const offset = normal.clone().multiplyScalar(0.004);
+  return {
+    left: point.clone().sub(side).add(offset),
+    right: point.clone().add(side).add(offset),
+  };
+}
+
+/** Computes shared cross-sections for every same-face path joint. */
+export function ribbonSections(
+  points: readonly THREE.Vector3[],
+  segmentFaces: readonly Cell["face"][],
+  width: number,
+): readonly SegmentCrossSections[] {
+  const sections: SegmentCrossSections[] = [];
+  for (let index = 0; index < segmentFaces.length; index += 1) {
+    const start = points[index];
+    const end = points[index + 1];
+    const face = segmentFaces[index];
+    if (!start || !end || !face) continue;
+    const [nx, ny, nz] = faceNormal(face);
+    const normal = new THREE.Vector3(nx, ny, nz);
+    const tangent = end.clone().sub(start);
+    if (tangent.lengthSq() < 1e-10) {
+      tangent.copy(
+        normal
+          .clone()
+          .cross(
+            Math.abs(normal.y) < 0.9
+              ? new THREE.Vector3(0, 1, 0)
+              : new THREE.Vector3(1, 0, 0),
+          )
+          .normalize(),
+      );
+    } else {
+      tangent.normalize();
+    }
+    sections.push({
+      start: crossSection(start, normal, tangent, width),
+      end: crossSection(end, normal, tangent, width),
+    });
+  }
+  for (let index = 1; index < sections.length; index += 1) {
+    const previousFace = segmentFaces[index - 1];
+    const nextFace = segmentFaces[index];
+    const joint = points[index];
+    const previousStart = points[index - 1];
+    const nextEnd = points[index + 1];
+    if (
+      !previousFace ||
+      !nextFace ||
+      !joint ||
+      !previousStart ||
+      !nextEnd ||
+      previousFace !== nextFace
+    )
+      continue;
+    const [nx, ny, nz] = faceNormal(previousFace);
+    const normal = new THREE.Vector3(nx, ny, nz);
+    const incoming = joint.clone().sub(previousStart).normalize();
+    const outgoing = nextEnd.clone().sub(joint).normalize();
+    if (incoming.lengthSq() < 1e-10 || outgoing.lengthSq() < 1e-10) continue;
+    const incomingSide = normal.clone().cross(incoming).normalize();
+    const outgoingSide = normal.clone().cross(outgoing).normalize();
+    const bisector = incomingSide.clone().add(outgoingSide);
+    if (bisector.lengthSq() < 1e-8) continue;
+    bisector.normalize();
+    const denominator = bisector.dot(outgoingSide);
+    if (Math.abs(denominator) < 0.25) continue;
+    const miterLength = width / 2 / denominator;
+    if (!Number.isFinite(miterLength) || Math.abs(miterLength) > width * 2)
+      continue;
+    const miter = bisector.multiplyScalar(miterLength);
+    const offset = normal.multiplyScalar(0.004);
+    const shared: RibbonCrossSection = {
+      left: joint.clone().sub(miter).add(offset),
+      right: joint.clone().add(miter).add(offset),
+    };
+    const previous = sections[index - 1];
+    const next = sections[index];
+    if (previous && next) {
+      previous.end = shared;
+      next.start = shared;
+    }
+  }
+  return sections;
+}
+
 /** Returns a face-parallel ribbon quad, suitable for geometry buffer updates. */
 export function ribbonVertices(
   start: THREE.Vector3,
   end: THREE.Vector3,
   normal: THREE.Vector3,
   width: number,
+  startSection?: RibbonCrossSection,
+  endSection?: RibbonCrossSection,
 ): Float32Array {
   const tangent = end.clone().sub(start).normalize();
   const side = normal
@@ -122,10 +232,10 @@ export function ribbonVertices(
     .multiplyScalar(width / 2);
   const offset = normal.clone().multiplyScalar(0.004);
   const corners = [
-    start.clone().sub(side).add(offset),
-    start.clone().add(side).add(offset),
-    end.clone().sub(side).add(offset),
-    end.clone().add(side).add(offset),
+    startSection?.left ?? start.clone().sub(side).add(offset),
+    startSection?.right ?? start.clone().add(side).add(offset),
+    endSection?.left ?? end.clone().sub(side).add(offset),
+    endSection?.right ?? end.clone().add(side).add(offset),
   ];
   return new Float32Array(
     corners.flatMap((point) => [point.x, point.y, point.z]),
@@ -628,6 +738,11 @@ export class PuzzleRenderer {
 
   private updatePathVisual(visual: ArrowVisual, path: RibbonSlice): void {
     const up = new THREE.Vector3(0, 1, 0);
+    const sections = ribbonSections(
+      path.points,
+      path.segmentFaces,
+      visual.ribbonWidth,
+    );
     for (let index = 0; index < visual.segments.length; index += 1) {
       const segment = visual.segments[index];
       if (!segment) {
@@ -652,6 +767,8 @@ export class PuzzleRenderer {
         end,
         new THREE.Vector3(nx, ny, nz),
         visual.ribbonWidth,
+        sections[index]?.start,
+        sections[index]?.end,
       );
       const attribute = segment.ribbon.geometry.getAttribute(
         "position",

@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import * as THREE from "three";
 
-import { stepAcrossSeam } from "../src/core/topology";
-import type { Cell } from "../src/core/types";
+import { faceNormal, stepAcrossSeam } from "../src/core/topology";
+import type { Cell, FaceId } from "../src/core/types";
 import {
   expandedPoints,
+  ribbonSections,
   ribbonVertices,
   slicePath,
 } from "../src/render/renderer";
@@ -29,6 +30,12 @@ function expectFacePlane(
   for (const point of vertices(values)) {
     expect(point.dot(normal)).toBeCloseTo(offset, 5);
   }
+}
+
+function expectEqualPoint(first: THREE.Vector3, second: THREE.Vector3): void {
+  expect(first.x).toBeCloseTo(second.x, 7);
+  expect(first.y).toBeCloseTo(second.y, 7);
+  expect(first.z).toBeCloseTo(second.z, 7);
 }
 
 describe("flat ribbon geometry", () => {
@@ -121,10 +128,138 @@ describe("flat ribbon geometry", () => {
     const sliced = slicePath(path, 0.13, 0.71);
     expect(sliced.points.length).toBe(sliced.segmentFaces.length + 1);
     expect(sliced.segmentFaces).toEqual(["front", "front", "right"]);
+    const sections = ribbonSections(sliced.points, sliced.segmentFaces, 0.2);
+    expectEqualPoint(
+      sections[0]?.end.left ?? new THREE.Vector3(),
+      sections[1]?.start.left ?? new THREE.Vector3(),
+    );
+    expect(
+      sections[1]?.end.left.distanceTo(
+        sections[2]?.start.left ?? new THREE.Vector3(),
+      ),
+    ).toBeGreaterThan(0.001);
     expect(
       sliced.points
         .at(-1)
         ?.distanceTo(path.points.at(-1) ?? new THREE.Vector3()),
     ).toBeLessThan(0.5);
+  });
+
+  test("does not shift later miter slots after a tiny fractional leading segment", () => {
+    const path = {
+      points: [
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(1, 0, 1),
+        new THREE.Vector3(2, 0, 1),
+        new THREE.Vector3(2, 1, 1),
+      ],
+      segmentFaces: ["front", "front", "front"] as const,
+    };
+    const sliced = slicePath(path, 0.99999999, 2);
+    const sections = ribbonSections(sliced.points, sliced.segmentFaces, 0.2);
+    expect(sections.length).toBe(sliced.segmentFaces.length);
+    expect(
+      sliced.points[1]?.distanceTo(sliced.points[0] ?? new THREE.Vector3()),
+    ).toBeLessThan(0.000001);
+    expectEqualPoint(
+      sections[1]?.end.left ?? new THREE.Vector3(),
+      sections[2]?.start.left ?? new THREE.Vector3(),
+    );
+    expectEqualPoint(
+      sections[1]?.end.right ?? new THREE.Vector3(),
+      sections[2]?.start.right ?? new THREE.Vector3(),
+    );
+  });
+
+  test("shares exact miter sections with known inner and outer front corners", () => {
+    const left = ribbonSections(
+      [
+        new THREE.Vector3(-1, 0, 1),
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(0, 1, 1),
+      ],
+      ["front", "front"],
+      0.2,
+    );
+    const right = ribbonSections(
+      [
+        new THREE.Vector3(-1, 0, 1),
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(0, -1, 1),
+      ],
+      ["front", "front"],
+      0.2,
+    );
+    expectEqualPoint(
+      left[0]?.end.left ?? new THREE.Vector3(),
+      left[1]?.start.left ?? new THREE.Vector3(),
+    );
+    expectEqualPoint(
+      left[0]?.end.right ?? new THREE.Vector3(),
+      left[1]?.start.right ?? new THREE.Vector3(),
+    );
+    expect(left[0]?.end.left.x).toBeCloseTo(0.1, 6);
+    expect(left[0]?.end.left.y).toBeCloseTo(-0.1, 6);
+    expect(left[0]?.end.right.x).toBeCloseTo(-0.1, 6);
+    expect(left[0]?.end.right.y).toBeCloseTo(0.1, 6);
+    expect(right[0]?.end.left.x).toBeCloseTo(-0.1, 6);
+    expect(right[0]?.end.left.y).toBeCloseTo(-0.1, 6);
+    expect(right[0]?.end.right.x).toBeCloseTo(0.1, 6);
+    expect(right[0]?.end.right.y).toBeCloseTo(0.1, 6);
+  });
+
+  test("keeps square ends and applies stable miters for left and right turns on every face", () => {
+    const faces: readonly FaceId[] = [
+      "front",
+      "back",
+      "right",
+      "left",
+      "top",
+      "bottom",
+    ];
+    for (const face of faces) {
+      const [nx, ny, nz] = faceNormal(face);
+      const normal = new THREE.Vector3(nx, ny, nz);
+      const first = normal
+        .clone()
+        .cross(
+          Math.abs(ny) < 0.9
+            ? new THREE.Vector3(0, 1, 0)
+            : new THREE.Vector3(1, 0, 0),
+        )
+        .normalize();
+      const leftTurn = normal.clone().cross(first).normalize();
+      for (const turn of [leftTurn, leftTurn.clone().negate()]) {
+        const sections = ribbonSections(
+          [first.clone().negate(), new THREE.Vector3(), turn],
+          [face, face],
+          0.2,
+        );
+        expectEqualPoint(
+          sections[0]?.end.left ?? new THREE.Vector3(),
+          sections[1]?.start.left ?? new THREE.Vector3(),
+        );
+        expectEqualPoint(
+          sections[0]?.end.right ?? new THREE.Vector3(),
+          sections[1]?.start.right ?? new THREE.Vector3(),
+        );
+        for (const point of [sections[0]?.end.left, sections[0]?.end.right]) {
+          expect(point?.dot(normal)).toBeCloseTo(0.004, 6);
+        }
+      }
+      const straight = ribbonSections(
+        [first.clone().negate(), new THREE.Vector3(), first],
+        [face, face],
+        0.2,
+      );
+      expect(
+        straight[0]?.end.left.distanceTo(
+          straight[1]?.start.left ?? new THREE.Vector3(),
+        ),
+      ).toBeCloseTo(0, 7);
+      expect(
+        straight[0]?.start.left.distanceTo(new THREE.Vector3()),
+      ).toBeGreaterThan(0.9);
+    }
   });
 });

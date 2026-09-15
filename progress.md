@@ -2,6 +2,10 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Miter join correction
+
+The owner supplied a close-up showing a notch where independent flat ribbon segments met at a right-angle bend. Terra implemented a shared mitered endpoint cross-section for adjacent segments on the same face. Exact inner/outer vertex tests cover left/right turns on all faces and tiny fractional moving segments. Straight ends and cube-edge folds retain their existing behavior, with the 1.5625 speed multiplier. Root verified the repaired close-up, 34 tests / 626 assertions, full project gate, headed Chrome/WebKit flows, and the skill's headed browser client. The fix was re-reviewed without remaining findings.
+
 ## Latest speed tuning
 
 The owner requested another 25% arrow-speed increase after the ribbon refinement. The multiplier is now 1.25 × 1.25 = 1.5625 relative to the initial MVP. Exits take 563.2 ms, rebounds 473.6 ms, and reduced-motion transitions 70.4 ms. Demo pauses are unchanged.
