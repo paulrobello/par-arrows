@@ -147,7 +147,7 @@ export async function assertRuntimeCampaign(
   await page.reload();
   await waitForReady(page);
   assert.deepEqual((await state(page)).remainingIds, []);
-  await page.getByRole("button", { name: "Next cube", exact: true }).click();
+  await page.getByRole("button", { name: "Next Level", exact: true }).click();
   await waitForReady(page);
   assert.equal((await state(page)).level.id, 1001);
   assert.ok((await page.locator("#level-input").count()) === 1);

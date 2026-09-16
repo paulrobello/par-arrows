@@ -18,9 +18,12 @@ interface ActivePointer {
   readonly pressY: number;
   readonly arrowId: string | undefined;
   readonly dragging: boolean;
+  readonly tapThreshold: number;
 }
 
 const TAP_THRESHOLD = 9;
+/** A thumb rolls further than a fingertip or cursor while it presses. */
+const TOUCH_TAP_THRESHOLD = 16;
 const PINCH_ZOOM_SCALE = 3.6;
 
 /** Normalizes mouse and touch gestures before handing actions to the game. */
@@ -42,6 +45,7 @@ export class PointerInput {
     element.addEventListener("pointercancel", this.cancel);
     element.addEventListener("lostpointercapture", this.cancel);
     element.addEventListener("wheel", this.onWheel, { passive: false });
+    element.addEventListener("contextmenu", this.onContextMenu);
   }
 
   dispose(): void {
@@ -52,6 +56,7 @@ export class PointerInput {
     this.element.removeEventListener("pointercancel", this.cancel);
     this.element.removeEventListener("lostpointercapture", this.cancel);
     this.element.removeEventListener("wheel", this.onWheel);
+    this.element.removeEventListener("contextmenu", this.onContextMenu);
   }
 
   private readonly onPointerDown = (event: PointerEvent): void => {
@@ -79,6 +84,8 @@ export class PointerInput {
       pressY: event.clientY,
       arrowId,
       dragging: false,
+      tapThreshold:
+        event.pointerType === "touch" ? TOUCH_TAP_THRESHOLD : TAP_THRESHOLD,
     };
     this.handlers.onPress(arrowId);
   };
@@ -103,7 +110,10 @@ export class PointerInput {
     }
     const deltaX = event.clientX - this.active.x;
     const deltaY = event.clientY - this.active.y;
-    if (!this.active.dragging && Math.hypot(deltaX, deltaY) >= TAP_THRESHOLD) {
+    if (
+      !this.active.dragging &&
+      Math.hypot(deltaX, deltaY) >= this.active.tapThreshold
+    ) {
       this.active = {
         ...this.active,
         x: event.clientX,
@@ -133,7 +143,7 @@ export class PointerInput {
       !active.dragging &&
       event.button === 0 &&
       Math.hypot(event.clientX - active.pressX, event.clientY - active.pressY) <
-        TAP_THRESHOLD
+        active.tapThreshold
     ) {
       this.handlers.onTap(active.arrowId);
     }
@@ -144,6 +154,10 @@ export class PointerInput {
     this.pinchDistance = undefined;
     this.touches.clear();
     this.handlers.onPress(undefined);
+  };
+
+  private readonly onContextMenu = (event: Event): void => {
+    event.preventDefault();
   };
 
   private readonly onWheel = (event: WheelEvent): void => {

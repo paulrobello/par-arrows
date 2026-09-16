@@ -200,7 +200,7 @@ async function assertCelebration(page: Page, mobile = false): Promise<void> {
   await page.screenshot({
     path: `${output}/celebration-${mobile ? "mobile" : "desktop"}.png`,
   });
-  await page.getByRole("button", { name: "Next cube", exact: true }).click();
+  await page.getByRole("button", { name: "Next Level", exact: true }).click();
   await waitForReady(page);
   assert.equal((await snapshot(page)).level.id, 2);
   assert.equal(await page.locator(".confetti-piece").count(), 0);
@@ -247,7 +247,7 @@ async function assertCelebration(page: Page, mobile = false): Promise<void> {
   await waitForReady(page);
   assert.equal(await page.locator(".confetti-piece").count(), 0);
   assert.equal(await page.locator(".state-card.is-won").isVisible(), true);
-  await page.getByRole("button", { name: "Next cube", exact: true }).click();
+  await page.getByRole("button", { name: "Next Level", exact: true }).click();
   await waitForReady(page);
   assert.equal((await snapshot(page)).level.id, 11);
   assert.equal(await page.locator(".state-card.is-won").count(), 0);
@@ -409,7 +409,7 @@ async function assertThemes(page: Page, mobile = false): Promise<void> {
   await page.waitForTimeout(250);
   await page.screenshot({ path: `${output}/theme-${prefix}-dark-victory.png` });
   assert.equal(await page.locator(".state-card.is-won").isVisible(), true);
-  await page.getByRole("button", { name: "Next cube", exact: true }).click();
+  await page.getByRole("button", { name: "Next Level", exact: true }).click();
   await waitForReady(page);
   await page.locator("#settings-button").click();
   await page.locator("#theme-select").selectOption("system");
@@ -1086,7 +1086,7 @@ try {
   await page.reload();
   await waitForReady(page);
   assert.equal((await snapshot(page)).remainingIds.length, 0);
-  await page.getByRole("button", { name: "Next cube" }).click();
+  await page.getByRole("button", { name: "Next Level" }).click();
   await waitForReady(page);
   assert.equal((await snapshot(page)).level.id, 2);
   console.log(

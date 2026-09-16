@@ -135,7 +135,7 @@ export async function assertWrapIntro(
       true,
       "The campaign must show the level 10 win before progression",
     );
-    await page.getByRole("button", { name: "Next cube", exact: true }).click();
+    await page.getByRole("button", { name: "Next Level", exact: true }).click();
     await waitForReady(page);
 
     const intro = await state(page);
@@ -234,7 +234,7 @@ export async function assertWrapIntro(
     }, remaining);
     assert.equal((await state(page)).remainingIds.length, 0);
     assert.equal(await instruction.isVisible(), false);
-    await page.getByRole("button", { name: "Next cube", exact: true }).click();
+    await page.getByRole("button", { name: "Next Level", exact: true }).click();
     await waitForReady(page);
     const levelTwelve = await state(page);
     assert.equal(levelTwelve.level.id, 12);

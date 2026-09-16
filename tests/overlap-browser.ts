@@ -403,7 +403,7 @@ async function assertCampaignSave(
     assert.ok(lastPoint);
     await clickAt(page, lastPoint, false, "canvas");
     await finishMotion(page);
-    await page.getByRole("button", { name: "Next cube", exact: true }).click();
+    await page.getByRole("button", { name: "Next Level", exact: true }).click();
     await waitForReady(page);
     assert.equal((await state(page)).level.id, OVERLAP_INTRO_LEVEL.id);
     assert.deepEqual((await state(page)).remainingIds, stateValue.remainingIds);
@@ -715,7 +715,7 @@ export async function assertOverlapIntro(
       await activateAt(page, group, point, false, "canvas");
       await finishMotion(page);
     }
-    await page.getByRole("button", { name: "Next cube", exact: true }).click();
+    await page.getByRole("button", { name: "Next Level", exact: true }).click();
     await waitForReady(page);
     assert.ok(
       (await state(page)).level.id === OVERLAP_INTRO_LEVEL.id + 1,

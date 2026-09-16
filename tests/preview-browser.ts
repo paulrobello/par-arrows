@@ -169,7 +169,7 @@ export async function assertLevelPreview(
     }, solution);
     assert.equal((await state(page)).remainingIds.length, 0);
     await assertSaveUnchanged();
-    await page.getByRole("button", { name: "Next cube", exact: true }).click();
+    await page.getByRole("button", { name: "Next Level", exact: true }).click();
     await waitForReady(page);
     preview = await state(page);
     assert.equal(preview.level.id, 2);

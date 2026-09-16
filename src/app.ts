@@ -64,7 +64,7 @@ const HINT_FOCUS_DURATION = 600;
 const HINT_FLASH_DURATION = 2400;
 const HINT_FLASH_HALF_PULSE = 400;
 const MOUSE_PICK_MARGIN_PX = 6;
-const TOUCH_PICK_MARGIN_PX = 18;
+const TOUCH_PICK_MARGIN_PX = 30;
 
 export class ParArrowsApp {
   private readonly root: HTMLElement;
@@ -157,7 +157,7 @@ export class ParArrowsApp {
             <div class="victory-emblem" aria-hidden="true">★</div>
             <h2 id="state-title">Path complete</h2>
             <p id="state-copy">The next cube is ready.</p>
-            <button class="primary-button" id="state-button" type="button">Next cube</button>
+            <button class="primary-button" id="state-button" type="button">Next Level</button>
           </div>
         </section>
         <nav class="control-dock" aria-label="Puzzle controls">
@@ -851,7 +851,7 @@ export class ParArrowsApp {
       this.requireElement("state-kicker").textContent = "NICE WORK";
       title.textContent = "Cube cleared!";
       copy.textContent = "Every arrow is free. Your next cube is ready.";
-      button.textContent = "Next cube";
+      button.textContent = "Next Level";
       button.dataset.action = "next";
     } else if (this.state.status === "lost") {
       this.requireElement("state-kicker").textContent = "TRY AGAIN";

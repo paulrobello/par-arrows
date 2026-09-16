@@ -120,6 +120,11 @@ button {
   height: 100vh;
   overflow: hidden;
   background: var(--shell-background);
+  -webkit-tap-highlight-color: transparent;
+  /* A long press on iOS otherwise selects every label on the page. */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* iOS resolves 100vh against the tallest viewport it could show, so a shell
