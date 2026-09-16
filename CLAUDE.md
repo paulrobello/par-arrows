@@ -78,7 +78,8 @@ keeps that arrow; among whatever is left, an arrow whose move avoids a collision
 beats a nearer one that would cost a life, and the closest arrow settles the
 rest. The renderer ranks but never decides — move legality stays in `app.ts`,
 which supplies the safe test that `beginHint` also uses. `tests/pick-browser.ts`
-pins the widened zone against a measured baseline.
+pins the widened zone against a measured baseline and proves the preference
+by the life count rather than by projected centroids.
 
 ### Generation and seeds
 

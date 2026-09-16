@@ -42,6 +42,15 @@ async function snapshot(page: Page): Promise<PickState> {
   ) as PickState;
 }
 
+async function settle(page: Page): Promise<void> {
+  const moving = (await snapshot(page)).moving;
+  if (moving)
+    await page.evaluate(
+      (duration) => window.advanceTime?.(duration + 1),
+      moving.duration,
+    );
+}
+
 async function loadLevel(page: Page, levelId: number): Promise<void> {
   await page.evaluate(async (id) => {
     await window.__PAR_ARROWS_TEST__?.loadLevel(id);
@@ -116,7 +125,7 @@ export async function assertWidePickTargets(
 
       let reached = 0;
       let probes = 0;
-      let safePreferred = 0;
+      let preferred: { x: number; y: number; id: string } | undefined;
       for (const point of points) {
         for (const [dx, dy] of RING) {
           probes += 1;
@@ -134,6 +143,7 @@ export async function assertWidePickTargets(
               : Number.POSITIVE_INFINITY;
           };
           if (
+            !preferred &&
             isSafe(level, initial, selected) &&
             allPoints.some(
               (other) =>
@@ -142,7 +152,7 @@ export async function assertWidePickTargets(
                 Math.hypot(other.x - x, other.y - y) < gap(selected),
             )
           )
-            safePreferred += 1;
+            preferred = { x, y, id: selected };
         }
       }
       const coverage = reached / probes;
@@ -151,8 +161,34 @@ export async function assertWidePickTargets(
         `Level ${levelId} near-miss presses reached an arrow ${reached}/${probes} (${coverage.toFixed(2)}), below ${MINIMUM_COVERAGE}`,
       );
       assert.ok(
-        safePreferred > 0,
+        preferred,
         `Level ${levelId} never preferred a safe arrow over a nearer colliding one across ${probes} near-miss presses`,
+      );
+      // Centroids only suggested the preference; the life count proves it. A
+      // disconnected safe test would hand this press to the colliding arrow
+      // and spend a life here.
+      await loadLevel(page, levelId);
+      await touch(client, preferred.x + bounds.x, preferred.y + bounds.y);
+      assert.equal(
+        (await snapshot(page)).selectedArrowId,
+        preferred.id,
+        `Level ${levelId} contested press no longer selects ${preferred.id}`,
+      );
+      await client.send("Input.dispatchTouchEvent", {
+        type: "touchEnd",
+        touchPoints: [],
+      });
+      await settle(page);
+      const spared = await snapshot(page);
+      assert.equal(
+        spared.lives,
+        level.lives,
+        `Level ${levelId} contested press spent a life on ${preferred.id}`,
+      );
+      assert.deepEqual(
+        spared.failedIds,
+        [],
+        `Level ${levelId} contested press turned an arrow red`,
       );
 
       // A press aimed squarely at an arrow keeps that arrow, even when a safe
@@ -204,12 +240,7 @@ export async function assertWidePickTargets(
         type: "touchEnd",
         touchPoints: [],
       });
-      const moving = (await snapshot(page)).moving;
-      if (moving)
-        await page.evaluate(
-          (duration) => window.advanceTime?.(duration + 1),
-          moving.duration,
-        );
+      await settle(page);
       const settled = await snapshot(page);
       if (expected.kind === "exit")
         assert.equal(
