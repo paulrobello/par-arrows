@@ -30,7 +30,7 @@ make browser-test               # builds, serves, runs tests/browser-runner.ts
 BROWSER_ENGINE=webkit make browser-test   # after: bunx playwright install webkit
 ```
 
-Linux CI runs browser tests under `xvfb-run --auto-servernum` (see `.github/workflows/ci.yml`, which runs `make checkall` plus browser tests on every push).
+GitHub Actions runs `make checkall` on every push. Run the browser suite locally on a machine with a real headed browser and working WebGL; a virtual X display does not provide valid canvas-pixel evidence.
 
 `make pre-commit` runs the pinned secret-scanning and project checks over all files.
 

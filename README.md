@@ -43,7 +43,7 @@ make browser-test
 
 `checkall` runs format verification, lint, TypeScript checks, unit tests, and a production build. Browser checks use Playwright and are separate from physical-device and installed-PWA acceptance. The isolated browser test port is 8058. `make fmt` formats the project; during ongoing work, format only the files being changed.
 
-For the WebKit compatibility run, install its browser with `bunx playwright install webkit`, then run `BROWSER_ENGINE=webkit make browser-test`. Browser tests build and serve production assets, use a headed browser, and clean up their temporary server. Linux needs a graphical session or `xvfb-run --auto-servernum`.
+For the WebKit compatibility run, install its browser with `bunx playwright install webkit`, then run `BROWSER_ENGINE=webkit make browser-test`. Browser tests build and serve production assets, use a headed browser, and clean up their temporary server. Run them on a machine with a real graphical session and working WebGL; virtual X and headless CI are insufficient for the canvas-pixel assertions.
 
 Install pre-commit and run `pre-commit install` to enable the pinned secret-scanning and project checks. `make pre-commit` runs them over tracked files. Dependencies are pinned in `package.json` and `bun.lock`.
 

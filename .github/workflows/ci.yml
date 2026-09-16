@@ -18,5 +18,3 @@ jobs:
           bun-version: "1.4.2"
       - run: bun install --frozen-lockfile
       - run: make checkall
-      - run: bunx playwright install --with-deps chromium
-      - run: xvfb-run --auto-servernum make browser-test
