@@ -21,6 +21,7 @@ interface ActivePointer {
 }
 
 const TAP_THRESHOLD = 9;
+const PINCH_ZOOM_SCALE = 3.6;
 
 /** Normalizes mouse and touch gestures before handing actions to the game. */
 export class PointerInput {
@@ -91,7 +92,7 @@ export class PointerInput {
       const prior = this.pinchDistance;
       this.updatePinchDistance();
       if (prior && this.pinchDistance) {
-        this.handlers.onZoom((prior - this.pinchDistance) * 1.8);
+        this.handlers.onZoom((prior - this.pinchDistance) * PINCH_ZOOM_SCALE);
       }
       this.active = undefined;
       this.handlers.onPress(undefined);

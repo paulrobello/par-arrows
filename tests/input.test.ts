@@ -200,7 +200,7 @@ describe("PointerInput", () => {
     element.emit("pointermove", pointer(20, 0, 2, "touch"));
     element.emit("pointerup", pointer(20, 0, 2, "touch"));
     element.emit("pointerup", pointer(0, 0, 1, "touch"));
-    expect(zooms).toEqual([-18]);
+    expect(zooms).toEqual([-36]);
     expect(taps).toEqual([]);
   });
 
