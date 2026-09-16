@@ -786,8 +786,8 @@ export class PuzzleRenderer {
   /**
    * Every arrow the pointer could plausibly mean, nearest first. Direct hits
    * report a zero gap; arrows merely close to the pointer report the screen
-   * distance to their exposed ribbon or head, capped so a zoomed-out cube
-   * cannot offer an arrow the player never aimed at.
+   * distance to their exposed ribbon or head. The margin is a fingertip in
+   * CSS pixels, so every candidate it returns really did sit under the press.
    */
   pickCandidates(
     clientX: number,
@@ -824,7 +824,6 @@ export class PuzzleRenderer {
       clientY - bounds.top,
       0,
     );
-    const margin = Math.min(marginPx, this.cellPitchPx(bounds) * 0.5);
     const nearby: PickCandidate[] = [];
     for (const [arrowId, visual] of this.visuals) {
       if (
@@ -834,7 +833,7 @@ export class PuzzleRenderer {
       )
         continue;
       const distancePx = this.screenDistanceToArrow(visual, pointer, bounds);
-      if (distancePx !== undefined && distancePx <= margin) {
+      if (distancePx !== undefined && distancePx <= marginPx) {
         nearby.push({ arrowId, distancePx });
       }
     }
@@ -929,20 +928,6 @@ export class PuzzleRenderer {
       if (start && end) consider(distanceToSegment(pointer, start, end));
     }
     return nearest;
-  }
-
-  /** Screen size of one grid cell at the cube centre. */
-  private cellPitchPx(bounds: DOMRect): number {
-    const pitch = 2 / (this.level?.gridSize ?? 4);
-    const origin = new THREE.Vector3().project(this.camera);
-    const offset = new THREE.Vector3()
-      .setFromMatrixColumn(this.camera.matrixWorld, 0)
-      .multiplyScalar(pitch)
-      .project(this.camera);
-    return Math.hypot(
-      ((offset.x - origin.x) * bounds.width) / 2,
-      ((offset.y - origin.y) * bounds.height) / 2,
-    );
   }
 
   animate(arrowId: string, result: MoveResult, progress: number): void {

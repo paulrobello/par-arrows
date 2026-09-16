@@ -5,8 +5,10 @@ export interface PickCandidate {
 }
 
 /**
- * Chooses the arrow a pointer meant to hit. An arrow whose move avoids a
- * collision wins over a nearer one that would cost a life, and the closest
+ * Chooses the arrow a pointer meant to hit. Arrows the pointer landed on
+ * outright exclude ones it merely came close to, so a press aimed squarely at
+ * an arrow always gets that arrow. Among the arrows left, one whose move avoids
+ * a collision wins over a nearer one that would cost a life, and the closest
  * arrow settles every other case.
  */
 export function resolvePick(
@@ -14,6 +16,9 @@ export function resolvePick(
   isSafe: (arrowId: string) => boolean,
 ): string | undefined {
   const ordered = [...candidates].sort((a, b) => a.distancePx - b.distancePx);
-  const safe = ordered.find((candidate) => isSafe(candidate.arrowId));
-  return (safe ?? ordered[0])?.arrowId;
+  const direct = ordered.filter((candidate) => candidate.distancePx === 0);
+  const contested = direct.length > 0 ? direct : ordered;
+  return (
+    contested.find((candidate) => isSafe(candidate.arrowId)) ?? contested[0]
+  )?.arrowId;
 }

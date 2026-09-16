@@ -65,6 +65,30 @@ describe("resolvePick", () => {
     ).toBe("first");
   });
 
+  test("keeps a direct hit even when a nearby arrow would not collide", () => {
+    expect(
+      resolvePick(
+        [
+          { arrowId: "aimed", distancePx: 0 },
+          { arrowId: "safe", distancePx: 11 },
+        ],
+        safeOnly("safe"),
+      ),
+    ).toBe("aimed");
+  });
+
+  test("prefers the safe arrow when the press landed on several at once", () => {
+    expect(
+      resolvePick(
+        [
+          { arrowId: "blocked", distancePx: 0 },
+          { arrowId: "safe", distancePx: 0 },
+        ],
+        safeOnly("safe"),
+      ),
+    ).toBe("safe");
+  });
+
   test("prefers a safe direct hit over a safe nearby arrow", () => {
     expect(
       resolvePick(

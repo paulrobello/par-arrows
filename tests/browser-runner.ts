@@ -21,6 +21,7 @@ import { runHintChecks } from "./hints-browser";
 import { assertConsistentMotion } from "./motion-browser";
 import { assertOverlapIntro } from "./overlap-browser";
 import { assertStopIntro } from "./stop-browser";
+import { assertWidePickTargets } from "./pick-browser";
 import { assertLevelPreview } from "./preview-browser";
 import { assertRuntimeCampaign } from "./runtime-browser";
 import { LEVELS, waitForReady } from "./runtime-fixtures";
@@ -1347,6 +1348,7 @@ try {
   await assertStopIntro(browser, url, output);
   await assertConsistentMotion(browser, url, output);
   await assertReliableTaps(browser, url, output);
+  await assertWidePickTargets(browser, url);
   await assertSeamFills(browser, url, output);
   await assertLevelPreview(browser, url, output);
   await assertWrappingEdges(browser, url, output, {
