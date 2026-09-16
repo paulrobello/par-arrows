@@ -2,7 +2,7 @@
 
 A desktop and mobile 3D arrow-removal puzzle with flat ribbon arrows. Rotate a cube, find an unobstructed arrow, and send it off the surface. A first collision costs one life and marks that arrow red; further collisions by the same red arrow are free. An arrow whose head reaches a green stop circle parks there until it is touched again, which lets it move forward to clear a lane without running into anything; if it is then blocked, it rebounds to the circle rather than to its starting place. Two or three arrows can share tail segments: touching any member moves the whole group, and an outside collision sends all members back red for one life. Their heads and travel paths stay separate.
 
-Play at [arrows.par-dev.com](https://arrows.par-dev.com).
+Play at [arrows.pardev.net](https://arrows.pardev.net).
 
 Level 1 is the authored teaching cube. Level 5 introduces green stop circles, level 11 introduces reciprocal yellow-edge wrapping, and level 15 teaches overlapping tails; levels 2–4, 6–10, 12–14, and 16 onward are generated at runtime from their logical level numbers. Generated cubes from level 6 carry zero to three stop circles. The campaign continues indefinitely, and generated layouts are validated before play. See [PRD.md](PRD.md) for product rules and [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the runtime design.
 
