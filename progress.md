@@ -2,6 +2,14 @@ Original prompt: Build a desktop/mobile web 3D arrow-removal puzzle with cube-ba
 
 # Implementation progress
 
+## Cube grid lines and deployed-version refresh
+
+Requested 2026-09-16: Settings now includes a persisted Show grid lines toggle. When enabled, each visible cube face draws cell-aligned lines using the active level's grid size; hidden faces stay uncluttered, and the lines retint with the light/dark theme. Existing settings migrate with grid lines off.
+
+Production builds now emit version.json from the build commit and embed the same version in the client. The app checks immediately, every 60 seconds, and when a tab becomes visible. A different deployed version triggers a reload after loading or an active arrow animation finishes; campaign moves are already persisted before their animation begins. Development builds and unavailable or malformed manifests fail open without reloading.
+
+Focused storage/version tests pass. The full gate passes with 158 tests and 132,359 assertions. The headed Chrome production suite verifies desktop/mobile grid visibility and persistence, live version-mismatch reload with campaign restoration, and all existing gameplay/PWA flows. Desktop and mobile grid screenshots were inspected, and the headed web-game client completed with visible canvas pixels and no console errors.
+
 ## Overlapping tails
 
 Requested 2026-09-15: two or three arrows share tail segments, with separate heads and no crossing travel paths. Touching any portion activates the whole connected group. Any outside collision rewinds all members and turns them red. The first group failure costs one life; repeat failures are free. The owner clarified that the mechanic starts at cube 15 with a level-1-style 4 × 4 cube, six arrows and five lives. The pair and its blocker occupy the front face; a trio occupies the left face. Generated groups start at cube 16. Layouts/seeds through cube 14 stay unchanged. New v7 saves preserve compatible older attempts through cube 14; affected later attempts refresh while unlocks and onboarding remain intact.

@@ -26,6 +26,7 @@ export interface LoadedCampaign extends CampaignSave {
 }
 
 export interface PlayerSettings {
+  readonly gridLines: boolean;
   readonly reducedMotion: boolean;
   readonly theme: "system" | "light" | "dark";
 }
@@ -43,6 +44,7 @@ type StoredCampaign = Partial<CampaignSave> & {
 };
 
 const DEFAULT_SETTINGS: PlayerSettings = {
+  gridLines: false,
   reducedMotion: false,
   theme: "system",
 };
@@ -347,6 +349,7 @@ export function loadSettings(): PlayerSettings {
       : undefined;
     const theme = parsed?.theme;
     return {
+      gridLines: parsed?.gridLines === true,
       reducedMotion: parsed?.reducedMotion === true,
       theme:
         theme === "light" || theme === "dark" || theme === "system"

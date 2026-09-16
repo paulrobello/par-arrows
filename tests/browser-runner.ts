@@ -47,6 +47,14 @@ interface Snapshot {
     preference: "system" | "light" | "dark";
     resolved: "light" | "dark";
   };
+  gridLines: {
+    enabled: boolean;
+    visibleSegments: number;
+  };
+  version: {
+    current: string;
+    updateAvailable: boolean;
+  };
   camera: {
     orientation: [number, number, number, number];
     position: [number, number, number];
@@ -336,6 +344,20 @@ async function assertThemes(page: Page, mobile = false): Promise<void> {
   await assertTheme(page, "dark");
   await assertVisibleArrows(page, 10);
   await page.screenshot({ path: `${output}/theme-${prefix}-dark-dense.png` });
+  assert.deepEqual((await snapshot(page)).gridLines, {
+    enabled: false,
+    visibleSegments: 0,
+  });
+  await page.locator("#settings-button").click();
+  await page.getByLabel("Show grid lines").check();
+  await page.waitForFunction(() => {
+    const raw = window.render_game_to_text?.();
+    if (!raw) return false;
+    const grid = JSON.parse(raw).gridLines;
+    return grid.enabled === true && grid.visibleSegments > 0;
+  });
+  await page.screenshot({ path: `${output}/grid-${prefix}-dark.png` });
+  await page.locator("#settings-button").click();
   await assertArrowheadPicking(page, 2, mobile);
   await loadLevel(page, 3);
   await page.getByRole("button", { name: "Reset camera view" }).click();
@@ -399,6 +421,8 @@ async function assertThemes(page: Page, mobile = false): Promise<void> {
   assert.equal((await snapshot(page)).lives, before.lives);
   await page.locator("#settings-button").click();
   assert.equal(await page.getByLabel("Reduce movement").isChecked(), true);
+  assert.equal(await page.getByLabel("Show grid lines").isChecked(), true);
+  assert.ok((await snapshot(page)).gridLines.visibleSegments > 0);
   await page.getByLabel("Reduce movement").uncheck();
   await page.screenshot({
     path: `${output}/theme-${prefix}-dark-settings.png`,
@@ -475,6 +499,35 @@ async function assertThemeBootstrap(browser: Browser): Promise<void> {
   await denied.close();
   console.log(
     "PASS theme before app bundle execution, saved overrides/legacy/malformed data, and denied storage",
+  );
+}
+
+async function assertVersionReload(page: Page): Promise<void> {
+  await loadLevel(page, 3);
+  const before = await snapshot(page);
+  let manifestRequests = 0;
+  await page.route("**/version.json?*", async (route) => {
+    manifestRequests += 1;
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        version: `${before.version.current}-new`,
+      }),
+    });
+  });
+
+  const reloaded = page.waitForEvent("load");
+  await page.evaluate(() => {
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await reloaded;
+  await waitForReady(page);
+  assert.equal((await snapshot(page)).level.id, before.level.id);
+  await page.waitForTimeout(250);
+  assert.equal(manifestRequests, 2);
+  await page.unroute("**/version.json?*");
+  console.log(
+    "PASS deployed-version detection reloads and restores campaign state",
   );
 }
 
@@ -1358,6 +1411,7 @@ try {
     movementLevelId: 23,
     reboundLevelId: 23,
   });
+  await assertVersionReload(page);
   await assertThemeBootstrap(browser);
   assert.deepEqual(failures, [], "Browser must not report uncaught errors");
   await Bun.write(

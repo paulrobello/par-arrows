@@ -576,7 +576,11 @@ describe("resumable campaign saves", () => {
 
 describe("player settings", () => {
   test("defaults to system theme and full motion", () => {
-    expect(loadSettings()).toEqual({ reducedMotion: false, theme: "system" });
+    expect(loadSettings()).toEqual({
+      gridLines: false,
+      reducedMotion: false,
+      theme: "system",
+    });
   });
 
   test("loads legacy reduced-motion settings with the system theme", () => {
@@ -584,21 +588,39 @@ describe("player settings", () => {
       "par-arrows:settings:v1",
       JSON.stringify({ reducedMotion: true }),
     );
-    expect(loadSettings()).toEqual({ reducedMotion: true, theme: "system" });
+    expect(loadSettings()).toEqual({
+      gridLines: false,
+      reducedMotion: true,
+      theme: "system",
+    });
   });
 
   test("recovers from malformed and invalid saved themes", () => {
     entries.set("par-arrows:settings:v1", "{broken");
-    expect(loadSettings()).toEqual({ reducedMotion: false, theme: "system" });
+    expect(loadSettings()).toEqual({
+      gridLines: false,
+      reducedMotion: false,
+      theme: "system",
+    });
     entries.set(
       "par-arrows:settings:v1",
       JSON.stringify({ reducedMotion: true, theme: "midnight" }),
     );
-    expect(loadSettings()).toEqual({ reducedMotion: true, theme: "system" });
+    expect(loadSettings()).toEqual({
+      gridLines: false,
+      reducedMotion: true,
+      theme: "system",
+    });
   });
 
-  test("persists theme and reduced motion", () => {
-    expect(saveSettings({ reducedMotion: true, theme: "dark" })).toBe(true);
-    expect(loadSettings()).toEqual({ reducedMotion: true, theme: "dark" });
+  test("persists theme, grid lines, and reduced motion", () => {
+    expect(
+      saveSettings({ gridLines: true, reducedMotion: true, theme: "dark" }),
+    ).toBe(true);
+    expect(loadSettings()).toEqual({
+      gridLines: true,
+      reducedMotion: true,
+      theme: "dark",
+    });
   });
 });

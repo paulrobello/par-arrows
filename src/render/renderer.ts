@@ -13,6 +13,7 @@ import type {
   ArrowDefinition,
   Cell,
   GameState,
+  FaceId,
   LevelDefinition,
   MoveResult,
 } from "../core/types";
@@ -23,6 +24,15 @@ const FACING_EPSILON = 0.04;
 const WRAPPING_EDGE_RADIUS = 0.007;
 const STOP_CIRCLE_RADIUS = 0.34;
 const STOP_CIRCLE_THICKNESS = 0.1;
+const GRID_LINE_OFFSET = 0.004;
+const CUBE_FACES: readonly FaceId[] = [
+  "front",
+  "back",
+  "left",
+  "right",
+  "top",
+  "bottom",
+];
 
 export type Theme = "light" | "dark";
 
@@ -30,6 +40,7 @@ interface ThemePalette {
   readonly background: number;
   readonly cube: number;
   readonly edges: number;
+  readonly grid: number;
   readonly arrow: number;
   readonly failed: number;
   readonly selected: number;
@@ -49,6 +60,7 @@ const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     background: 0xe9f4f7,
     cube: 0xfffcf4,
     edges: 0xa9c5ce,
+    grid: 0x6f9baa,
     arrow: 0x0b1015,
     failed: 0xd94841,
     selected: 0x108acb,
@@ -59,6 +71,7 @@ const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     background: 0x101820,
     cube: 0x253641,
     edges: 0x597784,
+    grid: 0x6f8f9d,
     arrow: 0xf7f0dc,
     failed: 0xff776c,
     selected: 0x54d6ee,
@@ -599,6 +612,7 @@ export class PuzzleRenderer {
   private readonly camera = new THREE.PerspectiveCamera(32, 1, 0.1, 40);
   private readonly renderer: THREE.WebGLRenderer;
   private readonly cubeGroup = new THREE.Group();
+  private readonly gridLinesGroup = new THREE.Group();
   private readonly wrappingEdgesGroup = new THREE.Group();
   private readonly stopCirclesGroup = new THREE.Group();
   private readonly arrowsGroup = new THREE.Group();
@@ -608,6 +622,8 @@ export class PuzzleRenderer {
   private readonly visuals = new Map<string, ArrowVisual>();
   private cubeMaterial: THREE.MeshStandardMaterial | undefined;
   private edgeMaterial: THREE.LineBasicMaterial | undefined;
+  private gridLineMaterial: THREE.LineBasicMaterial | undefined;
+  private gridLinesEnabled = false;
   private theme: Theme = "light";
   private level: LevelDefinition | undefined;
   private state: GameState | undefined;
@@ -634,7 +650,11 @@ export class PuzzleRenderer {
     container.append(this.canvas);
 
     this.scene.add(this.cubeGroup, this.arrowsGroup);
-    this.cubeGroup.add(this.wrappingEdgesGroup, this.stopCirclesGroup);
+    this.cubeGroup.add(
+      this.gridLinesGroup,
+      this.wrappingEdgesGroup,
+      this.stopCirclesGroup,
+    );
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0xb7d5df, 2.4));
     const key = new THREE.DirectionalLight(0xffffff, 2.1);
     key.position.set(3, 5, 4);
@@ -655,6 +675,7 @@ export class PuzzleRenderer {
     this.clearStopCircles();
     this.level = level;
     this.state = state;
+    this.createGridLines(level.gridSize);
     this.createWrappingEdges(level);
     this.createStopCircles(level);
     for (const arrow of level.arrows) {
@@ -697,6 +718,10 @@ export class PuzzleRenderer {
     this.renderer.setClearColor(palette.background, 1);
     this.cubeMaterial?.color.set(palette.cube);
     this.edgeMaterial?.color.set(palette.edges);
+    if (this.gridLineMaterial) {
+      this.gridLineMaterial.color.set(palette.grid);
+      this.gridLineMaterial.opacity = theme === "light" ? 0.52 : 0.6;
+    }
     this.wrappingEdgesGroup.traverse((child) => {
       const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
       if (mesh.material instanceof THREE.MeshBasicMaterial) {
@@ -711,6 +736,25 @@ export class PuzzleRenderer {
     });
     this.applySelection();
     this.render();
+  }
+
+  setGridLines(enabled: boolean): void {
+    this.gridLinesEnabled = enabled;
+    this.gridLinesGroup.visible = enabled;
+    this.render();
+  }
+
+  visibleGridLineCount(): number {
+    if (!this.gridLinesEnabled) return 0;
+    return this.gridLinesGroup.children.reduce(
+      (count, child) =>
+        count +
+        (child.visible
+          ? ((child as THREE.LineSegments).geometry.getAttribute("position")
+              .count ?? 0) / 2
+          : 0),
+      0,
+    );
   }
 
   orbit(deltaX: number, deltaY: number): void {
@@ -1109,6 +1153,11 @@ export class PuzzleRenderer {
 
   render(): void {
     this.updateCamera();
+    for (const child of this.gridLinesGroup.children) {
+      const normal = child.userData.normal as THREE.Vector3;
+      child.visible =
+        this.gridLinesEnabled && normal.dot(this.camera.position) > 0;
+    }
     const selectedIds =
       this.level && this.selectedId
         ? overlappingArrowIds(this.level, this.selectedId)
@@ -1211,6 +1260,62 @@ export class PuzzleRenderer {
     );
     edges.renderOrder = -1;
     this.cubeGroup.add(cube, edges);
+  }
+
+  private createGridLines(gridSize: number): void {
+    for (const child of this.gridLinesGroup.children) {
+      (child as THREE.LineSegments).geometry.dispose();
+    }
+    this.gridLinesGroup.clear();
+    this.gridLineMaterial?.dispose();
+    this.gridLineMaterial = new THREE.LineBasicMaterial({
+      color: this.palette.grid,
+      transparent: true,
+      opacity: this.theme === "light" ? 0.52 : 0.6,
+      depthWrite: false,
+      toneMapped: false,
+    });
+    if (gridSize <= 1) return;
+    for (const face of CUBE_FACES) {
+      const first = new THREE.Vector3(
+        ...cellToWorld({ face, x: 0, y: 0 }, gridSize),
+      );
+      const east = new THREE.Vector3(
+        ...cellToWorld({ face, x: 1, y: 0 }, gridSize),
+      ).sub(first);
+      const south = new THREE.Vector3(
+        ...cellToWorld({ face, x: 0, y: 1 }, gridSize),
+      ).sub(first);
+      const normal = new THREE.Vector3(...faceNormal(face));
+      const corner = first
+        .clone()
+        .addScaledVector(east, -0.5)
+        .addScaledVector(south, -0.5)
+        .addScaledVector(normal, GRID_LINE_OFFSET);
+      const vertices: THREE.Vector3[] = [];
+      for (let index = 1; index < gridSize; index += 1) {
+        vertices.push(
+          corner.clone().addScaledVector(east, index),
+          corner
+            .clone()
+            .addScaledVector(east, index)
+            .addScaledVector(south, gridSize),
+          corner.clone().addScaledVector(south, index),
+          corner
+            .clone()
+            .addScaledVector(south, index)
+            .addScaledVector(east, gridSize),
+        );
+      }
+      const lines = new THREE.LineSegments(
+        new THREE.BufferGeometry().setFromPoints(vertices),
+        this.gridLineMaterial,
+      );
+      lines.renderOrder = 0;
+      lines.userData.normal = normal;
+      this.gridLinesGroup.add(lines);
+    }
+    this.gridLinesGroup.visible = this.gridLinesEnabled;
   }
 
   private createWrappingEdges(level: LevelDefinition): void {

@@ -37,6 +37,11 @@ import {
   saveCampaign,
   saveSettings,
 } from "./storage";
+import {
+  APP_VERSION,
+  markVersionReloaded,
+  VersionWatcher,
+} from "./version-watcher";
 
 type AppMode = "demo" | "campaign";
 
@@ -86,6 +91,7 @@ export class ParArrowsApp {
   private readonly settingsButton: HTMLButtonElement;
   private readonly hintButton: HTMLButtonElement;
   private readonly hintStatus: HTMLElement;
+  private readonly gridLines: HTMLInputElement;
   private readonly reducedMotion: HTMLInputElement;
   private readonly themeSelect: HTMLSelectElement;
   private readonly celebrationLayer: HTMLElement;
@@ -94,6 +100,9 @@ export class ParArrowsApp {
   private readonly previewStatus: HTMLElement;
   private readonly previewExit: HTMLAnchorElement;
   private readonly loader = new LevelLoader();
+  private readonly versionWatcher = new VersionWatcher((version) => {
+    this.updateAvailable = version;
+  });
   private readonly preview = resolveLevelPreview(
     parseLevelPreview(window.location.search),
   );
@@ -124,6 +133,7 @@ export class ParArrowsApp {
   private previewResolvedLevelId: number | undefined;
   private loadRequest = 0;
   private disposed = false;
+  private updateAvailable: string | undefined;
   private retryPurpose: "restore" | "level" | undefined;
 
   constructor(root: HTMLElement) {
@@ -168,6 +178,7 @@ export class ParArrowsApp {
           <button class="dock-button" id="settings-button" type="button" aria-expanded="false">☼<span>Settings</span></button>
         </nav>
         <aside class="settings-panel" id="settings-panel" hidden>
+          <label><input id="grid-lines" type="checkbox" /> Show grid lines</label>
           <label><input id="reduced-motion" type="checkbox" /> Reduce movement</label>
           <label>Theme<select id="theme-select"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
           <button id="install-button" type="button" hidden>Install app</button>
@@ -201,6 +212,7 @@ export class ParArrowsApp {
     ) as HTMLButtonElement;
     this.hintButton = this.requireElement("hint-button") as HTMLButtonElement;
     this.hintStatus = this.requireElement("hint-status");
+    this.gridLines = this.requireElement("grid-lines") as HTMLInputElement;
     this.reducedMotion = this.requireElement(
       "reduced-motion",
     ) as HTMLInputElement;
@@ -210,9 +222,11 @@ export class ParArrowsApp {
     this.previewBanner = this.requireElement("preview-banner");
     this.previewStatus = this.requireElement("preview-status");
     this.previewExit = this.requireElement("preview-exit") as HTMLAnchorElement;
+    this.gridLines.checked = this.settings.gridLines;
     this.reducedMotion.checked = this.settings.reducedMotion;
     this.themeSelect.value = this.settings.theme;
     this.renderer = new PuzzleRenderer(this.stage);
+    this.renderer.setGridLines(this.settings.gridLines);
     this.applyTheme();
     this.input = new PointerInput(this.renderer.canvas, {
       pick: (x, y, pointerType) =>
@@ -267,6 +281,7 @@ export class ParArrowsApp {
       this.updateInstallPrompt(available, ios),
     );
     this.installDebugApi();
+    this.versionWatcher.start();
     this.renderUi();
     this.renderer.render();
     this.animationFrame = requestAnimationFrame(this.tick);
@@ -288,6 +303,7 @@ export class ParArrowsApp {
     this.cancelHint();
     this.input.dispose();
     this.loader.dispose();
+    this.versionWatcher.dispose();
     this.renderer.dispose();
   }
 
@@ -384,6 +400,14 @@ export class ParArrowsApp {
       theme: {
         preference: this.settings.theme,
         resolved: this.resolvedTheme(),
+      },
+      gridLines: {
+        enabled: this.settings.gridLines,
+        visibleSegments: this.renderer.visibleGridLineCount(),
+      },
+      version: {
+        current: APP_VERSION,
+        updateAvailable: this.updateAvailable !== undefined,
       },
       camera: this.renderer.cameraDiagnostics(),
       visibleProjectedArrowPositions: this.renderer
@@ -493,6 +517,12 @@ export class ParArrowsApp {
   };
 
   private update(delta: number): void {
+    if (this.updateAvailable && !this.loading && !this.motion) {
+      markVersionReloaded(this.updateAvailable);
+      this.updateAvailable = undefined;
+      window.location.reload();
+      return;
+    }
     if (this.celebration) {
       this.celebration.elapsed += delta;
       if (this.celebration.elapsed >= CELEBRATION_DURATION) {
@@ -886,6 +916,14 @@ export class ParArrowsApp {
       const panel = this.requireElement("settings-panel");
       panel.hidden = !panel.hidden;
       this.settingsButton.setAttribute("aria-expanded", String(!panel.hidden));
+    });
+    this.gridLines.addEventListener("change", () => {
+      this.settings = {
+        ...this.settings,
+        gridLines: this.gridLines.checked,
+      };
+      saveSettings(this.settings);
+      this.renderer.setGridLines(this.settings.gridLines);
     });
     this.reducedMotion.addEventListener("change", () => {
       this.settings = {
