@@ -985,6 +985,7 @@ try {
     true,
   );
   assert.equal(await page.getByRole("button", { name: /skip/i }).count(), 0);
+  assert.equal(await page.locator(".rotate-hint").isVisible(), true);
   await page.screenshot({ path: `${output}/demo-start.png` });
   await advance(page, 1700);
   const failedDemo = await snapshot(page);
@@ -996,6 +997,7 @@ try {
   await advance(page, 4000);
   const completedDemo = await snapshot(page);
   assert.ok(completedDemo.remainingIds.length < failedDemo.remainingIds.length);
+  assert.equal(await page.locator(".rotate-hint").isVisible(), true);
   assert.equal(await page.locator(".confetti-piece").count(), 0);
   await page.getByRole("button", { name: "Start level 1" }).click();
   assert.equal((await snapshot(page)).lives, 5);

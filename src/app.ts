@@ -156,6 +156,7 @@ export class ParArrowsApp {
             <div class="tutorial-kicker">HOW IT WORKS</div>
             <h1>Find the open way.</h1>
             <p id="tutorial-copy">A blocked arrow returns and turns red.</p>
+            <p class="rotate-hint">Drag anywhere to rotate the cube.</p>
             <button class="primary-button" id="start-button" type="button" hidden>Start level 1</button>
           </div>
           <div class="touch-cue" id="touch-cue" aria-hidden="true"><span></span></div>

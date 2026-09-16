@@ -277,6 +277,21 @@ button {
   text-align: center;
 }
 
+/* The demo card never traps a drag: the rotate blurb must stay true. */
+.tutorial-card {
+  pointer-events: none;
+}
+
+.tutorial-card button {
+  pointer-events: auto;
+}
+
+.tutorial-card .rotate-hint {
+  margin-top: 0.55rem;
+  color: var(--quiet-text);
+  font-size: 0.66rem;
+}
+
 .celebration-layer {
   position: absolute;
   z-index: 3;
