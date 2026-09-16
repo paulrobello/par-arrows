@@ -1,7 +1,18 @@
+import {
+  applyMove,
+  createGameState,
+  simulateMove as simulateState,
+} from "./game-state";
 import { advanceHead, simulateMove } from "./movement";
 import { cellKey, headingForPath, linkKey, seamTransition } from "./topology";
 import { overlappingArrowIds, sharedDirectedSegment } from "./overlap";
-import type { ArrowDefinition, Cell, Endpoint, LevelDefinition } from "./types";
+import type {
+  ArrowDefinition,
+  Cell,
+  Endpoint,
+  GameState,
+  LevelDefinition,
+} from "./types";
 
 export interface ValidationResult {
   readonly valid: boolean;
@@ -207,6 +218,24 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
       }
     }
   }
+  const stopCells = new Set<string>();
+  const arrowCells = new Set(
+    level.arrows.flatMap((arrow) => arrow.path.map(cellKey)),
+  );
+  for (const stop of level.stops ?? []) {
+    const key = cellKey(stop);
+    if (!inBounds(stop, level.gridSize)) {
+      errors.push(`Stop circle ${key} is out of bounds.`);
+    }
+    if (stopCells.has(key)) {
+      errors.push(`Stop circle ${key} is declared more than once.`);
+    }
+    stopCells.add(key);
+    if (arrowCells.has(key)) {
+      errors.push(`Stop circle ${key} sits on an arrow's starting cell.`);
+    }
+  }
+
   const checkedGroups = new Set<string>();
   for (const arrow of level.arrows) {
     const group = overlappingArrowIds(level, arrow.id);
@@ -251,8 +280,100 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
 }
 
 /**
+ * Drive one arrow from its settled position to an exit, parking on every stop
+ * circle along the way. Undefined means some leg of that drive was blocked.
+ */
+function driveThrough(
+  level: LevelDefinition,
+  state: GameState,
+  arrowId: string,
+): { readonly state: GameState; readonly taps: readonly string[] } | undefined {
+  const maximumTaps = level.gridSize * 6 + 2;
+  const taps: string[] = [];
+  let current = state;
+  for (let tap = 0; tap < maximumTaps; tap += 1) {
+    const result = simulateState(level, current, arrowId);
+    if (result.kind !== "exit" && result.kind !== "paused") return undefined;
+    const next = applyMove(level, current, result);
+    if (next === current) return undefined;
+    taps.push(arrowId);
+    current = next;
+    if (result.kind === "exit") return { state: current, taps };
+  }
+  return undefined;
+}
+
+/**
+ * Remove every arrow that can currently reach its exit. Removing an arrow only
+ * ever frees cells, so clearing greedily can never strand another arrow and
+ * needs no backtracking.
+ */
+function clearWhatExits(
+  level: LevelDefinition,
+  state: GameState,
+): { readonly state: GameState; readonly taps: readonly string[] } {
+  const taps: string[] = [];
+  let current = state;
+  for (let pass = 0; pass <= level.arrows.length; pass += 1) {
+    const before = current.remainingIds.length;
+    for (const arrowId of [...current.remainingIds]) {
+      if (!current.remainingIds.includes(arrowId)) continue;
+      const cleared = driveThrough(level, current, arrowId);
+      if (!cleared) continue;
+      current = cleared.state;
+      taps.push(...cleared.taps);
+    }
+    if (current.remainingIds.length === before) break;
+  }
+  return { state: current, taps };
+}
+
+function solveKey(state: GameState): string {
+  const parked = Object.entries(state.offsets)
+    .filter(([, value]) => value > 0)
+    .map(([id, value]) => `${id}@${value}`)
+    .sort()
+    .join(",");
+  return `${[...state.remainingIds].sort().join("|")}#${parked}`;
+}
+
+const SOLVER_NODE_BUDGET = 4000;
+
+/**
+ * Parking an arrow on a stop circle occupies new cells, so unlike clearing it
+ * can strand other arrows and has to be explored with backtracking. Reverse
+ * construction gives generated levels a drive-through certificate, so they
+ * finish in the greedy pass and never reach this search.
+ */
+function searchSolution(
+  level: LevelDefinition,
+  state: GameState,
+  visited: Set<string>,
+  budget: { remaining: number },
+): readonly string[] | undefined {
+  const cleared = clearWhatExits(level, state);
+  if (cleared.state.remainingIds.length === 0) return cleared.taps;
+  const key = solveKey(cleared.state);
+  if (visited.has(key)) return undefined;
+  visited.add(key);
+  for (const arrowId of cleared.state.remainingIds) {
+    if (budget.remaining <= 0) return undefined;
+    budget.remaining -= 1;
+    const result = simulateState(level, cleared.state, arrowId);
+    if (result.kind !== "paused") continue;
+    const parked = applyMove(level, cleared.state, result);
+    if (parked === cleared.state) continue;
+    const rest = searchSolution(level, parked, visited, budget);
+    if (rest) return [...cleared.taps, arrowId, ...rest];
+  }
+  return undefined;
+}
+
+/**
  * Replay a deterministic no-mistake solution under the same simulation used by
- * the game. Undefined means no legal full-clear sequence was found.
+ * the game. The result lists taps in order, so an arrow that parks on a stop
+ * circle appears once per leg. Undefined means no legal full-clear sequence was
+ * found.
  */
 export function solveLevel(
   level: LevelDefinition,
@@ -260,24 +381,7 @@ export function solveLevel(
   if (!validateLevel(level).valid) {
     return undefined;
   }
-  const remainingIds = level.arrows.map((arrow) => arrow.id);
-  const solution: string[] = [];
-  while (remainingIds.length > 0) {
-    const clearId = remainingIds.find(
-      (arrowId) => simulateMove(level, remainingIds, arrowId).kind === "exit",
-    );
-    if (!clearId) {
-      return undefined;
-    }
-    const cleared = simulateMove(level, remainingIds, clearId);
-    const clearedIds = cleared.members?.map((member) => member.arrowId) ?? [
-      clearId,
-    ];
-    solution.push(clearId);
-    for (const id of clearedIds) {
-      const index = remainingIds.indexOf(id);
-      if (index >= 0) remainingIds.splice(index, 1);
-    }
-  }
-  return solution;
+  return searchSolution(level, createGameState(level), new Set(), {
+    remaining: SOLVER_NODE_BUDGET,
+  });
 }

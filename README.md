@@ -1,10 +1,10 @@
 # Par Arrows
 
-A desktop and mobile 3D arrow-removal puzzle with flat ribbon arrows. Rotate a cube, find an unobstructed arrow, and send it off the surface. A first collision costs one life and marks that arrow red; further collisions by the same red arrow are free. Two or three arrows can share tail segments: touching any member moves the whole group, and an outside collision sends all members back red for one life. Their heads and travel paths stay separate.
+A desktop and mobile 3D arrow-removal puzzle with flat ribbon arrows. Rotate a cube, find an unobstructed arrow, and send it off the surface. A first collision costs one life and marks that arrow red; further collisions by the same red arrow are free. An arrow whose head reaches a green stop circle parks there until it is touched again, which lets it move forward to clear a lane without running into anything; if it is then blocked, it rebounds to the circle rather than to its starting place. Two or three arrows can share tail segments: touching any member moves the whole group, and an outside collision sends all members back red for one life. Their heads and travel paths stay separate.
 
 Play at [arrows.par-dev.com](https://arrows.par-dev.com).
 
-Level 1 is the authored teaching cube. Level 11 is a second authored, small teaching cube that introduces reciprocal yellow-edge wrapping; level 15 teaches overlapping tails, and levels 2–10, 12–14, and 16 onward are generated at runtime from their logical level numbers. The campaign continues indefinitely, and generated layouts are validated before play. See [PRD.md](PRD.md) for product rules and [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the runtime design.
+Level 1 is the authored teaching cube. Level 5 introduces green stop circles, level 11 introduces reciprocal yellow-edge wrapping, and level 15 teaches overlapping tails; levels 2–4, 6–10, 12–14, and 16 onward are generated at runtime from their logical level numbers. Generated cubes from level 6 carry zero to three stop circles. The campaign continues indefinitely, and generated layouts are validated before play. See [PRD.md](PRD.md) for product rules and [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the runtime design.
 
 The former fixed ten-level catalog and its reports remain historical reference and test fixtures only. They are excluded from production imports.
 
@@ -24,12 +24,13 @@ Open [the local game](http://localhost:8057). The development server binds to lo
 Open these links to preview campaign content without unlocking it:
 
 - [Level 25](http://localhost:8057/?level=25) loads that level directly, regardless of campaign unlocks.
+- [Stop circle introduction](http://localhost:8057/?feature=stop) opens cube 5, whose three front-face arrows deadlock until one parks on the circle.
 - [Overlapping tails introduction](http://localhost:8057/?feature=overlap) opens cube 15, with a pair, a trio, and an outside blocker.
 - [First level with wrapping](http://localhost:8057/?feature=wrap) finds the first level containing a yellow physical edge.
 - [Level with exactly three wrapping edges](http://localhost:8057/?wraps=3) searches for an exact edge count.
 - [Three wrapping edges at or after level 50](http://localhost:8057/?level=50&wraps=3) searches from level 50 for an exact count.
 
-`feature` accepts `overlap` or `overlapping` for linked tails, and `wrap`, `wrapping`, or `wraparound` for yellow edges, case-insensitively. `wraps` accepts `0`, `1`, `2`, or `3`. A filter searches from level 1 unless `level` sets the starting point; Go and Next keep the filter active, and the resolved level is written into the URL for reloads. Searches inspect at most 1,000 candidates using edge-count metadata rather than generating and rendering every level. Levels must be safe integers from 1 through `Number.MAX_SAFE_INTEGER - 1`; malformed values, duplicate parameters, conflicting selectors, unknown features, and searches with no match show a clear error.
+`feature` accepts `overlap` or `overlapping` for linked tails, `stop`, `stops`, or `stopcircle` for green circles, and `wrap`, `wrapping`, or `wraparound` for yellow edges, case-insensitively. `wraps` accepts `0`, `1`, `2`, or `3`. A filter searches from level 1 unless `level` sets the starting point; Go and Next keep the filter active, and the resolved level is written into the URL for reloads. Searches inspect at most 1,000 candidates using edge-count metadata rather than generating and rendering every level. Levels must be safe integers from 1 through `Number.MAX_SAFE_INTEGER - 1`; malformed values, duplicate parameters, conflicting selectors, unknown features, and searches with no match show a clear error.
 
 Using `level`, `feature`, or `wraps` opens a separate preview session, skips the onboarding demo, and never writes or deletes campaign saves during play, Retry, Next, Reset, or error handling. Use **Return to campaign** to leave preview. The existing `?test=1` flag only enables automation hooks; by itself it does not start preview mode.
 
@@ -52,9 +53,9 @@ Install pre-commit and run `pre-commit install` to enable the pinned secret-scan
 - Click or touch an arrow to attempt a move. Drag to rotate continuously in any direction, including over the top and bottom. Use the mouse wheel or pinch to zoom, and View to restore the starting angle.
 - A press highlights its arrow or connected tail group. Ambiguous touches do nothing. Dragging and pinching do not activate arrows.
 - The first-run demo shows a failed move followed by a successful move before campaign play.
-- The authored introductions at levels 1, 11, and 15 have five lives. Runtime-generated levels are deterministic reverse-constructed puzzles, growing from 60 to 180 arrows early and then capped at 240 arrows, 26 × 26 cells per face, 40 cells per path, and a three-life floor.
+- The authored introductions at levels 1, 5, 11, and 15 have five lives. Runtime-generated levels are deterministic reverse-constructed puzzles, growing from 60 to 180 arrows early and then capped at 240 arrows, 26 × 26 cells per face, 40 cells per path, and a three-life floor.
 - Retry restores the same layout and full life budget. Next continues to the next level; there is no final campaign screen. The numeric level control accepts Go or Enter for any unlocked safe-integer level.
-- Progress, lives, failed-arrow history, and generator metadata are stored as a v7 logical save in browser `localStorage`. Stable older saves through level 14 resume exactly when their seeds match. Changed attempts from level 15 onward refresh while preserving the level, unlocks, and tutorial completion. Level 11 retains its version-2 `:wrap-intro:1` seed; level 15 and later content use generator version 3. Saved groups restore atomically and count as one failure for lives. Generated levels are regenerated by a worker on reload.
+- Progress, lives, failed-arrow history, parked stop-circle positions, and generator metadata are stored as a v8 logical save in browser `localStorage`. Stable older saves through level 4 resume exactly when their seeds match, as do the authored cubes 11 and 15. Changed attempts from level 5 onward refresh while preserving the level, unlocks, and tutorial completion. Level 11 retains its version-2 `:wrap-intro:1` seed and level 15 its version-3 `:overlap-intro:1` seed; level 5 and other generated content use generator version 4. Saved groups restore atomically and count as one failure for lives, and a parked arrow restores exactly on its circle. Generated levels are regenerated by a worker on reload.
 
 PWA installation is supported where the browser provides it. A production installation needs a secure origin; local development can use localhost. Installation does not require an account. Offline gameplay is outside the current MVP scope.
 

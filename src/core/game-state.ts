@@ -1,5 +1,6 @@
 import { simulateMove as simulate } from "./movement";
 import { overlappingArrowIds } from "./overlap";
+import { maximumOffset, offsetOf } from "./stops";
 import type { Endpoint, GameState, LevelDefinition, MoveResult } from "./types";
 
 export function createGameState(level: LevelDefinition): GameState {
@@ -10,6 +11,7 @@ export function createGameState(level: LevelDefinition): GameState {
     lives: level.lives,
     status: "playing",
     revision: 0,
+    offsets: {},
   };
 }
 
@@ -28,10 +30,18 @@ export function simulateMove(
       route: [],
       waypoints: [],
       stateRevision: state.revision,
+      offset: offsetOf(state.offsets, arrowId),
       reason: "Level state is not accepting moves.",
     };
   }
-  return simulate(level, state.remainingIds, arrowId, endpoint, state.revision);
+  return simulate(
+    level,
+    state.remainingIds,
+    arrowId,
+    endpoint,
+    state.revision,
+    state.offsets,
+  );
 }
 
 /** Apply an already-simulated result once, producing a complete settled snapshot. */
@@ -62,13 +72,29 @@ export function applyMove(
   ) {
     return state;
   }
+  if (result.kind === "paused") {
+    const steps = result.pausedSteps ?? 0;
+    if (steps <= 0) return state;
+    const offsets = { ...state.offsets };
+    for (const id of groupIds) {
+      const arrow = level.arrows.find((candidate) => candidate.id === id);
+      if (!arrow) return state;
+      const next = offsetOf(state.offsets, id) + steps;
+      if (next > maximumOffset(level, arrow)) return state;
+      offsets[id] = next;
+    }
+    return { ...state, offsets, revision: state.revision + 1 };
+  }
   if (result.kind === "exit") {
     const remainingIds = state.remainingIds.filter(
       (id) => !groupIds.includes(id),
     );
+    const offsets = { ...state.offsets };
+    for (const id of groupIds) delete offsets[id];
     return {
       ...state,
       remainingIds,
+      offsets,
       status: remainingIds.length === 0 ? "won" : "playing",
       revision: state.revision + 1,
     };

@@ -205,7 +205,12 @@ export async function assertWrappingEdges(
     const movementLevel = generateLevel(fixtures.movementLevelId);
     const movementArrow = crossingArrow(fixtures.movementLevelId);
     await loadLevel(page, fixtures.movementLevelId);
-    await assertEdgeDimming(page, 26, fixtures.movementLevelId, output);
+    await assertEdgeDimming(
+      page,
+      fixtures.movementLevelId,
+      fixtures.movementLevelId,
+      output,
+    );
     const expectedEdges =
       (movementLevel.edgePolicies ?? []).filter(
         (policy) => policy.policy === "continue",
@@ -265,7 +270,9 @@ export async function assertWrappingEdges(
           revision,
         };
         saved.tutorialComplete = true;
-        saved.contentVersion = 7;
+        // A current save, so the single-arrow state resumes instead of
+        // refreshing to a full cube the crossing arrow could not leave.
+        saved.contentVersion = 8;
         saved.generatorVersion = generatorVersion;
         saved.seed = seed;
         localStorage.setItem(key, JSON.stringify(saved));
@@ -293,6 +300,7 @@ export async function assertWrappingEdges(
         failedIds: [],
         lives: movementLevel.lives,
         status: "playing",
+        offsets: {},
         revision: movementLevel.arrows.length - 1,
       },
       movementArrow.id,

@@ -4,7 +4,11 @@ import type { Browser, Page } from "playwright";
 import sharp from "sharp";
 import { PerspectiveCamera, Vector3 } from "three";
 import { OVERLAP_INTRO_LEVEL } from "../src/content/overlap-intro";
-import { generateLevel, seedForLevel } from "../src/content/procedural";
+import {
+  GENERATOR_VERSION,
+  generateLevel,
+  seedForLevel,
+} from "../src/content/procedural";
 import { createGameState, simulateMove } from "../src/core/game-state";
 import {
   cellToWorld,
@@ -368,8 +372,8 @@ async function assertCampaignSave(
     currentLevelId: previousLevel.id,
     unlockedLevelId: previousLevel.id,
     tutorialComplete: true,
-    contentVersion: 6,
-    generatorVersion: 2,
+    contentVersion: 8,
+    generatorVersion: GENERATOR_VERSION,
     seed: seedForLevel(previousLevel.id),
     state: {
       ...previousState,
@@ -391,7 +395,7 @@ async function assertCampaignSave(
     assert.deepEqual(
       (await state(page)).remainingIds,
       [lastArrow.id],
-      "The level-14 legacy save resumes exactly",
+      "The level-14 save resumes exactly",
     );
     const lastPoint = (await state(page)).visibleProjectedArrowPositions.find(
       (entry) => entry.id === lastArrow.id,

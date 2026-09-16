@@ -6,6 +6,12 @@ import { generateLevel } from "../src/content/procedural";
 import { faceNormal } from "../src/core/topology";
 import { arrowDimensions, expandedPoints } from "../src/render/renderer";
 
+/** Dark-theme ribbon and cube colours, matching the renderer's palette. */
+const DARK_ARROW_RGB = [247, 240, 220] as const;
+const DARK_CUBE_RGB = [37, 54, 65] as const;
+/** A sample must be at least this many times nearer the ribbon than the cube. */
+const GAP_MARGIN = 3;
+
 export async function assertSeamFills(
   browser: Browser,
   url: string,
@@ -38,7 +44,9 @@ export async function assertSeamFills(
       select.value = "dark";
       select.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    for (const id of [10, 26]) {
+    // Level 23 is the nearest generated cube carrying a front-east yellow seam
+    // under the current generator; level 10 has none, which is the contrast.
+    for (const id of [10, 23]) {
       await page.evaluate(
         (id) => window.__PAR_ARROWS_TEST__?.loadLevel(id),
         id,
@@ -60,7 +68,7 @@ export async function assertSeamFills(
             policy.edge === "east" &&
             policy.policy === "continue",
         ) ?? false,
-        id === 26,
+        id === 23,
         "Keep one ordinary-edge fixture and one yellow-edge fixture",
       );
       const bounds = await page.locator("canvas").boundingBox();
@@ -128,7 +136,17 @@ export async function assertSeamFills(
         const y = Math.floor(((1 - projected.y) * info.height) / 2);
         const pixel = (y * info.width + x) * 3;
         const rgb = [...data.subarray(pixel, pixel + 3)];
-        if ((rgb[0] ?? 0) < 230 || (rgb[1] ?? 0) < 220 || (rgb[2] ?? 0) < 195)
+        // A hairline fold gap shows the cube face through the ribbon, so judge
+        // each sample by which of the two it resembles. On a dense cube the
+        // ribbon is only a few pixels wide, and an absolute near-exact-fill
+        // threshold rejected merely anti-aliased border pixels as gaps.
+        const distance = (target: readonly number[]): number =>
+          rgb.reduce(
+            (total, channel, index) =>
+              total + (channel - (target[index] ?? 0)) ** 2,
+            0,
+          );
+        if (distance(DARK_ARROW_RGB) * GAP_MARGIN > distance(DARK_CUBE_RGB))
           failures.push({ x, y, rgb });
       }
       await page.screenshot({ path: `${output}/solid-seam-level-${id}.png` });

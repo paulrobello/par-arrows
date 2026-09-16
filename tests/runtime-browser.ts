@@ -182,7 +182,10 @@ export async function assertRuntimeCampaign(
   assert.deepEqual(errors, []);
   await context.close();
 
-  const migrationLevel = generateLevel(10);
+  // Level 4 keeps its version-1 seed, so a legacy save for it still resumes
+  // exactly; levels from 5 carry stop circles under generator version 4 and
+  // refresh instead (covered by the level-twelve case below).
+  const migrationLevel = generateLevel(4);
   const initialMigrationState = createGameState(migrationLevel);
   const migrationBlocker = migrationLevel.arrows.find(
     (arrow) =>
@@ -195,24 +198,24 @@ export async function assertRuntimeCampaign(
     initialMigrationState,
     simulateMove(migrationLevel, initialMigrationState, migrationBlocker.id),
   );
-  const levelTenLegacySave = JSON.stringify({
-    currentLevelId: 10,
+  const levelFourLegacySave = JSON.stringify({
+    currentLevelId: 4,
     unlockedLevelId: 14,
     state: partialMigrationState,
     tutorialComplete: true,
     contentVersion: 6,
     generatorVersion: 1,
-    seed: "par-arrows:runtime:1:level:10",
+    seed: "par-arrows:runtime:1:level:4",
   });
   const migration = await browser.newContext();
   await migration.addInitScript(
     ({ key, saved }) => localStorage.setItem(key, saved),
-    { key: KEY, saved: levelTenLegacySave },
+    { key: KEY, saved: levelFourLegacySave },
   );
   const migrationPage = await migration.newPage();
   await migrationPage.goto(url);
   await waitForReady(migrationPage);
-  assert.equal((await state(migrationPage)).level.id, 10);
+  assert.equal((await state(migrationPage)).level.id, 4);
   assert.deepEqual(
     (await state(migrationPage)).remainingIds,
     partialMigrationState.remainingIds,

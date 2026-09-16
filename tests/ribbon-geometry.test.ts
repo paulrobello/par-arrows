@@ -64,6 +64,7 @@ function result(
     route,
     waypoints: [],
     stateRevision: 0,
+    offset: 0,
     ...(edgePoint && tangent ? { exit: { edgePoint, tangent } } : {}),
   };
 }

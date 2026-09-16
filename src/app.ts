@@ -9,6 +9,7 @@ import {
 } from "./content/intro";
 import { LevelLoader } from "./content/level-loader";
 import { OVERLAP_INTRO_LEVEL } from "./content/overlap-intro";
+import { STOP_INTRO_LEVEL } from "./content/stop-intro";
 import {
   parseLevelPreview,
   resolveLevelPreview,
@@ -20,6 +21,7 @@ import {
 } from "./content/procedural";
 import { applyMove, createGameState, simulateMove } from "./core/game-state";
 import { overlappingArrowIds } from "./core/overlap";
+import { cellKey } from "./core/topology";
 import type { GameState, LevelDefinition, MoveResult } from "./core/types";
 import { PointerInput } from "./input";
 import { PwaInstallPrompt } from "./pwa";
@@ -318,6 +320,12 @@ export class ParArrowsApp {
       },
       wrappingEdges: this.renderer.wrappingEdgeCount(),
       wrappingEdgeOpacities: this.renderer.wrappingEdgeOpacities(),
+      stops: (this.level.stops ?? []).map((cell) => cellKey(cell)),
+      parkedOffsets: Object.fromEntries(
+        Object.entries(this.displayedState.offsets).filter(
+          ([, offset]) => offset > 0,
+        ),
+      ),
       lives: this.displayedState.lives,
       remainingIds: this.displayedState.remainingIds,
       failedIds: this.displayedState.failedIds,
@@ -570,8 +578,8 @@ export class ParArrowsApp {
 
   private finishMotion(arrowId: string): void {
     this.motion = undefined;
-    this.renderer.settle(arrowId);
     this.renderer.updateState(this.state);
+    this.renderer.settle(arrowId);
     this.displayedState = this.state;
     if (this.mode === "demo") {
       if (arrowId === DEMO_BLOCKED_ID) {
@@ -745,10 +753,13 @@ export class ParArrowsApp {
     mechanicIntro.textContent =
       this.level.id === OVERLAP_INTRO_LEVEL.id
         ? "Overlapping tails move together. Tap any part. If one is blocked, the whole group returns red."
-        : "Yellow edges carry arrows onto the next face. Try an arrow pointing toward the yellow line.";
+        : this.level.id === STOP_INTRO_LEVEL.id
+          ? "An arrow parks on a green circle until you tap it again. Park one to clear a lane, and it rebounds to the circle if the way ahead is blocked."
+          : "Yellow edges carry arrows onto the next face. Try an arrow pointing toward the yellow line.";
     mechanicIntro.hidden =
       this.mode !== "campaign" ||
       (this.level.id !== WRAP_INTRO_LEVEL.id &&
+        this.level.id !== STOP_INTRO_LEVEL.id &&
         this.level.id !== OVERLAP_INTRO_LEVEL.id) ||
       this.loading ||
       this.loadingError !== undefined ||
@@ -960,8 +971,10 @@ export class ParArrowsApp {
     ) {
       return;
     }
-    const arrowId = this.state.remainingIds.find(
-      (id) => simulateMove(this.level, this.state, id).kind === "exit",
+    const arrowId = this.state.remainingIds.find((id) =>
+      ["exit", "paused"].includes(
+        simulateMove(this.level, this.state, id).kind,
+      ),
     );
     if (!arrowId || !this.renderer.beginHint(arrowId)) {
       return;
@@ -1099,8 +1112,8 @@ export class ParArrowsApp {
     if (!this.motion) return;
     const arrowId = this.motion.result.arrowId;
     this.motion = undefined;
-    this.renderer.settle(arrowId);
     this.renderer.updateState(this.state);
+    this.renderer.settle(arrowId);
     this.displayedState = this.state;
   }
 

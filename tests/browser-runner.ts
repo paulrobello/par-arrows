@@ -20,6 +20,7 @@ import { arrowDimensions } from "../src/render/renderer";
 import { runHintChecks } from "./hints-browser";
 import { assertConsistentMotion } from "./motion-browser";
 import { assertOverlapIntro } from "./overlap-browser";
+import { assertStopIntro } from "./stop-browser";
 import { assertLevelPreview } from "./preview-browser";
 import { assertRuntimeCampaign } from "./runtime-browser";
 import { LEVELS, waitForReady } from "./runtime-fixtures";
@@ -83,6 +84,7 @@ let browser: Browser | undefined;
 let primaryContext: BrowserContext | undefined;
 const failures: string[] = [];
 const OVERLAP_ONLY_COMPLETE = Symbol("overlap-only-complete");
+const STOP_ONLY_COMPLETE = Symbol("stop-only-complete");
 const deadline = setTimeout(() => {
   console.error("Browser verification exceeded its 180-second deadline.");
   server.kill();
@@ -544,7 +546,16 @@ async function assertArrowheadPicking(
         point.y > bounds.y + 100 &&
         point.y < bounds.y + bounds.height - 110,
     );
-  const target = samples.find((sample) => sample.facing && inside(sample));
+  // The busy-input check below taps a second head while the first is still
+  // moving, so the fixture needs an arrow whose motion actually lasts. An exit
+  // carries its flight segment; a one-cell rebound or park can finish in under
+  // a frame on a dense cube.
+  const isObservable = (sample: { id: string }): boolean =>
+    simulateMove(level, createGameState(level), sample.id).kind === "exit";
+  const target =
+    samples.find(
+      (sample) => sample.facing && inside(sample) && isObservable(sample),
+    ) ?? samples.find((sample) => sample.facing && inside(sample));
   assert.ok(
     target,
     "A visible arrowhead must be available for tip and wing checks",
@@ -885,6 +896,20 @@ try {
   page.setDefaultTimeout(10_000);
   await page.goto(url);
   await waitForReady(page);
+
+  if (process.env.STOP_ONLY === "1") {
+    await assertStopIntro(browser, url, output);
+    assert.deepEqual(failures, [], "Browser must not report uncaught errors");
+    await Bun.write(
+      `${output}/stop-summary.json`,
+      JSON.stringify(
+        { passed: true, browser: engine.name(), physicalDevice: false },
+        null,
+        2,
+      ),
+    );
+    throw STOP_ONLY_COMPLETE;
+  }
 
   if (process.env.OVERLAP_ONLY === "1") {
     await assertOverlapIntro(browser, url, output);
@@ -1319,13 +1344,17 @@ try {
   await mobile.close();
   await assertRuntimeCampaign(browser, url, output);
   await assertWrapIntro(browser, url, output);
+  await assertStopIntro(browser, url, output);
   await assertConsistentMotion(browser, url, output);
   await assertReliableTaps(browser, url, output);
   await assertSeamFills(browser, url, output);
   await assertLevelPreview(browser, url, output);
   await assertWrappingEdges(browser, url, output, {
-    movementLevelId: 26,
-    reboundLevelId: 26,
+    // Level 23 is the generated cube carrying exactly one front-east seam under
+    // the current generator, with a crossing arrow that exits alone and is
+    // blocked among its neighbours.
+    movementLevelId: 23,
+    reboundLevelId: 23,
   });
   await assertThemeBootstrap(browser);
   assert.deepEqual(failures, [], "Browser must not report uncaught errors");
@@ -1338,7 +1367,8 @@ try {
     ),
   );
 } catch (error) {
-  if (error !== OVERLAP_ONLY_COMPLETE) throw error;
+  if (error !== OVERLAP_ONLY_COMPLETE && error !== STOP_ONLY_COMPLETE)
+    throw error;
 } finally {
   try {
     try {

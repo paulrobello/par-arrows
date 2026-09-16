@@ -1,7 +1,13 @@
 import * as THREE from "three";
 
 import { overlappingArrowIds } from "../core/overlap";
-import { cellToWorld, faceHeadingVector, faceNormal } from "../core/topology";
+import { currentPath, offsetOf } from "../core/stops";
+import {
+  cellKey,
+  cellToWorld,
+  faceHeadingVector,
+  faceNormal,
+} from "../core/topology";
 import type {
   ArrowDefinition,
   Cell,
@@ -14,6 +20,8 @@ const PICK_RADIUS = 0.14;
 const PICK_LAYER = 1;
 const HEAD_PICK_MARGIN_PX = 1.5;
 const WRAPPING_EDGE_RADIUS = 0.007;
+const STOP_CIRCLE_RADIUS = 0.34;
+const STOP_CIRCLE_THICKNESS = 0.1;
 
 export type Theme = "light" | "dark";
 
@@ -25,6 +33,7 @@ interface ThemePalette {
   readonly failed: number;
   readonly selected: number;
   readonly farSide: number;
+  readonly stop: number;
 }
 
 interface HintFocus {
@@ -43,6 +52,7 @@ const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     failed: 0xd94841,
     selected: 0x108acb,
     farSide: 0x6f9fb2,
+    stop: 0x1d9a86,
   },
   dark: {
     background: 0x101820,
@@ -52,6 +62,7 @@ const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     failed: 0xff776c,
     selected: 0x54d6ee,
     farSide: 0x516a7a,
+    stop: 0x3fe0c0,
   },
 };
 
@@ -83,7 +94,9 @@ interface ArrowVisual {
   readonly head: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
   readonly material: THREE.MeshBasicMaterial;
   readonly pickers: readonly THREE.Object3D[];
-  readonly path: ExpandedPath;
+  path: ExpandedPath;
+  /** Cell-key fingerprint of the settled path currently laid out. */
+  settledKey: string;
   readonly ribbonWidth: number;
   readonly headLength: number;
 }
@@ -476,12 +489,16 @@ export function arrowMotionTrack(
       ? pathLength(track) - bodyLength
       : result.kind === "blocked"
         ? Math.max(0, pathLength(route) - 1 / gridSize)
-        : 0;
+        : // A pause travels the whole route and stays parked on the circle.
+          result.kind === "paused"
+          ? pathLength(route)
+          : 0;
   return { track, bodyLength, distance };
 }
 
 const NORMAL_ARROW_SPEED = 5;
 const REDUCED_MOTION_DURATION = 110 / 1.5625;
+const PAUSE_MINIMUM_DURATION = 160;
 
 export function arrowMotionDuration(
   distance: number,
@@ -490,7 +507,10 @@ export function arrowMotionDuration(
 ): number {
   if (reducedMotion) return REDUCED_MOTION_DURATION;
   const outboundAndReturn = kind === "blocked" ? 2 : 1;
-  return (distance * outboundAndReturn * 1000) / NORMAL_ARROW_SPEED;
+  const travel = (distance * outboundAndReturn * 1000) / NORMAL_ARROW_SPEED;
+  // Cells are small on a dense cube, so a one-step park would otherwise finish
+  // inside a frame and read as a jump rather than as stopping at the circle.
+  return kind === "paused" ? Math.max(travel, PAUSE_MINIMUM_DURATION) : travel;
 }
 
 function arrowFace(arrow: ArrowDefinition): Cell["face"] {
@@ -555,6 +575,7 @@ export class PuzzleRenderer {
   private readonly renderer: THREE.WebGLRenderer;
   private readonly cubeGroup = new THREE.Group();
   private readonly wrappingEdgesGroup = new THREE.Group();
+  private readonly stopCirclesGroup = new THREE.Group();
   private readonly arrowsGroup = new THREE.Group();
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
@@ -588,7 +609,7 @@ export class PuzzleRenderer {
     container.append(this.canvas);
 
     this.scene.add(this.cubeGroup, this.arrowsGroup);
-    this.cubeGroup.add(this.wrappingEdgesGroup);
+    this.cubeGroup.add(this.wrappingEdgesGroup, this.stopCirclesGroup);
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0xb7d5df, 2.4));
     const key = new THREE.DirectionalLight(0xffffff, 2.1);
     key.position.set(3, 5, 4);
@@ -606,9 +627,11 @@ export class PuzzleRenderer {
     this.clearHint();
     this.clearArrows();
     this.clearWrappingEdges();
+    this.clearStopCircles();
     this.level = level;
     this.state = state;
     this.createWrappingEdges(level);
+    this.createStopCircles(level);
     for (const arrow of level.arrows) {
       const visual = this.createArrow(arrow, level.gridSize, level.arrowScale);
       this.visuals.set(arrow.id, visual);
@@ -622,6 +645,7 @@ export class PuzzleRenderer {
 
   updateState(state: GameState): void {
     this.state = state;
+    this.refreshSettledPaths(state);
     for (const [id, visual] of this.visuals) {
       visual.group.visible = state.remainingIds.includes(id);
       const red = state.failedIds.includes(id);
@@ -652,6 +676,12 @@ export class PuzzleRenderer {
       const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
       if (mesh.material instanceof THREE.MeshBasicMaterial) {
         mesh.material.color.set(theme === "light" ? 0xb77900 : 0xffd84a);
+      }
+    });
+    this.stopCirclesGroup.traverse((child) => {
+      const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
+      if (mesh.material instanceof THREE.MeshBasicMaterial) {
+        mesh.material.color.set(palette.stop);
       }
     });
     this.applySelection();
@@ -1129,6 +1159,64 @@ export class PuzzleRenderer {
     this.wrappingEdgesGroup.clear();
   }
 
+  /** A flat ring laid on each stop-circle cell, just above its cube face. */
+  private createStopCircles(level: LevelDefinition): void {
+    const pitch = 2 / level.gridSize;
+    const inner = pitch * (STOP_CIRCLE_RADIUS - STOP_CIRCLE_THICKNESS / 2);
+    const outer = pitch * (STOP_CIRCLE_RADIUS + STOP_CIRCLE_THICKNESS / 2);
+    for (const stop of level.stops ?? []) {
+      const mesh = new THREE.Mesh(
+        new THREE.RingGeometry(inner, outer, 28),
+        new THREE.MeshBasicMaterial({
+          color: this.palette.stop,
+          side: THREE.DoubleSide,
+          toneMapped: false,
+          transparent: true,
+          depthWrite: false,
+        }),
+      );
+      const [nx, ny, nz] = faceNormal(stop.face);
+      const normal = new THREE.Vector3(nx, ny, nz);
+      mesh.position
+        .copy(cellPoint(stop, level.gridSize))
+        .addScaledVector(normal, 0.001);
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+      mesh.renderOrder = -1;
+      mesh.userData.stop = cellKey(stop);
+      this.stopCirclesGroup.add(mesh);
+    }
+  }
+
+  private clearStopCircles(): void {
+    disposeTree(this.stopCirclesGroup);
+    this.stopCirclesGroup.clear();
+  }
+
+  /**
+   * Re-lay any arrow whose parked offset moved it since the last settled
+   * state. The pickers ride the ribbon, so a parked arrow stays tappable.
+   */
+  private refreshSettledPaths(state: GameState): void {
+    if (!this.level) return;
+    for (const arrow of this.level.arrows) {
+      const visual = this.visuals.get(arrow.id);
+      if (!visual) continue;
+      const cells = currentPath(
+        this.level,
+        arrow,
+        offsetOf(state.offsets, arrow.id),
+      );
+      const key = cells.map(cellKey).join("|");
+      if (visual.settledKey === key) continue;
+      visual.settledKey = key;
+      visual.path = expandedPoints(cells, this.level.gridSize);
+      this.updatePathVisual(visual, {
+        ...visual.path,
+        headFace: visual.path.segmentFaces.at(-1),
+      });
+    }
+  }
+
   private createArrow(
     arrow: ArrowDefinition,
     gridSize: number,
@@ -1186,6 +1274,7 @@ export class PuzzleRenderer {
       material,
       pickers,
       path: expanded,
+      settledKey: arrow.path.map(cellKey).join("|"),
       ribbonWidth,
       headLength,
     };
@@ -1303,7 +1392,10 @@ export class PuzzleRenderer {
   }
 
   private isArrowFacingCamera(arrow: ArrowDefinition): boolean {
-    const visibleCell = arrow.path.find((cell) => {
+    const cells = this.level
+      ? currentPath(this.level, arrow, offsetOf(this.state?.offsets, arrow.id))
+      : arrow.path;
+    const visibleCell = cells.find((cell) => {
       const point = cellPoint(cell, this.level?.gridSize ?? 1);
       const [nx, ny, nz] = faceNormal(cell.face);
       return (

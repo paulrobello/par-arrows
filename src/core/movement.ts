@@ -1,34 +1,25 @@
 import {
+  advanceHead,
   cellKey,
   cellToWorld,
   edgePoint,
   faceHeadingVector,
-  forwardInfo,
   headingForPath,
-  seamTransition,
+  isContinuationEdge,
 } from "./topology";
-import type {
-  ArrowDefinition,
-  Cell,
-  Endpoint,
-  ForwardInfo,
-  Heading,
-  LevelDefinition,
-  MoveResult,
-} from "./types";
+import type { Cell, Endpoint, LevelDefinition, MoveResult } from "./types";
 import { overlappingArrowIds } from "./overlap";
+import { currentPath, offsetOf, stopKeys } from "./stops";
 
-function orientedPath(
-  arrow: ArrowDefinition,
-  endpoint: Endpoint,
-): readonly Cell[] {
-  return endpoint === "head" ? arrow.path : [...arrow.path].reverse();
-}
+export { advanceHead } from "./topology";
+
+type Offsets = Readonly<Record<string, number>>;
 
 function invalid(
   arrowId: string,
   endpoint: Endpoint,
   stateRevision: number,
+  offset: number,
   reason: string,
 ): MoveResult {
   return {
@@ -39,60 +30,34 @@ function invalid(
     route: [],
     waypoints: [],
     stateRevision,
+    offset,
     reason,
   };
 }
 
-function edgePolicy(
-  level: Pick<LevelDefinition, "edgePolicies">,
-  cell: Cell,
-  heading: "east" | "west" | "south" | "north",
-) {
-  return level.edgePolicies?.find(
-    (rule) => rule.face === cell.face && rule.edge === heading,
-  );
-}
-
-/** Resolve one head step, including a declared continuation across a seam. */
-export function advanceHead(
-  level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
-  cell: Cell,
-  heading: Heading,
-): ForwardInfo {
-  const forward = forwardInfo(cell, heading, level.gridSize);
-  if (
-    !forward.exits ||
-    edgePolicy(level, cell, heading)?.policy !== "continue"
-  ) {
-    return forward;
-  }
-  const transition = seamTransition(cell, heading, level.gridSize);
-  const neighbor = edgePolicy(level, cell, heading)?.neighbor;
-  if (
-    !neighbor ||
-    neighbor.face !== transition.cell.face ||
-    neighbor.entering !== transition.heading
-  ) {
-    return forward;
-  }
-  return { heading: transition.heading, next: transition.cell, exits: false };
-}
-
-/** Simulate one complete, renderer-independent arrow attempt without mutating state. */
+/**
+ * Simulate one complete, renderer-independent arrow attempt without mutating
+ * state. A head that steps onto a stop circle parks there; a head resuming from
+ * one never re-parks, because only cells it steps onto are tested.
+ */
 function simulateSingle(
   level: LevelDefinition,
   remainingIds: readonly string[],
+  offsets: Offsets,
   arrowId: string,
   endpoint: Endpoint = "head",
   stateRevision = 0,
   ignoredIds: ReadonlySet<string> = new Set(),
+  stepLimit = Number.POSITIVE_INFINITY,
 ): MoveResult {
   const arrow = level.arrows.find((candidate) => candidate.id === arrowId);
+  const offset = offsetOf(offsets, arrowId);
   if (!arrow || !remainingIds.includes(arrowId)) {
     return invalid(
       arrowId,
       endpoint,
       stateRevision,
+      offset,
       "Arrow is not active in this level state.",
     );
   }
@@ -101,13 +66,30 @@ function simulateSingle(
       arrowId,
       endpoint,
       stateRevision,
+      offset,
       "Single-ended arrows only accept their head endpoint.",
     );
   }
-  const path = orientedPath(arrow, endpoint);
+  if (endpoint === "tail" && offset > 0) {
+    return invalid(
+      arrowId,
+      endpoint,
+      stateRevision,
+      offset,
+      "An arrow parked on a stop circle only continues forward.",
+    );
+  }
+  const settled = currentPath(level, arrow, offset);
+  const path = endpoint === "head" ? settled : [...settled].reverse();
   const initialHead = path[path.length - 1];
   if (!initialHead) {
-    return invalid(arrowId, endpoint, stateRevision, "Arrow has no head cell.");
+    return invalid(
+      arrowId,
+      endpoint,
+      stateRevision,
+      offset,
+      "Arrow has no head cell.",
+    );
   }
   const heading = headingForPath(path, level.gridSize);
   if (!heading) {
@@ -115,10 +97,12 @@ function simulateSingle(
       arrowId,
       endpoint,
       stateRevision,
+      offset,
       "Arrow needs two adjacent path cells to establish its heading.",
     );
   }
 
+  const stops = stopKeys(level);
   const occupied = new Map<string, string>();
   for (const other of level.arrows) {
     if (
@@ -126,7 +110,11 @@ function simulateSingle(
       !ignoredIds.has(other.id) &&
       remainingIds.includes(other.id)
     ) {
-      for (const cell of other.path) {
+      for (const cell of currentPath(
+        level,
+        other,
+        offsetOf(offsets, other.id),
+      )) {
         occupied.set(cellKey(cell), other.id);
       }
     }
@@ -145,18 +133,19 @@ function simulateSingle(
         arrowId,
         endpoint,
         stateRevision,
+        offset,
         "Move entered a nonterminating continuation cycle.",
       );
     }
     visited.add(stateKey);
     const forward = advanceHead(level, current, currentHeading);
     if (forward.exits) {
-      const policy = edgePolicy(level, current, currentHeading);
-      if (policy?.policy === "continue")
+      if (isContinuationEdge(level, current, currentHeading))
         return invalid(
           arrowId,
           endpoint,
           stateRevision,
+          offset,
           "Continuation edge does not match its cube seam transition.",
         );
       return {
@@ -167,6 +156,7 @@ function simulateSingle(
         route,
         waypoints: route.map((cell) => ({ cell, phase: "surface" as const })),
         stateRevision,
+        offset,
         exit: {
           edgePoint: edgePoint(current, currentHeading, level.gridSize),
           tangent: faceHeadingVector(current.face, currentHeading),
@@ -179,6 +169,7 @@ function simulateSingle(
         arrowId,
         endpoint,
         stateRevision,
+        offset,
         "Topology returned neither a next cell nor an exit.",
       );
     }
@@ -189,6 +180,7 @@ function simulateSingle(
         arrowId,
         endpoint,
         stateRevision,
+        offset,
         "Move contacted its own moving body.",
       );
     }
@@ -203,6 +195,7 @@ function simulateSingle(
         route,
         waypoints: route.map((cell) => ({ cell, phase: "surface" as const })),
         stateRevision,
+        offset,
         blockerId,
         contact: {
           cell: next,
@@ -224,6 +217,19 @@ function simulateSingle(
         },
       };
     }
+    if (stops.has(cellKey(next)) || step >= stepLimit) {
+      return {
+        arrowId,
+        endpoint,
+        kind: "paused",
+        distance,
+        route,
+        waypoints: route.map((cell) => ({ cell, phase: "surface" as const })),
+        stateRevision,
+        offset,
+        pausedSteps: step,
+      };
+    }
     current = next;
     currentHeading = forward.heading;
   }
@@ -231,8 +237,19 @@ function simulateSingle(
     arrowId,
     endpoint,
     stateRevision,
+    offset,
     "Move exceeded the cube topology safety bound.",
   );
+}
+
+/**
+ * The forward step at which an attempt stops advancing. Exits never interrupt a
+ * group, so they report no event.
+ */
+function eventStep(member: MoveResult): number {
+  return member.kind === "blocked" || member.kind === "paused"
+    ? member.route.length - 1
+    : Number.POSITIVE_INFINITY;
 }
 
 /** Simulate every member of a shared-tail group as one connected move. */
@@ -242,6 +259,7 @@ export function simulateMove(
   arrowId: string,
   endpoint: Endpoint = "head",
   stateRevision = 0,
+  offsets: Offsets = {},
 ): MoveResult {
   const ids = overlappingArrowIds(level, arrowId).filter((id) =>
     remainingIds.includes(id),
@@ -250,42 +268,68 @@ export function simulateMove(
     return simulateSingle(
       level,
       remainingIds,
+      offsets,
       arrowId,
       endpoint,
       stateRevision,
     );
   }
   const ignored = new Set(ids);
-  const members = ids.map((id) =>
-    simulateSingle(
-      level,
-      remainingIds,
-      id,
-      id === arrowId ? endpoint : "head",
-      stateRevision,
-      ignored,
+  const simulateMembers = (stepLimit: number): readonly MoveResult[] =>
+    ids.map((id) =>
+      simulateSingle(
+        level,
+        remainingIds,
+        offsets,
+        id,
+        id === arrowId ? endpoint : "head",
+        stateRevision,
+        ignored,
+        stepLimit,
+      ),
+    );
+  let members = simulateMembers(Number.POSITIVE_INFINITY);
+  const blockedStep = Math.min(
+    ...members.map((member) =>
+      member.kind === "blocked" ? eventStep(member) : Number.POSITIVE_INFINITY,
     ),
   );
+  const pausedStep = Math.min(
+    ...members.map((member) =>
+      member.kind === "paused" ? eventStep(member) : Number.POSITIVE_INFINITY,
+    ),
+  );
+  // A collision on the same step as a stop still costs the group its life.
+  const groupPauses =
+    Number.isFinite(pausedStep) &&
+    (!Number.isFinite(blockedStep) || pausedStep < blockedStep);
+  if (groupPauses) {
+    members = simulateMembers(pausedStep);
+  }
   const clicked = members.find((member) => member.arrowId === arrowId);
   if (!clicked) {
     return simulateSingle(
       level,
       remainingIds,
+      offsets,
       arrowId,
       endpoint,
       stateRevision,
     );
   }
-  const kind = members.some((member) => member.kind === "invalid")
-    ? "invalid"
-    : members.some((member) => member.kind === "blocked")
-      ? "blocked"
-      : "exit";
   const invalidMember = members.find((member) => member.kind === "invalid");
+  const kind: MoveResult["kind"] = invalidMember
+    ? "invalid"
+    : groupPauses
+      ? "paused"
+      : members.some((member) => member.kind === "blocked")
+        ? "blocked"
+        : "exit";
   return {
     ...clicked,
     kind,
     ...(invalidMember?.reason ? { reason: invalidMember.reason } : {}),
+    ...(kind === "paused" ? { pausedSteps: pausedStep } : {}),
     distance:
       kind === "blocked"
         ? Math.min(

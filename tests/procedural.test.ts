@@ -2,10 +2,12 @@ import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "../src/content/intro";
 import { OVERLAP_INTRO_LEVEL } from "../src/content/overlap-intro";
+import { STOP_INTRO_LEVEL } from "../src/content/stop-intro";
 import {
   GENERATOR_VERSION,
   generateLevel,
   getLevelConfig,
+  getStopCount,
   getWrappingEdgePolicies,
   getWrappingEdgeWeights,
   MAX_LEVEL_ID,
@@ -17,7 +19,9 @@ import {
   simulateMove as simulateGameMove,
 } from "../src/core/game-state";
 import { simulateMove as simulateCoreMove } from "../src/core/movement";
+import { arrowTrack } from "../src/core/stops";
 import {
+  cellKey,
   headingBetween,
   oppositeHeading,
   seamTransition,
@@ -45,7 +49,6 @@ function diverseLevelIds(): readonly number[] {
     2,
     3,
     4,
-    5,
     6,
     7,
     8,
@@ -96,7 +99,7 @@ function normalizedShapeSignature(
 
 describe("runtime campaign generator", () => {
   test("has a versioned stable seed and rejects unsafe ids", () => {
-    expect(GENERATOR_VERSION).toBe(3);
+    expect(GENERATOR_VERSION).toBe(4);
     expect(seedForLevel(1_000_000)).toBe(seedForLevel(1_000_000));
     expect(seedForLevel(1_000_000)).not.toBe(seedForLevel(1_000_001));
     for (const id of [0, -1, 1.5, Number.MAX_SAFE_INTEGER, MAX_LEVEL_ID + 1])
@@ -110,22 +113,29 @@ describe("runtime campaign generator", () => {
     }
   });
 
-  test("preserves legacy geometry through level fourteen and authors level fifteen", () => {
+  test("preserves geometry through level four and authors levels five, eleven, and fifteen", () => {
     expect(geometryHash(generateLevel(2))).toBe(
       "9fb45c3beaf0cafeacb20f56ee1fdf45bcccb17769cbc2229a1521339e85b7fa",
     );
     expect(geometryHash(generateLevel(10))).toBe(
-      "a1572c55ffc7ac95ef43344545191c17255a64a95a0a50169dd7a0ab85f3eec7",
+      "032cde2f3328211346956ede0b8be0416dda983431f51d28d52b32c94421edd0",
     );
     expect(geometryHash(generateLevel(12))).toBe(
-      "0ae328a1b7d451e914a4166a5ee6ea828cc55784d42fe58c1082a5064b4da2c1",
+      "cdede31a8769536158865c769cfc65a97eb882a3392277904551240f4761c69c",
     );
     expect(geometryHash(generateLevel(13))).toBe(
-      "d98224a1a930e1a8aaa002f96b0f176e127b8798cad9ba7ba52ae97ebc6c5978",
+      "5fa650642d13eaf83fe00da47e6acd3123c4ccc5c64e0ab789af917938bdfdcf",
     );
     expect(geometryHash(generateLevel(14))).toBe(
-      "a6ffcb9c0e43197eff41005a73699e7a518a88d4f078b060649f0a0882a718e9",
+      "311904e927fbbfbed017b7c57078614c763b7ea0c5879f0b0b9d052f74b9979a",
     );
+    expect(geometryHash(generateLevel(3))).toBe(
+      "4a1a8de68f8e033d11be45dd73ed6dc80a47289922f98aea82666c4380c5f48b",
+    );
+    expect(geometryHash(generateLevel(4))).toBe(
+      "d11fe1d894bcce87c0e1c068cbce30d1dee3c1d9e05136e4c3e5d8419eb6878f",
+    );
+    expect(generateLevel(5)).toBe(STOP_INTRO_LEVEL);
     expect(generateLevel(15)).toBe(OVERLAP_INTRO_LEVEL);
     expect(getWrappingEdgeWeights(15)).toEqual([1, 0, 0, 0]);
     expect(getWrappingEdgePolicies(15)).toEqual([]);
@@ -155,8 +165,12 @@ describe("runtime campaign generator", () => {
       ).toBe(true);
       const lengths = straightLengths(level);
       for (const length of [2, 3, 4]) expect(lengths).toContain(length);
+      // Two-cell arrows have only four possible shapes on a cube and the
+      // generator plants them on purpose, so repetition is only a variety
+      // problem for shapes long enough to be recognisable.
       const shapeCopies = new Map<string, number>();
       for (const arrow of level.arrows) {
+        if (arrow.path.length < 3) continue;
         const signature = normalizedShapeSignature(level, arrow);
         shapeCopies.set(signature, (shapeCopies.get(signature) ?? 0) + 1);
       }
@@ -165,10 +179,14 @@ describe("runtime campaign generator", () => {
       );
       let certificateState = createGameState(level);
       for (const arrow of [...level.arrows].reverse()) {
-        if (!certificateState.remainingIds.includes(arrow.id)) continue;
-        const result = simulateGameMove(level, certificateState, arrow.id);
-        expect(result.kind).toBe("exit");
-        certificateState = applyMove(level, certificateState, result);
+        // An arrow whose route crosses a stop circle needs one tap per leg.
+        while (certificateState.remainingIds.includes(arrow.id)) {
+          const result = simulateGameMove(level, certificateState, arrow.id);
+          expect(["exit", "paused"]).toContain(result.kind);
+          const next = applyMove(level, certificateState, result);
+          expect(next).not.toBe(certificateState);
+          certificateState = next;
+        }
       }
       expect(certificateState.status).toBe("won");
       expect(certificateState.lives).toBe(level.lives);
@@ -178,7 +196,7 @@ describe("runtime campaign generator", () => {
         if (!solution) throw new Error("Expected a generated solution.");
         for (const arrowId of solution) {
           const result = simulateGameMove(level, state, arrowId);
-          expect(result.kind).toBe("exit");
+          expect(["exit", "paused"]).toContain(result.kind);
           state = applyMove(level, state, result);
         }
         expect(state.status).toBe("won");
@@ -189,8 +207,9 @@ describe("runtime campaign generator", () => {
 
   test("keeps the intended early curve and continuing capped progression", () => {
     expect(
-      [2, 3, 4, 5, 6, 7, 8, 9, 10].map((id) => getLevelConfig(id).arrowCount),
-    ).toEqual([60, 84, 108, 132, 156, 168, 180, 180, 180]);
+      [2, 3, 4, 6, 7, 8, 9, 10].map((id) => getLevelConfig(id).arrowCount),
+    ).toEqual([60, 84, 108, 156, 168, 180, 180, 180]);
+    expect(getLevelConfig(5).arrowCount).toBe(6);
     expect(getLevelConfig(3).lives).toBe(5);
     expect(getLevelConfig(6).lives).toBe(4);
     expect(getLevelConfig(7).lives).toBe(3);
@@ -202,7 +221,7 @@ describe("runtime campaign generator", () => {
     for (const id of diverseLevelIds()) {
       const level = generateLevel(id);
       expect(seedForLevel(id)).toBe(
-        `par-arrows:runtime:${id <= 10 ? 1 : id <= 14 ? 2 : 3}:level:${id}`,
+        `par-arrows:runtime:${id <= 4 ? 1 : 4}:level:${id}`,
       );
       expect(validateLevel(level).valid).toBe(true);
       expect(level.gridSize).toBeLessThanOrEqual(26);
@@ -361,9 +380,43 @@ describe("runtime campaign generator", () => {
     });
   });
 
+  test("introduces stop circles at level five and spreads zero to three later", () => {
+    for (let id = 1; id <= 4; id += 1) {
+      expect(getStopCount(id)).toBe(0);
+      expect(generateLevel(id).stops ?? []).toEqual([]);
+    }
+    expect(getStopCount(5)).toBe(1);
+    expect(generateLevel(5).stops).toHaveLength(1);
+    expect(getStopCount(6)).toBe(1);
+    expect(getStopCount(11)).toBe(0);
+    expect(getStopCount(15)).toBe(0);
+
+    const counts = new Set<number>();
+    for (let id = 5; id <= 60; id += 1) counts.add(getStopCount(id));
+    expect([...counts].sort()).toEqual([0, 1, 2, 3]);
+
+    for (const id of [6, 7, 12, 16, 55]) {
+      const level = generateLevel(id);
+      const stops = level.stops ?? [];
+      expect(stops).toHaveLength(getStopCount(id));
+      const bodies = new Set(
+        level.arrows.flatMap((arrow) => arrow.path.map(cellKey)),
+      );
+      const reachable = new Set(
+        level.arrows.flatMap((arrow) =>
+          arrowTrack(level, arrow).slice(arrow.path.length).map(cellKey),
+        ),
+      );
+      for (const stop of stops) {
+        expect(bodies.has(cellKey(stop))).toBe(false);
+        expect(reachable.has(cellKey(stop))).toBe(true);
+      }
+    }
+  }, 20_000);
+
   test("generates playable head continuations without changing the seeded edge selection", () => {
     const counts = new Set<number>();
-    for (let id = 11; id <= 40; id += 1) {
+    for (let id = 11; id <= 50; id += 1) {
       const level = generateLevel(id);
       const policies = level.edgePolicies ?? [];
       expect(policies).toEqual(getWrappingEdgePolicies(id));

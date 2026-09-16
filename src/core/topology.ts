@@ -1,4 +1,10 @@
-import type { Cell, FaceId, ForwardInfo, Heading } from "./types";
+import type {
+  Cell,
+  FaceId,
+  ForwardInfo,
+  Heading,
+  LevelDefinition,
+} from "./types";
 
 export type Vector3 = readonly [number, number, number];
 
@@ -260,4 +266,48 @@ export function cellKey(cell: Cell): string {
 /** Canonical undirected link identity, shared by either traversal direction. */
 export function linkKey(first: Cell, second: Cell): string {
   return [cellKey(first), cellKey(second)].sort().join("|");
+}
+
+function edgePolicy(
+  level: Pick<LevelDefinition, "edgePolicies">,
+  cell: Cell,
+  heading: Heading,
+) {
+  return level.edgePolicies?.find(
+    (rule) => rule.face === cell.face && rule.edge === heading,
+  );
+}
+
+/** Resolve one head step, including a declared continuation across a seam. */
+export function advanceHead(
+  level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
+  cell: Cell,
+  heading: Heading,
+): ForwardInfo {
+  const forward = forwardInfo(cell, heading, level.gridSize);
+  if (
+    !forward.exits ||
+    edgePolicy(level, cell, heading)?.policy !== "continue"
+  ) {
+    return forward;
+  }
+  const transition = seamTransition(cell, heading, level.gridSize);
+  const neighbor = edgePolicy(level, cell, heading)?.neighbor;
+  if (
+    !neighbor ||
+    neighbor.face !== transition.cell.face ||
+    neighbor.entering !== transition.heading
+  ) {
+    return forward;
+  }
+  return { heading: transition.heading, next: transition.cell, exits: false };
+}
+
+/** True when this boundary declares a continuation rather than an exit. */
+export function isContinuationEdge(
+  level: Pick<LevelDefinition, "edgePolicies">,
+  cell: Cell,
+  heading: Heading,
+): boolean {
+  return edgePolicy(level, cell, heading)?.policy === "continue";
 }

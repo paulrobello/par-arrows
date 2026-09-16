@@ -8,6 +8,7 @@ interface TapState {
   selectedArrowId?: string;
   remainingIds: string[];
   failedIds: string[];
+  parkedOffsets: Record<string, number>;
   lives: number;
   moving: { arrowId: string; duration: number } | null;
   camera: { distance: number };
@@ -175,18 +176,17 @@ export async function assertReliableTaps(
         await dispatch(page, "pointerup", () => gesture.up());
         await settle(page);
         const result = await snapshot(page);
+        const missed = `Missed ${touch ? "touch" : "mouse"} release at ${dx},${dy}`;
         if (expected.kind === "exit")
-          assert.equal(
-            result.remainingIds.includes(target.id),
-            false,
-            `Missed ${touch ? "touch" : "mouse"} release at ${dx},${dy}`,
-          );
-        else
+          assert.equal(result.remainingIds.includes(target.id), false, missed);
+        else if (expected.kind === "paused")
+          // A park keeps the arrow on the cube and costs it nothing.
           assert.deepEqual(
-            result.failedIds,
-            [target.id],
-            `Missed ${touch ? "touch" : "mouse"} release at ${dx},${dy}`,
+            result.parkedOffsets,
+            { [target.id]: expected.pausedSteps },
+            missed,
           );
+        else assert.deepEqual(result.failedIds, [target.id], missed);
         assert.equal(
           result.lives,
           level.lives - (expected.kind === "blocked" ? 1 : 0),

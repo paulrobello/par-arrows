@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { LEVELS } from "../src/content/levels";
 import { OVERLAP_INTRO_LEVEL } from "../src/content/overlap-intro";
 import { generateLevel, seedForLevel } from "../src/content/procedural";
+import { STOP_INTRO_LEVEL } from "../src/content/stop-intro";
 import {
   applyMove,
   createGameState,
@@ -206,8 +207,8 @@ describe("resumable campaign saves", () => {
     const state = exitedState(level);
     expect(save(state, 88)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 7,
-      generatorVersion: 3,
+      contentVersion: 8,
+      generatorVersion: 4,
       currentLevelId: 42,
       unlockedLevelId: 88,
     });
@@ -220,8 +221,8 @@ describe("resumable campaign saves", () => {
     expect(restored.value?.level).toEqual(level);
   });
 
-  test("restores an exact partial v6 generator-v1 attempt through level ten", async () => {
-    const level = levelFor(10);
+  test("restores an exact partial v6 generator-v1 attempt through level four", async () => {
+    const level = levelFor(4);
     const state = exitedState(level);
     writeVersionOneGeneratorSave(state, 15, false);
 
@@ -233,7 +234,7 @@ describe("resumable campaign saves", () => {
     expect(restored.value?.tutorialComplete).toBe(false);
   });
 
-  test("refreshes a v6 generator-v1 attempt above level ten", async () => {
+  test("refreshes a v6 generator-v1 attempt above level four", async () => {
     const level = levelFor(11);
     writeVersionOneGeneratorSave(exitedState(level), 17, false);
 
@@ -246,8 +247,8 @@ describe("resumable campaign saves", () => {
     expect(restored.value?.tutorialComplete).toBe(false);
   });
 
-  test("preserves unchanged v6 generator content through level fourteen", async () => {
-    for (const id of [10, 11, 12, 13, 14]) {
+  test("preserves unchanged v6 generator content through level four and cube eleven", async () => {
+    for (const id of [2, 3, 4, 11]) {
       const level = generateLevel(id);
       const state = exitedState(level);
       expect(save(state, 29)).toBe(true);
@@ -291,6 +292,66 @@ describe("resumable campaign saves", () => {
     expect(restored.value?.state).toEqual(createGameState(level));
     expect(restored.value?.unlockedLevelId).toBe(35);
     expect(restored.value?.tutorialComplete).toBe(true);
+  });
+
+  test("restores a parked attempt and rejects impossible parked offsets", async () => {
+    const level = STOP_INTRO_LEVEL;
+    const initial = createGameState(level);
+    const parked = applyMove(
+      level,
+      initial,
+      simulateMove(level, initial, "stop-intro-parker"),
+    );
+    expect(parked.offsets).toEqual({ "stop-intro-parker": 1 });
+    expect(save(parked, 9)).toBe(true);
+
+    const restored = await loadCampaign((id) =>
+      Promise.resolve(id === 5 ? level : generateLevel(id)),
+    );
+    expect(restored.recovered).toBe(false);
+    expect(restored.value?.state).toEqual(parked);
+    expect(restored.value?.unlockedLevelId).toBe(9);
+
+    for (const broken of [
+      // Past the end of the arrow's own track.
+      { ...parked, offsets: { "stop-intro-parker": 99 } },
+      // Naming an arrow that is no longer on the cube.
+      { ...parked, offsets: { "stop-intro-missing": 1 } },
+      // Parked straight onto another arrow's cell.
+      { ...parked, offsets: { "stop-intro-parker": 2 } },
+      // A malformed value where an integer belongs.
+      { ...parked, offsets: { "stop-intro-parker": 1.5 } },
+    ]) {
+      const raw = savedJson();
+      entries.set(CAMPAIGN_KEY, JSON.stringify({ ...raw, state: broken }));
+      const recovered = await loadCampaign((id) =>
+        Promise.resolve(id === 5 ? level : generateLevel(id)),
+      );
+      expect(recovered.recovered).toBe(true);
+      expect(recovered.value?.state).toEqual(createGameState(level));
+    }
+  });
+
+  test("a v7 save without parked offsets resumes with none", async () => {
+    const level = levelFor(2);
+    const state = exitedState(level);
+    expect(save(state, 12)).toBe(true);
+    const { offsets: _dropped, ...withoutOffsets } = state;
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({
+        ...savedJson(),
+        contentVersion: 7,
+        generatorVersion: 3,
+        state: withoutOffsets,
+      }),
+    );
+
+    const restored = await loadCampaign(resolveFixture);
+    expect(restored.recovered).toBe(false);
+    expect(restored.value?.state).toEqual(state);
+    expect(restored.value?.state.offsets).toEqual({});
+    expect(restored.value?.unlockedLevelId).toBe(12);
   });
 
   test("saves an atomic overlap failure as one life and rejects partial groups", async () => {
@@ -352,8 +413,8 @@ describe("resumable campaign saves", () => {
       if (!restored.value) throw new Error("Expected restored campaign");
       expect(saveCampaign(restored.value)).toBe(true);
       expect(savedJson()).toMatchObject({
-        contentVersion: 7,
-        generatorVersion: 3,
+        contentVersion: 8,
+        generatorVersion: 4,
       });
     },
   );

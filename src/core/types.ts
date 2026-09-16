@@ -37,6 +37,8 @@ export interface LevelDefinition {
   readonly arrowScale?: number;
   readonly arrows: readonly ArrowDefinition[];
   readonly edgePolicies?: readonly EdgePolicyDefinition[];
+  /** Cells that pause a passing head until it is activated again. */
+  readonly stops?: readonly Cell[];
 }
 
 export type GameStatus = "playing" | "won" | "lost";
@@ -50,11 +52,13 @@ export interface GameState {
   readonly status: GameStatus;
   /** Increments after every accepted settled outcome and guards stale results. */
   readonly revision: number;
+  /** Forward steps already travelled by each arrow parked on a stop circle. */
+  readonly offsets: Readonly<Record<string, number>>;
 }
 
 export type Endpoint = "head" | "tail";
 
-export type MoveKind = "exit" | "blocked" | "invalid";
+export type MoveKind = "exit" | "blocked" | "invalid" | "paused";
 
 /** A renderer-neutral position in a settled attempt trace. */
 export interface MoveWaypoint {
@@ -77,7 +81,7 @@ export interface ContactTrace {
 
 /**
  * A complete deterministic move result. `route` ends at the first blocker for
- * rebounds, and ends at the last surface cell for exits.  Flight happens only
+ * rebounds, at the stop circle for pauses, and at the last surface cell for exits.  Flight happens only
  * after that final surface cell and cannot collide with other cube faces.
  */
 export interface MoveResult {
@@ -88,6 +92,10 @@ export interface MoveResult {
   readonly route: readonly Cell[];
   readonly waypoints: readonly MoveWaypoint[];
   readonly stateRevision: number;
+  /** Forward steps already travelled before this attempt began. */
+  readonly offset: number;
+  /** Forward steps this attempt travels before parking on a stop circle. */
+  readonly pausedSteps?: number;
   readonly blockerId?: string;
   readonly contact?: ContactTrace;
   readonly exit?: ExitTrace;

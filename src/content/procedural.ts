@@ -2,6 +2,7 @@ import { advanceHead, simulateMove } from "../core/movement";
 import { overlappingArrowIds } from "../core/overlap";
 import {
   cellKey,
+  headingForPath,
   oppositeHeading,
   seamTransition,
   stepSurface,
@@ -17,8 +18,9 @@ import type {
 import { validateLevel } from "../core/validation";
 import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "./intro";
 import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
+import { STOP_INTRO_LEVEL } from "./stop-intro";
 
-export const GENERATOR_VERSION = 3;
+export const GENERATOR_VERSION = 4;
 export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
 
 const FACES: readonly FaceId[] = [
@@ -41,11 +43,45 @@ export interface LevelConfig {
 /** The stable, inspectable input to the seeded layout generator. */
 export function seedForLevel(id: number): string {
   assertLevelId(id);
+  if (id === 5) return "par-arrows:runtime:4:level:5:stop-intro:1";
   if (id === 11) return "par-arrows:runtime:2:level:11:wrap-intro:1";
-  if (id <= 10) return `par-arrows:runtime:1:level:${id}`;
-  if (id <= 14) return `par-arrows:runtime:2:level:${id}`;
+  if (id <= 4) return `par-arrows:runtime:1:level:${id}`;
   if (id === 15) return "par-arrows:runtime:3:level:15:overlap-intro:1";
   return `par-arrows:runtime:${GENERATOR_VERSION}:level:${id}`;
+}
+
+/**
+ * Stop-circle counts per level, drawn from the same weighted shape as wrapping
+ * edges. Level 5 authors its own single circle, level 6 always carries one so
+ * the lesson repeats immediately, and the authored teaching cubes stay focused
+ * on their own mechanic.
+ */
+export function getStopCountWeights(
+  id: number,
+): readonly [number, number, number, number] {
+  assertLevelId(id);
+  if (id <= 4 || id === 11 || id === 15) return [1, 0, 0, 0];
+  if (id === 5 || id === 6) return [0, 1, 0, 0];
+  const progress = Math.min(1, (id - 6) / 94);
+  return [
+    0.2,
+    0.5 - 0.2 * progress,
+    0.2 + 0.1 * progress,
+    0.1 + 0.1 * progress,
+  ];
+}
+
+/** Circle selection has its own seeded stream, independent of layout retries. */
+export function getStopCount(id: number): number {
+  const weights = getStopCountWeights(id);
+  const roll = new Rng(hashSeed(`${seedForLevel(id)}:stops`)).next();
+  let count = 0;
+  let threshold = weights[0] as number;
+  while (count < 3 && roll >= threshold) {
+    count += 1;
+    threshold += weights[count] ?? 0;
+  }
+  return count;
 }
 
 export function getWrappingEdgeWeights(
@@ -122,10 +158,7 @@ export function getWrappingEdgePolicies(
 
 export function getLevelConfig(id: number): LevelConfig {
   assertLevelId(id);
-  if (id === 1 || id === 11) {
-    return { gridSize: 4, arrowCount: 6, lives: 5, arrowScale: 1 };
-  }
-  if (id === 15) {
+  if (id === 1 || id === 5 || id === 11 || id === 15) {
     return { gridSize: 4, arrowCount: 6, lives: 5, arrowScale: 1 };
   }
   const early = [0, 60, 84, 108, 132, 156, 168, 180, 180, 180];
@@ -373,17 +406,83 @@ function overlapStarter(
   return undefined;
 }
 
+/**
+ * Choose stop circles on cells some arrow's head actually travels through, so a
+ * circle is always reachable rather than decorative. Circles never change
+ * whether a level can be cleared: a head sweeps the same cells whether or not it
+ * parks along the way, so the reverse-insertion certificate still holds and the
+ * cheap drive-through replay below stays a valid check.
+ */
+function chooseStops(
+  id: number,
+  level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
+  arrows: readonly ArrowDefinition[],
+  occupied: ReadonlySet<string>,
+): readonly Cell[] {
+  const count = getStopCount(id);
+  if (count === 0) return [];
+  const candidates: Cell[] = [];
+  const seen = new Set<string>();
+  for (const arrow of arrows) {
+    const head = arrow.path[arrow.path.length - 1];
+    const heading = headingForPath(arrow.path, level.gridSize);
+    if (!head || !heading) continue;
+    for (const cell of exitRay(level, head, heading).slice(1)) {
+      const key = cellKey(cell);
+      if (occupied.has(key) || seen.has(key)) continue;
+      seen.add(key);
+      candidates.push(cell);
+    }
+  }
+  const rng = new Rng(hashSeed(`${seedForLevel(id)}:stop-cells`));
+  for (let index = candidates.length - 1; index > 0; index -= 1) {
+    const replacement = rng.int(index + 1);
+    const current = candidates[index] as Cell;
+    candidates[index] = candidates[replacement] as Cell;
+    candidates[replacement] = current;
+  }
+  return candidates.slice(0, count);
+}
+
+/**
+ * Replay the construction certificate. An arrow whose route crosses a stop
+ * circle needs one tap per leg, so each certificate entry is driven through its
+ * pauses before the next arrow is tried.
+ */
 function validateGenerated(
   level: LevelDefinition,
   certificate: readonly string[],
 ): boolean {
   if (!validateLevel(level).valid) return false;
   let remaining = level.arrows.map((arrow) => arrow.id);
+  const offsets: Record<string, number> = {};
+  const maximumLegs = level.gridSize * 6 + 2;
   for (const arrowId of certificate) {
     if (!remaining.includes(arrowId)) continue;
-    if (simulateMove(level, remaining, arrowId).kind !== "exit") return false;
+    let cleared = false;
+    for (let leg = 0; leg < maximumLegs && !cleared; leg += 1) {
+      const result = simulateMove(
+        level,
+        remaining,
+        arrowId,
+        "head",
+        0,
+        offsets,
+      );
+      if (result.kind === "exit") {
+        cleared = true;
+      } else if (result.kind === "paused" && result.pausedSteps) {
+        for (const id of overlappingArrowIds(level, arrowId)) {
+          offsets[id] = (offsets[id] ?? 0) + result.pausedSteps;
+        }
+      } else {
+        return false;
+      }
+    }
+    if (!cleared) return false;
     const clearedIds = overlappingArrowIds(level, arrowId);
     remaining = remaining.filter((id) => !clearedIds.includes(id));
+    for (const id of clearedIds) delete offsets[id];
   }
   return remaining.length === 0;
 }
@@ -396,6 +495,7 @@ function validateGenerated(
 export function generateLevel(id: number): LevelDefinition {
   assertLevelId(id);
   if (id === 1) return LEVEL_ONE;
+  if (id === 5) return STOP_INTRO_LEVEL;
   if (id === 11) return WRAP_INTRO_LEVEL;
   if (id === 15) return OVERLAP_INTRO_LEVEL;
   const config = getLevelConfig(id);
@@ -513,9 +613,11 @@ export function generateLevel(id: number): LevelDefinition {
       arrows.push(arrow);
     }
     if (arrows.length !== config.arrowCount) continue;
+    const stops = chooseStops(id, candidateLevel, arrows, occupied);
     const level: LevelDefinition = {
       ...candidateLevel,
       arrows,
+      ...(stops.length > 0 ? { stops } : {}),
     };
     const certificate = [...arrows].reverse().map((arrow) => arrow.id);
     if (validateGenerated(level, certificate)) return level;

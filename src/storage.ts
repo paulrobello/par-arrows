@@ -5,11 +5,13 @@ import {
 } from "./content/procedural";
 import { createGameState } from "./core/game-state";
 import { overlappingArrowIds } from "./core/overlap";
+import { currentPath, maximumOffset } from "./core/stops";
+import { cellKey } from "./core/topology";
 import type { GameState, LevelDefinition } from "./core/types";
 
 const STORAGE_KEY = "par-arrows:campaign:v1";
 const SETTINGS_KEY = "par-arrows:settings:v1";
-const CONTENT_VERSION = 7;
+const CONTENT_VERSION = 8;
 
 export interface CampaignSave {
   readonly currentLevelId: number;
@@ -62,6 +64,55 @@ function isLevelId(value: unknown): value is number {
   );
 }
 
+/**
+ * Parked offsets must name remaining arrows only, stay inside each arrow's
+ * track, move a shared-tail group as one, and never park two arrows onto the
+ * same cell.
+ */
+function hasValidOffsets(
+  value: unknown,
+  level: LevelDefinition,
+  remainingIds: ReadonlySet<string>,
+  overlapGroups: ReadonlyMap<string, readonly string[]>,
+): boolean {
+  if (value === undefined) return true;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const offsets = value as Record<string, unknown>;
+  for (const [id, offset] of Object.entries(offsets)) {
+    const arrow = level.arrows.find((candidate) => candidate.id === id);
+    if (
+      !arrow ||
+      !remainingIds.has(id) ||
+      typeof offset !== "number" ||
+      !Number.isSafeInteger(offset) ||
+      offset < 0 ||
+      offset > maximumOffset(level, arrow)
+    ) {
+      return false;
+    }
+  }
+  const at = (id: string): number => {
+    const offset = offsets[id];
+    return typeof offset === "number" ? offset : 0;
+  };
+  for (const group of overlapGroups.values()) {
+    if (group.some((id) => at(id) !== at(group[0] as string))) return false;
+  }
+  // Shared-tail group members legitimately share cells; anyone else may not.
+  const occupied = new Map<string, string>();
+  for (const arrow of level.arrows) {
+    if (!remainingIds.has(arrow.id)) continue;
+    const group = overlappingArrowIds(level, arrow.id);
+    for (const cell of currentPath(level, arrow, at(arrow.id))) {
+      const key = cellKey(cell);
+      const owner = occupied.get(key);
+      if (owner !== undefined && !group.includes(owner)) return false;
+      occupied.set(key, arrow.id);
+    }
+  }
+  return true;
+}
+
 function isState(value: unknown, level: LevelDefinition): value is GameState {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<GameState>;
@@ -108,6 +159,9 @@ function isState(value: unknown, level: LevelDefinition): value is GameState {
     [...overlapGroups.values()].filter((group) =>
       failedIds.has(group[0] as string),
     ).length;
+  if (!hasValidOffsets(candidate.offsets, level, remainingIds, overlapGroups)) {
+    return false;
+  }
   const expectedStatus =
     remaining?.length === 0 ? "won" : lives === 0 ? "lost" : "playing";
   return (
@@ -146,17 +200,24 @@ function isLegacyContentVersion(value: unknown): boolean {
   );
 }
 
+/** Levels whose seed and geometry this release leaves exactly as they were. */
+function isUnchangedLevel(levelId: number): boolean {
+  return levelId <= 4 || levelId === 11 || levelId === 15;
+}
+
 function hasMatchingGeneratorMetadata(
   value: StoredCampaign,
   levelId: number,
 ): boolean {
-  const seedMatches = value.seed === seedForLevel(levelId);
+  if (value.seed !== seedForLevel(levelId)) return false;
+  const stored = value.generatorVersion;
+  if (stored === GENERATOR_VERSION) return true;
+  // A matching seed on an unchanged level still describes the same cube, so an
+  // older generator stamp is not by itself a reason to restart the attempt.
   return (
-    seedMatches &&
-    (value.generatorVersion === GENERATOR_VERSION ||
-      (levelId <= 10 &&
-        (value.generatorVersion === 1 || value.generatorVersion === 2)) ||
-      (levelId <= 14 && value.generatorVersion === 2))
+    (levelId <= 4 && (stored === 1 || stored === 2 || stored === 3)) ||
+    (levelId === 11 && (stored === 2 || stored === 3)) ||
+    (levelId === 15 && stored === 3)
   );
 }
 
@@ -214,15 +275,19 @@ export async function loadCampaign(
   const compatible =
     currentStateIsValid &&
     (exactCurrentContent ||
-      (parsed.contentVersion === 6 &&
-        currentLevelId <= 14 &&
+      ((parsed.contentVersion === 6 || parsed.contentVersion === 7) &&
+        isUnchangedLevel(currentLevelId) &&
         hasMatchingGeneratorMetadata(parsed, currentLevelId)) ||
       (legacyContent && currentLevelId === 1));
+  const restored = parsed.state as GameState | undefined;
   const value: LoadedCampaign = compatible
     ? {
         currentLevelId,
         unlockedLevelId,
-        state: parsed.state as GameState,
+        state: {
+          ...(restored as GameState),
+          offsets: restored?.offsets ?? {},
+        },
         tutorialComplete: parsed.tutorialComplete === true,
         level,
       }

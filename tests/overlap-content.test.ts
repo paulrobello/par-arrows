@@ -88,15 +88,19 @@ describe("overlapping-tail level content", () => {
       expect(group).toHaveLength(expectedSize);
       expect(level.arrows).toHaveLength(getLevelConfig(id).arrowCount);
       expect(level).toEqual(generateLevel(id));
-      expect(seedForLevel(id)).toBe(`par-arrows:runtime:3:level:${id}`);
+      expect(seedForLevel(id)).toBe(`par-arrows:runtime:4:level:${id}`);
       expect(validateLevel(level)).toEqual({ valid: true, errors: [] });
 
       let state = createGameState(level);
       for (const arrow of [...level.arrows].reverse()) {
-        if (!state.remainingIds.includes(arrow.id)) continue;
-        const result = simulateMove(level, state, arrow.id);
-        expect(result.kind).toBe("exit");
-        state = applyMove(level, state, result);
+        // An arrow whose route crosses a stop circle needs one tap per leg.
+        while (state.remainingIds.includes(arrow.id)) {
+          const result = simulateMove(level, state, arrow.id);
+          expect(["exit", "paused"]).toContain(result.kind);
+          const next = applyMove(level, state, result);
+          expect(next).not.toBe(state);
+          state = next;
+        }
       }
       expect(state.status).toBe("won");
       expect(state.lives).toBe(level.lives);
