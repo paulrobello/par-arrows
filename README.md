@@ -2,6 +2,8 @@
 
 A desktop and mobile 3D arrow-removal puzzle with flat ribbon arrows. Rotate a cube, find an unobstructed arrow, and send it off the surface. A first collision costs one life and marks that arrow red; further collisions by the same red arrow are free. Two or three arrows can share tail segments: touching any member moves the whole group, and an outside collision sends all members back red for one life. Their heads and travel paths stay separate.
 
+Play at [arrows.par-dev.com](https://arrows.par-dev.com).
+
 Level 1 is the authored teaching cube. Level 11 is a second authored, small teaching cube that introduces reciprocal yellow-edge wrapping; level 15 teaches overlapping tails, and levels 2–10, 12–14, and 16 onward are generated at runtime from their logical level numbers. The campaign continues indefinitely, and generated layouts are validated before play. See [PRD.md](PRD.md) for product rules and [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the runtime design.
 
 The former fixed ten-level catalog and its reports remain historical reference and test fixtures only. They are excluded from production imports.
