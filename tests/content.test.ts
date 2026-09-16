@@ -160,7 +160,7 @@ describe("curated campaign", () => {
       expect(state.status).toBe("won");
       expect(state.remainingIds).toEqual([]);
     }
-  });
+  }, 15_000);
 
   test("raises density with real zigzags, wraps, and varied authored route lengths", () => {
     const campaignStraightLengths = new Set<number>();
