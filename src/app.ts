@@ -64,7 +64,7 @@ const HINT_FOCUS_DURATION = 600;
 const HINT_FLASH_DURATION = 2400;
 const HINT_FLASH_HALF_PULSE = 400;
 const MOUSE_PICK_MARGIN_PX = 6;
-const TOUCH_PICK_MARGIN_PX = 30;
+const TOUCH_PICK_MARGIN_PX = 44;
 
 export class ParArrowsApp {
   private readonly root: HTMLElement;
