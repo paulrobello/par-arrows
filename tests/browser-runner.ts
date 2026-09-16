@@ -833,8 +833,10 @@ async function assertContinuousRotation(
       const x = bounds.x + bounds.width / 2 - deltaX * 4;
       const y = bounds.y + bounds.height / 2 - deltaY * 4;
       await gesture.start(x, y);
+      // Consume the tap slop so every measured step tracks one to one.
+      await gesture.move(x + deltaX, y + deltaY);
       let before = await snapshot(page);
-      for (let step = 1; step <= 8; step += 1) {
+      for (let step = 2; step <= 9; step += 1) {
         await gesture.move(x + deltaX * step, y + deltaY * step);
         // Browser input dispatch may acknowledge before the page handles pointermove.
         try {

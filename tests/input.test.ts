@@ -89,13 +89,12 @@ describe("PointerInput", () => {
     element.emit("pointermove", pointer(30, 10));
     element.emit("pointermove", { ...pointer(100, 300), buttons: 0 });
     element.emit("pointermove", pointer(50, 30));
-    expect(orbit).toEqual([
-      [20, 0],
-      [20, 20],
-    ]);
+    // The threshold-crossing move only anchors the drag, so its delta never
+    // reaches the orbit.
+    expect(orbit).toEqual([[20, 20]]);
   });
 
-  test("enters drag once then forwards every subsequent pointer delta", () => {
+  test("consumes the tap slop then forwards every subsequent pointer delta", () => {
     const element = new MockElement();
     const orbit: Array<readonly [number, number]> = [];
     new PointerInput(element as unknown as HTMLElement, {
@@ -111,8 +110,9 @@ describe("PointerInput", () => {
     element.emit("pointermove", pointer(10, 0));
     element.emit("pointermove", pointer(11, 1));
 
+    // Crossing the threshold anchors the drag: the slop distance is never
+    // rotated in as one jump.
     expect(orbit).toEqual([
-      [9, 0],
       [1, 0],
       [1, 1],
     ]);

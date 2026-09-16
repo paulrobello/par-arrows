@@ -149,7 +149,8 @@ export class PointerInput {
         dragging: true,
       };
       this.handlers.onPress(undefined);
-      this.handlers.onOrbit(deltaX, deltaY);
+      // The tap slop is consumed as a dead zone: anchoring here keeps
+      // crossing the threshold from snapping the cube by the slop distance.
     } else if (this.active.dragging) {
       this.active = { ...this.active, x: event.clientX, y: event.clientY };
       this.handlers.onOrbit(deltaX, deltaY);
