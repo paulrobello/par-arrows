@@ -101,7 +101,7 @@ body,
 }
 
 body {
-  min-height: 100vh;
+  height: 100vh;
   overflow: hidden;
 }
 
@@ -117,9 +117,18 @@ button {
 
 .app-shell {
   position: relative;
-  min-height: 100vh;
+  height: 100vh;
   overflow: hidden;
   background: var(--shell-background);
+}
+
+/* iOS resolves 100vh against the tallest viewport it could show, so a shell
+   sized that way keeps its bottom edge behind the toolbar or home indicator. */
+@supports (height: 100dvh) {
+  body,
+  .app-shell {
+    height: 100dvh;
+  }
 }
 
 .app-shell::after {
