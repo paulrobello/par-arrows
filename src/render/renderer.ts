@@ -190,6 +190,15 @@ export function wrappingEdgeOpacity(
     : 0.32;
 }
 
+/** Dims a stop circle whose face turns away from the camera, like arrows. */
+export function stopCircleOpacity(
+  faceNormal: THREE.Vector3,
+  position: THREE.Vector3,
+  cameraPosition: THREE.Vector3,
+): number {
+  return faceNormal.dot(cameraPosition.clone().sub(position)) > 0 ? 1 : 0.32;
+}
+
 /** Returns one world-space segment for each continued physical cube edge. */
 export function wrappingEdgeSegments(
   level: LevelDefinition,
@@ -1118,6 +1127,17 @@ export class PuzzleRenderer {
         this.camera.position,
       );
     }
+    for (const child of this.stopCirclesGroup.children) {
+      const mesh = child as THREE.Mesh<
+        THREE.BufferGeometry,
+        THREE.MeshBasicMaterial
+      >;
+      mesh.material.opacity = stopCircleOpacity(
+        mesh.userData.normal as THREE.Vector3,
+        mesh.position,
+        this.camera.position,
+      );
+    }
     for (const visual of this.visuals.values()) {
       const activeColor = hintedIds.includes(visual.arrow.id)
         ? this.palette.selected
@@ -1255,6 +1275,7 @@ export class PuzzleRenderer {
       mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
       mesh.renderOrder = -1;
       mesh.userData.stop = cellKey(stop);
+      mesh.userData.normal = normal;
       this.stopCirclesGroup.add(mesh);
     }
   }

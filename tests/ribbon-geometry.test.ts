@@ -17,6 +17,7 @@ import {
   ribbonSections,
   ribbonVertices,
   slicePath,
+  stopCircleOpacity,
   wrappingEdgeOpacity,
   wrappingEdgeSegments,
 } from "../src/render/renderer";
@@ -726,5 +727,19 @@ describe("flat ribbon geometry", () => {
         straight[0]?.start.left.distanceTo(new THREE.Vector3()),
       ).toBeGreaterThan(0.9);
     }
+  });
+
+  test("stop circles dim when their face turns away from the camera", () => {
+    const normal = new THREE.Vector3(0, 0, 1);
+    const position = new THREE.Vector3(0.25, -0.25, 1.001);
+    expect(
+      stopCircleOpacity(normal, position, new THREE.Vector3(0, 0, 5)),
+    ).toBe(1);
+    expect(
+      stopCircleOpacity(normal, position, new THREE.Vector3(0, 0, -5)),
+    ).toBe(0.32);
+    expect(
+      stopCircleOpacity(normal, position, new THREE.Vector3(5, 0, 0)),
+    ).toBe(0.32);
   });
 });
