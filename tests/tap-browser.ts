@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import type { Browser, Page } from "playwright";
 import { generateLevel } from "../src/content/procedural";
-import { createGameState, simulateMove } from "../src/core/game-state";
+import {
+  applyMove,
+  createGameState,
+  simulateMove,
+} from "../src/core/game-state";
 import { waitForReady } from "./runtime-fixtures";
 
 interface TapState {
@@ -265,17 +269,46 @@ export async function assertReliableTaps(
         "A busy press must not imply an accepted arrow click",
       );
       await dispatch(page, "pointerup", () => gesture.up());
-      assert.equal((await snapshot(page)).moving?.arrowId, clear.id);
+      assert.equal(
+        (await snapshot(page)).moving?.arrowId,
+        clear.id,
+        "A busy tap must not preempt the running move",
+      );
+      await settle(page);
+      assert.equal(
+        (await snapshot(page)).moving?.arrowId,
+        other.id,
+        "The busy tap must buffer and start once the running move settles",
+      );
       await settle(page);
       const busyResult = await snapshot(page);
-      assert.equal(busyResult.remainingIds.length, level.arrows.length - 1);
-      assert.deepEqual(busyResult.failedIds, []);
+      const otherExpected = simulateMove(
+        level,
+        applyMove(level, initial, simulateMove(level, initial, clear.id)),
+        other.id,
+      );
+      if (otherExpected.kind === "exit")
+        assert.equal(busyResult.remainingIds.includes(other.id), false);
+      else if (otherExpected.kind === "paused")
+        assert.deepEqual(busyResult.parkedOffsets, {
+          ...busyResult.parkedOffsets,
+          [other.id]: otherExpected.pausedSteps,
+        });
+      else assert.deepEqual(busyResult.failedIds, [other.id]);
+      assert.equal(
+        busyResult.remainingIds.length,
+        level.arrows.length - (otherExpected.kind === "exit" ? 2 : 1),
+      );
+      assert.deepEqual(
+        busyResult.failedIds.length,
+        otherExpected.kind === "blocked" ? 1 : 0,
+      );
       await page.screenshot({
         path: `${output}/reliable-taps-${touch ? "touch" : "mouse"}.png`,
       });
       assert.deepEqual(errors, []);
       console.log(
-        `PASS ${touch ? "native touch" : "mouse"} tap jitter, drag cancellation, and busy press feedback (${offsets.length} release offsets)`,
+        `PASS ${touch ? "native touch" : "mouse"} tap jitter, drag cancellation, and buffered busy taps (${offsets.length} release offsets)`,
       );
       await client?.detach();
     } finally {

@@ -120,6 +120,7 @@ export class ParArrowsApp {
   private tutorialComplete = false;
   private settings: PlayerSettings = loadSettings();
   private motion: Motion | undefined;
+  private pendingTap: string | undefined;
   private celebration: Celebration | undefined;
   private hint: Hint | undefined;
   private demoStage: "observe" | "pause" | "ready" = "observe";
@@ -230,17 +231,19 @@ export class ParArrowsApp {
     this.applyTheme();
     this.input = new PointerInput(this.renderer.canvas, {
       pick: (x, y, pointerType) =>
-        this.loading ||
-        this.loadingError ||
-        this.motion ||
-        this.mode !== "campaign"
+        this.loading || this.loadingError || this.mode !== "campaign"
           ? undefined
           : this.resolvePick(x, y, pointerType),
       onPress: (id) => {
         this.cancelHint();
-        this.renderer.setSelected(id);
+        this.renderer.setSelected(this.motion ? undefined : id);
       },
-      onTap: (id) => this.attempt(id),
+      onTap: (id) => {
+        // One tap during a running move buffers instead of dropping, so quick
+        // play never loses input to the one-attempt-at-a-time lock.
+        if (this.motion) this.pendingTap = id;
+        else this.attempt(id);
+      },
       onOrbit: (x, y) => {
         this.cancelHint();
         this.renderer.orbit(x, y);
@@ -629,6 +632,9 @@ export class ParArrowsApp {
       this.startCelebration();
     }
     this.renderUi();
+    const pendingTap = this.pendingTap;
+    this.pendingTap = undefined;
+    if (pendingTap) this.attempt(pendingTap);
   }
 
   private async restore(): Promise<void> {
@@ -703,6 +709,7 @@ export class ParArrowsApp {
       return;
     }
     this.motion = undefined;
+    this.pendingTap = undefined;
     this.cancelHint();
     this.clearCelebration();
     this.state = createGameState(this.level);
@@ -1176,6 +1183,7 @@ export class ParArrowsApp {
     if (!this.motion) return;
     const arrowId = this.motion.result.arrowId;
     this.motion = undefined;
+    this.pendingTap = undefined;
     this.renderer.updateState(this.state);
     this.renderer.settle(arrowId);
     this.displayedState = this.state;
