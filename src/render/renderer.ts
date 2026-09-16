@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
 import { overlappingArrowIds } from "../core/overlap";
+import type { PickCandidate } from "../pick";
 import { currentPath, offsetOf } from "../core/stops";
 import {
   cellKey,
@@ -18,7 +19,7 @@ import type {
 
 const PICK_RADIUS = 0.14;
 const PICK_LAYER = 1;
-const HEAD_PICK_MARGIN_PX = 1.5;
+const FACING_EPSILON = 0.04;
 const WRAPPING_EDGE_RADIUS = 0.007;
 const STOP_CIRCLE_RADIUS = 0.34;
 const STOP_CIRCLE_THICKNESS = 0.1;
@@ -123,6 +124,21 @@ export interface CameraDiagnostics {
 const INITIAL_CAMERA_ORIENTATION = new THREE.Quaternion().setFromEuler(
   new THREE.Euler(-0.43, -0.72, 0, "YXZ"),
 );
+
+/** Screen-space gap between a point and a finite line segment. */
+function distanceToSegment(
+  point: THREE.Vector3,
+  start: THREE.Vector3,
+  end: THREE.Vector3,
+): number {
+  const axis = end.clone().sub(start);
+  const lengthSquared = axis.lengthSq();
+  const along =
+    lengthSquared > 0
+      ? clamp(point.clone().sub(start).dot(axis) / lengthSquared, 0, 1)
+      : 0;
+  return start.clone().addScaledVector(axis, along).distanceTo(point);
+}
 
 function clamp(value: number, lower: number, upper: number): number {
   return Math.min(upper, Math.max(lower, value));
@@ -767,95 +783,166 @@ export class PuzzleRenderer {
     this.render();
   }
 
-  pick(clientX: number, clientY: number): string | undefined {
+  /**
+   * Every arrow the pointer could plausibly mean, nearest first. Direct hits
+   * report a zero gap; arrows merely close to the pointer report the screen
+   * distance to their exposed ribbon or head, capped so a zoomed-out cube
+   * cannot offer an arrow the player never aimed at.
+   */
+  pickCandidates(
+    clientX: number,
+    clientY: number,
+    marginPx: number,
+  ): readonly PickCandidate[] {
     if (this.state?.status !== "playing") {
-      return undefined;
+      return [];
     }
     const bounds = this.canvas.getBoundingClientRect();
     this.pointer.x = ((clientX - bounds.left) / bounds.width) * 2 - 1;
     this.pointer.y = -((clientY - bounds.top) / bounds.height) * 2 + 1;
     this.raycaster.setFromCamera(this.pointer, this.camera);
-    const hit = this.raycaster
-      .intersectObjects(
-        this.pickers.filter((picker) => {
-          const id = picker.userData.arrowId as string | undefined;
-          return Boolean(
-            picker.visible &&
-              picker.parent?.visible &&
-              id &&
-              this.state?.remainingIds.includes(id),
-          );
-        }),
-        false,
-      )
-      .find((candidate) => {
-        const face = candidate.object.userData.face as Cell["face"] | undefined;
-        if (!face) {
-          return false;
-        }
-        const [nx, ny, nz] = faceNormal(face);
-        const normal = new THREE.Vector3(nx, ny, nz);
-        return (
-          normal.dot(this.camera.position.clone().sub(candidate.point)) > 0.04
-        );
-      });
-    const id = hit?.object.userData.arrowId as string | undefined;
-    if (id && this.state.remainingIds.includes(id)) return id;
+    const direct: string[] = [];
+    for (const hit of this.raycaster.intersectObjects(
+      this.pickers.filter((picker) => this.isPickable(picker)),
+      false,
+    )) {
+      const id = hit.object.userData.arrowId as string | undefined;
+      const face = hit.object.userData.face as Cell["face"] | undefined;
+      if (!id || !face || direct.includes(id)) continue;
+      const [nx, ny, nz] = faceNormal(face);
+      if (
+        new THREE.Vector3(nx, ny, nz).dot(
+          this.camera.position.clone().sub(hit.point),
+        ) > FACING_EPSILON
+      ) {
+        direct.push(id);
+      }
+    }
 
     const pointer = new THREE.Vector3(
       clientX - bounds.left,
       clientY - bounds.top,
       0,
     );
-    const nearbyHeads: string[] = [];
+    const margin = Math.min(marginPx, this.cellPitchPx(bounds) * 0.5);
+    const nearby: PickCandidate[] = [];
     for (const [arrowId, visual] of this.visuals) {
       if (
-        !visual.head.visible ||
+        direct.includes(arrowId) ||
         !visual.group.visible ||
         !this.state.remainingIds.includes(arrowId)
       )
         continue;
-      const face = visual.head.userData.face as Cell["face"] | undefined;
-      const center = visual.head.geometry.boundingSphere?.center;
-      if (!face || !center) continue;
-      const worldCenter = visual.head.localToWorld(center.clone());
-      const projectedCenter = worldCenter.clone().project(this.camera);
-      if (
-        !projectedCenter.toArray().every(Number.isFinite) ||
-        projectedCenter.z < -1 ||
-        projectedCenter.z > 1
-      )
-        continue;
-      const [nx, ny, nz] = faceNormal(face);
-      if (
-        new THREE.Vector3(nx, ny, nz).dot(
-          this.camera.position.clone().sub(worldCenter),
-        ) <= 0.04
-      )
-        continue;
-      const positions = visual.head.geometry.getAttribute("position");
-      const points = [0, 1, 2].map((index) => {
-        const projected = visual.head
-          .localToWorld(
-            new THREE.Vector3().fromBufferAttribute(positions, index),
-          )
-          .project(this.camera);
-        return new THREE.Vector3(
-          ((projected.x + 1) * bounds.width) / 2,
-          ((1 - projected.y) * bounds.height) / 2,
-          0,
-        );
-      });
-      const [a, b, c] = points;
-      if (!a || !b || !c) continue;
-      const closest = new THREE.Triangle(a, b, c).closestPointToPoint(
-        pointer,
-        new THREE.Vector3(),
-      );
-      if (closest.distanceToSquared(pointer) <= HEAD_PICK_MARGIN_PX ** 2)
-        nearbyHeads.push(arrowId);
+      const distancePx = this.screenDistanceToArrow(visual, pointer, bounds);
+      if (distancePx !== undefined && distancePx <= margin) {
+        nearby.push({ arrowId, distancePx });
+      }
     }
-    return nearbyHeads.length === 1 ? nearbyHeads[0] : undefined;
+    nearby.sort((a, b) => a.distancePx - b.distancePx);
+    return [
+      ...direct.map((arrowId) => ({ arrowId, distancePx: 0 })),
+      ...nearby,
+    ];
+  }
+
+  private isPickable(object: THREE.Object3D): boolean {
+    const id = object.userData.arrowId as string | undefined;
+    return Boolean(
+      object.visible &&
+        object.parent?.visible &&
+        id &&
+        this.state?.remainingIds.includes(id),
+    );
+  }
+
+  /** True when the cube face carrying this part turns toward the camera. */
+  private isFrontFacing(object: THREE.Object3D): boolean {
+    const face = object.userData.face as Cell["face"] | undefined;
+    if (!face) return false;
+    const [nx, ny, nz] = faceNormal(face);
+    return (
+      new THREE.Vector3(nx, ny, nz).dot(
+        this.camera.position
+          .clone()
+          .sub(object.getWorldPosition(new THREE.Vector3())),
+      ) > FACING_EPSILON
+    );
+  }
+
+  private toScreen(
+    worldPoint: THREE.Vector3,
+    bounds: DOMRect,
+  ): THREE.Vector3 | undefined {
+    const projected = worldPoint.project(this.camera);
+    if (
+      !projected.toArray().every(Number.isFinite) ||
+      projected.z < -1 ||
+      projected.z > 1
+    ) {
+      return undefined;
+    }
+    return new THREE.Vector3(
+      ((projected.x + 1) * bounds.width) / 2,
+      ((1 - projected.y) * bounds.height) / 2,
+      0,
+    );
+  }
+
+  /** Nearest screen gap between the pointer and the arrow's exposed parts. */
+  private screenDistanceToArrow(
+    visual: ArrowVisual,
+    pointer: THREE.Vector3,
+    bounds: DOMRect,
+  ): number | undefined {
+    let nearest: number | undefined;
+    const consider = (distance: number): void => {
+      nearest = nearest === undefined ? distance : Math.min(nearest, distance);
+    };
+    if (visual.head.visible && this.isFrontFacing(visual.head)) {
+      const positions = visual.head.geometry.getAttribute("position");
+      const [a, b, c] = [0, 1, 2].map((index) =>
+        this.toScreen(
+          visual.head.localToWorld(
+            new THREE.Vector3().fromBufferAttribute(positions, index),
+          ),
+          bounds,
+        ),
+      );
+      if (a && b && c) {
+        consider(
+          new THREE.Triangle(a, b, c)
+            .closestPointToPoint(pointer, new THREE.Vector3())
+            .distanceTo(pointer),
+        );
+      }
+    }
+    for (const { picker } of visual.segments) {
+      if (!picker.visible || !this.isFrontFacing(picker)) continue;
+      const start = this.toScreen(
+        picker.localToWorld(new THREE.Vector3(0, -0.5, 0)),
+        bounds,
+      );
+      const end = this.toScreen(
+        picker.localToWorld(new THREE.Vector3(0, 0.5, 0)),
+        bounds,
+      );
+      if (start && end) consider(distanceToSegment(pointer, start, end));
+    }
+    return nearest;
+  }
+
+  /** Screen size of one grid cell at the cube centre. */
+  private cellPitchPx(bounds: DOMRect): number {
+    const pitch = 2 / (this.level?.gridSize ?? 4);
+    const origin = new THREE.Vector3().project(this.camera);
+    const offset = new THREE.Vector3()
+      .setFromMatrixColumn(this.camera.matrixWorld, 0)
+      .multiplyScalar(pitch)
+      .project(this.camera);
+    return Math.hypot(
+      ((offset.x - origin.x) * bounds.width) / 2,
+      ((offset.y - origin.y) * bounds.height) / 2,
+    );
   }
 
   animate(arrowId: string, result: MoveResult, progress: number): void {

@@ -20,6 +20,7 @@ import {
   seedForLevel,
 } from "./content/procedural";
 import { applyMove, createGameState, simulateMove } from "./core/game-state";
+import { resolvePick } from "./pick";
 import { overlappingArrowIds } from "./core/overlap";
 import { cellKey } from "./core/topology";
 import type { GameState, LevelDefinition, MoveResult } from "./core/types";
@@ -62,6 +63,8 @@ const CONFETTI_COUNT = 56;
 const HINT_FOCUS_DURATION = 600;
 const HINT_FLASH_DURATION = 2400;
 const HINT_FLASH_HALF_PULSE = 400;
+const MOUSE_PICK_MARGIN_PX = 6;
+const TOUCH_PICK_MARGIN_PX = 18;
 
 export class ParArrowsApp {
   private readonly root: HTMLElement;
@@ -212,13 +215,13 @@ export class ParArrowsApp {
     this.renderer = new PuzzleRenderer(this.stage);
     this.applyTheme();
     this.input = new PointerInput(this.renderer.canvas, {
-      pick: (x, y) =>
+      pick: (x, y, pointerType) =>
         this.loading ||
         this.loadingError ||
         this.motion ||
         this.mode !== "campaign"
           ? undefined
-          : this.renderer.pick(x, y),
+          : this.resolvePick(x, y, pointerType),
       onPress: (id) => {
         this.cancelHint();
         this.renderer.setSelected(id);
@@ -960,6 +963,33 @@ export class ParArrowsApp {
     return this.settings.reducedMotion || this.systemMotionPreference.matches;
   }
 
+  /**
+   * Resolves a press to an arrow, widening the target for finger input. When
+   * the zone covers several arrows, one that clears without a collision wins;
+   * otherwise the closest arrow does.
+   */
+  private resolvePick(
+    x: number,
+    y: number,
+    pointerType: string,
+  ): string | undefined {
+    return resolvePick(
+      this.renderer.pickCandidates(
+        x,
+        y,
+        pointerType === "touch" ? TOUCH_PICK_MARGIN_PX : MOUSE_PICK_MARGIN_PX,
+      ),
+      (arrowId) => this.isSafeMove(arrowId),
+    );
+  }
+
+  /** True when tapping this arrow costs no life. */
+  private isSafeMove(arrowId: string): boolean {
+    return ["exit", "paused"].includes(
+      simulateMove(this.level, this.state, arrowId).kind,
+    );
+  }
+
   private beginHint(): void {
     if (
       this.mode !== "campaign" ||
@@ -971,11 +1001,7 @@ export class ParArrowsApp {
     ) {
       return;
     }
-    const arrowId = this.state.remainingIds.find((id) =>
-      ["exit", "paused"].includes(
-        simulateMove(this.level, this.state, id).kind,
-      ),
-    );
+    const arrowId = this.state.remainingIds.find((id) => this.isSafeMove(id));
     if (!arrowId || !this.renderer.beginHint(arrowId)) {
       return;
     }

@@ -1,5 +1,9 @@
 export interface PointerInputHandlers {
-  readonly pick: (x: number, y: number) => string | undefined;
+  readonly pick: (
+    x: number,
+    y: number,
+    pointerType: string,
+  ) => string | undefined;
   readonly onPress: (id: string | undefined) => void;
   readonly onTap: (id: string) => void;
   readonly onOrbit: (deltaX: number, deltaY: number) => void;
@@ -61,7 +65,11 @@ export class PointerInput {
       return;
     }
     this.element.setPointerCapture(event.pointerId);
-    const arrowId = this.handlers.pick(event.clientX, event.clientY);
+    const arrowId = this.handlers.pick(
+      event.clientX,
+      event.clientY,
+      event.pointerType,
+    );
     this.active = {
       id: event.pointerId,
       x: event.clientX,
