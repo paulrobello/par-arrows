@@ -24,13 +24,17 @@ interface ActivePointer {
 const TAP_THRESHOLD = 9;
 /** A thumb rolls further than a fingertip or cursor while it presses. */
 const TOUCH_TAP_THRESHOLD = 16;
+/** Zoom engages only after every finger travels this far from where it landed. */
+const PINCH_ENGAGE_PX = 16;
 const PINCH_ZOOM_SCALE = 3.6;
 
 /** Normalizes mouse and touch gestures before handing actions to the game. */
 export class PointerInput {
   private active: ActivePointer | undefined;
   private pinchDistance: number | undefined;
+  private pinchEngaged = false;
   private readonly touches = new Map<number, PointerEvent>();
+  private readonly touchStarts = new Map<number, { x: number; y: number }>();
   private readonly view: Window | null;
 
   constructor(
@@ -64,10 +68,19 @@ export class PointerInput {
       return;
     }
     this.touches.set(event.pointerId, event);
+    this.touchStarts.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+    });
     if (this.touches.size > 1) {
-      this.active = undefined;
-      this.handlers.onPress(undefined);
       this.updatePinchDistance();
+      // A held tap outlives a landing finger: zoom engages only once every
+      // finger has travelled, so a resting graze cannot eat a tap or jitter
+      // the zoom. An orbit in progress still hands over to the pinch.
+      if (this.active?.dragging) {
+        this.active = undefined;
+        this.handlers.onPress(undefined);
+      }
       return;
     }
     this.element.setPointerCapture(event.pointerId);
@@ -96,13 +109,27 @@ export class PointerInput {
       this.touches.set(event.pointerId, event);
     }
     if (this.touches.size > 1) {
+      if (!this.pinchEngaged) {
+        const travelled = (id: number): number => {
+          const start = this.touchStarts.get(id);
+          const touch = this.touches.get(id);
+          return start && touch
+            ? Math.hypot(touch.clientX - start.x, touch.clientY - start.y)
+            : 0;
+        };
+        const engaged = [...this.touches.keys()].every(
+          (id) => travelled(id) >= PINCH_ENGAGE_PX,
+        );
+        if (!engaged) return;
+        this.pinchEngaged = true;
+        this.active = undefined;
+        this.handlers.onPress(undefined);
+      }
       const prior = this.pinchDistance;
       this.updatePinchDistance();
       if (prior && this.pinchDistance) {
         this.handlers.onZoom((prior - this.pinchDistance) * PINCH_ZOOM_SCALE);
       }
-      this.active = undefined;
-      this.handlers.onPress(undefined);
       return;
     }
     if (!this.active || this.active.id !== event.pointerId) {
@@ -134,7 +161,9 @@ export class PointerInput {
     const trackedTouch = this.touches.has(event.pointerId);
     if (active?.id !== event.pointerId && !trackedTouch) return;
     this.touches.delete(event.pointerId);
+    this.touchStarts.delete(event.pointerId);
     this.pinchDistance = undefined;
+    this.pinchEngaged = false;
     if (active?.id !== event.pointerId) return;
     this.active = undefined;
     this.handlers.onPress(undefined);
@@ -152,7 +181,9 @@ export class PointerInput {
   private readonly cancel = (): void => {
     this.active = undefined;
     this.pinchDistance = undefined;
+    this.pinchEngaged = false;
     this.touches.clear();
+    this.touchStarts.clear();
     this.handlers.onPress(undefined);
   };
 

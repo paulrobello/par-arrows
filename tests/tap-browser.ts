@@ -228,13 +228,17 @@ export async function assertReliableTaps(
             ],
           }),
         );
-        assert.equal((await snapshot(page)).selectedArrowId, undefined);
+        assert.equal(
+          (await snapshot(page)).selectedArrowId,
+          target.id,
+          "A held tap keeps its highlight when a second finger lands",
+        );
         await dispatch(page, "pointermove", () =>
           client.send("Input.dispatchTouchEvent", {
             type: "touchMove",
             touchPoints: [
-              { id: 1, x: x - 12, y },
-              { id: 2, x: secondX + 12, y },
+              { id: 1, x: x - 18, y },
+              { id: 2, x: secondX + 18, y },
             ],
           }),
         );
@@ -248,6 +252,56 @@ export async function assertReliableTaps(
         assert.notEqual(pinched.camera.distance, distance);
         assert.deepEqual(pinched.failedIds, []);
         assert.equal(pinched.remainingIds.length, level.arrows.length);
+
+        // A resting graze must not eat a held tap: only two fingers that both
+        // travel past the engage threshold become a pinch.
+        await resetLevel(page);
+        const grazeDistance = (await snapshot(page)).camera.distance;
+        await dispatch(page, "pointerdown", () => gesture.down(x, y));
+        await dispatch(page, "pointerdown", () =>
+          client.send("Input.dispatchTouchEvent", {
+            type: "touchStart",
+            touchPoints: [
+              { id: 1, x, y },
+              { id: 2, x: secondX, y },
+            ],
+          }),
+        );
+        assert.equal(
+          (await snapshot(page)).selectedArrowId,
+          target.id,
+          "A held tap keeps its highlight under a resting graze",
+        );
+        await dispatch(page, "pointermove", () =>
+          client.send("Input.dispatchTouchEvent", {
+            type: "touchMove",
+            touchPoints: [
+              { id: 1, x: x + 2, y },
+              { id: 2, x: secondX + 5, y },
+            ],
+          }),
+        );
+        assert.equal(
+          (await snapshot(page)).camera.distance,
+          grazeDistance,
+          "Sub-threshold jitter must not zoom",
+        );
+        await dispatch(page, "pointerup", () =>
+          client.send("Input.dispatchTouchEvent", {
+            type: "touchEnd",
+            touchPoints: [],
+          }),
+        );
+        assert.equal(
+          (await snapshot(page)).moving?.arrowId,
+          target.id,
+          "The held tap fires once the graze finger lifts",
+        );
+        await settle(page);
+        assert.deepEqual(
+          (await snapshot(page)).failedIds,
+          expected.kind === "blocked" ? [target.id] : [],
+        );
       }
 
       await resetLevel(page);
@@ -308,7 +362,7 @@ export async function assertReliableTaps(
       });
       assert.deepEqual(errors, []);
       console.log(
-        `PASS ${touch ? "native touch" : "mouse"} tap jitter, drag cancellation, and buffered busy taps (${offsets.length} release offsets)`,
+        `PASS ${touch ? "native touch" : "mouse"} tap jitter, drag cancellation, buffered busy taps, and graze-proof holds (${offsets.length} release offsets)`,
       );
       await client?.detach();
     } finally {

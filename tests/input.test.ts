@@ -193,15 +193,33 @@ describe("PointerInput", () => {
     expect(taps).toEqual(["arrow-a"]);
   });
 
-  test("multi-touch pinch cancels the pending tap and keeps zoom behavior", () => {
+  test("multi-touch pinch requires every finger to travel before zoom engages", () => {
     const { element, taps, zooms } = harness();
     element.emit("pointerdown", pointer(0, 0, 1, "touch"));
     element.emit("pointerdown", pointer(10, 0, 2, "touch"));
-    element.emit("pointermove", pointer(20, 0, 2, "touch"));
-    element.emit("pointerup", pointer(20, 0, 2, "touch"));
-    element.emit("pointerup", pointer(0, 0, 1, "touch"));
-    expect(zooms).toEqual([-36]);
+    element.emit("pointermove", pointer(17, 0, 1, "touch"));
+    element.emit("pointermove", pointer(29, 0, 2, "touch"));
+    // The engagement move zooms from the second finger's landing baseline.
+    expect(zooms).toEqual([-7.2]);
+    element.emit("pointermove", pointer(48, 0, 2, "touch"));
+    element.emit("pointerup", pointer(48, 0, 2, "touch"));
+    element.emit("pointerup", pointer(17, 0, 1, "touch"));
+    expect(zooms).toEqual([-7.2, -68.4]);
     expect(taps).toEqual([]);
+  });
+
+  test("a resting second finger cannot eat a held tap or jitter the zoom", () => {
+    const { element, taps, zooms, presses } = harness();
+    element.emit("pointerdown", pointer(10, 10, 1, "touch"));
+    element.emit("pointerdown", pointer(10, 0, 2, "touch"));
+    element.emit("pointermove", pointer(14, 12, 1, "touch"));
+    element.emit("pointermove", pointer(13, 0, 2, "touch"));
+    element.emit("pointerup", pointer(13, 0, 2, "touch"));
+    element.emit("pointerup", pointer(14, 12, 1, "touch"));
+    expect(zooms).toEqual([]);
+    expect(taps).toEqual(["arrow-a"]);
+    // The graze never cleared the held press's highlight.
+    expect(presses).toEqual(["arrow-a", undefined]);
   });
 
   test("pointer cancellation and lost capture cancel the pending tap", () => {
