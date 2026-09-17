@@ -25,6 +25,7 @@ import { assertWidePickTargets } from "./pick-browser";
 import { assertLevelPreview } from "./preview-browser";
 import { assertRuntimeCampaign } from "./runtime-browser";
 import { LEVELS, waitForReady } from "./runtime-fixtures";
+import { assertResizeTracking } from "./resize-browser";
 import { assertSeamFills } from "./seam-fill-browser";
 import { assertReliableTaps } from "./tap-browser";
 import { assertWrapIntro } from "./wrap-intro-browser";
@@ -94,6 +95,7 @@ let primaryContext: BrowserContext | undefined;
 const failures: string[] = [];
 const OVERLAP_ONLY_COMPLETE = Symbol("overlap-only-complete");
 const STOP_ONLY_COMPLETE = Symbol("stop-only-complete");
+const RESIZE_ONLY_COMPLETE = Symbol("resize-only-complete");
 const deadline = setTimeout(() => {
   console.error("Browser verification exceeded its 180-second deadline.");
   server.kill();
@@ -981,6 +983,20 @@ try {
     throw OVERLAP_ONLY_COMPLETE;
   }
 
+  if (process.env.RESIZE_ONLY === "1") {
+    await assertResizeTracking(browser, url, output);
+    assert.deepEqual(failures, [], "Browser must not report uncaught errors");
+    await Bun.write(
+      `${output}/resize-summary.json`,
+      JSON.stringify(
+        { passed: true, browser: engine.name(), physicalDevice: false },
+        null,
+        2,
+      ),
+    );
+    throw RESIZE_ONLY_COMPLETE;
+  }
+
   assert.equal((await snapshot(page)).mode, "demo");
   assert.equal(
     await page.getByRole("button", { name: "Hint", exact: true }).isDisabled(),
@@ -1407,6 +1423,7 @@ try {
   await assertReliableTaps(browser, url, output);
   await assertWidePickTargets(browser, url);
   await assertSeamFills(browser, url, output);
+  await assertResizeTracking(browser, url, output);
   await assertLevelPreview(browser, url, output);
   await assertWrappingEdges(browser, url, output, {
     // Level 23 is the generated cube carrying exactly one front-east seam under
@@ -1427,7 +1444,11 @@ try {
     ),
   );
 } catch (error) {
-  if (error !== OVERLAP_ONLY_COMPLETE && error !== STOP_ONLY_COMPLETE)
+  if (
+    error !== OVERLAP_ONLY_COMPLETE &&
+    error !== STOP_ONLY_COMPLETE &&
+    error !== RESIZE_ONLY_COMPLETE
+  )
     throw error;
 } finally {
   try {

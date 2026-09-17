@@ -666,6 +666,9 @@ export class PuzzleRenderer {
     );
     this.resize();
     window.addEventListener("resize", () => this.resize());
+    // iOS fires window resize before the rotated layout is committed and never
+    // fires a second one, so the element's own box must drive the resize too.
+    new ResizeObserver(() => this.resize()).observe(container);
   }
 
   setLevel(level: LevelDefinition, state: GameState): void {
