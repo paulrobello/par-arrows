@@ -913,6 +913,7 @@ async function assertContinuousRotation(
   }
 }
 
+let primaryError: unknown;
 try {
   await mkdir(output, { recursive: true });
   const startupDeadline = Date.now() + 15_000;
@@ -1444,12 +1445,13 @@ try {
     ),
   );
 } catch (error) {
+  // Cleanup runs in finally and must never replace the original test failure.
   if (
     error !== OVERLAP_ONLY_COMPLETE &&
     error !== STOP_ONLY_COMPLETE &&
     error !== RESIZE_ONLY_COMPLETE
   )
-    throw error;
+    primaryError = error;
 } finally {
   try {
     try {
@@ -1457,6 +1459,8 @@ try {
     } finally {
       if (browser) await closeWithinDeadline(browser.close());
     }
+  } catch (cleanupError) {
+    if (primaryError === undefined) primaryError = cleanupError;
   } finally {
     server.kill();
     const forceStop = setTimeout(() => server.kill("SIGKILL"), 2000);
@@ -1467,3 +1471,4 @@ try {
     clearTimeout(deadline);
   }
 }
+if (primaryError !== undefined) throw primaryError;
