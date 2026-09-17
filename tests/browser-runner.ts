@@ -17,6 +17,7 @@ import {
 } from "../src/core/topology";
 import { solveLevel } from "../src/core/validation";
 import { arrowDimensions } from "../src/render/renderer";
+import { assertContextRecovery } from "./context-browser";
 import { runHintChecks } from "./hints-browser";
 import { assertConsistentMotion } from "./motion-browser";
 import { assertOverlapIntro } from "./overlap-browser";
@@ -93,6 +94,7 @@ const serverErrors = new Response(server.stderr).text();
 let browser: Browser | undefined;
 let primaryContext: BrowserContext | undefined;
 const failures: string[] = [];
+const CONTEXT_ONLY_COMPLETE = Symbol("context-only-complete");
 const OVERLAP_ONLY_COMPLETE = Symbol("overlap-only-complete");
 const STOP_ONLY_COMPLETE = Symbol("stop-only-complete");
 const RESIZE_ONLY_COMPLETE = Symbol("resize-only-complete");
@@ -998,6 +1000,20 @@ try {
     throw RESIZE_ONLY_COMPLETE;
   }
 
+  if (process.env.CONTEXT_ONLY === "1") {
+    await assertContextRecovery(browser, url, output);
+    assert.deepEqual(failures, [], "Browser must not report uncaught errors");
+    await Bun.write(
+      `${output}/context-summary.json`,
+      JSON.stringify(
+        { passed: true, browser: engine.name(), physicalDevice: false },
+        null,
+        2,
+      ),
+    );
+    throw CONTEXT_ONLY_COMPLETE;
+  }
+
   assert.equal((await snapshot(page)).mode, "demo");
   assert.equal(
     await page.getByRole("button", { name: "Hint", exact: true }).isDisabled(),
@@ -1425,6 +1441,7 @@ try {
   await assertWidePickTargets(browser, url);
   await assertSeamFills(browser, url, output);
   await assertResizeTracking(browser, url, output);
+  await assertContextRecovery(browser, url, output);
   await assertLevelPreview(browser, url, output);
   await assertWrappingEdges(browser, url, output, {
     // Level 23 is the generated cube carrying exactly one front-east seam under
@@ -1449,7 +1466,8 @@ try {
   if (
     error !== OVERLAP_ONLY_COMPLETE &&
     error !== STOP_ONLY_COMPLETE &&
-    error !== RESIZE_ONLY_COMPLETE
+    error !== RESIZE_ONLY_COMPLETE &&
+    error !== CONTEXT_ONLY_COMPLETE
   )
     primaryError = error;
 } finally {

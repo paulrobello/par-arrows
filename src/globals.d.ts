@@ -7,7 +7,13 @@ interface Window {
     getState(): string;
     getLevel(): import("./core/types").LevelDefinition;
     activate(arrowId: string): void;
+    render(): void;
   };
+}
+
+interface WEBGL_lose_context {
+  loseContext(): void;
+  restoreContext(): void;
 }
 
 declare module "*.css";

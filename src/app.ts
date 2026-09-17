@@ -1167,6 +1167,7 @@ export class ParArrowsApp {
         getState: () => this.diagnosticText(),
         getLevel: () => this.level,
         activate: (id) => this.attempt(id, true),
+        render: () => this.renderer.render(),
       };
     }
   }

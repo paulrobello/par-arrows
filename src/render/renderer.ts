@@ -669,6 +669,10 @@ export class PuzzleRenderer {
     // iOS fires window resize before the rotated layout is committed and never
     // fires a second one, so the element's own box must drive the resize too.
     new ResizeObserver(() => this.resize()).observe(container);
+    // three.js re-initializes its GL state on webglcontextrestored, but
+    // rendering is on-demand: without this repaint a restored context stays
+    // blank until the next interaction.
+    this.canvas.addEventListener("webglcontextrestored", () => this.render());
   }
 
   setLevel(level: LevelDefinition, state: GameState): void {
