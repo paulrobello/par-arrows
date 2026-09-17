@@ -648,6 +648,10 @@ input:focus-visible {
   font-size: 0.62rem;
   text-align: right;
 }
+
+.gesture-help {
+  margin: 0;
+}
 .storage-note {
   bottom: 2.55rem;
   color: var(--warning-text);
@@ -692,12 +696,12 @@ input:focus-visible {
   }
   .tutorial-card {
     top: auto;
-    bottom: 6.2rem;
+    bottom: 6.8rem;
     transform: none;
   }
   .gesture-help {
     right: 50%;
-    bottom: 5.35rem;
+    bottom: 4.7rem;
     width: 90vw;
     transform: translateX(50%);
     text-align: center;
@@ -720,6 +724,12 @@ input:focus-visible {
   }
   .level-picker input {
     width: 3.2rem;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1100px) {
+  .gesture-help {
+    bottom: 5.2rem;
   }
 }
 

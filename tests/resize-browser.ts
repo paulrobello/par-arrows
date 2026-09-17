@@ -43,6 +43,71 @@ async function waitForFrameAgreement(page: Page): Promise<void> {
   });
 }
 
+interface BoxRead {
+  width: number;
+  height: number;
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+async function measureBoxes(
+  page: Page,
+  selectors: string[],
+): Promise<Record<string, BoxRead>> {
+  const read = await page.evaluate((requested) => {
+    const boxes: Record<string, BoxRead | null> = {};
+    for (const selector of requested as string[]) {
+      const element = document.querySelector(selector);
+      if (!element) {
+        boxes[selector] = null;
+        continue;
+      }
+      const box = element.getBoundingClientRect();
+      boxes[selector] = {
+        width: box.width,
+        height: box.height,
+        left: box.left,
+        right: box.right,
+        top: box.top,
+        bottom: box.bottom,
+      };
+    }
+    return boxes;
+  }, selectors);
+  for (const selector of selectors) {
+    const box = read[selector];
+    assert.ok(box, `${selector} must be present to measure`);
+    assert.ok(box.width > 0 && box.height > 0, `${selector} must be readable`);
+  }
+  return read as Record<string, BoxRead>;
+}
+
+function pickBox(read: Record<string, BoxRead>, selector: string): BoxRead {
+  const box = read[selector];
+  assert.ok(box, `${selector} must be measured`);
+  return box;
+}
+
+function assertSeparate(
+  first: BoxRead,
+  second: BoxRead,
+  firstLabel: string,
+  secondLabel: string,
+): void {
+  const gap = 2;
+  const separated =
+    first.right + gap <= second.left ||
+    second.right + gap <= first.left ||
+    first.bottom + gap <= second.top ||
+    second.bottom + gap <= first.top;
+  assert.ok(
+    separated,
+    `${firstLabel} (${JSON.stringify(first)}) must not overlap ${secondLabel} (${JSON.stringify(second)})`,
+  );
+}
+
 export async function assertResizeTracking(
   browser: Browser,
   url: string,
@@ -100,11 +165,55 @@ export async function assertResizeTracking(
     );
     await page.screenshot({ path: `${output}/resize/02-landscape.png` });
 
+    // Demo mode shows the tutorial card; at phone widths it must not sit on
+    // the gesture-help line, and at narrow desktop widths the help line must
+    // not sit on the control dock.
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert.equal(
+      await page.locator("#tutorial").isVisible(),
+      true,
+      "Demo mode must show the tutorial card",
+    );
+    const phone = await measureBoxes(page, [".tutorial-card", ".gesture-help"]);
+    assertSeparate(
+      pickBox(phone, ".tutorial-card"),
+      pickBox(phone, ".gesture-help"),
+      "Tutorial card",
+      "gesture help (390px)",
+    );
+    await page.screenshot({ path: `${output}/resize/03-phone-tutorial.png` });
+
+    await page.setViewportSize({ width: 320, height: 690 });
+    const narrow = await measureBoxes(page, [
+      ".tutorial-card",
+      ".gesture-help",
+    ]);
+    assertSeparate(
+      pickBox(narrow, ".tutorial-card"),
+      pickBox(narrow, ".gesture-help"),
+      "Tutorial card",
+      "gesture help (320px)",
+    );
+
+    for (const width of [900, 1000, 1100]) {
+      await page.setViewportSize({ width, height: 700 });
+      const desktop = await measureBoxes(page, [
+        ".control-dock",
+        ".gesture-help",
+      ]);
+      assertSeparate(
+        pickBox(desktop, ".control-dock"),
+        pickBox(desktop, ".gesture-help"),
+        "Control dock",
+        `gesture help (${width}px)`,
+      );
+    }
+
     assert.deepEqual(errors, [], "Resize tracking must not log page errors");
   } finally {
     await context.close();
   }
   console.log(
-    "PASS canvas backing store tracks stage-only, restored, and rotated layout",
+    "PASS canvas backing-store tracking and tutorial/help/dock layout bounds",
   );
 }
