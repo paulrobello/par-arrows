@@ -574,6 +574,42 @@ describe("resumable campaign saves", () => {
   });
 });
 
+describe("concurrent-tab conflict policy", () => {
+  test("a lagging tab cannot regress the unlock another tab earned", () => {
+    expect(save(createGameState(levelFor(1)), 5)).toBe(true);
+    expect(save(createGameState(levelFor(2)), 2)).toBe(true);
+    expect(savedJson().unlockedLevelId).toBe(5);
+    expect(savedJson().currentLevelId).toBe(2);
+  });
+
+  test("the last writing tab selects the resume state with the merged unlock", async () => {
+    expect(save(createGameState(levelFor(2)), 3)).toBe(true);
+    const later = createGameState(levelFor(1));
+    expect(save(later, 1)).toBe(true);
+    const loaded = await loadCampaign(resolveFixture);
+    expect(loaded.value?.currentLevelId).toBe(1);
+    expect(loaded.value?.unlockedLevelId).toBe(3);
+    expect(loaded.value?.state).toEqual(later);
+  });
+
+  test("unlock progress is monotonic across interleaved tab writes", () => {
+    expect(save(createGameState(levelFor(1)), 4)).toBe(true);
+    expect(save(createGameState(levelFor(2)), 2)).toBe(true);
+    expect(savedJson().unlockedLevelId).toBe(4);
+    expect(save(createGameState(levelFor(3)), 6)).toBe(true);
+    expect(savedJson().unlockedLevelId).toBe(6);
+    expect(save(createGameState(levelFor(1)), 1)).toBe(true);
+    expect(savedJson().unlockedLevelId).toBe(6);
+  });
+
+  test("a corrupt stored save cannot contribute a merge or block the write", () => {
+    entries.set(CAMPAIGN_KEY, "{broken");
+    expect(save(createGameState(levelFor(1)), 1)).toBe(true);
+    expect(savedJson().unlockedLevelId).toBe(1);
+    expect(savedJson().currentLevelId).toBe(1);
+  });
+});
+
 describe("player settings", () => {
   test("defaults to system theme and full motion", () => {
     expect(loadSettings()).toEqual({

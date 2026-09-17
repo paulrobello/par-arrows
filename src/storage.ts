@@ -312,6 +312,15 @@ export async function loadCampaign(
   };
 }
 
+/**
+ * Persists the campaign with the concurrent-tab conflict policy: the writing
+ * tab's attempt (current level, state, tutorial completion) becomes the
+ * selected resume state — last writer wins — while unlockedLevelId merges
+ * monotonically, so no tab can regress progress another tab already earned.
+ * The merge only adopts a stored unlock from a structurally consistent save
+ * (both ids valid, unlocked >= current), so a corrupt stored row can never
+ * promote progress the player has not earned.
+ */
 export function saveCampaign(value: CampaignSave): boolean {
   try {
     const store = getStore();
@@ -323,11 +332,30 @@ export function saveCampaign(value: CampaignSave): boolean {
     ) {
       return false;
     }
+    let unlockedLevelId = value.unlockedLevelId;
+    try {
+      const raw = store.getItem(STORAGE_KEY);
+      if (raw) {
+        const stored = JSON.parse(raw) as Partial<CampaignSave>;
+        const storedCurrent = stored.currentLevelId;
+        const storedUnlock = stored.unlockedLevelId;
+        if (
+          isLevelId(storedCurrent) &&
+          isLevelId(storedUnlock) &&
+          storedUnlock >= storedCurrent &&
+          storedUnlock > unlockedLevelId
+        ) {
+          unlockedLevelId = storedUnlock;
+        }
+      }
+    } catch {
+      // An unreadable stored save cannot block this write or contribute a merge.
+    }
     store.setItem(
       STORAGE_KEY,
       JSON.stringify({
         currentLevelId: value.currentLevelId,
-        unlockedLevelId: value.unlockedLevelId,
+        unlockedLevelId,
         state: value.state,
         tutorialComplete: value.tutorialComplete,
         contentVersion: CONTENT_VERSION,
