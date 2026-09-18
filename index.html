@@ -36,6 +36,24 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <title>Par Arrows</title>
+    <!-- Google tag (gtag.js). Dev servers and browser-test runs stay out of the reports. -->
+    <script>
+      (() => {
+        const id = "G-2QKCC5SXD9";
+        const local = ["localhost", "127.0.0.1", "[::1]", ""].includes(location.hostname);
+        if (local || new URLSearchParams(location.search).has("test")) return;
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function gtag() {
+          window.dataLayer.push(arguments);
+        };
+        window.gtag("js", new Date());
+        window.gtag("config", id);
+        const tag = document.createElement("script");
+        tag.async = true;
+        tag.src = `https://www.googletagmanager.com/gtag/js?id=${id}`;
+        document.head.append(tag);
+      })();
+    </script>
   </head>
   <body>
     <noscript>Par Arrows needs JavaScript enabled to display the 3D puzzle.</noscript>
