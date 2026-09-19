@@ -21,6 +21,8 @@
   --ink-on-surface: #fffdf7;
   --lives-background: #0b1015;
   --lives-text: #fffdf7;
+  --life-lost-color: #d94841;
+  --life-lost-glow: rgb(217 72 65 / 38%);
   --mark-on-surface: #fdf9ed;
   --accent: #1687b7;
   --accent-on: #fff;
@@ -66,6 +68,8 @@ html[data-theme="dark"] {
   --ink-on-surface: #101820;
   --lives-background: #1d303a;
   --lives-text: #f7f0dc;
+  --life-lost-color: #ff776c;
+  --life-lost-glow: rgb(255 119 108 / 34%);
   --mark-on-surface: #101820;
   --accent: #54d6ee;
   --accent-on: #071116;
@@ -244,6 +248,64 @@ button {
   color: var(--accent-bright);
   font-size: 1.2rem;
   line-height: 1;
+}
+
+.lives.life-lost {
+  animation: life-lost-chip 0.9s ease-out;
+}
+.lives.life-lost strong {
+  color: var(--life-lost-color);
+}
+.lives.life-lost.life-lost-motion {
+  animation-name: life-lost-chip-shake;
+}
+.game-stage.life-lost::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: life-lost-vignette 0.9s ease-out;
+  box-shadow:
+    inset 0 0 0 3px var(--life-lost-color),
+    inset 0 0 4rem var(--life-lost-glow);
+}
+@keyframes life-lost-chip {
+  0%,
+  55% {
+    background: var(--life-lost-color);
+  }
+  100% {
+    background: var(--lives-background);
+  }
+}
+@keyframes life-lost-chip-shake {
+  0%,
+  55% {
+    background: var(--life-lost-color);
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-0.22rem);
+  }
+  30% {
+    transform: translateX(0.2rem);
+  }
+  45% {
+    transform: translateX(-0.12rem);
+  }
+  100% {
+    background: var(--lives-background);
+    transform: translateX(0);
+  }
+}
+@keyframes life-lost-vignette {
+  0%,
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 .game-stage {
@@ -783,5 +845,8 @@ input:focus-visible {
   .state-card.is-celebrating,
   .confetti-piece {
     animation: none;
+  }
+  .lives.life-lost.life-lost-motion {
+    animation-name: life-lost-chip;
   }
 }

@@ -67,6 +67,7 @@ const HINT_FOCUS_DURATION = 600;
 const HINT_FLASH_DURATION = 2400;
 const HINT_FLASH_HALF_PULSE = 400;
 const TUTORIAL_NUDGE_MS = 450;
+const LIFE_LOST_FLASH_MS = 900;
 const MOUSE_PICK_MARGIN_PX = 6;
 const TOUCH_PICK_MARGIN_PX = 44;
 
@@ -121,6 +122,7 @@ export class ParArrowsApp {
   private tutorialMove: { arrowId: string; kind: MoveKind } | undefined;
   private tutorialRunner: TutorialRunner | undefined;
   private tutorialNudgeMs = 0;
+  private lifeLostFlashMs = 0;
   private pendingTap: string | undefined;
   private celebration: Celebration | undefined;
   private hint: Hint | undefined;
@@ -501,6 +503,8 @@ export class ParArrowsApp {
     this.motion = undefined;
     this.pendingTap = undefined;
     this.tutorialNudgeMs = 0;
+    this.lifeLostFlashMs = 0;
+    this.clearLifeLostFlash();
     this.cancelHint();
     this.clearCelebration();
     this.loading = false;
@@ -523,6 +527,10 @@ export class ParArrowsApp {
     if (this.tutorialNudgeMs > 0) {
       this.tutorialNudgeMs = Math.max(0, this.tutorialNudgeMs - delta);
       this.renderer.setTutorialNudge(this.tutorialNudgeMs > 0);
+    }
+    if (this.lifeLostFlashMs > 0) {
+      this.lifeLostFlashMs = Math.max(0, this.lifeLostFlashMs - delta);
+      if (this.lifeLostFlashMs === 0) this.clearLifeLostFlash();
     }
     if (this.updateAvailable && !this.loading && !this.motion) {
       markVersionReloaded(this.updateAvailable);
@@ -554,6 +562,7 @@ export class ParArrowsApp {
         this.displayedState = this.state;
         this.renderer.updateState(this.state);
         this.renderUi();
+        this.flashLifeLost();
       }
       if (progress === 1) {
         this.finishMotion(this.motion.result.arrowId);
@@ -564,6 +573,23 @@ export class ParArrowsApp {
       this.updateHint(delta);
       return;
     }
+  }
+
+  /** One-shot HUD and stage flash marking the moment a life is lost. */
+  private flashLifeLost(): void {
+    this.lifeLostFlashMs = LIFE_LOST_FLASH_MS;
+    const lives = this.livesLabel.closest(".lives");
+    lives?.classList.add("life-lost");
+    if (!this.shouldReduceMotion()) lives?.classList.add("life-lost-motion");
+    this.requireElement("game-stage").classList.add("life-lost");
+  }
+
+  private clearLifeLostFlash(): void {
+    this.lifeLostFlashMs = 0;
+    document
+      .querySelector(".lives")
+      ?.classList.remove("life-lost", "life-lost-motion");
+    this.requireElement("game-stage").classList.remove("life-lost");
   }
 
   /** During a scripted walkthrough, only the current step's arrows respond. */
@@ -724,6 +750,8 @@ export class ParArrowsApp {
     this.motion = undefined;
     this.pendingTap = undefined;
     this.tutorialNudgeMs = 0;
+    this.lifeLostFlashMs = 0;
+    this.clearLifeLostFlash();
     this.tutorialRunner = undefined;
     this.cancelHint();
     this.clearCelebration();

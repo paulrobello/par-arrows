@@ -102,8 +102,45 @@ export async function assertFirstRunWalkthrough(
   assert.ok(rejectedStep.active && rejectedStep.stepIndex === 0);
 
   // The forced lesson: tapping the blocked arrow rebounds it, marks it red,
-  // and costs exactly one life.
-  await clickArrow(page, "l1-front-blocked");
+  // and costs exactly one life — and the impact flashes the lives chip and
+  // the stage for a moment before settling.
+  const blockedPoint = (await state(page)).visibleProjectedArrowPositions.find(
+    (entry) => entry.id === "l1-front-blocked",
+  );
+  assert.ok(blockedPoint, "Blocked arrow must be visible to click");
+  const blockedBounds = await page.locator("canvas").boundingBox();
+  assert.ok(blockedBounds);
+  await page.mouse.click(
+    blockedBounds.x + blockedPoint.x,
+    blockedBounds.y + blockedPoint.y,
+  );
+  const blockedMotion = (await state(page)).moving;
+  assert.ok(blockedMotion, "The blocked click must start a motion");
+  await page.evaluate(
+    (amount) => window.advanceTime?.(amount),
+    blockedMotion.duration / 2 + 33,
+  );
+  const flash = await page.evaluate(() => ({
+    chip: document.querySelector(".lives")?.classList.contains("life-lost"),
+    stage: document
+      .querySelector("#game-stage")
+      ?.classList.contains("life-lost"),
+  }));
+  assert.ok(
+    flash.chip && flash.stage,
+    "Losing a life must flash the lives chip and the stage",
+  );
+  await page.evaluate(() => window.advanceTime?.(1000));
+  const flashAfter = await page.evaluate(() => ({
+    chip: document.querySelector(".lives")?.classList.contains("life-lost"),
+    stage: document
+      .querySelector("#game-stage")
+      ?.classList.contains("life-lost"),
+  }));
+  assert.ok(
+    !flashAfter.chip && !flashAfter.stage,
+    "The life-loss flash must expire on its own",
+  );
   const afterCollision = await state(page);
   assert.equal(
     afterCollision.lives,
