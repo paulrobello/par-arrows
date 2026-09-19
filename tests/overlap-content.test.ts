@@ -92,14 +92,26 @@ describe("overlapping-tail level content", () => {
       expect(validateLevel(level)).toEqual({ valid: true, errors: [] });
 
       let state = createGameState(level);
-      for (const arrow of [...level.arrows].reverse()) {
-        // An arrow whose route crosses a stop circle needs one tap per leg.
-        while (state.remainingIds.includes(arrow.id)) {
-          const result = simulateMove(level, state, arrow.id);
+      if ((level.stops ?? []).length > 0) {
+        // The parking deadlock breaks the plain reverse order, so circle
+        // levels replay the solver's park-prefixed solution instead.
+        const solution = solveLevel(level);
+        if (!solution) throw new Error("Expected a generated solution.");
+        for (const arrowId of solution) {
+          const result = simulateMove(level, state, arrowId);
           expect(["exit", "paused"]).toContain(result.kind);
-          const next = applyMove(level, state, result);
-          expect(next).not.toBe(state);
-          state = next;
+          state = applyMove(level, state, result);
+        }
+      } else {
+        for (const arrow of [...level.arrows].reverse()) {
+          // An arrow whose route crosses a stop circle needs one tap per leg.
+          while (state.remainingIds.includes(arrow.id)) {
+            const result = simulateMove(level, state, arrow.id);
+            expect(["exit", "paused"]).toContain(result.kind);
+            const next = applyMove(level, state, result);
+            expect(next).not.toBe(state);
+            state = next;
+          }
         }
       }
       expect(state.status).toBe("won");

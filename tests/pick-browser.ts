@@ -248,6 +248,13 @@ export async function assertWidePickTargets(
           false,
           `Level ${levelId} off-centre tap failed to launch ${target.id}`,
         );
+      else if (expected.kind === "paused")
+        // A park keeps the arrow on the cube and costs it nothing.
+        assert.ok(
+          settled.remainingIds.includes(target.id) &&
+            settled.lives === level.lives,
+          `Level ${levelId} off-centre tap failed to park ${target.id}`,
+        );
       else
         assert.ok(
           settled.failedIds.includes(target.id) ||

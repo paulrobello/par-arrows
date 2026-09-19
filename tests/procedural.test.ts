@@ -118,16 +118,16 @@ describe("runtime campaign generator", () => {
       "9fb45c3beaf0cafeacb20f56ee1fdf45bcccb17769cbc2229a1521339e85b7fa",
     );
     expect(geometryHash(generateLevel(10))).toBe(
-      "032cde2f3328211346956ede0b8be0416dda983431f51d28d52b32c94421edd0",
+      "195c0a11610c8b477bfdb25ecac64f3f4cbaf1eaff460e316f877700a9d7b95c",
     );
     expect(geometryHash(generateLevel(12))).toBe(
-      "cdede31a8769536158865c769cfc65a97eb882a3392277904551240f4761c69c",
+      "65165ff268d4ee76d2714e2f3af3461cf36b5fec0ae25a7c8b020283f99558e8",
     );
     expect(geometryHash(generateLevel(13))).toBe(
       "5fa650642d13eaf83fe00da47e6acd3123c4ccc5c64e0ab789af917938bdfdcf",
     );
     expect(geometryHash(generateLevel(14))).toBe(
-      "311904e927fbbfbed017b7c57078614c763b7ea0c5879f0b0b9d052f74b9979a",
+      "db497c006f9c9351bfd44b67bb67f914cfffb0da68d400c10f68208812165f40",
     );
     expect(geometryHash(generateLevel(3))).toBe(
       "4a1a8de68f8e033d11be45dd73ed6dc80a47289922f98aea82666c4380c5f48b",
@@ -177,30 +177,45 @@ describe("runtime campaign generator", () => {
       expect(Math.max(...shapeCopies.values())).toBeLessThanOrEqual(
         Math.max(6, Math.ceil(level.arrows.length * 0.03)),
       );
-      let certificateState = createGameState(level);
-      for (const arrow of [...level.arrows].reverse()) {
-        // An arrow whose route crosses a stop circle needs one tap per leg.
-        while (certificateState.remainingIds.includes(arrow.id)) {
-          const result = simulateGameMove(level, certificateState, arrow.id);
-          expect(["exit", "paused"]).toContain(result.kind);
-          const next = applyMove(level, certificateState, result);
-          expect(next).not.toBe(certificateState);
-          certificateState = next;
-        }
-      }
-      expect(certificateState.status).toBe("won");
-      expect(certificateState.lives).toBe(level.lives);
-      if ([2, 10].includes(level.id)) {
-        let state = createGameState(level);
+      if ((level.stops ?? []).length > 0) {
+        // The parking deadlock breaks the plain reverse order, so circle
+        // levels replay the solver's park-prefixed solution instead.
         const solution = solveLevel(level);
         if (!solution) throw new Error("Expected a generated solution.");
+        let solverState = createGameState(level);
         for (const arrowId of solution) {
-          const result = simulateGameMove(level, state, arrowId);
+          const result = simulateGameMove(level, solverState, arrowId);
           expect(["exit", "paused"]).toContain(result.kind);
-          state = applyMove(level, state, result);
+          solverState = applyMove(level, solverState, result);
         }
-        expect(state.status).toBe("won");
-        expect(state.lives).toBe(level.lives);
+        expect(solverState.status).toBe("won");
+        expect(solverState.lives).toBe(level.lives);
+      } else {
+        let certificateState = createGameState(level);
+        for (const arrow of [...level.arrows].reverse()) {
+          // An arrow whose route crosses a stop circle needs one tap per leg.
+          while (certificateState.remainingIds.includes(arrow.id)) {
+            const result = simulateGameMove(level, certificateState, arrow.id);
+            expect(["exit", "paused"]).toContain(result.kind);
+            const next = applyMove(level, certificateState, result);
+            expect(next).not.toBe(certificateState);
+            certificateState = next;
+          }
+        }
+        expect(certificateState.status).toBe("won");
+        expect(certificateState.lives).toBe(level.lives);
+        if ([2, 10].includes(level.id)) {
+          let state = createGameState(level);
+          const solution = solveLevel(level);
+          if (!solution) throw new Error("Expected a generated solution.");
+          for (const arrowId of solution) {
+            const result = simulateGameMove(level, state, arrowId);
+            expect(["exit", "paused"]).toContain(result.kind);
+            state = applyMove(level, state, result);
+          }
+          expect(state.status).toBe("won");
+          expect(state.lives).toBe(level.lives);
+        }
       }
     }
   });
@@ -411,6 +426,27 @@ describe("runtime campaign generator", () => {
         expect(bodies.has(cellKey(stop))).toBe(false);
         expect(reachable.has(cellKey(stop))).toBe(true);
       }
+    }
+  }, 20_000);
+
+  test("every generated circle level requires parking and solves with it", () => {
+    for (const id of [6, 7, 10, 12, 14, 16, 55, 100]) {
+      const level = generateLevel(id);
+      const stops = level.stops ?? [];
+      expect(stops).toHaveLength(getStopCount(id));
+      if (stops.length === 0) continue;
+      const stripped = { ...level, stops: [] };
+      expect(solveLevel(stripped)).toBeUndefined();
+      const solution = solveLevel(level);
+      if (!solution) throw new Error(`Expected a parking solution for ${id}.`);
+      let state = createGameState(level);
+      for (const arrowId of solution) {
+        const result = simulateGameMove(level, state, arrowId);
+        expect(["exit", "paused"]).toContain(result.kind);
+        state = applyMove(level, state, result);
+      }
+      expect(state.status).toBe("won");
+      expect(state.lives).toBe(level.lives);
     }
   }, 20_000);
 

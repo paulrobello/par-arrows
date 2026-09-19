@@ -407,20 +407,160 @@ function overlapStarter(
 }
 
 /**
- * Choose stop circles on cells some arrow's head actually travels through, so a
- * circle is always reachable rather than decorative. Circles never change
- * whether a level can be cleared: a head sweeps the same cells whether or not it
- * parks along the way, so the reverse-insertion certificate still holds and the
- * cheap drive-through replay below stays a valid check.
+ * The level-5 deadlock, relative to the parker's tail: the parker blocks the
+ * freed arrow, the freed arrow blocks the blocker, and the blocker sits in the
+ * parker's lane past the circle, so parking is the only opening move.
+ */
+const PARK_PATTERN = {
+  parker: [
+    { dx: 0, dy: 0 },
+    { dx: 1, dy: 0 },
+  ],
+  stop: { dx: 2, dy: 0 },
+  blocker: [
+    { dx: 3, dy: 0 },
+    { dx: 3, dy: 1 },
+    { dx: 2, dy: 1 },
+    { dx: 1, dy: 1 },
+  ],
+  freed: [
+    { dx: 0, dy: 2 },
+    { dx: 0, dy: 1 },
+  ],
+} as const;
+
+const PARK_CERTIFICATE_PREFIX = "park:";
+
+interface ParkingCore {
+  readonly arrows: readonly ArrowDefinition[];
+  readonly stop: Cell;
+  readonly parkerId: string;
+}
+
+function patternCell(
+  base: Cell,
+  dx: number,
+  dy: number,
+  rotation: number,
+): Cell {
+  const turns = ((rotation % 4) + 4) % 4;
+  const x =
+    turns === 0
+      ? base.x + dx
+      : turns === 1
+        ? base.x - dy
+        : turns === 2
+          ? base.x - dx
+          : base.x + dy;
+  const y =
+    turns === 0
+      ? base.y + dy
+      : turns === 1
+        ? base.y + dx
+        : turns === 2
+          ? base.y - dy
+          : base.y - dx;
+  return { face: base.face, x, y };
+}
+
+/**
+ * Build the level-5 deadlock on its own seeded stream, independent of layout
+ * retries. The freed and blocker arrows collide on their first route cell and
+ * the parker reaches its circle before the blocker occupies its lane, so the
+ * finished level provably needs parking; the certificate replay below proves
+ * the rest of the cube still clears. Undefined means no placement fit and the
+ * level falls back to decorative circles only.
+ */
+function parkingCore(
+  id: number,
+  level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
+  occupied: ReadonlySet<string>,
+): ParkingCore | undefined {
+  const size = level.gridSize;
+  const rng = new Rng(hashSeed(`${seedForLevel(id)}:park-core`));
+  const faces = shuffledFaces(rng);
+  for (let attempt = 0; attempt < 96; attempt += 1) {
+    const face = faces[attempt % faces.length] as FaceId;
+    const rotation = rng.int(4);
+    const base: Cell = {
+      face,
+      x: 1 + rng.int(Math.max(1, size - 2)),
+      y: 1 + rng.int(Math.max(1, size - 2)),
+    };
+    const parkerPath = PARK_PATTERN.parker.map(({ dx, dy }) =>
+      patternCell(base, dx, dy, rotation),
+    );
+    const blockerPath = PARK_PATTERN.blocker.map(({ dx, dy }) =>
+      patternCell(base, dx, dy, rotation),
+    );
+    const freedPath = PARK_PATTERN.freed.map(({ dx, dy }) =>
+      patternCell(base, dx, dy, rotation),
+    );
+    const stop = patternCell(
+      base,
+      PARK_PATTERN.stop.dx,
+      PARK_PATTERN.stop.dy,
+      rotation,
+    );
+    const cells = [...parkerPath, ...blockerPath, ...freedPath, stop];
+    const patternKeys = new Set(cells.map(cellKey));
+    if (
+      patternKeys.size !== cells.length ||
+      cells.some(
+        (cell) =>
+          cell.x < 0 ||
+          cell.y < 0 ||
+          cell.x >= size ||
+          cell.y >= size ||
+          occupied.has(cellKey(cell)),
+      )
+    )
+      continue;
+    const rayClear = (path: readonly Cell[]): boolean => {
+      const head = path[path.length - 1];
+      const heading = head ? headingForPath(path, size) : undefined;
+      if (!head || !heading) return false;
+      const ray = exitRay(level, head, heading);
+      return (
+        ray.length > 0 &&
+        ray
+          .slice(1)
+          .every(
+            (cell) =>
+              patternKeys.has(cellKey(cell)) || !occupied.has(cellKey(cell)),
+          )
+      );
+    };
+    if (!rayClear(parkerPath) || !rayClear(blockerPath) || !rayClear(freedPath))
+      continue;
+    return {
+      arrows: [
+        { id: `r${id}-park-p`, path: parkerPath },
+        { id: `r${id}-park-b`, path: blockerPath },
+        { id: `r${id}-park-f`, path: freedPath },
+      ],
+      stop,
+      parkerId: `r${id}-park-p`,
+    };
+  }
+  return undefined;
+}
+
+/**
+ * Choose decorative circles on cells some arrow's head actually travels
+ * through, so a circle is always reachable rather than decorative. The
+ * load-bearing circle arrives with the parking core; these extras never change
+ * whether a level can be cleared, because a head sweeps the same cells whether
+ * or not it parks along the way.
  */
 function chooseStops(
   id: number,
   level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
   arrows: readonly ArrowDefinition[],
   occupied: ReadonlySet<string>,
+  decorativeCount: number,
 ): readonly Cell[] {
-  const count = getStopCount(id);
-  if (count === 0) return [];
+  if (decorativeCount <= 0) return [];
   const candidates: Cell[] = [];
   const seen = new Set<string>();
   for (const arrow of arrows) {
@@ -441,13 +581,13 @@ function chooseStops(
     candidates[index] = candidates[replacement] as Cell;
     candidates[replacement] = current;
   }
-  return candidates.slice(0, count);
+  return candidates.slice(0, decorativeCount);
 }
 
 /**
- * Replay the construction certificate. An arrow whose route crosses a stop
- * circle needs one tap per leg, so each certificate entry is driven through its
- * pauses before the next arrow is tried.
+ * Replay the construction certificate. A leading park entry advances the named
+ * arrow to its first circle and leaves it parked there; every other entry is
+ * driven through its pauses until it exits before the next arrow is tried.
  */
 function validateGenerated(
   level: LevelDefinition,
@@ -457,8 +597,25 @@ function validateGenerated(
   let remaining = level.arrows.map((arrow) => arrow.id);
   const offsets: Record<string, number> = {};
   const maximumLegs = level.gridSize * 6 + 2;
-  for (const arrowId of certificate) {
+  for (const entry of certificate) {
+    const park = entry.startsWith(PARK_CERTIFICATE_PREFIX);
+    const arrowId = park ? entry.slice(PARK_CERTIFICATE_PREFIX.length) : entry;
     if (!remaining.includes(arrowId)) continue;
+    if (park) {
+      const result = simulateMove(
+        level,
+        remaining,
+        arrowId,
+        "head",
+        0,
+        offsets,
+      );
+      if (result.kind !== "paused" || !result.pausedSteps) return false;
+      for (const memberId of overlappingArrowIds(level, arrowId)) {
+        offsets[memberId] = (offsets[memberId] ?? 0) + result.pausedSteps;
+      }
+      continue;
+    }
     let cleared = false;
     for (let leg = 0; leg < maximumLegs && !cleared; leg += 1) {
       const result = simulateMove(
@@ -490,7 +647,10 @@ function validateGenerated(
 /**
  * Build a pure, reproducible level. Insertion is reverse construction: each
  * arrow has an exit unobstructed by earlier arrows, so reverse insertion is a
- * real no-mistake solution certificate.
+ * real no-mistake solution certificate. Levels carrying stop circles also embed
+ * the parking core, whose circle is reserved from every later arrow so the
+ * replayed certificate — one leading park, then the reverse drive — can never
+ * fail because of parking.
  */
 export function generateLevel(id: number): LevelDefinition {
   assertLevelId(id);
@@ -529,6 +689,19 @@ export function generateLevel(id: number): LevelDefinition {
         for (const cell of arrow.path) occupied.add(cellKey(cell));
         arrows.push(arrow);
       }
+    }
+    const core =
+      getStopCount(id) >= 1
+        ? parkingCore(id, candidateLevel, occupied)
+        : undefined;
+    if (core) {
+      for (const arrow of core.arrows) {
+        if (!validateLevel({ ...candidateLevel, arrows: [arrow] }).valid)
+          throw new Error("Seeded parking-core arrow was invalid.");
+        for (const cell of arrow.path) occupied.add(cellKey(cell));
+        arrows.push(arrow);
+      }
+      occupied.add(cellKey(core.stop));
     }
     for (const [index, length] of [2, 3, 4].entries()) {
       const face = faces[index];
@@ -613,13 +786,23 @@ export function generateLevel(id: number): LevelDefinition {
       arrows.push(arrow);
     }
     if (arrows.length !== config.arrowCount) continue;
-    const stops = chooseStops(id, candidateLevel, arrows, occupied);
+    const decorative = chooseStops(
+      id,
+      candidateLevel,
+      arrows,
+      occupied,
+      getStopCount(id) - (core ? 1 : 0),
+    );
+    const stops = core ? [core.stop, ...decorative] : decorative;
     const level: LevelDefinition = {
       ...candidateLevel,
       arrows,
       ...(stops.length > 0 ? { stops } : {}),
     };
-    const certificate = [...arrows].reverse().map((arrow) => arrow.id);
+    const certificate = [
+      ...(core ? [`${PARK_CERTIFICATE_PREFIX}${core.parkerId}`] : []),
+      ...[...arrows].reverse().map((arrow) => arrow.id),
+    ];
     if (validateGenerated(level, certificate)) return level;
   }
   throw new Error(`Could not deterministically construct runtime level ${id}.`);

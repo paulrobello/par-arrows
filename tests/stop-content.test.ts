@@ -107,6 +107,10 @@ describe("stop-circle level content", () => {
       }
       expect((level.stops ?? []).length).toBeLessThanOrEqual(3);
       expect(solveLevel(level)).toBeDefined();
+      if ((level.stops ?? []).length > 0) {
+        // The circle is load-bearing: without it the deadlock never breaks.
+        expect(solveLevel({ ...level, stops: [] })).toBeUndefined();
+      }
     }
   }, 20_000);
 });

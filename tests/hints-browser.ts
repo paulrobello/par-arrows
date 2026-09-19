@@ -127,9 +127,12 @@ export async function runHintChecks(
   const savedBefore = await page.evaluate(() =>
     localStorage.getItem("par-arrows:campaign:v1"),
   );
-  const safe = level.arrows.find(
-    (arrow) =>
-      simulateMove(level, createGameState(level), arrow.id).kind === "exit",
+  // The hint names the first safe arrow, and parking counts as safe: it costs
+  // nothing, and on circle levels the parker is exactly the arrow to suggest.
+  const safe = level.arrows.find((arrow) =>
+    ["exit", "paused"].includes(
+      simulateMove(level, createGameState(level), arrow.id).kind,
+    ),
   );
   assert.ok(safe);
   const button = page.getByRole("button", { name: "Hint", exact: true });
