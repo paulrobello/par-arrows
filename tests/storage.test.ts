@@ -397,19 +397,17 @@ describe("resumable campaign saves", () => {
   });
 
   test.each([1, 2, 3, 4, 5] as const)(
-    "migrates a level one v%d attempt without changing its exact state",
+    "resets a legacy v%d level one attempt to the reworked tutorial cube",
     async (contentVersion) => {
       const level = levelFor(1);
-      const state = exitedState(level);
-      writeLegacyVersion(state, contentVersion, 3, false);
+      writeLegacyVersion(exitedState(level), contentVersion, 3, false);
 
       const restored = await loadCampaign(resolveFixture);
-      expect(restored.recovered).toBe(false);
-      expect(restored.contentUpdated).toBe(false);
-      expect(restored.value?.state).toEqual(state);
+      expect(restored.recovered).toBe(true);
+      expect(restored.contentUpdated).toBe(true);
+      expect(restored.value?.state).toEqual(createGameState(level));
       expect(restored.value?.unlockedLevelId).toBe(3);
       expect(restored.value?.tutorialComplete).toBe(false);
-      expect(savedJson()).toMatchObject({ contentVersion });
       if (!restored.value) throw new Error("Expected restored campaign");
       expect(saveCampaign(restored.value)).toBe(true);
       expect(savedJson()).toMatchObject({
@@ -433,6 +431,35 @@ describe("resumable campaign saves", () => {
       expect(restored.value?.tutorialComplete).toBe(false);
     },
   );
+
+  test("a current-version save with pre-rework level one arrows refreshes in place", async () => {
+    const level = levelFor(1);
+    const state = createGameState(level);
+    expect(save(state, 4)).toBe(true);
+    const stale = {
+      ...state,
+      remainingIds: [
+        "l1-front-clear",
+        "l1-back-clear",
+        "l1-right-clear",
+        "l1-left-clear",
+        "l1-top-clear",
+        "l1-bottom-clear",
+      ],
+      failedIds: [],
+    };
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({ ...savedJson(), state: stale, tutorialComplete: false }),
+    );
+
+    const restored = await loadCampaign(resolveFixture);
+    expect(restored.recovered).toBe(true);
+    expect(restored.value?.state).toEqual(createGameState(level));
+    expect(restored.value?.currentLevelId).toBe(1);
+    expect(restored.value?.unlockedLevelId).toBe(4);
+    expect(restored.value?.tutorialComplete).toBe(false);
+  });
 
   test("a v6 seed mismatch resets the attempt and never restores stale arrow IDs", async () => {
     const level = levelFor(19);
@@ -613,9 +640,10 @@ describe("concurrent-tab conflict policy", () => {
 describe("player settings", () => {
   test("defaults to system theme and full motion", () => {
     expect(loadSettings()).toEqual({
-      gridLines: false,
+      gridLines: true,
       reducedMotion: false,
       theme: "system",
+      tutorialSeenLevels: [],
     });
   });
 
@@ -625,38 +653,70 @@ describe("player settings", () => {
       JSON.stringify({ reducedMotion: true }),
     );
     expect(loadSettings()).toEqual({
-      gridLines: false,
+      gridLines: true,
       reducedMotion: true,
       theme: "system",
+      tutorialSeenLevels: [],
     });
   });
 
   test("recovers from malformed and invalid saved themes", () => {
     entries.set("par-arrows:settings:v1", "{broken");
     expect(loadSettings()).toEqual({
-      gridLines: false,
+      gridLines: true,
       reducedMotion: false,
       theme: "system",
+      tutorialSeenLevels: [],
     });
     entries.set(
       "par-arrows:settings:v1",
       JSON.stringify({ reducedMotion: true, theme: "midnight" }),
     );
     expect(loadSettings()).toEqual({
-      gridLines: false,
+      gridLines: true,
       reducedMotion: true,
       theme: "system",
+      tutorialSeenLevels: [],
     });
   });
 
   test("persists theme, grid lines, and reduced motion", () => {
     expect(
-      saveSettings({ gridLines: true, reducedMotion: true, theme: "dark" }),
+      saveSettings({
+        gridLines: true,
+        reducedMotion: true,
+        theme: "dark",
+        tutorialSeenLevels: [],
+      }),
     ).toBe(true);
     expect(loadSettings()).toEqual({
       gridLines: true,
       reducedMotion: true,
       theme: "dark",
+      tutorialSeenLevels: [],
     });
+  });
+
+  test("round-trips seen tutorial levels and drops invalid entries", () => {
+    expect(
+      saveSettings({
+        gridLines: false,
+        reducedMotion: false,
+        theme: "system",
+        tutorialSeenLevels: [1, 5],
+      }),
+    ).toBe(true);
+    expect(loadSettings().tutorialSeenLevels).toEqual([1, 5]);
+
+    entries.set(
+      "par-arrows:settings:v1",
+      JSON.stringify({
+        gridLines: false,
+        reducedMotion: false,
+        theme: "system",
+        tutorialSeenLevels: [1, "5", 0, -2, 2.5, 11, 11],
+      }),
+    );
+    expect(loadSettings().tutorialSeenLevels).toEqual([1, 11]);
   });
 });

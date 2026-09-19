@@ -1,6 +1,15 @@
 interface Window {
   render_game_to_text?: () => string;
   advanceTime?: (milliseconds: number) => void;
+  get_tutorial_state?: () =>
+    | {
+        active: true;
+        levelId: number;
+        stepIndex: number;
+        copy: string;
+        highlightId?: string;
+      }
+    | { active: false };
   __PAR_ARROWS_TEST__?: {
     loadLevel(levelId: number): Promise<void>;
     resetProgress(): void;

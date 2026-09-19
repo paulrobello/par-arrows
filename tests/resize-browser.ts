@@ -165,14 +165,14 @@ export async function assertResizeTracking(
     );
     await page.screenshot({ path: `${output}/resize/02-landscape.png` });
 
-    // Demo mode shows the tutorial card; at phone widths it must not sit on
-    // the gesture-help line, and at narrow desktop widths the help line must
-    // not sit on the control dock.
+    // The scripted tutorial card shows on first run; at phone widths it must
+    // not sit on the gesture-help line, and at narrow desktop widths the help
+    // line must not sit on the control dock.
     await page.setViewportSize({ width: 390, height: 844 });
     assert.equal(
       await page.locator("#tutorial").isVisible(),
       true,
-      "Demo mode must show the tutorial card",
+      "First run must show the tutorial card",
     );
     const phone = await measureBoxes(page, [".tutorial-card", ".gesture-help"]);
     assertSeparate(

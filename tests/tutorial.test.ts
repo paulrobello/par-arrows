@@ -1,0 +1,126 @@
+import { describe, expect, test } from "bun:test";
+import {
+  SCRIPTED_LEVEL_IDS,
+  TutorialRunner,
+  scriptForLevel,
+} from "../src/tutorial";
+
+function runnerFor(levelId: number): TutorialRunner {
+  const script = scriptForLevel(levelId);
+  if (!script) throw new Error(`No tutorial script for level ${levelId}.`);
+  return new TutorialRunner(script);
+}
+
+describe("tutorial scripts", () => {
+  test("exposes exactly the four intro levels", () => {
+    expect(SCRIPTED_LEVEL_IDS).toEqual([1, 5, 11, 15]);
+    expect(scriptForLevel(2)).toBeUndefined();
+    for (const levelId of SCRIPTED_LEVEL_IDS)
+      expect(scriptForLevel(levelId)?.levelId).toBe(levelId);
+  });
+});
+
+describe("level one runner", () => {
+  test("walks blocked collision, blocker, then red arrow", () => {
+    const runner = runnerFor(1);
+    expect(runner.current.highlightId).toBe("l1-front-blocked");
+
+    runner.onMove({ arrowId: "l1-front-blocked", kind: "blocked" });
+    expect(runner.current.highlightId).toBe("l1-front-blocker");
+
+    runner.onMove({ arrowId: "l1-front-blocker", kind: "exit" });
+    expect(runner.current.highlightId).toBe("l1-front-blocked");
+
+    runner.onMove({ arrowId: "l1-front-blocked", kind: "exit" });
+    expect(runner.current.advance.kind).toBe("won");
+    expect(runner.done).toBe(false);
+
+    runner.onWon();
+    expect(runner.done).toBe(true);
+  });
+
+  test("ignores arrows outside the script and invalid moves", () => {
+    const runner = runnerFor(1);
+    runner.onMove({ arrowId: "l1-back", kind: "exit" });
+    expect(runner.stepIndex).toBe(0);
+    runner.onMove({ arrowId: "l1-front-blocked", kind: "invalid" });
+    expect(runner.stepIndex).toBe(0);
+    runner.onMove({ arrowId: "l1-front-blocked", kind: "blocked" });
+    expect(runner.stepIndex).toBe(1);
+    runner.onMove({ arrowId: "l1-back", kind: "exit" });
+    expect(runner.stepIndex).toBe(1);
+  });
+
+  test("jumps to the matching step when a later lesson's move happens first", () => {
+    const runner = runnerFor(1);
+    // Blocker cleared off-script: the next lesson is the freed red arrow.
+    runner.onMove({ arrowId: "l1-front-blocker", kind: "exit" });
+    expect(runner.stepIndex).toBe(2);
+    expect(runner.current.highlightId).toBe("l1-front-blocked");
+    runner.onMove({ arrowId: "l1-front-blocked", kind: "exit" });
+    expect(runner.current.advance.kind).toBe("won");
+  });
+});
+
+describe("stop intro runner", () => {
+  test("requires the parked outcome, then the same arrow's exit", () => {
+    const runner = runnerFor(5);
+
+    runner.onMove({ arrowId: "stop-intro-parker", kind: "paused" });
+    expect(runner.current.highlightId).toBe("stop-intro-freed");
+
+    runner.onMove({ arrowId: "stop-intro-freed", kind: "exit" });
+    expect(runner.current.highlightId).toBe("stop-intro-blocker");
+
+    runner.onMove({ arrowId: "stop-intro-blocker", kind: "exit" });
+    expect(runner.current.highlightId).toBe("stop-intro-parker");
+
+    runner.onMove({ arrowId: "stop-intro-parker", kind: "exit" });
+    expect(runner.current.advance.kind).toBe("won");
+    runner.onWon();
+    expect(runner.done).toBe(true);
+  });
+
+  test("an unmatched parker exit before any lesson jumps to the win step", () => {
+    const runner = runnerFor(5);
+    runner.onMove({ arrowId: "stop-intro-parker", kind: "exit" });
+    expect(runner.current.advance.kind).toBe("won");
+    expect(runner.done).toBe(false);
+    runner.onWon();
+    expect(runner.done).toBe(true);
+  });
+
+  test("a freed-blocker exit out of order still advances the chain", () => {
+    const runner = runnerFor(5);
+    runner.onMove({ arrowId: "stop-intro-parker", kind: "paused" });
+    runner.onMove({ arrowId: "stop-intro-blocker", kind: "exit" });
+    expect(runner.current.highlightId).toBe("stop-intro-parker");
+  });
+});
+
+describe("wrap intro runner", () => {
+  test("advances on the wrap arrow's exit and finishes on win", () => {
+    const runner = runnerFor(11);
+    expect(runner.current.highlightId).toBe("wrap-intro-front");
+    runner.onMove({ arrowId: "wrap-intro-front", kind: "exit" });
+    expect(runner.current.advance.kind).toBe("won");
+    runner.onWon();
+    expect(runner.done).toBe(true);
+  });
+});
+
+describe("overlap intro runner", () => {
+  test("walks blocker, group launch, then trio win", () => {
+    const runner = runnerFor(15);
+    expect(runner.current.highlightId).toBe("overlap-intro-blocker");
+
+    runner.onMove({ arrowId: "overlap-intro-blocker", kind: "exit" });
+    expect(runner.current.highlightId).toBe("overlap-intro-pair-a");
+
+    // Any group member's launch satisfies the step, pair-b included.
+    runner.onMove({ arrowId: "overlap-intro-pair-b", kind: "exit" });
+    expect(runner.current.advance.kind).toBe("won");
+    runner.onWon();
+    expect(runner.done).toBe(true);
+  });
+});

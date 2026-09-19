@@ -391,32 +391,6 @@ button {
   line-height: 1.45;
 }
 
-.touch-cue {
-  position: absolute;
-  z-index: 3;
-  width: 2.45rem;
-  height: 2.45rem;
-  border: 1px solid var(--accent);
-  border-radius: 50%;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  animation: pulse 1.3s ease-in-out infinite;
-}
-.touch-cue span {
-  display: block;
-  width: 0.55rem;
-  height: 0.55rem;
-  margin: 0.88rem;
-  border-radius: 50%;
-  background: var(--accent);
-}
-@keyframes pulse {
-  50% {
-    transform: scale(1.18);
-    opacity: 0.45;
-  }
-}
-
 .primary-button {
   margin-top: 1rem;
   border: 0;
@@ -803,19 +777,9 @@ input:focus-visible {
   .tutorial-card h1 {
     font-size: 1.2rem;
   }
-  .touch-cue {
-    width: 2rem;
-    height: 2rem;
-  }
-  .touch-cue span {
-    width: 0.42rem;
-    height: 0.42rem;
-    margin: 0.72rem;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .touch-cue,
   .state-card.is-celebrating,
   .confetti-piece {
     animation: none;

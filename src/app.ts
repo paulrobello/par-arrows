@@ -1,12 +1,6 @@
 import "@fontsource-variable/manrope";
 
-import {
-  DEMO_BLOCKED_ID,
-  DEMO_LEVEL,
-  DEMO_SUCCESS_ID,
-  LEVEL_ONE,
-  WRAP_INTRO_LEVEL,
-} from "./content/intro";
+import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "./content/intro";
 import { LevelLoader } from "./content/level-loader";
 import { OVERLAP_INTRO_LEVEL } from "./content/overlap-intro";
 import { STOP_INTRO_LEVEL } from "./content/stop-intro";
@@ -23,7 +17,12 @@ import { applyMove, createGameState, simulateMove } from "./core/game-state";
 import { resolvePick } from "./pick";
 import { overlappingArrowIds } from "./core/overlap";
 import { cellKey } from "./core/topology";
-import type { GameState, LevelDefinition, MoveResult } from "./core/types";
+import type {
+  GameState,
+  LevelDefinition,
+  MoveKind,
+  MoveResult,
+} from "./core/types";
 import { PointerInput } from "./input";
 import { PwaInstallPrompt } from "./pwa";
 import { arrowMotionDuration, PuzzleRenderer } from "./render/renderer";
@@ -37,13 +36,12 @@ import {
   saveCampaign,
   saveSettings,
 } from "./storage";
+import { TutorialRunner, scriptForLevel } from "./tutorial";
 import {
   APP_VERSION,
   markVersionReloaded,
   VersionWatcher,
 } from "./version-watcher";
-
-type AppMode = "demo" | "campaign";
 
 interface Motion {
   readonly result: MoveResult;
@@ -84,8 +82,8 @@ export class ParArrowsApp {
   private readonly levelInput: HTMLInputElement;
   private readonly levelSubmit: HTMLButtonElement;
   private readonly tutorial: HTMLElement;
+  private readonly tutorialTitle: HTMLElement;
   private readonly tutorialCopy: HTMLElement;
-  private readonly startButton: HTMLButtonElement;
   private readonly installButton: HTMLButtonElement;
   private readonly installHint: HTMLElement;
   private readonly settingsButton: HTMLButtonElement;
@@ -112,7 +110,6 @@ export class ParArrowsApp {
   private readonly systemThemePreference = window.matchMedia(
     "(prefers-color-scheme: dark)",
   );
-  private mode: AppMode = "campaign";
   private level: LevelDefinition = LEVEL_ONE;
   private state: GameState = createGameState(LEVEL_ONE);
   private displayedState: GameState = this.state;
@@ -120,11 +117,11 @@ export class ParArrowsApp {
   private tutorialComplete = false;
   private settings: PlayerSettings = loadSettings();
   private motion: Motion | undefined;
+  private tutorialMove: { arrowId: string; kind: MoveKind } | undefined;
+  private tutorialRunner: TutorialRunner | undefined;
   private pendingTap: string | undefined;
   private celebration: Celebration | undefined;
   private hint: Hint | undefined;
-  private demoStage: "observe" | "pause" | "ready" = "observe";
-  private demoElapsed = 0;
   private animationFrame = 0;
   private lastTimestamp = 0;
   private appliedTheme: "light" | "dark" | undefined;
@@ -154,12 +151,10 @@ export class ParArrowsApp {
         <section class="game-stage" id="game-stage" aria-label="Interactive cube puzzle">
           <div class="tutorial-card" id="tutorial" aria-live="polite">
             <div class="tutorial-kicker">HOW IT WORKS</div>
-            <h1>Find the open way.</h1>
+            <h1 id="tutorial-title">Find the open way.</h1>
             <p id="tutorial-copy">A blocked arrow returns and turns red.</p>
             <p class="rotate-hint">Drag anywhere to rotate the cube.</p>
-            <button class="primary-button" id="start-button" type="button" hidden>Start level 1</button>
           </div>
-          <div class="touch-cue" id="touch-cue" aria-hidden="true"><span></span></div>
           <div class="celebration-layer" id="celebration-layer" aria-hidden="true"></div>
           <div class="generation-layer" id="generation-layer" role="status" aria-live="polite" aria-atomic="true" hidden>
             <div class="generation-card"><strong id="generation-status">Preparing cube…</strong><button class="primary-button" data-action="generation-retry" type="button" hidden>Try again</button></div>
@@ -203,8 +198,8 @@ export class ParArrowsApp {
     if (!this.levelSubmit)
       throw new Error("Missing cube picker submit button.");
     this.tutorial = this.requireElement("tutorial");
+    this.tutorialTitle = this.requireElement("tutorial-title");
     this.tutorialCopy = this.requireElement("tutorial-copy");
-    this.startButton = this.requireElement("start-button") as HTMLButtonElement;
     this.installButton = this.requireElement(
       "install-button",
     ) as HTMLButtonElement;
@@ -232,7 +227,7 @@ export class ParArrowsApp {
     this.applyTheme();
     this.input = new PointerInput(this.renderer.canvas, {
       pick: (x, y, pointerType) =>
-        this.loading || this.loadingError || this.mode !== "campaign"
+        this.loading || this.loadingError
           ? undefined
           : this.resolvePick(x, y, pointerType),
       onPress: (id) => {
@@ -265,7 +260,6 @@ export class ParArrowsApp {
     );
     this.renderer.setLevel(this.level, this.state);
     if (this.preview.active) {
-      this.mode = "campaign";
       this.tutorialComplete = true;
       this.unlockedLevelId = MAX_LEVEL_ID;
       this.requestedLevelId =
@@ -320,7 +314,6 @@ export class ParArrowsApp {
 
   diagnosticText(): string {
     return JSON.stringify({
-      mode: this.mode,
       level: { id: this.level.id, title: this.level.title },
       selectedArrowId: this.renderer.selectedArrowId(),
       preview: {
@@ -461,11 +454,9 @@ export class ParArrowsApp {
     try {
       const level = await this.loader.load(targetLevelId);
       if (this.disposed || request !== this.loadRequest) return;
-      this.mode = "campaign";
       this.level = level;
       this.state = createGameState(level);
       this.displayedState = this.state;
-      this.tutorialComplete = true;
       this.unlockedLevelId = Math.max(this.unlockedLevelId, level.id);
       this.renderer.setLevel(level, this.state);
       if (this.preview.active) {
@@ -491,22 +482,22 @@ export class ParArrowsApp {
       return;
     }
     this.loadRequest += 1;
+    this.requestedLevelId = 1;
     this.retryPurpose = undefined;
     clearCampaign();
-    this.mode = "demo";
-    this.level = DEMO_LEVEL;
-    this.state = createGameState(DEMO_LEVEL);
+    this.level = LEVEL_ONE;
+    this.state = createGameState(LEVEL_ONE);
     this.displayedState = this.state;
     this.tutorialComplete = false;
+    this.tutorialRunner = undefined;
     this.unlockedLevelId = 1;
-    this.demoStage = "observe";
-    this.demoElapsed = 0;
     this.motion = undefined;
+    this.pendingTap = undefined;
     this.cancelHint();
     this.clearCelebration();
     this.loading = false;
     this.loadingError = undefined;
-    this.renderer.setLevel(DEMO_LEVEL, this.state);
+    this.renderer.setLevel(LEVEL_ONE, this.state);
     this.renderUi();
   }
 
@@ -561,26 +552,11 @@ export class ParArrowsApp {
       this.updateHint(delta);
       return;
     }
-    if (!this.loading && this.mode === "demo" && this.demoStage !== "ready") {
-      this.demoElapsed += delta;
-      if (this.demoStage === "observe" && this.demoElapsed >= 800) {
-        this.demoElapsed = 0;
-        this.attempt(DEMO_BLOCKED_ID, true);
-      } else if (this.demoStage === "pause" && this.demoElapsed >= 500) {
-        this.demoElapsed = 0;
-        this.attempt(DEMO_SUCCESS_ID, true);
-      }
-    }
   }
 
-  private attempt(arrowId: string, scripted = false): void {
+  private attempt(arrowId: string): void {
     this.cancelHint();
-    if (
-      this.loading ||
-      this.loadingError ||
-      this.motion ||
-      (this.mode === "demo" && !scripted)
-    ) {
+    if (this.loading || this.loadingError || this.motion) {
       return;
     }
     const result = simulateMove(this.level, this.state, arrowId);
@@ -589,15 +565,14 @@ export class ParArrowsApp {
       return;
     }
     this.state = next;
-    if (this.mode === "campaign") {
-      if (next.status === "won") {
-        this.unlockedLevelId = Math.max(
-          this.unlockedLevelId,
-          Math.min(MAX_LEVEL_ID, this.level.id + 1),
-        );
-      }
-      this.persist();
+    this.tutorialMove = { arrowId, kind: result.kind };
+    if (next.status === "won") {
+      this.unlockedLevelId = Math.max(
+        this.unlockedLevelId,
+        Math.min(MAX_LEVEL_ID, this.level.id + 1),
+      );
     }
+    this.persist();
     this.motion = {
       result,
       elapsed: 0,
@@ -618,13 +593,16 @@ export class ParArrowsApp {
     this.renderer.updateState(this.state);
     this.renderer.settle(arrowId);
     this.displayedState = this.state;
-    if (this.mode === "demo") {
-      if (arrowId === DEMO_BLOCKED_ID) {
-        this.demoStage = "pause";
-      } else if (arrowId === DEMO_SUCCESS_ID) {
-        this.demoStage = "ready";
+    const move = this.tutorialMove;
+    this.tutorialMove = undefined;
+    if (move) this.tutorialRunner?.onMove(move);
+    if (this.state.status === "won") {
+      if (this.level.id === 1) this.tutorialComplete = true;
+      this.tutorialRunner?.onWon();
+      if (this.tutorialRunner) {
+        this.markTutorialSeen(this.level.id);
+        this.tutorialRunner = undefined;
       }
-    } else if (this.state.status === "won") {
       this.unlockedLevelId = Math.max(
         this.unlockedLevelId,
         Math.min(MAX_LEVEL_ID, this.level.id + 1),
@@ -636,6 +614,40 @@ export class ParArrowsApp {
     const pendingTap = this.pendingTap;
     this.pendingTap = undefined;
     if (pendingTap) this.attempt(pendingTap);
+  }
+
+  /** Records that a scripted intro level's walkthrough has been completed. */
+  private markTutorialSeen(levelId: number): void {
+    if (this.settings.tutorialSeenLevels.includes(levelId)) return;
+    this.settings = {
+      ...this.settings,
+      tutorialSeenLevels: [...this.settings.tutorialSeenLevels, levelId],
+    };
+    if (!this.preview.active) saveSettings(this.settings);
+  }
+
+  /** Syncs the scripted walkthrough with the current level and board. */
+  private attachTutorial(): void {
+    const script = scriptForLevel(this.level.id);
+    const active =
+      !this.preview.active &&
+      script !== undefined &&
+      !this.settings.tutorialSeenLevels.includes(this.level.id) &&
+      this.state.status === "playing";
+    if (!active || !script) {
+      this.tutorialRunner = undefined;
+      this.renderer.setTutorialHighlight(undefined);
+      return;
+    }
+    if (!this.tutorialRunner || this.tutorialRunner.levelId !== this.level.id) {
+      this.tutorialRunner = new TutorialRunner(script);
+      this.tutorialRunner.attach(this.state.remainingIds);
+    }
+    this.renderer.setTutorialHighlight(
+      this.tutorialRunner.done
+        ? undefined
+        : this.tutorialRunner.current.highlightId,
+    );
   }
 
   private async restore(): Promise<void> {
@@ -675,42 +687,20 @@ export class ParArrowsApp {
       this.displayedState = this.state;
       this.unlockedLevelId = saved.value.unlockedLevelId;
       this.tutorialComplete = saved.value.tutorialComplete;
-      this.mode = this.tutorialComplete ? "campaign" : "demo";
       if (this.tutorialComplete) this.persist();
-    }
-    if (!this.tutorialComplete) {
-      this.mode = "demo";
-      this.level = DEMO_LEVEL;
-      this.state = createGameState(DEMO_LEVEL);
-      this.displayedState = this.state;
     }
     this.renderer.setLevel(this.level, this.state);
     this.loading = false;
     this.renderUi();
   }
 
-  private beginCampaign(): void {
-    if (this.mode !== "demo" || this.demoStage !== "ready") {
-      return;
-    }
-    this.tutorialComplete = true;
-    this.mode = "campaign";
-    this.level = LEVEL_ONE;
-    this.state = createGameState(this.level);
-    this.displayedState = this.state;
-    this.cancelHint();
-    this.unlockedLevelId = Math.max(this.unlockedLevelId, 1);
-    this.renderer.setLevel(this.level, this.state);
-    this.persist();
-    this.renderUi();
-  }
-
   private retry(): void {
-    if (this.mode !== "campaign" || this.loading || this.loadingError) {
+    if (this.loading || this.loadingError) {
       return;
     }
     this.motion = undefined;
     this.pendingTap = undefined;
+    this.tutorialRunner = undefined;
     this.cancelHint();
     this.clearCelebration();
     this.state = createGameState(this.level);
@@ -727,7 +717,6 @@ export class ParArrowsApp {
       return;
     }
     if (
-      this.mode !== "campaign" ||
       this.loading ||
       this.loadingError !== undefined ||
       !Number.isSafeInteger(levelId) ||
@@ -785,11 +774,20 @@ export class ParArrowsApp {
   }
 
   private renderUi(): void {
-    this.levelLabel.textContent =
-      this.mode === "demo" ? "First flight" : this.level.title;
+    this.attachTutorial();
+    this.levelLabel.textContent = this.level.title;
     this.livesLabel.textContent = String(this.displayedState.lives);
     this.arrowsLabel.textContent = `${this.displayedState.remainingIds.length} arrows`;
-    this.tutorial.hidden = this.mode !== "demo";
+    const script =
+      this.tutorialRunner && !this.tutorialRunner.done
+        ? this.tutorialRunner
+        : undefined;
+    this.tutorial.hidden = !script;
+    if (script) {
+      const scriptTitle = scriptForLevel(script.levelId)?.title;
+      if (scriptTitle) this.tutorialTitle.textContent = scriptTitle;
+      this.tutorialCopy.textContent = script.current.copy;
+    }
     const mechanicIntro = this.requireElement("wrap-intro");
     mechanicIntro.textContent =
       this.level.id === OVERLAP_INTRO_LEVEL.id
@@ -798,7 +796,7 @@ export class ParArrowsApp {
           ? "An arrow parks on a green circle until you tap it again. Park one to clear a lane, and it rebounds to the circle if the way ahead is blocked."
           : "Yellow edges carry arrows onto the next face. Try an arrow pointing toward the yellow line.";
     mechanicIntro.hidden =
-      this.mode !== "campaign" ||
+      script !== undefined ||
       (this.level.id !== WRAP_INTRO_LEVEL.id &&
         this.level.id !== STOP_INTRO_LEVEL.id &&
         this.level.id !== OVERLAP_INTRO_LEVEL.id) ||
@@ -807,45 +805,17 @@ export class ParArrowsApp {
       this.preview.error !== undefined ||
       this.state.status !== "playing";
     const pickerDisabled =
-      this.mode !== "campaign" ||
       this.loading ||
       this.preview.error !== undefined ||
       (this.loadingError !== undefined && !this.preview.active);
     this.levelInput.disabled = pickerDisabled;
     this.levelSubmit.disabled = pickerDisabled;
     this.hintButton.disabled =
-      this.mode !== "campaign" ||
       this.loading ||
       this.loadingError !== undefined ||
       this.motion !== undefined ||
       this.hint !== undefined ||
       this.state.status !== "playing";
-    if (this.mode === "demo") {
-      this.tutorialCopy.textContent =
-        this.demoStage === "observe"
-          ? "Watch a blocked arrow return, then find the open way."
-          : this.demoStage === "pause"
-            ? "That arrow stays red. Now watch its blocker leave."
-            : "You have seen both outcomes.";
-      this.startButton.hidden = this.demoStage !== "ready";
-      const cue = this.requireElement("touch-cue");
-      const targetId =
-        this.demoStage === "observe"
-          ? DEMO_BLOCKED_ID
-          : this.demoStage === "pause"
-            ? DEMO_SUCCESS_ID
-            : undefined;
-      const target = this.renderer
-        .projectedArrows()
-        .find((arrow) => arrow.id === targetId && arrow.visible);
-      cue.hidden = !target;
-      if (target) {
-        cue.style.left = `${target.x}px`;
-        cue.style.top = `${target.y}px`;
-      }
-    } else {
-      this.requireElement("touch-cue").hidden = true;
-    }
     this.levelInput.value = String(this.level.id);
     this.levelInput.max = String(
       this.preview.active ? MAX_LEVEL_ID : this.unlockedLevelId,
@@ -873,14 +843,13 @@ export class ParArrowsApp {
     const title = this.requireElement("state-title");
     const copy = this.requireElement("state-copy");
     const button = this.requireElement("state-button") as HTMLButtonElement;
-    const won = this.mode === "campaign" && this.state.status === "won";
+    const won = this.state.status === "won";
     card.classList.toggle("is-won", won);
     card.classList.toggle(
       "is-celebrating",
       won && this.celebration !== undefined,
     );
     card.hidden =
-      this.mode !== "campaign" ||
       this.loading ||
       this.loadingError !== undefined ||
       this.motion !== undefined ||
@@ -903,9 +872,6 @@ export class ParArrowsApp {
   private bindControls(): void {
     this.root.addEventListener("click", (event) => {
       const target = event.target as HTMLElement;
-      if (target.id === "start-button") {
-        this.beginCampaign();
-      }
       const action =
         target.closest<HTMLElement>("[data-action]")?.dataset.action;
       if (action === "reset") this.renderer.resetView();
@@ -1038,7 +1004,6 @@ export class ParArrowsApp {
 
   private beginHint(): void {
     if (
-      this.mode !== "campaign" ||
       this.loading ||
       this.loadingError !== undefined ||
       this.motion ||
@@ -1157,6 +1122,20 @@ export class ParArrowsApp {
   private installDebugApi(): void {
     window.render_game_to_text = () => this.diagnosticText();
     window.advanceTime = (milliseconds) => this.advanceTime(milliseconds);
+    window.get_tutorial_state = () => {
+      const runner = this.tutorialRunner;
+      if (!runner || runner.done) return { active: false as const };
+      const step = runner.current;
+      return {
+        active: true as const,
+        levelId: runner.levelId,
+        stepIndex: runner.stepIndex,
+        copy: step.copy,
+        ...(step.highlightId === undefined
+          ? {}
+          : { highlightId: step.highlightId }),
+      };
+    };
     if (
       import.meta.env.DEV ||
       new URLSearchParams(window.location.search).has("test")
@@ -1166,7 +1145,7 @@ export class ParArrowsApp {
         resetProgress: () => this.resetProgress(),
         getState: () => this.diagnosticText(),
         getLevel: () => this.level,
-        activate: (id) => this.attempt(id, true),
+        activate: (id) => this.attempt(id),
         render: () => this.renderer.render(),
       };
     }

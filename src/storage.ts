@@ -29,6 +29,8 @@ export interface PlayerSettings {
   readonly gridLines: boolean;
   readonly reducedMotion: boolean;
   readonly theme: "system" | "light" | "dark";
+  /** Intro levels whose interactive walkthrough has already been shown. */
+  readonly tutorialSeenLevels: readonly number[];
 }
 
 export interface StorageResult<T> {
@@ -44,9 +46,10 @@ type StoredCampaign = Partial<CampaignSave> & {
 };
 
 const DEFAULT_SETTINGS: PlayerSettings = {
-  gridLines: false,
+  gridLines: true,
   reducedMotion: false,
   theme: "system",
+  tutorialSeenLevels: [],
 };
 
 function getStore(): Storage | undefined {
@@ -204,7 +207,7 @@ function isLegacyContentVersion(value: unknown): boolean {
 
 /** Levels whose seed and geometry this release leaves exactly as they were. */
 function isUnchangedLevel(levelId: number): boolean {
-  return levelId <= 4 || levelId === 11 || levelId === 15;
+  return (levelId >= 2 && levelId <= 4) || levelId === 11 || levelId === 15;
 }
 
 function hasMatchingGeneratorMetadata(
@@ -279,8 +282,7 @@ export async function loadCampaign(
     (exactCurrentContent ||
       ((parsed.contentVersion === 6 || parsed.contentVersion === 7) &&
         isUnchangedLevel(currentLevelId) &&
-        hasMatchingGeneratorMetadata(parsed, currentLevelId)) ||
-      (legacyContent && currentLevelId === 1));
+        hasMatchingGeneratorMetadata(parsed, currentLevelId)));
   const restored = parsed.state as GameState | undefined;
   const value: LoadedCampaign = compatible
     ? {
@@ -376,13 +378,21 @@ export function loadSettings(): PlayerSettings {
       ? (JSON.parse(raw) as Partial<PlayerSettings>)
       : undefined;
     const theme = parsed?.theme;
+    const seen = Array.isArray(parsed?.tutorialSeenLevels)
+      ? parsed.tutorialSeenLevels
+      : [];
+    const tutorialSeenLevels: number[] = [];
+    for (const levelId of seen)
+      if (isLevelId(levelId) && !tutorialSeenLevels.includes(levelId))
+        tutorialSeenLevels.push(levelId);
     return {
-      gridLines: parsed?.gridLines === true,
+      gridLines: parsed?.gridLines !== false,
       reducedMotion: parsed?.reducedMotion === true,
       theme:
         theme === "light" || theme === "dark" || theme === "system"
           ? theme
           : "system",
+      tutorialSeenLevels,
     };
   } catch {
     return DEFAULT_SETTINGS;

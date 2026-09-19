@@ -117,6 +117,20 @@ export async function assertWrapIntro(
       },
     }),
   );
+  // Cube 11's walkthrough is already seen in this scenario, so the module
+  // exercises the ambient mechanic line a replaying player gets.
+  await context.addInitScript(
+    (settings) => {
+      if (!localStorage.getItem("par-arrows:settings:v1"))
+        localStorage.setItem("par-arrows:settings:v1", settings);
+    },
+    JSON.stringify({
+      gridLines: false,
+      reducedMotion: false,
+      theme: "light",
+      tutorialSeenLevels: [11],
+    }),
+  );
   const page = await context.newPage();
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));

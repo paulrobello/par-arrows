@@ -19,7 +19,6 @@ async function state(page: Page) {
   const raw = await page.evaluate(() => window.render_game_to_text?.());
   assert.ok(raw);
   return JSON.parse(raw) as {
-    mode: string;
     level: { id: number };
     loading: boolean;
     loadingError?: string;
@@ -110,7 +109,11 @@ export async function assertRuntimeCampaign(
     window.__PAR_ARROWS_TEST__?.resetProgress();
     await pending;
   });
-  assert.equal((await state(page)).mode, "demo");
+  assert.equal(
+    (await state(page)).level.id,
+    1,
+    "Resetting progress returns to the tutorial cube",
+  );
   assert.equal(
     await page.evaluate((key) => localStorage.getItem(key), KEY),
     null,
@@ -359,7 +362,11 @@ export async function assertRuntimeCampaign(
     null,
     "Stale legacy restore must not resurrect cleared progress",
   );
-  assert.equal((await state(delayedPage)).mode, "demo");
+  assert.equal(
+    (await state(delayedPage)).level.id,
+    1,
+    "Resetting progress returns to the tutorial cube",
+  );
   await delayed.close();
   console.log(
     "PASS runtime worker generation, shared seeds, 1000→1001 progression, bounded navigation, retry/reload, stale requests, restore failure recovery and reset during migration",

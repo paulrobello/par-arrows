@@ -630,6 +630,7 @@ export class PuzzleRenderer {
   private selectedId: string | undefined;
   private hintFocus: HintFocus | undefined;
   private hintLit = false;
+  private tutorialHighlightId: string | undefined;
   private readonly orientation = INITIAL_CAMERA_ORIENTATION.clone();
   private distance = 7.5;
   private fitDistance = 7.5;
@@ -677,6 +678,7 @@ export class PuzzleRenderer {
 
   setLevel(level: LevelDefinition, state: GameState): void {
     this.clearHint();
+    this.tutorialHighlightId = undefined;
     this.clearArrows();
     this.clearWrappingEdges();
     this.clearStopCircles();
@@ -840,6 +842,13 @@ export class PuzzleRenderer {
   clearHint(): void {
     this.hintFocus = undefined;
     this.hintLit = false;
+    this.render();
+  }
+
+  /** Sustains the tutorial's step highlight without moving the camera. */
+  setTutorialHighlight(arrowId: string | undefined): void {
+    if (this.tutorialHighlightId === arrowId) return;
+    this.tutorialHighlightId = arrowId;
     this.render();
   }
 
@@ -1169,10 +1178,14 @@ export class PuzzleRenderer {
       this.level && this.selectedId
         ? overlappingArrowIds(this.level, this.selectedId)
         : [];
+    const tutorialIds =
+      this.level && this.tutorialHighlightId
+        ? overlappingArrowIds(this.level, this.tutorialHighlightId)
+        : [];
     const hintedIds =
       this.level && this.hintFocus && this.hintLit
         ? overlappingArrowIds(this.level, this.hintFocus.arrowId)
-        : [];
+        : tutorialIds;
     for (const child of this.wrappingEdgesGroup.children) {
       const mesh = child as THREE.Mesh<
         THREE.BufferGeometry,

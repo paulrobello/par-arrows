@@ -1,13 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { createHash } from "node:crypto";
 import { analyzeLevel } from "../scripts/campaign-quality";
 import { decodeRoute, type FrozenRoute } from "../src/content/campaign-layouts";
-import {
-  DEMO_BLOCKED_ID,
-  DEMO_LEVEL,
-  DEMO_SUCCESS_ID,
-  LEVELS,
-} from "../src/content/levels";
+import { LEVEL_ONE, LEVELS } from "../src/content/levels";
 import {
   applyMove,
   createGameState,
@@ -85,10 +79,6 @@ function bendCount(
       bends += 1;
   }
   return bends;
-}
-
-function stableHash(value: unknown): string {
-  return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
 describe("curated campaign", () => {
@@ -284,25 +274,33 @@ describe("onboarding fixture", () => {
     };
     expect(() => decodeRoute(malformed, 4)).toThrow("invalid direction token");
   });
+});
 
-  test("preserves the baseline level-one and demo data", () => {
-    expect(stableHash(LEVELS[0])).toBe(
-      "a37ad4fe023faeecb65317ad7db43cf67e50d9277c6bf1d375133ecd0f6d9a53",
-    );
-    expect(stableHash(DEMO_LEVEL)).toBe(
-      "e3d477b3eedbb57b37538e3f3282865b4a9dbb32f0af58b2fb8f5df2935e9a14",
-    );
+describe("level one tutorial cube", () => {
+  test("pairs a blocked arrow with its blocker on an otherwise open cube", () => {
+    expect(LEVEL_ONE.arrows).toHaveLength(7);
+    expect(LEVEL_ONE.stops).toBeUndefined();
+    expect(LEVEL_ONE.edgePolicies).toBeUndefined();
+    expect(validateLevel(LEVEL_ONE)).toEqual({ valid: true, errors: [] });
+    expect(
+      new Set(
+        LEVEL_ONE.arrows.flatMap((arrow) =>
+          arrow.path.map((cell) => cell.face),
+        ),
+      ).size,
+    ).toBe(6);
   });
 
-  test("fails first and then removes the failed arrow's blocker on the front face", () => {
-    expect(validateLevel(DEMO_LEVEL)).toEqual({ valid: true, errors: [] });
-    const initial = createGameState(DEMO_LEVEL);
-    const failure = simulateMove(DEMO_LEVEL, initial, DEMO_BLOCKED_ID);
-    const afterFailure = applyMove(DEMO_LEVEL, initial, failure);
+  test("costs a life on the blocked arrow until its blocker clears", () => {
+    const initial = createGameState(LEVEL_ONE);
+    const failure = simulateMove(LEVEL_ONE, initial, "l1-front-blocked");
     expect(failure.kind).toBe("blocked");
-    expect(afterFailure.failedIds).toEqual([DEMO_BLOCKED_ID]);
-    const success = simulateMove(DEMO_LEVEL, afterFailure, DEMO_SUCCESS_ID);
-    expect(success.kind).toBe("exit");
-    expect(success.route.every((cell) => cell.face === "front")).toBe(true);
+    const afterFailure = applyMove(LEVEL_ONE, initial, failure);
+    expect(afterFailure.failedIds).toEqual(["l1-front-blocked"]);
+    const blocker = simulateMove(LEVEL_ONE, afterFailure, "l1-front-blocker");
+    expect(blocker.kind).toBe("exit");
+    const afterBlocker = applyMove(LEVEL_ONE, afterFailure, blocker);
+    const retry = simulateMove(LEVEL_ONE, afterBlocker, "l1-front-blocked");
+    expect(retry.kind).toBe("exit");
   });
 });

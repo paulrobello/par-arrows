@@ -21,19 +21,22 @@ import { assertContextRecovery } from "./context-browser";
 import { runHintChecks } from "./hints-browser";
 import { assertConsistentMotion } from "./motion-browser";
 import { assertOverlapIntro } from "./overlap-browser";
-import { assertStopIntro } from "./stop-browser";
 import { assertWidePickTargets } from "./pick-browser";
 import { assertLevelPreview } from "./preview-browser";
+import { assertResizeTracking } from "./resize-browser";
 import { assertRuntimeCampaign } from "./runtime-browser";
 import { LEVELS, waitForReady } from "./runtime-fixtures";
-import { assertResizeTracking } from "./resize-browser";
 import { assertSeamFills } from "./seam-fill-browser";
+import { assertStopIntro } from "./stop-browser";
 import { assertReliableTaps } from "./tap-browser";
+import {
+  assertFirstRunWalkthrough,
+  assertTutorialFlow,
+} from "./tutorial-browser";
 import { assertWrapIntro } from "./wrap-intro-browser";
 import { assertWrappingEdges } from "./wrapping-browser";
 
 interface Snapshot {
-  mode: string;
   level: { id: number; title: string };
   lives: number;
   remainingIds: string[];
@@ -348,11 +351,19 @@ async function assertThemes(page: Page, mobile = false): Promise<void> {
   await assertTheme(page, "dark");
   await assertVisibleArrows(page, 10);
   await page.screenshot({ path: `${output}/theme-${prefix}-dark-dense.png` });
-  assert.deepEqual((await snapshot(page)).gridLines, {
-    enabled: false,
-    visibleSegments: 0,
-  });
+  assert.equal(
+    (await snapshot(page)).gridLines.enabled,
+    true,
+    "Grid lines must default to on",
+  );
   await page.locator("#settings-button").click();
+  await page.getByLabel("Show grid lines").uncheck();
+  await page.waitForFunction(() => {
+    const raw = window.render_game_to_text?.();
+    if (!raw) return false;
+    const grid = JSON.parse(raw).gridLines;
+    return grid.enabled === false && grid.visibleSegments === 0;
+  });
   await page.getByLabel("Show grid lines").check();
   await page.waitForFunction(() => {
     const raw = window.render_game_to_text?.();
@@ -1014,33 +1025,11 @@ try {
     throw CONTEXT_ONLY_COMPLETE;
   }
 
-  assert.equal((await snapshot(page)).mode, "demo");
-  assert.equal(
-    await page.getByRole("button", { name: "Hint", exact: true }).isDisabled(),
-    true,
-  );
-  assert.equal(await page.getByRole("button", { name: /skip/i }).count(), 0);
-  assert.equal(await page.locator(".rotate-hint").isVisible(), true);
-  await page.screenshot({ path: `${output}/demo-start.png` });
-  await advance(page, 1700);
-  const failedDemo = await snapshot(page);
-  assert.ok(
-    failedDemo.failedIds.length > 0,
-    "Demo must visibly show its failed arrow",
-  );
-  await page.screenshot({ path: `${output}/demo-failure.png` });
-  await advance(page, 4000);
-  const completedDemo = await snapshot(page);
-  assert.ok(completedDemo.remainingIds.length < failedDemo.remainingIds.length);
-  assert.equal(await page.locator(".rotate-hint").isVisible(), true);
-  assert.equal(await page.locator(".confetti-piece").count(), 0);
-  await page.getByRole("button", { name: "Start level 1" }).click();
-  assert.equal((await snapshot(page)).lives, 5);
-  assert.deepEqual((await snapshot(page)).failedIds, []);
+  await assertFirstRunWalkthrough(page, output);
   await assertVisibleArrows(page, 1);
   await page.screenshot({ path: `${output}/desktop-level-1.png` });
   console.log(
-    "PASS demo: blocked touch, persistent red, then exit; campaign starts clean",
+    "PASS tutorial: rules, forced blocked click costs a life, then guided clear",
   );
 
   await loadLevel(page, 2);
@@ -1436,6 +1425,7 @@ try {
   await assertRuntimeCampaign(browser, url, output);
   await assertWrapIntro(browser, url, output);
   await assertStopIntro(browser, url, output);
+  await assertTutorialFlow(browser, url, output);
   await assertConsistentMotion(browser, url, output);
   await assertReliableTaps(browser, url, output);
   await assertWidePickTargets(browser, url);
