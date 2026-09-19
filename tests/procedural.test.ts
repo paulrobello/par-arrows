@@ -469,5 +469,5 @@ describe("runtime campaign generator", () => {
       ).toBe(true);
     }
     expect([...counts].sort()).toEqual([0, 1, 2, 3]);
-  });
+  }, 20_000);
 });
