@@ -34,6 +34,10 @@ GitHub Actions runs `make checkall` on every push. Run the browser suite locally
 
 `make pre-commit` runs the pinned secret-scanning and project checks over all files.
 
+## Git and deployment
+
+Standing authorization: after every verified batch of work — gates green (`make checkall`, plus the headed browser suite when browser-relevant) and committed — push to `main` immediately without asking. A push to `main` is the deploy: Actions runs `make checkall` (ci.yml) and publishes GitHub Pages (deploy.yml). Confirm the pushed run passes and fix forward if it fails; push per batch, not per commit.
+
 ## Architecture
 
 The layering is the central design constraint:
