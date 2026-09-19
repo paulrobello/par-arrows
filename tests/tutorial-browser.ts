@@ -12,6 +12,7 @@ interface TutorialState {
   stepIndex?: number;
   copy?: string;
   highlightId?: string;
+  gate?: string[];
 }
 
 interface State {
@@ -87,8 +88,18 @@ export async function assertFirstRunWalkthrough(
     "Level 1 must start its walkthrough at the first step",
   );
   assert.equal(opened.highlightId, "l1-front-blocked");
+  assert.deepEqual(opened.gate, ["l1-front-blocked"]);
   assert.equal(await page.locator("#wrap-intro").isVisible(), false);
   await page.screenshot({ path: `${output}/tutorial-start.png` });
+
+  // Input gating: a tap on a visible non-highlighted arrow is rejected
+  // outright — no move, no life cost, no step advance.
+  await clickArrow(page, "l1-front-blocker");
+  const rejected = await state(page);
+  assert.equal(rejected.lives, 5, "A gated-out tap must not cost a life");
+  assert.deepEqual(rejected.failedIds, []);
+  const rejectedStep = await tutorialState(page);
+  assert.ok(rejectedStep.active && rejectedStep.stepIndex === 0);
 
   // The forced lesson: tapping the blocked arrow rebounds it, marks it red,
   // and costs exactly one life.
@@ -103,6 +114,7 @@ export async function assertFirstRunWalkthrough(
   const step1 = await tutorialState(page);
   assert.ok(step1.active && step1.stepIndex === 1);
   assert.equal(step1.highlightId, "l1-front-blocker");
+  assert.deepEqual(step1.gate, ["l1-front-blocker"]);
   assert.equal(await card.isVisible(), true);
   await page.screenshot({ path: `${output}/tutorial-collision.png` });
 
@@ -110,11 +122,13 @@ export async function assertFirstRunWalkthrough(
   const step2 = await tutorialState(page);
   assert.ok(step2.active && step2.stepIndex === 2);
   assert.equal(step2.highlightId, "l1-front-blocked");
+  assert.deepEqual(step2.gate, ["l1-front-blocked"]);
 
   await clickArrow(page, "l1-front-blocked");
   const step3 = await tutorialState(page);
   assert.ok(step3.active && step3.stepIndex === 3);
   assert.equal(step3.highlightId, undefined);
+  assert.equal(step3.gate, undefined);
 
   // The remaining arrows span the hidden faces, so clear them through the
   // scripted path the celebration suite uses instead of screen coordinates.
@@ -166,10 +180,26 @@ const MECHANIC_INTROS: readonly {
   level: number;
   title: string;
   first: string;
+  gate: string[];
 }[] = [
-  { level: 5, title: "Park it.", first: "stop-intro-parker" },
-  { level: 11, title: "Ride the yellow edge.", first: "wrap-intro-front" },
-  { level: 15, title: "Fly together.", first: "overlap-intro-blocker" },
+  {
+    level: 5,
+    title: "Park it.",
+    first: "stop-intro-parker",
+    gate: ["stop-intro-parker"],
+  },
+  {
+    level: 11,
+    title: "Ride the yellow edge.",
+    first: "wrap-intro-front",
+    gate: ["wrap-intro-front"],
+  },
+  {
+    level: 15,
+    title: "Fly together.",
+    first: "overlap-intro-blocker",
+    gate: ["overlap-intro-blocker"],
+  },
 ];
 
 /**
@@ -219,6 +249,7 @@ export async function assertTutorialFlow(
       const before = await tutorialState(page);
       assert.ok(before.active && before.stepIndex === 0);
       assert.equal(before.highlightId, intro.first);
+      assert.deepEqual(before.gate, intro.gate);
       await clickArrow(page, intro.first);
       const after = await tutorialState(page);
       assert.ok(
@@ -229,6 +260,22 @@ export async function assertTutorialFlow(
         path: `${output}/tutorial/mechanic-${intro.level}.png`,
       });
     }
+
+    // Level 15's group step gates the whole pair: either member launches,
+    // and once it clears, the trio step leaves the rest of the cube ungated.
+    await page.evaluate(() => window.__PAR_ARROWS_TEST__?.loadLevel(15));
+    assert.equal((await state(page)).level.id, 15);
+    await clickArrow(page, "overlap-intro-blocker");
+    const groupStep = await tutorialState(page);
+    assert.ok(groupStep.active && groupStep.stepIndex === 1);
+    assert.deepEqual(groupStep.gate, [
+      "overlap-intro-pair-a",
+      "overlap-intro-pair-b",
+    ]);
+    await clickArrow(page, "overlap-intro-pair-b");
+    const freePlay = await tutorialState(page);
+    assert.ok(freePlay.active && freePlay.stepIndex === 2);
+    assert.equal(freePlay.gate, undefined);
 
     // Steps were taken but no scripted cube was won, so nothing is recorded
     // as seen yet; the level 1 walkthrough above pins the on-win write.

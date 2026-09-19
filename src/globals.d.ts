@@ -8,6 +8,7 @@ interface Window {
         stepIndex: number;
         copy: string;
         highlightId?: string;
+        gate?: string[];
       }
     | { active: false };
   __PAR_ARROWS_TEST__?: {

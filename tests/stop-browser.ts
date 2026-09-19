@@ -199,6 +199,21 @@ async function assertParkedCampaignSave(
     viewport: { width: 1100, height: 760 },
     colorScheme: "light",
   });
+  // Cube 5's walkthrough is not under test in this parking-persistence
+  // scenario; mark it seen so input gating never rejects the freed-arrow
+  // taps checked after the reload.
+  await context.addInitScript(
+    (settings) => {
+      if (!localStorage.getItem("par-arrows:settings:v1"))
+        localStorage.setItem("par-arrows:settings:v1", settings);
+    },
+    JSON.stringify({
+      gridLines: true,
+      reducedMotion: false,
+      theme: "light",
+      tutorialSeenLevels: [5],
+    }),
+  );
   const page = await context.newPage();
   try {
     await page.goto(url);

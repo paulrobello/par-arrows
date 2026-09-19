@@ -98,6 +98,7 @@ let browser: Browser | undefined;
 let primaryContext: BrowserContext | undefined;
 const failures: string[] = [];
 const CONTEXT_ONLY_COMPLETE = Symbol("context-only-complete");
+const TUTORIAL_ONLY_COMPLETE = Symbol("tutorial-only-complete");
 const OVERLAP_ONLY_COMPLETE = Symbol("overlap-only-complete");
 const STOP_ONLY_COMPLETE = Symbol("stop-only-complete");
 const RESIZE_ONLY_COMPLETE = Symbol("resize-only-complete");
@@ -1025,6 +1026,21 @@ try {
     throw CONTEXT_ONLY_COMPLETE;
   }
 
+  if (process.env.TUTORIAL_ONLY === "1") {
+    await assertFirstRunWalkthrough(page, output);
+    await assertTutorialFlow(browser, url, output);
+    assert.deepEqual(failures, [], "Browser must not report uncaught errors");
+    await Bun.write(
+      `${output}/tutorial-summary.json`,
+      JSON.stringify(
+        { passed: true, browser: engine.name(), physicalDevice: false },
+        null,
+        2,
+      ),
+    );
+    throw TUTORIAL_ONLY_COMPLETE;
+  }
+
   await assertFirstRunWalkthrough(page, output);
   await assertVisibleArrows(page, 1);
   await page.screenshot({ path: `${output}/desktop-level-1.png` });
@@ -1312,6 +1328,18 @@ try {
     hasTouch: true,
     deviceScaleFactor: 2,
   });
+  // This context exercises themes, hints, and celebration, not the level 1
+  // walkthrough; mark it seen so free-order clearing is not input-gated.
+  // Seed only when settings are absent — later navigations must keep the
+  // live settings the suite itself changes.
+  await mobile.addInitScript(() => {
+    if (!localStorage.getItem("par-arrows:settings:v1")) {
+      localStorage.setItem(
+        "par-arrows:settings:v1",
+        JSON.stringify({ tutorialSeenLevels: [1] }),
+      );
+    }
+  });
   const touchPage = await mobile.newPage();
   observeErrors(touchPage);
   await touchPage.goto(url);
@@ -1457,7 +1485,8 @@ try {
     error !== OVERLAP_ONLY_COMPLETE &&
     error !== STOP_ONLY_COMPLETE &&
     error !== RESIZE_ONLY_COMPLETE &&
-    error !== CONTEXT_ONLY_COMPLETE
+    error !== CONTEXT_ONLY_COMPLETE &&
+    error !== TUTORIAL_ONLY_COMPLETE
   )
     primaryError = error;
 } finally {

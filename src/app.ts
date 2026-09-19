@@ -66,6 +66,7 @@ const CONFETTI_COUNT = 56;
 const HINT_FOCUS_DURATION = 600;
 const HINT_FLASH_DURATION = 2400;
 const HINT_FLASH_HALF_PULSE = 400;
+const TUTORIAL_NUDGE_MS = 450;
 const MOUSE_PICK_MARGIN_PX = 6;
 const TOUCH_PICK_MARGIN_PX = 44;
 
@@ -119,6 +120,7 @@ export class ParArrowsApp {
   private motion: Motion | undefined;
   private tutorialMove: { arrowId: string; kind: MoveKind } | undefined;
   private tutorialRunner: TutorialRunner | undefined;
+  private tutorialNudgeMs = 0;
   private pendingTap: string | undefined;
   private celebration: Celebration | undefined;
   private hint: Hint | undefined;
@@ -232,7 +234,11 @@ export class ParArrowsApp {
           : this.resolvePick(x, y, pointerType),
       onPress: (id) => {
         this.cancelHint();
-        this.renderer.setSelected(this.motion ? undefined : id);
+        this.renderer.setSelected(
+          this.motion || id === undefined || !this.gateAllows(id)
+            ? undefined
+            : id,
+        );
       },
       onTap: (id) => {
         // One tap during a running move buffers instead of dropping, so quick
@@ -457,6 +463,7 @@ export class ParArrowsApp {
       this.level = level;
       this.state = createGameState(level);
       this.displayedState = this.state;
+      this.tutorialRunner = undefined;
       this.unlockedLevelId = Math.max(this.unlockedLevelId, level.id);
       this.renderer.setLevel(level, this.state);
       if (this.preview.active) {
@@ -493,6 +500,7 @@ export class ParArrowsApp {
     this.unlockedLevelId = 1;
     this.motion = undefined;
     this.pendingTap = undefined;
+    this.tutorialNudgeMs = 0;
     this.cancelHint();
     this.clearCelebration();
     this.loading = false;
@@ -512,6 +520,10 @@ export class ParArrowsApp {
   };
 
   private update(delta: number): void {
+    if (this.tutorialNudgeMs > 0) {
+      this.tutorialNudgeMs = Math.max(0, this.tutorialNudgeMs - delta);
+      this.renderer.setTutorialNudge(this.tutorialNudgeMs > 0);
+    }
     if (this.updateAvailable && !this.loading && !this.motion) {
       markVersionReloaded(this.updateAvailable);
       this.updateAvailable = undefined;
@@ -554,9 +566,20 @@ export class ParArrowsApp {
     }
   }
 
+  /** During a scripted walkthrough, only the current step's arrows respond. */
+  private gateAllows(arrowId: string): boolean {
+    const gate = this.tutorialRunner?.gate;
+    if (!gate) return true;
+    return overlappingArrowIds(this.level, arrowId).some((id) => gate.has(id));
+  }
+
   private attempt(arrowId: string): void {
     this.cancelHint();
     if (this.loading || this.loadingError || this.motion) {
+      return;
+    }
+    if (!this.gateAllows(arrowId)) {
+      this.tutorialNudgeMs = TUTORIAL_NUDGE_MS;
       return;
     }
     const result = simulateMove(this.level, this.state, arrowId);
@@ -700,6 +723,7 @@ export class ParArrowsApp {
     }
     this.motion = undefined;
     this.pendingTap = undefined;
+    this.tutorialNudgeMs = 0;
     this.tutorialRunner = undefined;
     this.cancelHint();
     this.clearCelebration();
@@ -1012,7 +1036,9 @@ export class ParArrowsApp {
     ) {
       return;
     }
-    const arrowId = this.state.remainingIds.find((id) => this.isSafeMove(id));
+    const arrowId = this.state.remainingIds
+      .filter((id) => this.gateAllows(id))
+      .find((id) => this.isSafeMove(id));
     if (!arrowId || !this.renderer.beginHint(arrowId)) {
       return;
     }
@@ -1126,6 +1152,7 @@ export class ParArrowsApp {
       const runner = this.tutorialRunner;
       if (!runner || runner.done) return { active: false as const };
       const step = runner.current;
+      const gate = runner.gate;
       return {
         active: true as const,
         levelId: runner.levelId,
@@ -1134,6 +1161,7 @@ export class ParArrowsApp {
         ...(step.highlightId === undefined
           ? {}
           : { highlightId: step.highlightId }),
+        ...(gate === undefined ? {} : { gate: [...gate].sort() }),
       };
     };
     if (

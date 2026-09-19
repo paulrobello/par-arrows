@@ -44,6 +44,7 @@ interface ThemePalette {
   readonly arrow: number;
   readonly failed: number;
   readonly selected: number;
+  readonly nudge: number;
   readonly farSide: number;
   readonly stop: number;
 }
@@ -64,6 +65,7 @@ const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     arrow: 0x0b1015,
     failed: 0xd94841,
     selected: 0x108acb,
+    nudge: 0xd07a00,
     farSide: 0x6f9fb2,
     stop: 0x1d9a86,
   },
@@ -75,6 +77,7 @@ const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     arrow: 0xf7f0dc,
     failed: 0xff776c,
     selected: 0x54d6ee,
+    nudge: 0xffd24d,
     farSide: 0x516a7a,
     stop: 0x3fe0c0,
   },
@@ -631,6 +634,7 @@ export class PuzzleRenderer {
   private hintFocus: HintFocus | undefined;
   private hintLit = false;
   private tutorialHighlightId: string | undefined;
+  private tutorialNudge = false;
   private readonly orientation = INITIAL_CAMERA_ORIENTATION.clone();
   private distance = 7.5;
   private fitDistance = 7.5;
@@ -850,6 +854,12 @@ export class PuzzleRenderer {
     if (this.tutorialHighlightId === arrowId) return;
     this.tutorialHighlightId = arrowId;
     this.render();
+  }
+
+  /** Flashes the tutorial arrows after a tap the walkthrough rejects. */
+  setTutorialNudge(active: boolean): void {
+    if (this.tutorialNudge === active) return;
+    this.tutorialNudge = active;
   }
 
   /**
@@ -1208,13 +1218,17 @@ export class PuzzleRenderer {
       );
     }
     for (const visual of this.visuals.values()) {
-      const activeColor = hintedIds.includes(visual.arrow.id)
-        ? this.palette.selected
-        : selectedIds.includes(visual.arrow.id)
+      const nudged =
+        this.tutorialNudge && tutorialIds.includes(visual.arrow.id);
+      const activeColor = nudged
+        ? this.palette.nudge
+        : hintedIds.includes(visual.arrow.id)
           ? this.palette.selected
-          : this.state?.failedIds.includes(visual.arrow.id)
-            ? this.palette.failed
-            : this.palette.arrow;
+          : selectedIds.includes(visual.arrow.id)
+            ? this.palette.selected
+            : this.state?.failedIds.includes(visual.arrow.id)
+              ? this.palette.failed
+              : this.palette.arrow;
       for (const segment of visual.segments) {
         const face = segment.picker.userData.face as Cell["face"] | undefined;
         const [nx, ny, nz] = face ? faceNormal(face) : [0, 0, 0];

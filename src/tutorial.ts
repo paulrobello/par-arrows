@@ -193,6 +193,17 @@ export class TutorialRunner {
     return step;
   }
 
+  /**
+   * Arrow ids the current step accepts taps for, or undefined once the
+   * script is finished or reaches its final free-play "won" step.
+   */
+  get gate(): ReadonlySet<string> | undefined {
+    if (this.done) return undefined;
+    const advance = this.current.advance;
+    if (advance.kind === "won") return undefined;
+    return new Set(advance.arrowIds);
+  }
+
   /** Skips steps whose every named arrow has already left the board. */
   attach(remainingIds: readonly string[]): void {
     const remaining = new Set(remainingIds);

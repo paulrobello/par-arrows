@@ -124,3 +124,70 @@ describe("overlap intro runner", () => {
     expect(runner.done).toBe(true);
   });
 });
+
+describe("runner gate", () => {
+  test("level one gates each lesson arrow, then opens at the won step", () => {
+    const runner = runnerFor(1);
+    expect(runner.gate).toEqual(new Set(["l1-front-blocked"]));
+    runner.onMove({ arrowId: "l1-front-blocked", kind: "blocked" });
+    expect(runner.gate).toEqual(new Set(["l1-front-blocker"]));
+    runner.onMove({ arrowId: "l1-front-blocker", kind: "exit" });
+    expect(runner.gate).toEqual(new Set(["l1-front-blocked"]));
+    runner.onMove({ arrowId: "l1-front-blocked", kind: "exit" });
+    expect(runner.gate).toBeUndefined();
+    runner.onWon();
+    expect(runner.gate).toBeUndefined();
+  });
+
+  test("a move outside the gate leaves it unchanged", () => {
+    const runner = runnerFor(1);
+    runner.onMove({ arrowId: "l1-back", kind: "exit" });
+    expect(runner.stepIndex).toBe(0);
+    expect(runner.gate).toEqual(new Set(["l1-front-blocked"]));
+  });
+
+  test("stop intro gates park, freed arrow, blocker, then the exit", () => {
+    const runner = runnerFor(5);
+    expect(runner.gate).toEqual(new Set(["stop-intro-parker"]));
+    runner.onMove({ arrowId: "stop-intro-parker", kind: "paused" });
+    expect(runner.gate).toEqual(new Set(["stop-intro-freed"]));
+    runner.onMove({ arrowId: "stop-intro-freed", kind: "exit" });
+    expect(runner.gate).toEqual(new Set(["stop-intro-blocker"]));
+    runner.onMove({ arrowId: "stop-intro-blocker", kind: "exit" });
+    expect(runner.gate).toEqual(new Set(["stop-intro-parker"]));
+    runner.onMove({ arrowId: "stop-intro-parker", kind: "exit" });
+    expect(runner.gate).toBeUndefined();
+  });
+
+  test("wrap intro gates the wrap arrow only", () => {
+    const runner = runnerFor(11);
+    expect(runner.gate).toEqual(new Set(["wrap-intro-front"]));
+    runner.onMove({ arrowId: "wrap-intro-front", kind: "exit" });
+    expect(runner.gate).toBeUndefined();
+  });
+
+  test("overlap intro gates the whole pair at the group step", () => {
+    const runner = runnerFor(15);
+    expect(runner.gate).toEqual(new Set(["overlap-intro-blocker"]));
+    runner.onMove({ arrowId: "overlap-intro-blocker", kind: "exit" });
+    expect(runner.gate).toEqual(
+      new Set(["overlap-intro-pair-a", "overlap-intro-pair-b"]),
+    );
+    runner.onMove({ arrowId: "overlap-intro-pair-b", kind: "exit" });
+    expect(runner.gate).toBeUndefined();
+  });
+
+  test("attach skips consumed steps and gates the next one", () => {
+    const runner = runnerFor(5);
+    runner.attach(["stop-intro-freed", "stop-intro-blocker"]);
+    expect(runner.stepIndex).toBe(1);
+    expect(runner.gate).toEqual(new Set(["stop-intro-freed"]));
+  });
+
+  test("an unmatched parker exit jumps straight to free play", () => {
+    const runner = runnerFor(5);
+    runner.onMove({ arrowId: "stop-intro-parker", kind: "exit" });
+    expect(runner.current.advance.kind).toBe("won");
+    expect(runner.gate).toBeUndefined();
+  });
+});

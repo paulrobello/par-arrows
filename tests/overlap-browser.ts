@@ -386,6 +386,20 @@ async function assertCampaignSave(
       localStorage.setItem("par-arrows:campaign:v1", saved);
     }
   }, savedCampaign);
+  // Cube 15's walkthrough is not under test in this progression scenario;
+  // mark it seen so input gating never rejects these mechanic moves.
+  await context.addInitScript(
+    (settings) => {
+      if (!localStorage.getItem("par-arrows:settings:v1"))
+        localStorage.setItem("par-arrows:settings:v1", settings);
+    },
+    JSON.stringify({
+      gridLines: true,
+      reducedMotion: false,
+      theme: "light",
+      tutorialSeenLevels: [15],
+    }),
+  );
   const page = await context.newPage();
   try {
     await page.goto(url);
