@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { generateLevel, hasDirectionalCore } from "../src/content/procedural";
+import {
+  directionalFaceCount,
+  generateLevel,
+  hasDirectionalCore,
+} from "../src/content/procedural";
 import { DIRECTIONAL_INTRO_LEVEL } from "../src/content/directional-intro";
 import {
   applyMove,
@@ -97,21 +101,45 @@ describe("directional spot level content", () => {
     expect(state.lives).toBe(5);
   });
 
-  test("generated cubes split on a stable plan and require their spot", () => {
-    for (const id of [21, 22, 23, 24, 25, 26]) {
-      const plan = hasDirectionalCore(id);
+  test("generated cubes draw 0-4 spot faces with 1-4 spots per face", () => {
+    for (const id of [21, 22, 23, 24, 25, 26, 27, 28, 29, 30]) {
+      const planFaces = directionalFaceCount(id);
       const level = generateLevel(id);
       expect(validateLevel(level).valid).toBe(true);
       const spots = level.directionals ?? [];
-      if (plan) {
-        expect(spots).toHaveLength(1);
-        expect(solveLevel(level)).toBeDefined();
-        expect(solveLevel({ ...level, directionals: [] })).toBeUndefined();
-      } else {
-        expect(spots).toHaveLength(0);
+      if (planFaces === 0) {
+        expect(spots).toEqual([]);
+        continue;
       }
+      expect(hasDirectionalCore(id)).toBe(true);
+      expect(spots.length).toBeGreaterThanOrEqual(1);
+      expect(spots.length).toBeLessThanOrEqual(16);
+      const perFace = new Map<string, number>();
+      const cells = new Set<string>();
+      for (const spot of spots) {
+        const key = cellKey(spot.cell);
+        expect(cells.has(key)).toBe(false);
+        cells.add(key);
+        perFace.set(spot.cell.face, (perFace.get(spot.cell.face) ?? 0) + 1);
+      }
+      expect(perFace.size).toBeLessThanOrEqual(4);
+      for (const count of perFace.values()) {
+        expect(count).toBeLessThanOrEqual(4);
+      }
+      expect(solveLevel(level)).toBeDefined();
+      expect(solveLevel({ ...level, directionals: [] })).toBeUndefined();
     }
-  }, 40_000);
+  }, 60_000);
+
+  test("most generated cubes carry the mechanic and the split is stable", () => {
+    let carriers = 0;
+    for (let id = 21; id <= 60; id += 1) {
+      if (hasDirectionalCore(id)) carriers += 1;
+    }
+    // Uniform draw over 0-4 faces puts a spot plan on ~80% of cubes; the
+    // seeded streams make the exact split deterministic per generator.
+    expect(carriers).toBe(29);
+  });
 
   test("levels through nineteen are untouched by the directional plan", () => {
     expect(hasDirectionalCore(19)).toBe(false);
