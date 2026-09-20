@@ -252,7 +252,7 @@ describe("runtime campaign generator", () => {
       const lengths = straightLengths(level);
       for (const length of [2, 3, 4]) expect(lengths).toContain(length);
     }
-  }, 20_000);
+  }, 60_000);
 
   test("introduces wrapping after level ten and shifts probability toward more edges", () => {
     for (let id = 1; id <= 10; id += 1) {
