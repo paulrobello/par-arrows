@@ -239,6 +239,17 @@ describe("runtime campaign generator", () => {
         `par-arrows:runtime:${id <= 4 ? 1 : 4}:level:${id}`,
       );
       expect(validateLevel(level).valid).toBe(true);
+      const spots = level.directionals ?? [];
+      if (spots.length > 0) {
+        const perFace = new Map<string, number>();
+        for (const spot of spots) {
+          perFace.set(spot.cell.face, (perFace.get(spot.cell.face) ?? 0) + 1);
+        }
+        expect(perFace.size).toBeLessThanOrEqual(4);
+        for (const count of perFace.values()) {
+          expect(count).toBeLessThanOrEqual(4);
+        }
+      }
       expect(level.gridSize).toBeLessThanOrEqual(26);
       expect(level.arrows.length).toBeLessThanOrEqual(240);
       expect(

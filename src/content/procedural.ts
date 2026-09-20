@@ -628,6 +628,7 @@ function directionalCore(
   level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
   occupied: ReadonlySet<string>,
   preferredFace?: FaceId,
+  parkTracks?: ReadonlySet<string>,
 ): DirectionalCore | undefined {
   const size = level.gridSize;
   const rng = new Rng(hashSeed(`${seedForLevel(id)}:dir-core`));
@@ -663,6 +664,8 @@ function directionalCore(
     ];
     const cells = [...approachingPath, ...opposingPath, spotCell];
     const patternKeys = new Set(cells.map(cellKey));
+    const taken = (cell: Cell): boolean =>
+      occupied.has(cellKey(cell)) || (parkTracks?.has(cellKey(cell)) ?? false);
     if (
       patternKeys.size !== cells.length ||
       cells.some(
@@ -671,7 +674,7 @@ function directionalCore(
           cell.y < 0 ||
           cell.x >= size ||
           cell.y >= size ||
-          occupied.has(cellKey(cell)),
+          taken(cell),
       )
     )
       continue;
@@ -685,7 +688,7 @@ function directionalCore(
           cell.x >= size ||
           cell.y >= size ||
           patternKeys.has(cellKey(cell)) ||
-          occupied.has(cellKey(cell)),
+          taken(cell),
       )
     )
       continue;
@@ -824,7 +827,7 @@ function extraDirectionalSpots(
  */
 function chooseStops(
   id: number,
-  level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
+  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
   arrows: readonly ArrowDefinition[],
   occupied: ReadonlySet<string>,
   decorativeCount: number,
@@ -832,11 +835,21 @@ function chooseStops(
   if (decorativeCount <= 0) return [];
   const candidates: Cell[] = [];
   const seen = new Set<string>();
+  const bent = (level.directionals?.length ?? 0) > 0;
   for (const arrow of arrows) {
-    const head = arrow.path[arrow.path.length - 1];
-    const heading = headingForPath(arrow.path, level.gridSize);
-    if (!head || !heading) continue;
-    for (const cell of exitRay(level, head, heading).slice(1)) {
+    // On spot cubes the rays are bent by the spots, so circles must come from
+    // the tracks arrows actually travel; spot-free levels keep the straight
+    // rays, which are identical there and preserve those layouts.
+    const swept = bent
+      ? arrowTrack(level, arrow).slice(arrow.path.length)
+      : (() => {
+          const head = arrow.path[arrow.path.length - 1];
+          const heading = headingForPath(arrow.path, level.gridSize);
+          return !head || !heading
+            ? []
+            : exitRay(level, head, heading).slice(1);
+        })();
+    for (const cell of swept) {
       const key = cellKey(cell);
       if (occupied.has(key) || seen.has(key)) continue;
       seen.add(key);
@@ -994,8 +1007,27 @@ export function generateLevel(id: number): LevelDefinition {
         }
         occupied.add(cellKey(core.stop));
       }
+      // The park legs lead the certificate replay, so the parked windows along
+      // the park core's routes block everything that drives after them. The
+      // directional core checks these tracks in addition to `occupied`; they are
+      // deliberately NOT reserved globally, which would shift every circle
+      // cube's layout.
+      const parkTrackKeys = new Set<string>();
+      if (core) {
+        for (const arrow of core.arrows) {
+          for (const cell of arrowTrack(candidateLevel, arrow)) {
+            parkTrackKeys.add(cellKey(cell));
+          }
+        }
+      }
       const directionalSpot = directional
-        ? directionalCore(id, candidateLevel, occupied, planFaceIds[0])
+        ? directionalCore(
+            id,
+            candidateLevel,
+            occupied,
+            planFaceIds[0],
+            parkTrackKeys,
+          )
         : undefined;
       const dirCells = new Set<string>();
       if (directionalSpot) {
@@ -1151,7 +1183,10 @@ export function generateLevel(id: number): LevelDefinition {
         : [];
       const decorative = chooseStops(
         id,
-        candidateLevel,
+        {
+          ...candidateLevel,
+          ...(spots.length > 0 ? { directionals: spots } : {}),
+        },
         arrows,
         occupied,
         getStopCount(id) - (core ? 1 : 0),
