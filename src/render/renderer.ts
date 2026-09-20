@@ -14,6 +14,7 @@ import type {
   Cell,
   GameState,
   FaceId,
+  Heading,
   LevelDefinition,
   MoveResult,
 } from "../core/types";
@@ -24,6 +25,9 @@ const FACING_EPSILON = 0.04;
 const WRAPPING_EDGE_RADIUS = 0.007;
 const STOP_CIRCLE_RADIUS = 0.34;
 const STOP_CIRCLE_THICKNESS = 0.1;
+const DIRECTIONAL_CHEVRON_SPAN = 0.24;
+const DIRECTIONAL_CHEVRON_DEPTH = 0.16;
+const DIRECTIONAL_CHEVRON_BAND = 0.08;
 const GRID_LINE_OFFSET = 0.004;
 const CUBE_FACES: readonly FaceId[] = [
   "front",
@@ -47,6 +51,7 @@ interface ThemePalette {
   readonly nudge: number;
   readonly farSide: number;
   readonly stop: number;
+  readonly directional: number;
 }
 
 interface HintFocus {
@@ -68,6 +73,7 @@ const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     nudge: 0xd07a00,
     farSide: 0x6f9fb2,
     stop: 0x1d9a86,
+    directional: 0x0f7fa8,
   },
   dark: {
     background: 0x101820,
@@ -80,6 +86,7 @@ const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     nudge: 0xffd24d,
     farSide: 0x516a7a,
     stop: 0x3fe0c0,
+    directional: 0x3ac8f0,
   },
 };
 
@@ -213,6 +220,25 @@ export function stopCircleOpacity(
   cameraPosition: THREE.Vector3,
 ): number {
   return faceNormal.dot(cameraPosition.clone().sub(position)) > 0 ? 1 : 0.32;
+}
+
+/**
+ * The in-plane rotation that aims a spot's local +Y along its heading once the
+ * +Z-to-face-normal quaternion is applied.
+ */
+function inPlaneHeadingAngle(
+  face: FaceId,
+  heading: Heading,
+  quaternion: THREE.Quaternion,
+): number {
+  const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(quaternion);
+  const headingVector = new THREE.Vector3(...faceHeadingVector(face, heading));
+  const [nx, ny, nz] = faceNormal(face);
+  const normal = new THREE.Vector3(nx, ny, nz);
+  return Math.atan2(
+    normal.dot(new THREE.Vector3().crossVectors(localUp, headingVector)),
+    localUp.dot(headingVector),
+  );
 }
 
 /** Returns one world-space segment for each continued physical cube edge. */
@@ -618,6 +644,7 @@ export class PuzzleRenderer {
   private readonly gridLinesGroup = new THREE.Group();
   private readonly wrappingEdgesGroup = new THREE.Group();
   private readonly stopCirclesGroup = new THREE.Group();
+  private readonly directionalsGroup = new THREE.Group();
   private readonly arrowsGroup = new THREE.Group();
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
@@ -659,6 +686,7 @@ export class PuzzleRenderer {
       this.gridLinesGroup,
       this.wrappingEdgesGroup,
       this.stopCirclesGroup,
+      this.directionalsGroup,
     );
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0xb7d5df, 2.4));
     const key = new THREE.DirectionalLight(0xffffff, 2.1);
@@ -686,11 +714,13 @@ export class PuzzleRenderer {
     this.clearArrows();
     this.clearWrappingEdges();
     this.clearStopCircles();
+    this.clearDirectionals();
     this.level = level;
     this.state = state;
     this.createGridLines(level.gridSize);
     this.createWrappingEdges(level);
     this.createStopCircles(level);
+    this.createDirectionals(level);
     for (const arrow of level.arrows) {
       const visual = this.createArrow(arrow, level.gridSize, level.arrowScale);
       this.visuals.set(arrow.id, visual);
@@ -745,6 +775,12 @@ export class PuzzleRenderer {
       const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
       if (mesh.material instanceof THREE.MeshBasicMaterial) {
         mesh.material.color.set(palette.stop);
+      }
+    });
+    this.directionalsGroup.traverse((child) => {
+      const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
+      if (mesh.material instanceof THREE.MeshBasicMaterial) {
+        mesh.material.color.set(palette.directional);
       }
     });
     this.applySelection();
@@ -1217,6 +1253,17 @@ export class PuzzleRenderer {
         this.camera.position,
       );
     }
+    for (const child of this.directionalsGroup.children) {
+      const mesh = child as THREE.Mesh<
+        THREE.BufferGeometry,
+        THREE.MeshBasicMaterial
+      >;
+      mesh.material.opacity = stopCircleOpacity(
+        mesh.userData.normal as THREE.Vector3,
+        mesh.position,
+        this.camera.position,
+      );
+    }
     for (const visual of this.visuals.values()) {
       const nudged =
         this.tutorialNudge && tutorialIds.includes(visual.arrow.id);
@@ -1422,6 +1469,68 @@ export class PuzzleRenderer {
   private clearStopCircles(): void {
     disposeTree(this.stopCirclesGroup);
     this.stopCirclesGroup.clear();
+  }
+
+  /**
+   * Two flat chevrons on each directional-spot cell, pointing along the
+   * spot's heading, just above its cube face like stop circles.
+   */
+  private createDirectionals(level: LevelDefinition): void {
+    const pitch = 2 / level.gridSize;
+    for (const spot of level.directionals ?? []) {
+      const apex = pitch * 0.18;
+      const span = pitch * DIRECTIONAL_CHEVRON_SPAN;
+      const depth = pitch * DIRECTIONAL_CHEVRON_DEPTH;
+      const band = pitch * DIRECTIONAL_CHEVRON_BAND;
+      const chevron = (offset: number): THREE.Vector2[] =>
+        [
+          [-span, offset - depth],
+          [0, offset],
+          [span, offset - depth],
+          [span, offset - depth - band],
+          [0, offset - band],
+          [-span, offset - depth - band],
+        ].map(([x, y]) => new THREE.Vector2(x as number, y as number));
+      const shapes = [apex, apex - band - pitch * 0.14].map(
+        (offset) => new THREE.Shape(chevron(offset)),
+      );
+      const mesh = new THREE.Mesh(
+        new THREE.ShapeGeometry(shapes),
+        new THREE.MeshBasicMaterial({
+          color: this.palette.directional,
+          side: THREE.DoubleSide,
+          toneMapped: false,
+          transparent: true,
+          depthWrite: false,
+        }),
+      );
+      const [nx, ny, nz] = faceNormal(spot.cell.face);
+      const normal = new THREE.Vector3(nx, ny, nz);
+      const quaternion = new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        normal,
+      );
+      mesh.position
+        .copy(cellPoint(spot.cell, level.gridSize))
+        .addScaledVector(normal, 0.001);
+      mesh.quaternion
+        .copy(quaternion)
+        .multiply(
+          new THREE.Quaternion().setFromAxisAngle(
+            new THREE.Vector3(0, 0, 1),
+            inPlaneHeadingAngle(spot.cell.face, spot.heading, quaternion),
+          ),
+        );
+      mesh.renderOrder = -1;
+      mesh.userData.directional = cellKey(spot.cell);
+      mesh.userData.normal = normal;
+      this.directionalsGroup.add(mesh);
+    }
+  }
+
+  private clearDirectionals(): void {
+    disposeTree(this.directionalsGroup);
+    this.directionalsGroup.clear();
   }
 
   /**

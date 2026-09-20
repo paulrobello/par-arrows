@@ -27,6 +27,12 @@ export interface EdgePolicyDefinition {
   };
 }
 
+/** A floor fixture that bends any entering head onto its heading. */
+export interface DirectionalSpotDefinition {
+  readonly cell: Cell;
+  readonly heading: Heading;
+}
+
 /** Cube-only level data with ordinary exits and optional continuation edges. */
 export interface LevelDefinition {
   readonly id: number;
@@ -39,6 +45,8 @@ export interface LevelDefinition {
   readonly edgePolicies?: readonly EdgePolicyDefinition[];
   /** Cells that pause a passing head until it is activated again. */
   readonly stops?: readonly Cell[];
+  /** Spots that bend a passing head onto their heading from its next step. */
+  readonly directionals?: readonly DirectionalSpotDefinition[];
 }
 
 export type GameStatus = "playing" | "won" | "lost";

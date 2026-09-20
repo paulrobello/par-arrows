@@ -2,6 +2,7 @@ import "@fontsource-variable/manrope";
 
 import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "./content/intro";
 import { LevelLoader } from "./content/level-loader";
+import { DIRECTIONAL_INTRO_LEVEL } from "./content/directional-intro";
 import { OVERLAP_INTRO_LEVEL } from "./content/overlap-intro";
 import { STOP_INTRO_LEVEL } from "./content/stop-intro";
 import {
@@ -345,6 +346,10 @@ export class ParArrowsApp {
       wrappingEdges: this.renderer.wrappingEdgeCount(),
       wrappingEdgeOpacities: this.renderer.wrappingEdgeOpacities(),
       stops: (this.level.stops ?? []).map((cell) => cellKey(cell)),
+      directionals: (this.level.directionals ?? []).map((spot) => ({
+        cell: cellKey(spot.cell),
+        heading: spot.heading,
+      })),
       parkedOffsets: Object.fromEntries(
         Object.entries(this.displayedState.offsets).filter(
           ([, offset]) => offset > 0,
@@ -846,12 +851,15 @@ export class ParArrowsApp {
         ? "Overlapping tails move together. Tap any part. If one is blocked, the whole group returns red."
         : this.level.id === STOP_INTRO_LEVEL.id
           ? "An arrow parks on a green circle until you tap it again. Park one to clear a lane, and it rebounds to the circle if the way ahead is blocked."
-          : "Yellow edges carry arrows onto the next face. Try an arrow pointing toward the yellow line.";
+          : this.level.id === DIRECTIONAL_INTRO_LEVEL.id
+            ? "Cyan chevrons bend any arrow that reaches them onto the chevron's heading. Follow the turn — it may be the only way through."
+            : "Yellow edges carry arrows onto the next face. Try an arrow pointing toward the yellow line.";
     mechanicIntro.hidden =
       script !== undefined ||
       (this.level.id !== WRAP_INTRO_LEVEL.id &&
         this.level.id !== STOP_INTRO_LEVEL.id &&
-        this.level.id !== OVERLAP_INTRO_LEVEL.id) ||
+        this.level.id !== OVERLAP_INTRO_LEVEL.id &&
+        this.level.id !== DIRECTIONAL_INTRO_LEVEL.id) ||
       this.loading ||
       this.loadingError !== undefined ||
       this.preview.error !== undefined ||

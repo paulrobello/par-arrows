@@ -1,3 +1,4 @@
+import { spotHeadingAt } from "./directionals";
 import { advanceHead, cellKey, headingForPath } from "./topology";
 import type {
   ArrowDefinition,
@@ -19,7 +20,7 @@ export function stopKeys(
  * track never depends on other arrows and stays constant for the whole level.
  */
 export function arrowTrack(
-  level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
+  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
   arrow: ArrowDefinition,
 ): readonly Cell[] {
   const track: Cell[] = [...arrow.path];
@@ -37,14 +38,14 @@ export function arrowTrack(
     if (forward.exits || !forward.next) return track;
     track.push(forward.next);
     current = forward.next;
-    currentHeading = forward.heading;
+    currentHeading = spotHeadingAt(level, current) ?? forward.heading;
   }
   return track;
 }
 
 /** The largest forward offset an arrow can hold without leaving the cube. */
 export function maximumOffset(
-  level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
+  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
   arrow: ArrowDefinition,
 ): number {
   return Math.max(0, arrowTrack(level, arrow).length - arrow.path.length);
@@ -52,7 +53,7 @@ export function maximumOffset(
 
 /** The cells an arrow occupies after travelling `offset` forward steps. */
 export function currentPath(
-  level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
+  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
   arrow: ArrowDefinition,
   offset: number,
 ): readonly Cell[] {

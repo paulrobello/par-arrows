@@ -8,6 +8,7 @@ import {
   isContinuationEdge,
 } from "./topology";
 import type { Cell, Endpoint, LevelDefinition, MoveResult } from "./types";
+import { spotHeadingAt } from "./directionals";
 import { overlappingArrowIds } from "./overlap";
 import { currentPath, offsetOf, stopKeys } from "./stops";
 
@@ -231,7 +232,7 @@ function simulateSingle(
       };
     }
     current = next;
-    currentHeading = forward.heading;
+    currentHeading = spotHeadingAt(level, next) ?? forward.heading;
   }
   return invalid(
     arrowId,

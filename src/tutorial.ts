@@ -20,7 +20,7 @@ export interface TutorialScript {
   readonly steps: readonly TutorialStep[];
 }
 
-export const SCRIPTED_LEVEL_IDS: readonly number[] = [1, 5, 11, 15];
+export const SCRIPTED_LEVEL_IDS: readonly number[] = [1, 5, 11, 15, 20];
 
 const LEVEL_ONE_SCRIPT: TutorialScript = {
   levelId: 1,
@@ -153,11 +153,50 @@ const OVERLAP_INTRO_SCRIPT: TutorialScript = {
   ],
 };
 
+const DIRECTIONAL_INTRO_SCRIPT: TutorialScript = {
+  levelId: 20,
+  title: "Mind the chevrons.",
+  steps: [
+    {
+      copy: "Cyan chevrons bend the road. Any arrow that reaches one turns onto the chevron's heading. Tap this arrow and watch it turn.",
+      highlightId: "dir-intro-east",
+      advance: {
+        kind: "move",
+        arrowIds: ["dir-intro-east"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "The east arrow's body was blocking this one. With it gone, the lane is open. Tap it.",
+      highlightId: "dir-intro-freed",
+      advance: {
+        kind: "move",
+        arrowIds: ["dir-intro-freed"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "The long arrow was blocked by the freed one. Clear it.",
+      highlightId: "dir-intro-blocker",
+      advance: {
+        kind: "move",
+        arrowIds: ["dir-intro-blocker"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "Chevrons turn every arrow that passes them — use them to dodge trouble. Clear the remaining arrows.",
+      advance: { kind: "won" },
+    },
+  ],
+};
+
 const SCRIPTS: readonly TutorialScript[] = [
   LEVEL_ONE_SCRIPT,
   STOP_INTRO_SCRIPT,
   WRAP_INTRO_SCRIPT,
   OVERLAP_INTRO_SCRIPT,
+  DIRECTIONAL_INTRO_SCRIPT,
 ];
 
 export function scriptForLevel(levelId: number): TutorialScript | undefined {

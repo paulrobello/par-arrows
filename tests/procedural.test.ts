@@ -271,11 +271,13 @@ describe("runtime campaign generator", () => {
     expect(getWrappingEdgeWeights(MAX_LEVEL_ID)).toEqual(final);
     for (let id = 12; id <= 100; id += 1) {
       const current = getWrappingEdgeWeights(id);
-      if (id === 15) {
+      if (id === 15 || id === 20) {
         expect(current).toEqual([1, 0, 0, 0]);
         continue;
       }
-      const previous = getWrappingEdgeWeights(id === 16 ? 14 : id - 1);
+      const previous = getWrappingEdgeWeights(
+        id === 16 ? 14 : id === 21 ? 19 : id - 1,
+      );
       expect(current[0]).toBe(0.25);
       expect(
         current.reduce((sum, probability) => sum + probability, 0),

@@ -1,13 +1,14 @@
 import {
   getStopCount,
   getWrappingEdgePolicies,
+  hasDirectionalCore,
   MAX_LEVEL_ID,
 } from "./procedural";
 
 export interface LevelPreview {
   readonly active: boolean;
   readonly requestedLevelId?: number;
-  readonly feature?: "wrap" | "overlap" | "stop";
+  readonly feature?: "wrap" | "overlap" | "stop" | "directional";
   readonly wraps?: number;
   readonly resolvedLevelId?: number;
   readonly error?: string;
@@ -49,7 +50,7 @@ export function parseLevelPreview(search: string): LevelPreview {
   }
 
   const rawFeature = params.get("feature");
-  let feature: "wrap" | "overlap" | "stop" | undefined;
+  let feature: "wrap" | "overlap" | "stop" | "directional" | undefined;
   if (rawFeature !== null) {
     const normalized = rawFeature.toLowerCase();
     if (["wrap", "wrapping", "wraparound"].includes(normalized)) {
@@ -58,6 +59,8 @@ export function parseLevelPreview(search: string): LevelPreview {
       feature = "overlap";
     } else if (["stop", "stops", "stopcircle"].includes(normalized)) {
       feature = "stop";
+    } else if (["directional", "directionals"].includes(normalized)) {
+      feature = "directional";
     } else {
       return { active: true, error: `Unknown test feature: ${rawFeature}.` };
     }
@@ -119,9 +122,11 @@ export function resolveLevelPreview(
       ? Math.max(15, fromLevelId)
       : preview.feature === "stop"
         ? Math.max(5, fromLevelId)
-        : requiresWrap
-          ? Math.max(11, fromLevelId)
-          : fromLevelId;
+        : preview.feature === "directional"
+          ? Math.max(20, fromLevelId)
+          : requiresWrap
+            ? Math.max(11, fromLevelId)
+            : fromLevelId;
   const finalLevelId = Math.min(
     MAX_LEVEL_ID,
     startLevelId + Math.min(MAX_SEARCH_LEVELS - 1, MAX_LEVEL_ID - startLevelId),
@@ -134,6 +139,7 @@ export function resolveLevelPreview(
     if (
       (preview.feature !== "wrap" || physicalWraps >= 1) &&
       (preview.feature !== "stop" || getStopCount(levelId) >= 1) &&
+      (preview.feature !== "directional" || hasDirectionalCore(levelId)) &&
       (preview.wraps === undefined || physicalWraps === preview.wraps)
     ) {
       return { ...preview, resolvedLevelId: levelId };

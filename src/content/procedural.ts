@@ -10,6 +10,7 @@ import {
 import type {
   ArrowDefinition,
   Cell,
+  DirectionalSpotDefinition,
   EdgePolicyDefinition,
   FaceId,
   Heading,
@@ -17,6 +18,7 @@ import type {
 } from "../core/types";
 import { validateLevel } from "../core/validation";
 import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "./intro";
+import { DIRECTIONAL_INTRO_LEVEL } from "./directional-intro";
 import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
 import { STOP_INTRO_LEVEL } from "./stop-intro";
 
@@ -47,6 +49,9 @@ export function seedForLevel(id: number): string {
   if (id === 11) return "par-arrows:runtime:2:level:11:wrap-intro:1";
   if (id <= 4) return `par-arrows:runtime:1:level:${id}`;
   if (id === 15) return "par-arrows:runtime:3:level:15:overlap-intro:1";
+  if (id === 20) {
+    return `par-arrows:runtime:${GENERATOR_VERSION}:level:20:directional-intro:1`;
+  }
   return `par-arrows:runtime:${GENERATOR_VERSION}:level:${id}`;
 }
 
@@ -60,7 +65,7 @@ export function getStopCountWeights(
   id: number,
 ): readonly [number, number, number, number] {
   assertLevelId(id);
-  if (id <= 4 || id === 11 || id === 15) return [1, 0, 0, 0];
+  if (id <= 4 || id === 11 || id === 15 || id === 20) return [1, 0, 0, 0];
   if (id === 5 || id === 6) return [0, 1, 0, 0];
   const progress = Math.min(1, (id - 6) / 94);
   return [
@@ -90,7 +95,7 @@ export function getWrappingEdgeWeights(
   assertLevelId(id);
   if (id <= 10) return [1, 0, 0, 0];
   if (id === 11) return [0, 1, 0, 0];
-  if (id === 15) return [1, 0, 0, 0];
+  if (id === 15 || id === 20) return [1, 0, 0, 0];
   const progress = Math.min(1, (id - 11) / 89);
   return [
     0.25,
@@ -105,7 +110,7 @@ export function getWrappingEdgePolicies(
   id: number,
 ): readonly EdgePolicyDefinition[] {
   if (id === 11) return WRAP_INTRO_LEVEL.edgePolicies ?? [];
-  if (id === 15) return [];
+  if (id === 15 || id === 20) return [];
   const weights = getWrappingEdgeWeights(id);
   if (id <= 10) return [];
   const rng = new Rng(hashSeed(`${seedForLevel(id)}:edges`));
@@ -158,7 +163,7 @@ export function getWrappingEdgePolicies(
 
 export function getLevelConfig(id: number): LevelConfig {
   assertLevelId(id);
-  if (id === 1 || id === 5 || id === 11 || id === 15) {
+  if (id === 1 || id === 5 || id === 11 || id === 15 || id === 20) {
     return { gridSize: 4, arrowCount: 6, lives: 5, arrowScale: 1 };
   }
   const early = [0, 60, 84, 108, 132, 156, 168, 180, 180, 180];
@@ -546,6 +551,127 @@ function parkingCore(
   return undefined;
 }
 
+const HEADING_VECTORS: Record<
+  Heading,
+  { readonly dx: number; readonly dy: number }
+> = {
+  east: { dx: 1, dy: 0 },
+  west: { dx: -1, dy: 0 },
+  south: { dx: 0, dy: 1 },
+  north: { dx: 0, dy: -1 },
+};
+
+const PERPENDICULAR: Record<Heading, readonly [Heading, Heading]> = {
+  east: ["north", "south"],
+  west: ["north", "south"],
+  north: ["east", "west"],
+  south: ["east", "west"],
+};
+
+/** First generated level that can embed the required directional core. */
+const FIRST_DIRECTIONAL_LEVEL = 21;
+
+/**
+ * Whether a level carries the required directional core. The authored intro
+ * always does; from the level after it, half of the generated levels do, on
+ * their own seeded stream so the split is stable across sessions. Levels with
+ * the core never carry overlap groups — the two mechanics never share a cube.
+ */
+export function hasDirectionalCore(id: number): boolean {
+  if (id === DIRECTIONAL_INTRO_LEVEL.id) return true;
+  if (id < FIRST_DIRECTIONAL_LEVEL) return false;
+  const roll = new Rng(hashSeed(`${seedForLevel(id)}:dir-plan`)).next();
+  return roll < 0.5;
+}
+
+interface DirectionalCore {
+  readonly arrows: readonly ArrowDefinition[];
+  readonly spot: DirectionalSpotDefinition;
+}
+
+/**
+ * Build a head-on deadlock that only a directional spot can break, on its own
+ * seeded stream. Two arrows face each other across the spot cell with a
+ * perpendicular exit corridor behind it: without the spot each arrow's track
+ * runs into the other's head cell, so neither can ever move; with it, each
+ * bends into the corridor and leaves. The corridor must exit and stay clear of
+ * everything placed before the core; everything placed after rejects these
+ * cells, which keeps the certificate replay infallible. Undefined means no
+ * placement fit and the level falls back to a layout without directionals.
+ */
+function directionalCore(
+  id: number,
+  level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
+  occupied: ReadonlySet<string>,
+): DirectionalCore | undefined {
+  const size = level.gridSize;
+  const rng = new Rng(hashSeed(`${seedForLevel(id)}:dir-core`));
+  const faces = shuffledFaces(rng);
+  for (let attempt = 0; attempt < 96; attempt += 1) {
+    const face = faces[attempt % faces.length] as FaceId;
+    const lane = HEADINGS[rng.int(HEADINGS.length)] as Heading;
+    const turn = PERPENDICULAR[lane][rng.int(2)] as Heading;
+    const vector = HEADING_VECTORS[lane];
+    const spotCell: Cell = {
+      face,
+      x: 2 + rng.int(Math.max(1, size - 4)),
+      y: 2 + rng.int(Math.max(1, size - 4)),
+    };
+    const approachingPath: readonly Cell[] = [
+      {
+        face,
+        x: spotCell.x - 2 * vector.dx,
+        y: spotCell.y - 2 * vector.dy,
+      },
+      { face, x: spotCell.x - vector.dx, y: spotCell.y - vector.dy },
+    ];
+    const opposingPath: readonly Cell[] = [
+      {
+        face,
+        x: spotCell.x + 2 * vector.dx,
+        y: spotCell.y + 2 * vector.dy,
+      },
+      { face, x: spotCell.x + vector.dx, y: spotCell.y + vector.dy },
+    ];
+    const cells = [...approachingPath, ...opposingPath, spotCell];
+    const patternKeys = new Set(cells.map(cellKey));
+    if (
+      patternKeys.size !== cells.length ||
+      cells.some(
+        (cell) =>
+          cell.x < 0 ||
+          cell.y < 0 ||
+          cell.x >= size ||
+          cell.y >= size ||
+          occupied.has(cellKey(cell)),
+      )
+    )
+      continue;
+    const corridor = exitRay(level, spotCell, turn).slice(1);
+    if (
+      corridor.length === 0 ||
+      corridor.some(
+        (cell) =>
+          cell.x < 0 ||
+          cell.y < 0 ||
+          cell.x >= size ||
+          cell.y >= size ||
+          patternKeys.has(cellKey(cell)) ||
+          occupied.has(cellKey(cell)),
+      )
+    )
+      continue;
+    return {
+      arrows: [
+        { id: `r${id}-dir-a`, path: approachingPath },
+        { id: `r${id}-dir-b`, path: opposingPath },
+      ],
+      spot: { cell: spotCell, heading: turn },
+    };
+  }
+  return undefined;
+}
+
 /**
  * Choose decorative circles on cells some arrow's head actually travels
  * through, so a circle is always reachable rather than decorative. The
@@ -658,6 +784,7 @@ export function generateLevel(id: number): LevelDefinition {
   if (id === 5) return STOP_INTRO_LEVEL;
   if (id === 11) return WRAP_INTRO_LEVEL;
   if (id === 15) return OVERLAP_INTRO_LEVEL;
+  if (id === 20) return DIRECTIONAL_INTRO_LEVEL;
   const config = getLevelConfig(id);
   const baseSeed = hashSeed(seedForLevel(id));
   const edgePolicies = getWrappingEdgePolicies(id);
@@ -675,7 +802,8 @@ export function generateLevel(id: number): LevelDefinition {
     } as const;
     const faces = shuffledFaces(rng);
     const headingOffset = rng.int(HEADINGS.length);
-    if (id >= 16) {
+    const directional = hasDirectionalCore(id);
+    if (!directional && id >= 16) {
       const group = overlapStarter(
         id,
         config.gridSize,
@@ -702,6 +830,25 @@ export function generateLevel(id: number): LevelDefinition {
         arrows.push(arrow);
       }
       occupied.add(cellKey(core.stop));
+    }
+    const directionalSpot = directional
+      ? directionalCore(id, candidateLevel, occupied)
+      : undefined;
+    if (directionalSpot) {
+      for (const arrow of directionalSpot.arrows) {
+        if (!validateLevel({ ...candidateLevel, arrows: [arrow] }).valid)
+          throw new Error("Seeded directional-core arrow was invalid.");
+        for (const cell of arrow.path) occupied.add(cellKey(cell));
+        arrows.push(arrow);
+      }
+      occupied.add(cellKey(directionalSpot.spot.cell));
+      for (const cell of exitRay(
+        candidateLevel,
+        directionalSpot.spot.cell,
+        directionalSpot.spot.heading,
+      ).slice(1)) {
+        occupied.add(cellKey(cell));
+      }
     }
     for (const [index, length] of [2, 3, 4].entries()) {
       const face = faces[index];
@@ -798,11 +945,22 @@ export function generateLevel(id: number): LevelDefinition {
       ...candidateLevel,
       arrows,
       ...(stops.length > 0 ? { stops } : {}),
+      ...(directionalSpot ? { directionals: [directionalSpot.spot] } : {}),
     };
     const certificate = [
       ...(core ? [`${PARK_CERTIFICATE_PREFIX}${core.parkerId}`] : []),
+      ...(directionalSpot
+        ? directionalSpot.arrows.map((arrow) => arrow.id)
+        : []),
       ...[...arrows].reverse().map((arrow) => arrow.id),
     ];
+    if (
+      directional &&
+      !level.arrows.some(
+        (arrow) => new Set(arrow.path.map((cell) => cell.face)).size >= 3,
+      )
+    )
+      continue;
     if (validateGenerated(level, certificate)) return level;
   }
   throw new Error(`Could not deterministically construct runtime level ${id}.`);

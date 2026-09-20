@@ -4,6 +4,7 @@ import {
   simulateMove as simulateState,
 } from "./game-state";
 import { advanceHead, simulateMove } from "./movement";
+import { spotHeadingAt } from "./directionals";
 import { cellKey, headingForPath, linkKey, seamTransition } from "./topology";
 import { overlappingArrowIds, sharedDirectedSegment } from "./overlap";
 import type {
@@ -69,7 +70,7 @@ function selfContactError(
     }
     route.push(next);
     head = next;
-    currentHeading = forward.heading;
+    currentHeading = spotHeadingAt(level, head) ?? forward.heading;
   }
   return `Arrow ${arrow.id} has a nonterminating continuation loop from its ${endpoint} endpoint.`;
 }
@@ -233,6 +234,36 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
     stopCells.add(key);
     if (arrowCells.has(key)) {
       errors.push(`Stop circle ${key} sits on an arrow's starting cell.`);
+    }
+  }
+
+  const spotCells = new Set<string>();
+  for (const spot of level.directionals ?? []) {
+    const key = cellKey(spot.cell);
+    if (!inBounds(spot.cell, level.gridSize)) {
+      errors.push(`Directional spot ${key} is out of bounds.`);
+    }
+    if (spotCells.has(key)) {
+      errors.push(`Directional spot ${key} is declared more than once.`);
+    }
+    spotCells.add(key);
+    if (stopCells.has(key)) {
+      errors.push(
+        `Directional spot ${key} shares its cell with a stop circle.`,
+      );
+    }
+    if (arrowCells.has(key)) {
+      errors.push(`Directional spot ${key} sits on an arrow's starting cell.`);
+    }
+  }
+  if (spotCells.size > 0) {
+    const grouped = level.arrows.some(
+      (arrow) => overlappingArrowIds(level, arrow.id).length > 1,
+    );
+    if (grouped) {
+      errors.push(
+        "A level with directional spots cannot contain shared-tail groups.",
+      );
     }
   }
 
