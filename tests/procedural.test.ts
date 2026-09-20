@@ -118,16 +118,16 @@ describe("runtime campaign generator", () => {
       "9fb45c3beaf0cafeacb20f56ee1fdf45bcccb17769cbc2229a1521339e85b7fa",
     );
     expect(geometryHash(generateLevel(10))).toBe(
-      "195c0a11610c8b477bfdb25ecac64f3f4cbaf1eaff460e316f877700a9d7b95c",
+      "48bf3896852038155c179facccc7174e71e86e0d24d6e5ccac99f770b41a9512",
     );
     expect(geometryHash(generateLevel(12))).toBe(
-      "65165ff268d4ee76d2714e2f3af3461cf36b5fec0ae25a7c8b020283f99558e8",
+      "9ba53f21c7600f3a4ff995f353570e8874d45b9bc6a23b4de9342eb8125a73c5",
     );
     expect(geometryHash(generateLevel(13))).toBe(
       "5fa650642d13eaf83fe00da47e6acd3123c4ccc5c64e0ab789af917938bdfdcf",
     );
     expect(geometryHash(generateLevel(14))).toBe(
-      "db497c006f9c9351bfd44b67bb67f914cfffb0da68d400c10f68208812165f40",
+      "7d457b5871f620da52eda1beaba8669b9ef4c0fd85f26fb97da30f09a9f21fcc",
     );
     expect(geometryHash(generateLevel(3))).toBe(
       "4a1a8de68f8e033d11be45dd73ed6dc80a47289922f98aea82666c4380c5f48b",
@@ -462,6 +462,69 @@ describe("runtime campaign generator", () => {
       expect(state.lives).toBe(level.lives);
     }
   }, 20_000);
+
+  test("park cores vary in shape across the campaign", () => {
+    const shapes = new Set<string>();
+    for (let id = 6; id <= 40; id += 1) {
+      const level = generateLevel(id);
+      if ((level.stops ?? []).length === 0) continue;
+      const parkArrows = level.arrows.filter((arrow) =>
+        arrow.id.includes("-park-"),
+      );
+      shapes.add(
+        `${parkArrows.length}:${parkArrows.reduce(
+          (cells, arrow) => cells + arrow.path.length,
+          0,
+        )}`,
+      );
+    }
+    // classic 3:8, cascade 4:9, double 3:10, long 3:11.
+    expect([...shapes].sort()).toEqual(["3:10", "3:11", "3:8", "4:9"]);
+  }, 20_000);
+
+  test("double-circle cores stay deadlocked after one park and open after two", () => {
+    let checked = 0;
+    for (let id = 6; id <= 80 && checked < 3; id += 1) {
+      const level = generateLevel(id);
+      if ((level.stops ?? []).length < 2) continue;
+      const parkArrows = level.arrows.filter((arrow) =>
+        arrow.id.includes("-park-"),
+      );
+      const parker = parkArrows.find((arrow) => arrow.id.endsWith("-park-p"));
+      if (!parker) continue;
+      const others = parkArrows.filter((arrow) => arrow.id !== parker.id);
+      let state = createGameState(level);
+      const first = simulateGameMove(level, state, parker.id);
+      if (first.kind !== "paused") continue;
+      state = applyMove(level, state, first);
+      // Plain arrows may legally sit on the core's vacated route cells, so
+      // only core-arrow blockers prove the deadlock is the core's own.
+      const blockedByCore = (arrow: (typeof parkArrows)[number]): boolean => {
+        const result = simulateGameMove(level, state, arrow.id);
+        return (
+          result.kind === "blocked" &&
+          result.blockerId?.includes("-park-") === true
+        );
+      };
+      if (!others.every(blockedByCore)) continue;
+      // The freed arrow is the one the parker itself pins: its lane cell is
+      // the parker's head, which only the second park vacates.
+      const freed = others.find(
+        (arrow) =>
+          simulateGameMove(level, state, arrow.id).blockerId === parker.id,
+      );
+      if (!freed) continue;
+      checked += 1;
+      const second = simulateGameMove(level, state, parker.id);
+      expect(second.kind).toBe("paused");
+      state = applyMove(level, state, second);
+      const result = simulateGameMove(level, state, freed.id);
+      expect(result.kind === "blocked" ? result.blockerId : null).not.toBe(
+        parker.id,
+      );
+    }
+    expect(checked).toBeGreaterThan(0);
+  }, 30_000);
 
   test("generates playable head continuations without changing the seeded edge selection", () => {
     const counts = new Set<number>();

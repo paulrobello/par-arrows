@@ -418,34 +418,134 @@ function overlapStarter(
   return undefined;
 }
 
+/** Pattern-local offset resolved against a base cell and rotation. */
+interface ParkDelta {
+  readonly dx: number;
+  readonly dy: number;
+}
+
 /**
- * The level-5 deadlock, relative to the parker's tail: the parker blocks the
- * freed arrow, the freed arrow blocks the blocker, and the blocker sits in the
- * parker's lane past the circle, so parking is the only opening move.
+ * Park-core deadlocks, relative to the parker's tail. Every pattern is a
+ * closed cycle: with its circles stripped, each arrow's first route cell hits
+ * another core arrow, so the cube provably needs parking; parking the parker
+ * advances its tail off the next arrow's lane and the whole core unwinds in
+ * the listed order. "classic" is the level-5 deadlock. "long" stretches the
+ * same lanes. "cascade" adds a fourth arrow whose lane opens only after the
+ * freed arrow leaves. "double" needs two parks: the blocker sits past the
+ * second circle, so the parker's tail blocks the freed arrow's lane until
+ * both parks are spent. A pattern is eligible only when the level's stop
+ * budget covers its circles. `others` lists the non-parker arrows in reverse
+ * unwinding order: the certificate tail drives arrows last-placed-first, so
+ * the last listed arrow must be the one that moves immediately after the
+ * park.
  */
-const PARK_PATTERN = {
-  parker: [
-    { dx: 0, dy: 0 },
-    { dx: 1, dy: 0 },
-  ],
-  stop: { dx: 2, dy: 0 },
-  blocker: [
-    { dx: 3, dy: 0 },
-    { dx: 3, dy: 1 },
-    { dx: 2, dy: 1 },
-    { dx: 1, dy: 1 },
-  ],
-  freed: [
-    { dx: 0, dy: 2 },
-    { dx: 0, dy: 1 },
-  ],
-} as const;
+const PARK_PATTERNS: readonly {
+  readonly name: string;
+  readonly parker: readonly ParkDelta[];
+  readonly stops: readonly ParkDelta[];
+  readonly others: readonly (readonly ParkDelta[])[];
+}[] = [
+  {
+    name: "classic",
+    parker: [
+      { dx: 0, dy: 0 },
+      { dx: 1, dy: 0 },
+    ],
+    stops: [{ dx: 2, dy: 0 }],
+    others: [
+      [
+        { dx: 3, dy: 0 },
+        { dx: 3, dy: 1 },
+        { dx: 2, dy: 1 },
+        { dx: 1, dy: 1 },
+      ],
+      [
+        { dx: 0, dy: 2 },
+        { dx: 0, dy: 1 },
+      ],
+    ],
+  },
+  {
+    name: "long",
+    parker: [
+      { dx: 0, dy: 0 },
+      { dx: 1, dy: 0 },
+      { dx: 2, dy: 0 },
+    ],
+    stops: [{ dx: 3, dy: 0 }],
+    others: [
+      [
+        { dx: 5, dy: 0 },
+        { dx: 5, dy: 1 },
+        { dx: 4, dy: 1 },
+        { dx: 3, dy: 1 },
+        { dx: 2, dy: 1 },
+        { dx: 1, dy: 1 },
+      ],
+      [
+        { dx: 0, dy: 2 },
+        { dx: 0, dy: 1 },
+      ],
+    ],
+  },
+  {
+    name: "cascade",
+    parker: [
+      { dx: 0, dy: 0 },
+      { dx: 1, dy: 0 },
+    ],
+    stops: [{ dx: 2, dy: 0 }],
+    others: [
+      [
+        { dx: 4, dy: 0 },
+        { dx: 4, dy: 1 },
+        { dx: 3, dy: 1 },
+      ],
+      [
+        { dx: 2, dy: 1 },
+        { dx: 1, dy: 1 },
+      ],
+      [
+        { dx: 0, dy: 2 },
+        { dx: 0, dy: 1 },
+      ],
+    ],
+  },
+  {
+    name: "double",
+    parker: [
+      { dx: 0, dy: 0 },
+      { dx: 1, dy: 0 },
+    ],
+    stops: [
+      { dx: 2, dy: 0 },
+      { dx: 4, dy: 0 },
+    ],
+    others: [
+      [
+        { dx: 6, dy: 0 },
+        { dx: 6, dy: 1 },
+        { dx: 5, dy: 1 },
+        { dx: 4, dy: 1 },
+        { dx: 3, dy: 1 },
+        { dx: 2, dy: 1 },
+      ],
+      [
+        { dx: 1, dy: 2 },
+        { dx: 1, dy: 1 },
+      ],
+    ],
+  },
+];
+
+/** Ids for the non-parker core arrows, in pattern order. */
+const PARK_FOLLOWER_IDS = ["park-b", "park-f", "park-g"] as const;
 
 const PARK_CERTIFICATE_PREFIX = "park:";
 
 interface ParkingCore {
   readonly arrows: readonly ArrowDefinition[];
-  readonly stop: Cell;
+  readonly stops: readonly Cell[];
   readonly parkerId: string;
 }
 
@@ -476,21 +576,32 @@ function patternCell(
 }
 
 /**
- * Build the level-5 deadlock on its own seeded stream, independent of layout
- * retries. The freed and blocker arrows collide on their first route cell and
- * the parker reaches its circle before the blocker occupies its lane, so the
- * finished level provably needs parking; the certificate replay below proves
- * the rest of the cube still clears. Undefined means no placement fit and the
- * level falls back to decorative circles only.
+ * Build a parking-required deadlock on its own seeded stream, independent of
+ * layout retries. The stream first picks a catalog pattern whose circle count
+ * fits the level's stop budget, then places it: pattern cells stay in bounds,
+ * off occupied cells, and every arrow's exit ray must dodge occupied cells.
+ * The core-only certificate — the park legs, then each arrow driven to exit in
+ * reverse placement order — must replay through the real movement rules, so a
+ * wrap or route crossing that would strand a core arrow rejects the placement
+ * instead of failing the level's replay later. Undefined means no placement
+ * fit and the level falls back to decorative circles only.
  */
 function parkingCore(
   id: number,
-  level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
+  level: LevelDefinition,
   occupied: ReadonlySet<string>,
+  stopCount: number,
 ): ParkingCore | undefined {
   const size = level.gridSize;
   const rng = new Rng(hashSeed(`${seedForLevel(id)}:park-core`));
+  const eligible = PARK_PATTERNS.filter(
+    (candidate) => candidate.stops.length <= stopCount,
+  );
+  const pattern = eligible[
+    rng.int(eligible.length)
+  ] as (typeof PARK_PATTERNS)[number];
   const faces = shuffledFaces(rng);
+  const parkerId = `r${id}-park-p`;
   for (let attempt = 0; attempt < 96; attempt += 1) {
     const face = faces[attempt % faces.length] as FaceId;
     const rotation = rng.int(4);
@@ -499,22 +610,16 @@ function parkingCore(
       x: 1 + rng.int(Math.max(1, size - 2)),
       y: 1 + rng.int(Math.max(1, size - 2)),
     };
-    const parkerPath = PARK_PATTERN.parker.map(({ dx, dy }) =>
+    const parkerPath = pattern.parker.map(({ dx, dy }) =>
       patternCell(base, dx, dy, rotation),
     );
-    const blockerPath = PARK_PATTERN.blocker.map(({ dx, dy }) =>
+    const followerPaths = pattern.others.map((deltas) =>
+      deltas.map(({ dx, dy }) => patternCell(base, dx, dy, rotation)),
+    );
+    const stops = pattern.stops.map(({ dx, dy }) =>
       patternCell(base, dx, dy, rotation),
     );
-    const freedPath = PARK_PATTERN.freed.map(({ dx, dy }) =>
-      patternCell(base, dx, dy, rotation),
-    );
-    const stop = patternCell(
-      base,
-      PARK_PATTERN.stop.dx,
-      PARK_PATTERN.stop.dy,
-      rotation,
-    );
-    const cells = [...parkerPath, ...blockerPath, ...freedPath, stop];
+    const cells = [...parkerPath, ...followerPaths.flat(), ...stops];
     const patternKeys = new Set(cells.map(cellKey));
     if (
       patternKeys.size !== cells.length ||
@@ -543,17 +648,24 @@ function parkingCore(
           )
       );
     };
-    if (!rayClear(parkerPath) || !rayClear(blockerPath) || !rayClear(freedPath))
-      continue;
-    return {
-      arrows: [
-        { id: `r${id}-park-p`, path: parkerPath },
-        { id: `r${id}-park-b`, path: blockerPath },
-        { id: `r${id}-park-f`, path: freedPath },
-      ],
-      stop,
-      parkerId: `r${id}-park-p`,
-    };
+    const arrows: ArrowDefinition[] = [
+      { id: parkerId, path: parkerPath },
+      ...followerPaths.map((path, index) => ({
+        id: `r${id}-${PARK_FOLLOWER_IDS[index]}`,
+        path,
+      })),
+    ];
+    if (!arrows.every((arrow) => rayClear(arrow.path))) continue;
+    // The core drives last in the level's certificate, against an otherwise
+    // empty cube with the park legs already applied; prove that tail here so
+    // a hostile wrap config rejects this placement instead of the level.
+    const coreLevel: LevelDefinition = { ...level, arrows, stops };
+    const certificate = [
+      ...stops.map(() => `${PARK_CERTIFICATE_PREFIX}${parkerId}`),
+      ...[...arrows].reverse().map((arrow) => arrow.id),
+    ];
+    if (!replayCertificate(coreLevel, certificate)) continue;
+    return { arrows, stops, parkerId };
   }
   return undefined;
 }
@@ -867,15 +979,14 @@ function chooseStops(
 }
 
 /**
- * Replay the construction certificate. A leading park entry advances the named
- * arrow to its first circle and leaves it parked there; every other entry is
- * driven through its pauses until it exits before the next arrow is tried.
+ * Replay a construction certificate. A park entry advances the named arrow to
+ * its next circle and leaves it parked there; every other entry is driven
+ * through its pauses until it exits before the next arrow is tried.
  */
-function validateGenerated(
+function replayCertificate(
   level: LevelDefinition,
   certificate: readonly string[],
 ): boolean {
-  if (!validateLevel(level).valid) return false;
   let remaining = level.arrows.map((arrow) => arrow.id);
   const offsets: Record<string, number> = {};
   const maximumLegs = level.gridSize * 6 + 2;
@@ -926,12 +1037,20 @@ function validateGenerated(
   return remaining.length === 0;
 }
 
+/** Replay the certificate of a level that passes validation. */
+function validateGenerated(
+  level: LevelDefinition,
+  certificate: readonly string[],
+): boolean {
+  return validateLevel(level).valid && replayCertificate(level, certificate);
+}
+
 /**
  * Build a pure, reproducible level. Insertion is reverse construction: each
  * arrow has an exit unobstructed by earlier arrows, so reverse insertion is a
  * real no-mistake solution certificate. Levels carrying stop circles also embed
- * the parking core, whose circle is reserved from every later arrow so the
- * replayed certificate — one leading park, then the reverse drive — can never
+ * the parking core, whose circles are reserved from every later arrow so the
+ * replayed certificate — the park legs, then the reverse drive — can never
  * fail because of parking.
  */
 export function generateLevel(id: number): LevelDefinition {
@@ -996,7 +1115,12 @@ export function generateLevel(id: number): LevelDefinition {
       }
       const core =
         getStopCount(id) >= 1
-          ? parkingCore(id, candidateLevel, occupied)
+          ? parkingCore(
+              id,
+              { ...candidateLevel, arrows },
+              occupied,
+              getStopCount(id),
+            )
           : undefined;
       if (core) {
         for (const arrow of core.arrows) {
@@ -1005,7 +1129,7 @@ export function generateLevel(id: number): LevelDefinition {
           for (const cell of arrow.path) occupied.add(cellKey(cell));
           arrows.push(arrow);
         }
-        occupied.add(cellKey(core.stop));
+        for (const stop of core.stops) occupied.add(cellKey(stop));
       }
       // The park legs lead the certificate replay, so the parked windows along
       // the park core's routes block everything that drives after them. The
@@ -1189,9 +1313,9 @@ export function generateLevel(id: number): LevelDefinition {
         },
         arrows,
         occupied,
-        getStopCount(id) - (core ? 1 : 0),
+        getStopCount(id) - (core ? core.stops.length : 0),
       );
-      const stops = core ? [core.stop, ...decorative] : decorative;
+      const stops = core ? [...core.stops, ...decorative] : decorative;
       const level: LevelDefinition = {
         ...candidateLevel,
         arrows,
@@ -1199,7 +1323,9 @@ export function generateLevel(id: number): LevelDefinition {
         ...(spots.length > 0 ? { directionals: spots } : {}),
       };
       const certificate = [
-        ...(core ? [`${PARK_CERTIFICATE_PREFIX}${core.parkerId}`] : []),
+        ...(core
+          ? core.stops.map(() => `${PARK_CERTIFICATE_PREFIX}${core.parkerId}`)
+          : []),
         ...(directionalSpot
           ? directionalSpot.arrows.map((arrow) => arrow.id)
           : []),
