@@ -526,6 +526,26 @@ describe("runtime campaign generator", () => {
     expect(checked).toBeGreaterThan(0);
   }, 30_000);
 
+  test("decorative circles ahead on the parker's track only add pauses", () => {
+    let checked = 0;
+    for (let id = 6; id <= 120 && checked < 3; id += 1) {
+      const level = generateLevel(id);
+      if ((level.stops ?? []).length === 0) continue;
+      const parker = level.arrows.find((arrow) => arrow.id.endsWith("-park-p"));
+      if (!parker) continue;
+      const track = arrowTrack(level, parker).map(cellKey);
+      const pathKeys = new Set(parker.path.map(cellKey));
+      const ahead = (level.stops ?? []).filter(
+        (stop) => track.includes(cellKey(stop)) && !pathKeys.has(cellKey(stop)),
+      );
+      if (ahead.length === 0) continue;
+      checked += 1;
+      expect(solveLevel({ ...level, stops: [] })).toBeUndefined();
+      expect(solveLevel(level)).toBeDefined();
+    }
+    expect(checked).toBeGreaterThan(0);
+  }, 30_000);
+
   test("generates playable head continuations without changing the seeded edge selection", () => {
     const counts = new Set<number>();
     for (let id = 11; id <= 50; id += 1) {
