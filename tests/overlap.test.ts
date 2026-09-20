@@ -5,7 +5,13 @@ import {
   simulateMove,
 } from "../src/core/game-state";
 import { overlappingArrowIds } from "../src/core/overlap";
-import type { ArrowDefinition, LevelDefinition } from "../src/core/types";
+import { seamTransition, stepSurface } from "../src/core/topology";
+import type {
+  ArrowDefinition,
+  Cell,
+  Heading,
+  LevelDefinition,
+} from "../src/core/types";
 import { solveLevel, validateLevel } from "../src/core/validation";
 
 function level(
@@ -33,6 +39,42 @@ const pair: readonly ArrowDefinition[] = [
     ],
   },
 ];
+
+function faceCell(x: number, y: number): Cell {
+  return { face: "front", x, y };
+}
+
+interface Leg {
+  readonly heading: Heading;
+  readonly steps: number;
+}
+
+/**
+ * Walk a concrete surface route from a seeded cell. Seam crossings re-derive
+ * the continuation heading from the topology core, never by hand.
+ */
+function walk(
+  start: Cell,
+  legs: readonly Leg[],
+  gridSize = 5,
+): readonly Cell[] {
+  const cells: Cell[] = [start];
+  let current = start;
+  let heading: Heading | undefined;
+  for (const leg of legs) {
+    heading = leg.heading;
+    for (let step = 0; step < leg.steps; step += 1) {
+      if (!heading) throw new Error("Walk lost its heading.");
+      const next = stepSurface(current, heading, gridSize);
+      if (next.face !== current.face) {
+        heading = seamTransition(current, heading, gridSize).heading;
+      }
+      cells.push(next);
+      current = next;
+    }
+  }
+  return cells;
+}
 
 describe("overlapping arrow groups", () => {
   test("finds staggered same-direction shared tail segments and ordinary singletons", () => {
@@ -271,5 +313,193 @@ describe("overlapping arrow groups", () => {
     expect(validateLevel(fixture).errors).toContain(
       "Shared-tail group four|one|three|two has more than three arrows.",
     );
+  });
+});
+
+describe("wrapped shared-tail groups", () => {
+  test("a wrapped member exits cleanly with its sibling through the shared tail", () => {
+    const north: ArrowDefinition = {
+      id: "north",
+      path: walk(faceCell(0, 2), [
+        { heading: "east", steps: 2 },
+        { heading: "south", steps: 2 },
+      ]),
+    };
+    const wrap: ArrowDefinition = {
+      id: "wrap",
+      path: walk(faceCell(0, 2), [
+        { heading: "east", steps: 5 },
+        { heading: "north", steps: 2 },
+      ]),
+    };
+    const fixture = level([north, wrap]);
+    const shared: Cell[] = [
+      ...walk(faceCell(0, 2), [{ heading: "east", steps: 2 }]),
+    ];
+    expect(north.path.slice(0, 3)).toEqual(shared);
+    expect(wrap.path.slice(0, 3)).toEqual(shared);
+    expect(overlappingArrowIds(fixture, "wrap")).toEqual(["north", "wrap"]);
+    expect(validateLevel(fixture).valid).toBe(true);
+    const initial = createGameState(fixture);
+    const result = simulateMove(fixture, initial, "wrap");
+    expect(result.kind).toBe("exit");
+    expect(result.members?.map((member) => member.arrowId)).toEqual([
+      "north",
+      "wrap",
+    ]);
+    expect(result.members?.every((member) => member.kind === "exit")).toBe(
+      true,
+    );
+    const wrapMember = result.members?.find(
+      (member) => member.arrowId === "wrap",
+    );
+    expect(wrapMember?.route[0]?.face).toBe("right");
+    const settled = applyMove(fixture, initial, result);
+    expect(settled.remainingIds).toEqual([]);
+    expect(settled.status).toBe("won");
+    expect(solveLevel(fixture)).toEqual(["north"]);
+  });
+
+  test("a staggered pair whose late member wraps a seam derives and exits as one group", () => {
+    const early: ArrowDefinition = {
+      id: "early",
+      path: walk(faceCell(0, 1), [
+        { heading: "east", steps: 1 },
+        { heading: "south", steps: 3 },
+      ]),
+    };
+    const late: ArrowDefinition = {
+      id: "late",
+      path: walk(faceCell(0, 1), [{ heading: "east", steps: 6 }]),
+    };
+    const fixture = level([early, late]);
+    expect(overlappingArrowIds(fixture, "late")).toEqual(["early", "late"]);
+    expect(validateLevel(fixture).valid).toBe(true);
+    const initial = createGameState(fixture);
+    const result = simulateMove(fixture, initial, "late");
+    expect(result.kind).toBe("exit");
+    expect(result.members?.map((member) => member.arrowId)).toEqual([
+      "early",
+      "late",
+    ]);
+    expect(result.members?.every((member) => member.kind === "exit")).toBe(
+      true,
+    );
+    const settled = applyMove(fixture, initial, result);
+    expect(settled.remainingIds).toEqual([]);
+    expect(settled.status).toBe("won");
+  });
+
+  test("a trio containing a wrapped member validates and exits as one group", () => {
+    const fixture = level([
+      {
+        id: "north",
+        path: walk(faceCell(0, 2), [
+          { heading: "east", steps: 2 },
+          { heading: "north", steps: 2 },
+        ]),
+      },
+      {
+        id: "south",
+        path: walk(faceCell(0, 2), [
+          { heading: "east", steps: 2 },
+          { heading: "south", steps: 2 },
+        ]),
+      },
+      {
+        id: "wrap",
+        path: walk(faceCell(0, 2), [
+          { heading: "east", steps: 5 },
+          { heading: "south", steps: 2 },
+        ]),
+      },
+    ]);
+    expect(overlappingArrowIds(fixture, "wrap")).toEqual([
+      "north",
+      "south",
+      "wrap",
+    ]);
+    expect(validateLevel(fixture).valid).toBe(true);
+    const initial = createGameState(fixture);
+    const result = simulateMove(fixture, initial, "wrap");
+    expect(result.kind).toBe("exit");
+    expect(result.members?.map((member) => member.arrowId)).toEqual([
+      "north",
+      "south",
+      "wrap",
+    ]);
+    expect(result.members?.every((member) => member.kind === "exit")).toBe(
+      true,
+    );
+    const settled = applyMove(fixture, initial, result);
+    expect(settled.remainingIds).toEqual([]);
+    expect(settled.status).toBe("won");
+  });
+
+  test("rejects a wrapped member whose future route contacts a sibling's body", () => {
+    const far: ArrowDefinition = {
+      id: "far",
+      path: walk(faceCell(0, 3), [{ heading: "east", steps: 7 }]),
+    };
+    const wrap: ArrowDefinition = {
+      id: "wrap",
+      path: walk(faceCell(0, 3), [
+        { heading: "east", steps: 2 },
+        { heading: "north", steps: 3 },
+        { heading: "east", steps: 3 },
+        { heading: "south", steps: 2 },
+      ]),
+    };
+    const result = validateLevel(level([far, wrap]));
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "Shared-tail group far|wrap has crossing or contacting travel paths.",
+    );
+  });
+
+  test("an outside arrow blocking the wrapped member fails the whole group for one life", () => {
+    const wrapPath = walk(faceCell(0, 2), [{ heading: "east", steps: 6 }]);
+    const wall: ArrowDefinition = {
+      id: "wall",
+      path: walk(stepSurface(wrapPath[wrapPath.length - 1]!, "east", 5), [
+        { heading: "south", steps: 1 },
+      ]),
+    };
+    const fixture = level([
+      {
+        id: "north",
+        path: walk(faceCell(0, 2), [
+          { heading: "east", steps: 2 },
+          { heading: "north", steps: 2 },
+        ]),
+      },
+      { id: "wrap", path: wrapPath },
+      wall,
+    ]);
+    expect(validateLevel(fixture).valid).toBe(true);
+    const initial = createGameState(fixture);
+    const result = simulateMove(fixture, initial, "north");
+    expect(result.kind).toBe("blocked");
+    expect(
+      result.members?.find((member) => member.arrowId === "north")?.kind,
+    ).toBe("exit");
+    const wrapMember = result.members?.find(
+      (member) => member.arrowId === "wrap",
+    );
+    expect(wrapMember?.kind).toBe("blocked");
+    expect(wrapMember?.blockerId).toBe("wall");
+    expect(wrapMember?.contact?.cell).toEqual(wall.path[0]);
+    const first = applyMove(fixture, initial, result);
+    expect(first.failedIds).toEqual(["north", "wrap"]);
+    expect(first.lives).toBe(1);
+    expect(first.status).toBe("playing");
+    const retry = applyMove(
+      fixture,
+      first,
+      simulateMove(fixture, first, "wrap"),
+    );
+    expect(retry.failedIds).toEqual(["north", "wrap"]);
+    expect(retry.lives).toBe(1);
+    expect(applyMove(fixture, retry, result)).toBe(retry);
   });
 });

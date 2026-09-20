@@ -323,6 +323,7 @@ export class ParArrowsApp {
 
   diagnosticText(): string {
     return JSON.stringify({
+      mode: this.preview.active ? "preview" : "campaign",
       level: { id: this.level.id, title: this.level.title },
       selectedArrowId: this.renderer.selectedArrowId(),
       preview: {

@@ -11,6 +11,7 @@ import {
   simulateMove,
 } from "../src/core/game-state";
 import { overlappingArrowIds } from "../src/core/overlap";
+import { cellKey, headingBetween } from "../src/core/topology";
 import { solveLevel, validateLevel } from "../src/core/validation";
 
 function replay(
@@ -118,4 +119,100 @@ describe("overlapping-tail level content", () => {
       expect(state.lives).toBe(level.lives);
     }
   }, 20_000);
+
+  test("generated cubes wrap group members around cube seams", () => {
+    let wrappedCubes = 0;
+    let staggeredCubes = 0;
+    for (const id of [
+      16, 17, 18, 19, 21, 22, 23, 24, 25, 28, 40, 46, 49, 55, 58, 70,
+    ]) {
+      const level = generateLevel(id);
+      expect(validateLevel(level)).toEqual({ valid: true, errors: [] });
+      if ((level.directionals ?? []).length > 0) continue;
+      expect(level).toEqual(generateLevel(id));
+      const group = overlappingArrowIds(level, level.arrows[0]?.id ?? "");
+      expect(group.length).toBeGreaterThan(1);
+      const members = level.arrows.filter((arrow) => group.includes(arrow.id));
+      const shared = members
+        .map((member) => new Set(member.path.map(cellKey)))
+        .reduce(
+          (left, right) => new Set([...left].filter((key) => right.has(key))),
+        );
+      const sharedFaces = new Set(
+        [...shared].map((key) => key.split(":")[0] ?? ""),
+      );
+      let wrappedMember = false;
+      let staggeredMember = false;
+      for (const member of members) {
+        const head = member.path[member.path.length - 1];
+        if (head && !sharedFaces.has(head.face)) wrappedMember = true;
+      }
+      for (let first = 0; first < members.length; first += 1) {
+        const left = members[first];
+        if (!left) continue;
+        for (const right of members.slice(first + 1)) {
+          let divergence = 0;
+          while (
+            divergence < left.path.length &&
+            divergence < right.path.length &&
+            cellKey(left.path[divergence]!) === cellKey(right.path[divergence]!)
+          ) {
+            divergence += 1;
+          }
+          if (divergence < 2) continue;
+          if (divergence >= left.path.length) continue;
+          if (divergence >= right.path.length) continue;
+          const sharedHeading = headingBetween(
+            left.path[divergence - 2]!,
+            left.path[divergence - 1]!,
+            level.gridSize,
+          );
+          const leftHeading = headingBetween(
+            left.path[divergence - 1]!,
+            left.path[divergence]!,
+            level.gridSize,
+          );
+          const rightHeading = headingBetween(
+            right.path[divergence - 1]!,
+            right.path[divergence]!,
+            level.gridSize,
+          );
+          if (
+            sharedHeading &&
+            (leftHeading === sharedHeading || rightHeading === sharedHeading)
+          ) {
+            staggeredMember = true;
+          }
+        }
+      }
+      if (wrappedMember) wrappedCubes += 1;
+      if (staggeredMember) staggeredCubes += 1;
+
+      let state = createGameState(level);
+      if ((level.stops ?? []).length > 0) {
+        const solution = solveLevel(level);
+        if (!solution) throw new Error(`Expected a solution for cube ${id}.`);
+        for (const arrowId of solution) {
+          const result = simulateMove(level, state, arrowId);
+          expect(["exit", "paused"]).toContain(result.kind);
+          state = applyMove(level, state, result);
+        }
+      } else {
+        for (const arrow of [...level.arrows].reverse()) {
+          // An arrow whose route crosses a stop circle needs one tap per leg.
+          while (state.remainingIds.includes(arrow.id)) {
+            const result = simulateMove(level, state, arrow.id);
+            expect(["exit", "paused"]).toContain(result.kind);
+            const next = applyMove(level, state, result);
+            expect(next).not.toBe(state);
+            state = next;
+          }
+        }
+      }
+      expect(state.status).toBe("won");
+      expect(state.lives).toBe(level.lives);
+    }
+    expect(wrappedCubes).toBeGreaterThanOrEqual(3);
+    expect(staggeredCubes).toBeGreaterThanOrEqual(2);
+  }, 120_000);
 });

@@ -3,6 +3,7 @@ import { overlappingArrowIds } from "../core/overlap";
 import { arrowTrack } from "../core/stops";
 import {
   cellKey,
+  forwardInfo,
   headingForPath,
   oppositeHeading,
   seamTransition,
@@ -356,56 +357,410 @@ function candidate(
   return backwards.length >= 2 ? backwards.reverse() : undefined;
 }
 
+/**
+ * One leg of a group member's surface walk. Fixed legs step a set number of
+ * cells; seam legs walk forward until the walk crosses a cube seam and then
+ * continue a few cells on the new face. `toNearestEdge` aims the leg across
+ * the closer perpendicular edge, which is what lets a member wrap onto a
+ * third face from any seeded start.
+ */
+type OverlapSegment =
+  | { readonly heading: Heading; readonly steps: number }
+  | {
+      readonly heading: Heading;
+      readonly untilSeam: true;
+      readonly extra: number;
+      readonly maxToSeam: number;
+      readonly toNearestEdge?: boolean;
+    };
+
+interface OverlapPattern {
+  readonly name: string;
+  /** Seed the start near the leading edge so seam legs cross promptly. */
+  readonly lead: boolean;
+  readonly members: readonly (readonly OverlapSegment[])[];
+}
+
+const HEADING_CYCLE: readonly Heading[] = ["east", "south", "west", "north"];
+
+function rotateHeading(heading: Heading, quarterTurns: number): Heading {
+  const index = HEADING_CYCLE.indexOf(heading);
+  return HEADING_CYCLE[
+    (index + quarterTurns) % HEADING_CYCLE.length
+  ] as Heading;
+}
+
+/**
+ * Shared-tail group shapes. Every member starts on the same cell heading the
+ * same way, so pairwise overlaps are always common prefixes; patterns differ
+ * in where members peel off and how far their own portions run. "seam"
+ * members cross one cube seam, "wrap" members cross two and park their heads
+ * on a third face, "staggered" members peel at different points, and "lanes"
+ * members run long parallel bodies far from the shared tail.
+ */
+const PAIR_PATTERNS: readonly OverlapPattern[] = [
+  {
+    name: "classic",
+    lead: false,
+    members: [
+      [
+        { heading: "east", steps: 1 },
+        { heading: "north", steps: 1 },
+        { heading: "east", steps: 1 },
+      ],
+      [
+        { heading: "east", steps: 1 },
+        { heading: "south", steps: 1 },
+        { heading: "east", steps: 1 },
+      ],
+    ],
+  },
+  {
+    name: "staggered",
+    lead: false,
+    members: [
+      [
+        { heading: "east", steps: 2 },
+        { heading: "south", steps: 2 },
+      ],
+      [{ heading: "east", steps: 6 }],
+    ],
+  },
+  {
+    name: "lanes",
+    lead: false,
+    members: [
+      [
+        { heading: "east", steps: 2 },
+        { heading: "north", steps: 1 },
+        { heading: "east", steps: 4 },
+      ],
+      [
+        { heading: "east", steps: 3 },
+        { heading: "south", steps: 1 },
+        { heading: "east", steps: 4 },
+      ],
+    ],
+  },
+  {
+    name: "seam",
+    lead: true,
+    members: [
+      [
+        { heading: "east", steps: 2 },
+        { heading: "north", steps: 1 },
+        { heading: "east", steps: 2 },
+      ],
+      [
+        { heading: "east", steps: 2 },
+        { heading: "east", untilSeam: true, extra: 2, maxToSeam: 6 },
+      ],
+    ],
+  },
+  {
+    name: "wrap",
+    lead: true,
+    members: [
+      [
+        { heading: "east", steps: 2 },
+        { heading: "north", steps: 1 },
+        { heading: "east", steps: 2 },
+      ],
+      [
+        { heading: "east", steps: 2 },
+        { heading: "east", untilSeam: true, extra: 0, maxToSeam: 6 },
+        {
+          heading: "east",
+          untilSeam: true,
+          extra: 2,
+          maxToSeam: 20,
+          toNearestEdge: true,
+        },
+      ],
+    ],
+  },
+];
+
+const TRIO_PATTERNS: readonly OverlapPattern[] = [
+  {
+    name: "classic",
+    lead: false,
+    members: [...PAIR_PATTERNS[0]!.members, [{ heading: "east", steps: 3 }]],
+  },
+  {
+    name: "staggered",
+    lead: false,
+    members: [
+      [
+        { heading: "east", steps: 2 },
+        { heading: "north", steps: 2 },
+      ],
+      [
+        { heading: "east", steps: 3 },
+        { heading: "south", steps: 2 },
+      ],
+      [{ heading: "east", steps: 6 }],
+    ],
+  },
+  {
+    name: "seam",
+    lead: true,
+    members: [
+      [
+        { heading: "east", steps: 2 },
+        { heading: "north", steps: 1 },
+        { heading: "east", steps: 2 },
+      ],
+      [
+        { heading: "east", steps: 2 },
+        { heading: "south", steps: 1 },
+        { heading: "east", steps: 3 },
+      ],
+      [
+        { heading: "east", steps: 2 },
+        { heading: "east", untilSeam: true, extra: 1, maxToSeam: 6 },
+      ],
+    ],
+  },
+  {
+    name: "wrap",
+    lead: true,
+    members: [
+      [
+        { heading: "east", steps: 2 },
+        { heading: "north", steps: 1 },
+        { heading: "east", steps: 2 },
+      ],
+      [
+        { heading: "east", steps: 2 },
+        { heading: "south", steps: 1 },
+        { heading: "east", steps: 3 },
+      ],
+      [
+        { heading: "east", steps: 2 },
+        { heading: "east", untilSeam: true, extra: 0, maxToSeam: 6 },
+        {
+          heading: "east",
+          untilSeam: true,
+          extra: 2,
+          maxToSeam: 20,
+          toNearestEdge: true,
+        },
+      ],
+    ],
+  },
+];
+
+/** On-face steps before walking `heading` leaves `cell`'s face. */
+function stepsToEdge(cell: Cell, heading: Heading, size: number): number {
+  let steps = 0;
+  let current = cell;
+  while (steps <= size) {
+    const forward = forwardInfo(current, heading, size);
+    if (forward.exits || !forward.next) return steps;
+    current = forward.next;
+    steps += 1;
+  }
+  return steps;
+}
+
+/**
+ * Walk one member's concrete path from `start`. Seam crossings re-derive the
+ * continuation heading from the topology core, never by hand; a walk that
+ * revisits any claimed cell rejects the attempt.
+ */
+function walkOverlapMember(
+  start: Cell,
+  segments: readonly OverlapSegment[],
+  rotation: number,
+  size: number,
+): readonly Cell[] | undefined {
+  const cells: Cell[] = [start];
+  const seen = new Set([cellKey(start)]);
+  let current = start;
+  const advance = (heading: Heading): Heading | undefined => {
+    const previous = current;
+    const next = stepSurface(previous, heading, size);
+    if (seen.has(cellKey(next))) return undefined;
+    seen.add(cellKey(next));
+    cells.push(next);
+    current = next;
+    return next.face === previous.face
+      ? heading
+      : seamTransition(previous, heading, size).heading;
+  };
+  for (const segment of segments) {
+    let heading = rotateHeading(segment.heading, rotation);
+    if ("steps" in segment) {
+      for (let step = 0; step < segment.steps; step += 1) {
+        const continued = advance(heading);
+        if (continued === undefined) return undefined;
+        heading = continued;
+      }
+    } else {
+      let legHeading = heading;
+      if (segment.toNearestEdge) {
+        const perpendicular = HEADING_CYCLE.filter(
+          (candidate) =>
+            candidate !== legHeading &&
+            candidate !== oppositeHeading(legHeading),
+        );
+        const [firstSide, secondSide] = perpendicular;
+        if (!firstSide || !secondSide) return undefined;
+        legHeading =
+          stepsToEdge(current, firstSide, size) <
+          stepsToEdge(current, secondSide, size)
+            ? firstSide
+            : secondSide;
+      }
+      let crossed = false;
+      for (let step = 0; step <= segment.maxToSeam && !crossed; step += 1) {
+        const before = current;
+        const continued = advance(legHeading);
+        if (continued === undefined) return undefined;
+        crossed = current.face !== before.face;
+        legHeading = continued;
+      }
+      if (!crossed) return undefined;
+      for (let step = 0; step < segment.extra; step += 1) {
+        const continued = advance(legHeading);
+        if (continued === undefined) return undefined;
+        legHeading = continued;
+      }
+    }
+  }
+  return cells;
+}
+
+/** A start cell sitting `back` cells inside the leading edge of `heading`. */
+function edgeOffsetCell(
+  face: FaceId,
+  heading: Heading,
+  back: number,
+  lateral: number,
+  size: number,
+): Cell {
+  switch (heading) {
+    case "east":
+      return { face, x: size - 1 - back, y: lateral };
+    case "west":
+      return { face, x: back, y: lateral };
+    case "south":
+      return { face, x: lateral, y: size - 1 - back };
+    case "north":
+      return { face, x: lateral, y: back };
+  }
+}
+
 function overlapStarter(
   id: number,
   size: number,
   rng: Rng,
-  level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
+  level: LevelDefinition,
   occupied: ReadonlySet<string>,
 ): readonly ArrowDefinition[] | undefined {
   const trio = id % 3 === 0;
+  const catalog = trio ? TRIO_PATTERNS : PAIR_PATTERNS;
   for (let attempt = 0; attempt < 32; attempt += 1) {
+    const pattern = rng.pick(catalog);
+    const rotation = rng.int(HEADING_CYCLE.length);
     const face = rng.pick(shuffledFaces(rng));
-    const x = 1 + rng.int(size - 5);
-    const y = 1 + rng.int(size - 3);
-    const paths: readonly (readonly Cell[])[] = [
-      [
-        { face, x, y },
-        { face, x: x + 1, y },
-        { face, x: x + 1, y: y - 1 },
-        { face, x: x + 2, y: y - 1 },
-      ],
-      [
-        { face, x, y },
-        { face, x: x + 1, y },
-        { face, x: x + 1, y: y + 1 },
-        { face, x: x + 2, y: y + 1 },
-      ],
-      [
-        { face, x, y },
-        { face, x: x + 1, y },
-        { face, x: x + 2, y },
-        { face, x: x + 3, y },
-      ],
-    ];
-    const selected = trio ? paths : [paths[0], paths[1]];
+    const leadIn = pattern.lead
+      ? 2 + rng.int(3)
+      : 9 + rng.int(Math.max(1, size - 18));
+    const lateral = 4 + rng.int(Math.max(1, size - 9));
+    const firstHeading = pattern.members[0]?.[0]?.heading;
+    if (!firstHeading) continue;
+    const start = edgeOffsetCell(
+      face,
+      rotateHeading(firstHeading, rotation),
+      leadIn,
+      lateral,
+      size,
+    );
+    const paths = pattern.members.map((segments) =>
+      walkOverlapMember(start, segments, rotation, size),
+    );
+    if (paths.some((path) => !path)) continue;
+    const concrete = paths.filter((path): path is readonly Cell[] => !!path);
+    if (concrete.length !== pattern.members.length) continue;
+    if (concrete.some((path) => path.length > 40)) continue;
+    const heads = new Set(
+      concrete.map((path) => cellKey(path[path.length - 1]!)),
+    );
+    if (heads.size !== concrete.length) continue;
     if (
-      selected.some(
-        (path) => !path || path.some((cell) => occupied.has(cellKey(cell))),
-      )
+      concrete.some((path) => path.some((cell) => occupied.has(cellKey(cell))))
     )
       continue;
-    const arrows = selected.map((path, index) => ({
+    // Cells shared between two members must be exactly their common prefix.
+    let prefixesClean = true;
+    for (let first = 0; first < concrete.length && prefixesClean; first += 1) {
+      const left = concrete[first]!;
+      for (let second = first + 1; second < concrete.length; second += 1) {
+        const right = concrete[second]!;
+        let prefix = 0;
+        while (
+          prefix < left.length &&
+          prefix < right.length &&
+          cellKey(left[prefix]!) === cellKey(right[prefix]!)
+        ) {
+          prefix += 1;
+        }
+        const shared = left.filter((cell) =>
+          right.some((other) => cellKey(other) === cellKey(cell)),
+        ).length;
+        if (shared !== prefix) {
+          prefixesClean = false;
+          break;
+        }
+      }
+    }
+    if (!prefixesClean) continue;
+    const arrows = concrete.map((path, index) => ({
       id: `r${id}-overlap-${index}`,
-      path: path as readonly Cell[],
+      path,
     }));
     const groupCells = new Set(
       arrows.flatMap((arrow) => arrow.path.map(cellKey)),
     );
+    // Members' solo future routes must stay clear of sibling bodies and of
+    // each other — the same contract validateLevel enforces, checked here so
+    // a doomed shape retries locally instead of restarting the whole cube.
+    const routes = arrows.map((arrow) =>
+      simulateMove({ ...level, arrows }, [arrow.id], arrow.id),
+    );
+    if (routes.some((route) => route.kind !== "exit")) continue;
+    let routesClean = true;
+    for (let first = 0; first < arrows.length && routesClean; first += 1) {
+      const left = arrows[first]!;
+      const leftRoute = routes[first]!;
+      for (let second = first + 1; second < arrows.length; second += 1) {
+        const right = arrows[second]!;
+        const rightRoute = routes[second]!;
+        const leftKeys = new Set(leftRoute.route.map(cellKey));
+        const rightKeys = new Set(rightRoute.route.map(cellKey));
+        if (
+          leftRoute.route.some((cell) =>
+            right.path.some((other) => cellKey(other) === cellKey(cell)),
+          ) ||
+          rightRoute.route.some((cell) =>
+            left.path.some((other) => cellKey(other) === cellKey(cell)),
+          ) ||
+          leftRoute.route.some((cell) => rightKeys.has(cellKey(cell)))
+        ) {
+          routesClean = false;
+          break;
+        }
+      }
+    }
+    if (!routesClean) continue;
     const hasClearTrajectories = arrows.every((arrow) => {
       const head = arrow.path[arrow.path.length - 1];
       if (!head) return false;
-      const ray = exitRay(level, head, "east");
+      const heading = headingForPath(arrow.path, size);
+      if (!heading) return false;
+      const ray = exitRay(level, head, heading);
       return (
         ray.length > 0 &&
         ray.slice(1).every((cell) => !groupCells.has(cellKey(cell))) &&
@@ -1098,7 +1453,7 @@ export function generateLevel(id: number): LevelDefinition {
           id,
           config.gridSize,
           rng,
-          candidateLevel,
+          { ...candidateLevel, arrows: [] },
           occupied,
         );
         if (
