@@ -125,7 +125,7 @@ export async function assertRuntimeCampaign(
     await page.evaluate(() => window.__PAR_ARROWS_TEST__?.getLevel()),
     thousand,
   );
-  assert.ok(thousand.gridSize <= 26 && thousand.arrows.length <= 240);
+  assert.ok(thousand.gridSize <= 26 && thousand.arrows.length <= 264);
   await page.screenshot({ path: `${output}/runtime-cube-1000-mobile.png` });
   const safe = thousand.arrows.find((arrow) => {
     const move = simulateMove(thousand, createGameState(thousand), arrow.id);

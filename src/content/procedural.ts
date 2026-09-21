@@ -174,7 +174,7 @@ export function getLevelConfig(id: number): LevelConfig {
   const arrowCount =
     id <= 10
       ? (early[index] ?? 180)
-      : Math.min(240, 180 + Math.floor((id - 10) / 3) * 6);
+      : Math.min(264, 180 + Math.floor((id - 10) / 2) * 6);
   const gridSize =
     id <= 10
       ? (earlyGrid[index] ?? 22)

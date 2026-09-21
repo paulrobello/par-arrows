@@ -121,13 +121,13 @@ describe("runtime campaign generator", () => {
       "48bf3896852038155c179facccc7174e71e86e0d24d6e5ccac99f770b41a9512",
     );
     expect(geometryHash(generateLevel(12))).toBe(
-      "9ba53f21c7600f3a4ff995f353570e8874d45b9bc6a23b4de9342eb8125a73c5",
+      "c5b7db7f7020b69c1a84bac4afef0dd888baba845ca05e054cf4c4505095dbbd",
     );
     expect(geometryHash(generateLevel(13))).toBe(
       "5fa650642d13eaf83fe00da47e6acd3123c4ccc5c64e0ab789af917938bdfdcf",
     );
     expect(geometryHash(generateLevel(14))).toBe(
-      "7d457b5871f620da52eda1beaba8669b9ef4c0fd85f26fb97da30f09a9f21fcc",
+      "69cc1c9649f194341f067a69861884d36a9578323189493ac162aff6111b058f",
     );
     expect(geometryHash(generateLevel(3))).toBe(
       "4a1a8de68f8e033d11be45dd73ed6dc80a47289922f98aea82666c4380c5f48b",
@@ -149,7 +149,7 @@ describe("runtime campaign generator", () => {
     for (const level of layouts) {
       expect(validateLevel(level)).toEqual({ valid: true, errors: [] });
       expect(level.gridSize).toBeLessThanOrEqual(26);
-      expect(level.arrows.length).toBeLessThanOrEqual(240);
+      expect(level.arrows.length).toBeLessThanOrEqual(264);
       expect(
         Math.max(...level.arrows.map((arrow) => arrow.path.length)),
       ).toBeLessThanOrEqual(40);
@@ -228,8 +228,10 @@ describe("runtime campaign generator", () => {
     expect(getLevelConfig(3).lives).toBe(5);
     expect(getLevelConfig(6).lives).toBe(4);
     expect(getLevelConfig(7).lives).toBe(3);
+    expect(getLevelConfig(12).arrowCount).toBe(186);
+    expect(getLevelConfig(30).arrowCount).toBe(240);
     expect(getLevelConfig(1_000_000).gridSize).toBe(26);
-    expect(getLevelConfig(1_000_000).arrowCount).toBe(240);
+    expect(getLevelConfig(1_000_000).arrowCount).toBe(264);
   });
 
   test("constructs a broad deterministic seeded sweep without quality collapse", () => {
@@ -251,7 +253,7 @@ describe("runtime campaign generator", () => {
         }
       }
       expect(level.gridSize).toBeLessThanOrEqual(26);
-      expect(level.arrows.length).toBeLessThanOrEqual(240);
+      expect(level.arrows.length).toBeLessThanOrEqual(264);
       expect(
         Math.max(...level.arrows.map((arrow) => arrow.path.length)),
       ).toBeLessThanOrEqual(40);
