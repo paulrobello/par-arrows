@@ -52,7 +52,7 @@ The four additional photos supplied on 2026-09-14 are preserved as references 04
 | R17 | Arrow paths use grid-aligned 90-degree turns, with no crossings or overpasses, except the shared tail segments defined in R33. |
 | R18 | Reject any level where an arrow could contact its own body. Do not turn self-contact into an ordinary life-costing gameplay event. |
 | R19 | Only one arrow or connected tail group moves or rebounds at a time. Ignore additional arrow taps while rotation and zoom remain available. |
-| R20 | Runtime progression is endless. Difficulty grows from 60 to 180 arrows early, then caps at 240 arrows; grids grow to 26 × 26 cells per face and path length is bounded at 40. Lives never fall below three. Retry resets lives and red-arrow history. |
+| R20 | Runtime progression is endless. Difficulty grows from 60 to 180 arrows early, then caps at 264 arrows; grids grow to 26 × 26 cells per face and path length is bounded at 40. Lives never fall below three. Retry resets lives and red-arrow history. |
 | R21 | Refresh/reopen resumes the exact logical state, preserving removed arrows, lives, and failure history, including the result of an interrupted move. |
 | R22 | Highlight an unambiguous arrow on press only when a move can start. A valid tap activates the arrow captured on press; blank or ambiguous presses and drag/zoom/cancel gestures do nothing. |
 | R23 | Save player progress in browser `localStorage` so players can resume after refresh or reopening the game. |
@@ -177,7 +177,7 @@ Keyboard puzzle navigation and a nonvisual equivalent of the spatial puzzle need
 
 **Superseded historical policy:** the fixed ten-level, content-version-5 catalog described in earlier reports is retained only as historical reference and test fixtures. It is not a production import.
 
-**Current policy:** level 1 remains the unchanged authored teaching cube. Levels 2–10 retain their version-1 seeds and geometry; levels 12–14 retain their original version-2 layouts. Level 11 is an authored 4 × 4 cube with six short arrows, one per face, five lives, and a guaranteed reciprocal front-west/left-east yellow edge. Two safe moves wrap across that edge; the other four arrows exit through ordinary edges. This teaching layout is exempt from random edge-count selection and generated density. Level 15 is an authored 4 × 4 introduction with a pair, a trio, and one outside blocker, with five lives. Generated layouts with overlapping groups begin at level 16 using generator version 3 and validated tail groups. The yellow-edge weighting curve remains in place. Seeds through level 14 stay unchanged; affected older attempts from level 15 onward refresh while unlocks and tutorial completion remain preserved. Each generated puzzle is reverse-constructed and validated as solvable before use. A player retry and every player on the same generated level number receive the same puzzle.
+**Current policy:** level 1 remains the unchanged authored teaching cube. Levels 2–4 keep their version-1 seeds and geometry, levels 6–10 keep their version-4 runtime seeds, and generated cubes 12–14 took new version-5 layouts in the v5 density bump. Level 11 is an authored 4 × 4 cube with six short arrows, one per face, five lives, and a guaranteed reciprocal front-west/left-east yellow edge. Two safe moves wrap across that edge; the other four arrows exit through ordinary edges. This teaching layout is exempt from random edge-count selection and generated density. Level 15 is an authored 4 × 4 introduction with a pair, a trio, and one outside blocker, with five lives. Generated layouts with overlapping groups begin at level 16 using generator version 5 and validated tail groups. The yellow-edge weighting curve remains in place. Seeds through level 11 stay unchanged; affected older attempts from level 12 onward refresh while unlocks and tutorial completion remain preserved. Each generated puzzle is reverse-constructed and validated as solvable before use. A player retry and every player on the same generated level number receive the same puzzle.
 
 | Range | Generation bounds | Starting lives | Purpose |
 | --- | --- | --- | --- |
@@ -185,7 +185,7 @@ Keyboard puzzle navigation and a nonvisual equivalent of the spatial puzzle need
 | Level 11 | Authored 4 × 4 cube, 6 short arrows, reciprocal front-west/left-east yellow edge | 5 | Introduce two safe head-wrap moves and four ordinary exits at low density. |
 | Level 15 | Authored 4 × 4 cube, linked pair and trio plus a blocker | 5 | Teach group activation and whole-group rewind. |
 | Early runtime levels | 60–180 arrows with increasing grid/detail | Decreases toward 3 | Build density, wrapping, and removal dependencies. |
-| Later runtime levels | At most 240 arrows, 26 × 26 cells per face, and 40 cells per path | 3 floor | Continue endlessly within validated desktop bounds. |
+| Later runtime levels | At most 264 arrows, 26 × 26 cells per face, and 40 cells per path | 3 floor | Continue endlessly within validated desktop bounds. |
 
 Generation uses a worker, caches the three most recent results, and times out after 12 seconds. A stale request, reset, or failed restore must never replace a newer accepted state. Never present an unvalidated puzzle merely to meet a count target.
 
