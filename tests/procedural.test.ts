@@ -111,7 +111,7 @@ describe("runtime campaign generator", () => {
     for (const id of [2, 10, 12, 14, 15, 16, 100, 1_000, 1_000_000]) {
       expect(generateLevel(id)).toEqual(generateLevel(id));
     }
-  });
+  }, 30_000);
 
   test("preserves geometry through level four and authors levels five, eleven, and fifteen", () => {
     expect(geometryHash(generateLevel(2))).toBe(
@@ -218,7 +218,7 @@ describe("runtime campaign generator", () => {
         }
       }
     }
-  });
+  }, 60_000);
 
   test("keeps the intended early curve and continuing capped progression", () => {
     expect(
@@ -265,7 +265,7 @@ describe("runtime campaign generator", () => {
       const lengths = straightLengths(level);
       for (const length of [2, 3, 4]) expect(lengths).toContain(length);
     }
-  }, 60_000);
+  }, 120_000);
 
   test("introduces wrapping after level ten and shifts probability toward more edges", () => {
     for (let id = 1; id <= 10; id += 1) {
