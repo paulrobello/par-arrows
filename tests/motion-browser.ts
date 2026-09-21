@@ -78,9 +78,9 @@ export async function assertConsistentMotion(
   const denseArrow = dense.arrows.find(
     (arrow) => arrow.path.at(-1)?.face === "front",
   );
-  const wrapped = generateLevel(12);
+  const wrapped = generateLevel(13);
   const wrappingArrow = wrapped.arrows.find(
-    (arrow) => arrow.id === "r12-wrap-0",
+    (arrow) => arrow.id === "r13-wrap-0",
   );
   const blocker = early.arrows.find((arrow) => {
     const result = simulateMove(

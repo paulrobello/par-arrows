@@ -1479,12 +1479,12 @@ try {
   await assertContextRecovery(browser, url, output);
   await assertLevelPreview(browser, url, output);
   await assertWrappingEdges(browser, url, output, {
-    // Level 267 is the generated cube carrying exactly one front-east seam
+    // Level 411 is the generated cube carrying exactly one front-east seam
     // under the current generator, with a crossing arrow that exits alone and
     // is blocked among its neighbours. Directional cubes bend their wrap
     // arrows across circles, so the fixture stays on a non-directional id.
-    movementLevelId: 267,
-    reboundLevelId: 267,
+    movementLevelId: 411,
+    reboundLevelId: 411,
   });
   await assertVersionReload(page);
   await assertThemeBootstrap(browser);

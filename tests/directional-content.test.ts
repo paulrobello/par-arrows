@@ -138,7 +138,7 @@ describe("directional spot level content", () => {
     }
     // Uniform draw over 0-4 faces puts a spot plan on ~80% of cubes; the
     // seeded streams make the exact split deterministic per generator.
-    expect(carriers).toBe(29);
+    expect(carriers).toBe(31);
   });
 
   test("levels through nineteen are untouched by the directional plan", () => {
@@ -147,6 +147,6 @@ describe("directional spot level content", () => {
     expect(hasDirectionalCore(20)).toBe(true);
     const level = generateLevel(19);
     expect(level.directionals ?? []).toEqual([]);
-    expect(level.stops ?? []).toHaveLength(1);
+    expect(level.stops ?? []).toHaveLength(3);
   });
 });

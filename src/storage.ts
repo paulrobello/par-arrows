@@ -219,6 +219,10 @@ function hasMatchingGeneratorMetadata(
   if (stored === GENERATOR_VERSION) return true;
   // A matching seed on an unchanged level still describes the same cube, so an
   // older generator stamp is not by itself a reason to restart the attempt.
+  if (stored === 4) {
+    // v4-stamped saves sit on cubes the v5 release left byte-identical.
+    return (levelId >= 2 && levelId <= 11) || levelId === 15 || levelId === 20;
+  }
   return (
     (levelId <= 4 && (stored === 1 || stored === 2 || stored === 3)) ||
     (levelId === 11 && (stored === 2 || stored === 3)) ||

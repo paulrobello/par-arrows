@@ -99,7 +99,7 @@ function normalizedShapeSignature(
 
 describe("runtime campaign generator", () => {
   test("has a versioned stable seed and rejects unsafe ids", () => {
-    expect(GENERATOR_VERSION).toBe(4);
+    expect(GENERATOR_VERSION).toBe(5);
     expect(seedForLevel(1_000_000)).toBe(seedForLevel(1_000_000));
     expect(seedForLevel(1_000_000)).not.toBe(seedForLevel(1_000_001));
     for (const id of [0, -1, 1.5, Number.MAX_SAFE_INTEGER, MAX_LEVEL_ID + 1])
@@ -121,13 +121,13 @@ describe("runtime campaign generator", () => {
       "48bf3896852038155c179facccc7174e71e86e0d24d6e5ccac99f770b41a9512",
     );
     expect(geometryHash(generateLevel(12))).toBe(
-      "c5b7db7f7020b69c1a84bac4afef0dd888baba845ca05e054cf4c4505095dbbd",
+      "7941eba92f4c256311b0922b0301650c710d8bbf029d59d2c20122234496f3a6",
     );
     expect(geometryHash(generateLevel(13))).toBe(
-      "5fa650642d13eaf83fe00da47e6acd3123c4ccc5c64e0ab789af917938bdfdcf",
+      "76f3bdc93d2ab36a70aaa4e920c50a73c7463edc9021f946ddc52363c950c4a1",
     );
     expect(geometryHash(generateLevel(14))).toBe(
-      "69cc1c9649f194341f067a69861884d36a9578323189493ac162aff6111b058f",
+      "97d80bdcf208ab0cac9846d107556c1774c8209b3bc5d21402c72a097af08983",
     );
     expect(geometryHash(generateLevel(3))).toBe(
       "4a1a8de68f8e033d11be45dd73ed6dc80a47289922f98aea82666c4380c5f48b",
@@ -238,7 +238,7 @@ describe("runtime campaign generator", () => {
     for (const id of diverseLevelIds()) {
       const level = generateLevel(id);
       expect(seedForLevel(id)).toBe(
-        `par-arrows:runtime:${id <= 4 ? 1 : 4}:level:${id}`,
+        `par-arrows:runtime:${id <= 4 ? 1 : id <= 10 ? 4 : 5}:level:${id}`,
       );
       expect(validateLevel(level).valid).toBe(true);
       const spots = level.directionals ?? [];

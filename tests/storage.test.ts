@@ -187,6 +187,44 @@ describe("resumable campaign saves", () => {
     }
   });
 
+  test("v4 saves resume on byte-identical cubes and refresh on changed ones", async () => {
+    const unchanged = generateLevel(8);
+    const unchangedState = exitedState(unchanged);
+    expect(save(unchangedState, 35)).toBe(true);
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({
+        ...savedJson(),
+        generatorVersion: 4,
+        seed: "par-arrows:runtime:4:level:8",
+      }),
+    );
+    const resumed = await loadCampaign(async (id) => generateLevel(id));
+    expect(resumed.recovered).toBe(false);
+    expect(resumed.value?.state).toEqual(unchangedState);
+    expect(resumed.value?.unlockedLevelId).toBe(35);
+
+    const changed = generateLevel(12);
+    const changedState = exitedState(changed);
+    expect(save(changedState, 35)).toBe(true);
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({
+        ...savedJson(),
+        generatorVersion: 4,
+        seed: "par-arrows:runtime:4:level:12",
+      }),
+    );
+    const refreshed = await loadCampaign(async (id) => generateLevel(id));
+    expect(refreshed.recovered).toBe(true);
+    expect(refreshed.contentUpdated).toBe(true);
+    expect(refreshed.value).toMatchObject({
+      state: createGameState(changed),
+      unlockedLevelId: 35,
+      tutorialComplete: true,
+    });
+  });
+
   test("does not invoke the resolver when no save exists", async () => {
     let calls = 0;
     const result = await loadCampaign(async (id) => {
@@ -208,7 +246,7 @@ describe("resumable campaign saves", () => {
     expect(save(state, 88)).toBe(true);
     expect(savedJson()).toMatchObject({
       contentVersion: 8,
-      generatorVersion: 4,
+      generatorVersion: 5,
       currentLevelId: 42,
       unlockedLevelId: 88,
     });
@@ -412,7 +450,7 @@ describe("resumable campaign saves", () => {
       expect(saveCampaign(restored.value)).toBe(true);
       expect(savedJson()).toMatchObject({
         contentVersion: 8,
-        generatorVersion: 4,
+        generatorVersion: 5,
       });
     },
   );

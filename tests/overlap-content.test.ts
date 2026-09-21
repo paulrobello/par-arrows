@@ -89,7 +89,7 @@ describe("overlapping-tail level content", () => {
       expect(group).toHaveLength(expectedSize);
       expect(level.arrows).toHaveLength(getLevelConfig(id).arrowCount);
       expect(level).toEqual(generateLevel(id));
-      expect(seedForLevel(id)).toBe(`par-arrows:runtime:4:level:${id}`);
+      expect(seedForLevel(id)).toBe(`par-arrows:runtime:5:level:${id}`);
       expect(validateLevel(level)).toEqual({ valid: true, errors: [] });
 
       let state = createGameState(level);
@@ -124,7 +124,7 @@ describe("overlapping-tail level content", () => {
     let wrappedCubes = 0;
     let staggeredCubes = 0;
     for (const id of [
-      16, 17, 18, 19, 21, 22, 23, 24, 25, 28, 40, 46, 49, 55, 58, 70,
+      16, 17, 18, 19, 21, 22, 23, 24, 25, 28, 40, 44, 46, 47, 49, 55, 58, 70,
     ]) {
       const level = generateLevel(id);
       expect(validateLevel(level)).toEqual({ valid: true, errors: [] });

@@ -24,7 +24,7 @@ import { DIRECTIONAL_INTRO_LEVEL } from "./directional-intro";
 import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
 import { STOP_INTRO_LEVEL } from "./stop-intro";
 
-export const GENERATOR_VERSION = 4;
+export const GENERATOR_VERSION = 5;
 export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
 
 const FACES: readonly FaceId[] = [
@@ -51,9 +51,10 @@ export function seedForLevel(id: number): string {
   if (id === 11) return "par-arrows:runtime:2:level:11:wrap-intro:1";
   if (id <= 4) return `par-arrows:runtime:1:level:${id}`;
   if (id === 15) return "par-arrows:runtime:3:level:15:overlap-intro:1";
-  if (id === 20) {
-    return `par-arrows:runtime:${GENERATOR_VERSION}:level:20:directional-intro:1`;
-  }
+  // Cubes this release leaves byte-identical keep their v4 seed strings so
+  // existing saves still match metadata and resume instead of refreshing.
+  if (id === 20) return "par-arrows:runtime:4:level:20:directional-intro:1";
+  if (id <= 10) return `par-arrows:runtime:4:level:${id}`;
   return `par-arrows:runtime:${GENERATOR_VERSION}:level:${id}`;
 }
 
@@ -220,6 +221,18 @@ function hashSeed(seed: string): number {
     hash = Math.imul(hash ^ seed.charCodeAt(index), 0x01000193) >>> 0;
   }
   return hash || 1;
+}
+
+/**
+ * Core-placement stream for one construction attempt. Attempt 0 hashes the
+ * plain stream name so every id that constructs first try keeps its exact
+ * historical layout; later attempts salt the stream, because a deterministic
+ * core that fails its certificate replay would otherwise fail identically on
+ * every restart and make the whole id unconstructible.
+ */
+function coreStream(id: number, name: string, restart: number): Rng {
+  const suffix = restart > 0 ? `:retry-${restart}` : "";
+  return new Rng(hashSeed(`${seedForLevel(id)}:${name}${suffix}`));
 }
 
 function exitRay(
@@ -946,9 +959,10 @@ function parkingCore(
   level: LevelDefinition,
   occupied: ReadonlySet<string>,
   stopCount: number,
+  restart: number,
 ): ParkingCore | undefined {
   const size = level.gridSize;
-  const rng = new Rng(hashSeed(`${seedForLevel(id)}:park-core`));
+  const rng = coreStream(id, "park-core", restart);
   const eligible = PARK_PATTERNS.filter(
     (candidate) => candidate.stops.length <= stopCount,
   );
@@ -1096,9 +1110,10 @@ function directionalCore(
   occupied: ReadonlySet<string>,
   preferredFace?: FaceId,
   parkTracks?: ReadonlySet<string>,
+  restart = 0,
 ): DirectionalCore | undefined {
   const size = level.gridSize;
-  const rng = new Rng(hashSeed(`${seedForLevel(id)}:dir-core`));
+  const rng = coreStream(id, "dir-core", restart);
   const shuffled = shuffledFaces(rng);
   const faces = preferredFace
     ? [preferredFace, ...shuffled.filter((face) => face !== preferredFace)]
@@ -1475,6 +1490,7 @@ export function generateLevel(id: number): LevelDefinition {
               { ...candidateLevel, arrows },
               occupied,
               getStopCount(id),
+              restart,
             )
           : undefined;
       if (core) {
@@ -1506,6 +1522,7 @@ export function generateLevel(id: number): LevelDefinition {
             occupied,
             planFaceIds[0],
             parkTrackKeys,
+            restart,
           )
         : undefined;
       const dirCells = new Set<string>();
