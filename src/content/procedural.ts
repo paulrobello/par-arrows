@@ -18,7 +18,7 @@ import type {
   Heading,
   LevelDefinition,
 } from "../core/types";
-import { validateLevel } from "../core/validation";
+import { solveLevel, validateLevel } from "../core/validation";
 import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "./intro";
 import { DIRECTIONAL_INTRO_LEVEL } from "./directional-intro";
 import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
@@ -1439,292 +1439,320 @@ export function generateLevel(id: number): LevelDefinition {
   // empty — a cube without spots is always legal, and generation must never
   // give up on an id.
   const plannedSpotPlan = directionalFacePlan(id);
-  for (const spotPlan of [plannedSpotPlan, [] as number[]]) {
-    construction: for (let restart = 0; restart < 8; restart += 1) {
-      const rng = new Rng(
-        (baseSeed + Math.imul(restart + 1, 0x9e3779b9)) >>> 0,
-      );
-      const occupied = new Set<string>();
-      const arrows: ArrowDefinition[] = [];
-      const candidateLevel = {
-        id,
-        title: `Cube ${id}`,
-        gridSize: config.gridSize,
-        lives: config.lives,
-        arrowScale: config.arrowScale,
-        ...(edgePolicies.length > 0 ? { edgePolicies } : {}),
-      } as const;
-      const faces = shuffledFaces(rng);
-      const headingOffset = rng.int(HEADINGS.length);
-      const planFaceIds =
-        spotPlan.length > 0
-          ? shuffledFaces(
-              new Rng(hashSeed(`${seedForLevel(id)}:dir-faces`)),
-            ).slice(0, spotPlan.length)
-          : [];
-      const directional = spotPlan.length > 0;
-      if (!directional && id >= 16) {
-        const group = overlapStarter(
-          id,
-          config.gridSize,
-          rng,
-          { ...candidateLevel, arrows: [] },
-          occupied,
+  // Acceptance tiers, tried strictly in order. Tier one is the historical
+  // exact-count, certificate-replayed construction, so every level that
+  // constructs today stays byte-identical. A later tier only sees an id that
+  // every earlier tier rejected across both spot plans and all eight
+  // restarts: it trades exact density and, in the last tier, the
+  // reverse-construction certificate for a solver-proven level instead of
+  // throwing.
+  const tiers = [
+    { minArrows: config.arrowCount, certificate: true },
+    { minArrows: config.arrowCount - 12, certificate: true },
+    { minArrows: config.arrowCount - 12, certificate: false },
+  ];
+  for (const tier of tiers) {
+    for (const spotPlan of [plannedSpotPlan, [] as number[]]) {
+      construction: for (let restart = 0; restart < 8; restart += 1) {
+        const rng = new Rng(
+          (baseSeed + Math.imul(restart + 1, 0x9e3779b9)) >>> 0,
         );
-        if (
-          !group ||
-          !validateLevel({ ...candidateLevel, arrows: group }).valid
-        ) {
-          skip = "overlap";
-          continue construction;
+        const occupied = new Set<string>();
+        const arrows: ArrowDefinition[] = [];
+        const candidateLevel = {
+          id,
+          title: `Cube ${id}`,
+          gridSize: config.gridSize,
+          lives: config.lives,
+          arrowScale: config.arrowScale,
+          ...(edgePolicies.length > 0 ? { edgePolicies } : {}),
+        } as const;
+        const faces = shuffledFaces(rng);
+        const headingOffset = rng.int(HEADINGS.length);
+        const planFaceIds =
+          spotPlan.length > 0
+            ? shuffledFaces(
+                new Rng(hashSeed(`${seedForLevel(id)}:dir-faces`)),
+              ).slice(0, spotPlan.length)
+            : [];
+        const directional = spotPlan.length > 0;
+        if (!directional && id >= 16) {
+          const group = overlapStarter(
+            id,
+            config.gridSize,
+            rng,
+            { ...candidateLevel, arrows: [] },
+            occupied,
+          );
+          if (
+            !group ||
+            !validateLevel({ ...candidateLevel, arrows: group }).valid
+          ) {
+            skip = "overlap";
+            continue construction;
+          }
+          for (const arrow of group) {
+            for (const cell of arrow.path) occupied.add(cellKey(cell));
+            arrows.push(arrow);
+          }
         }
-        for (const arrow of group) {
-          for (const cell of arrow.path) occupied.add(cellKey(cell));
-          arrows.push(arrow);
+        const core =
+          getStopCount(id) >= 1
+            ? parkingCore(
+                id,
+                { ...candidateLevel, arrows },
+                occupied,
+                getStopCount(id),
+                restart,
+              )
+            : undefined;
+        if (core) {
+          for (const arrow of core.arrows) {
+            if (!validateLevel({ ...candidateLevel, arrows: [arrow] }).valid)
+              throw new Error("Seeded parking-core arrow was invalid.");
+            for (const cell of arrow.path) occupied.add(cellKey(cell));
+            arrows.push(arrow);
+          }
+          for (const stop of core.stops) occupied.add(cellKey(stop));
         }
-      }
-      const core =
-        getStopCount(id) >= 1
-          ? parkingCore(
+        // The park legs lead the certificate replay, so the parked windows along
+        // the park core's routes block everything that drives after them. The
+        // directional core checks these tracks in addition to `occupied`; they are
+        // deliberately NOT reserved globally, which would shift every circle
+        // cube's layout.
+        const parkTrackKeys = new Set<string>();
+        if (core) {
+          for (const arrow of core.arrows) {
+            for (const cell of arrowTrack(candidateLevel, arrow)) {
+              parkTrackKeys.add(cellKey(cell));
+            }
+          }
+        }
+        const directionalSpot = directional
+          ? directionalCore(
               id,
-              { ...candidateLevel, arrows },
+              candidateLevel,
               occupied,
-              getStopCount(id),
+              planFaceIds[0],
+              parkTrackKeys,
               restart,
             )
           : undefined;
-      if (core) {
-        for (const arrow of core.arrows) {
-          if (!validateLevel({ ...candidateLevel, arrows: [arrow] }).valid)
-            throw new Error("Seeded parking-core arrow was invalid.");
-          for (const cell of arrow.path) occupied.add(cellKey(cell));
-          arrows.push(arrow);
-        }
-        for (const stop of core.stops) occupied.add(cellKey(stop));
-      }
-      // The park legs lead the certificate replay, so the parked windows along
-      // the park core's routes block everything that drives after them. The
-      // directional core checks these tracks in addition to `occupied`; they are
-      // deliberately NOT reserved globally, which would shift every circle
-      // cube's layout.
-      const parkTrackKeys = new Set<string>();
-      if (core) {
-        for (const arrow of core.arrows) {
-          for (const cell of arrowTrack(candidateLevel, arrow)) {
-            parkTrackKeys.add(cellKey(cell));
+        const dirCells = new Set<string>();
+        if (directionalSpot) {
+          for (const arrow of directionalSpot.arrows) {
+            if (!validateLevel({ ...candidateLevel, arrows: [arrow] }).valid)
+              throw new Error("Seeded directional-core arrow was invalid.");
+            for (const cell of arrow.path) occupied.add(cellKey(cell));
+            arrows.push(arrow);
+          }
+          occupied.add(cellKey(directionalSpot.spot.cell));
+          for (const cell of exitRay(
+            candidateLevel,
+            directionalSpot.spot.cell,
+            directionalSpot.spot.heading,
+          ).slice(1)) {
+            dirCells.add(cellKey(cell));
+            occupied.add(cellKey(cell));
           }
         }
-      }
-      const directionalSpot = directional
-        ? directionalCore(
-            id,
-            candidateLevel,
-            occupied,
-            planFaceIds[0],
-            parkTrackKeys,
-            restart,
-          )
-        : undefined;
-      const dirCells = new Set<string>();
-      if (directionalSpot) {
-        for (const arrow of directionalSpot.arrows) {
-          if (!validateLevel({ ...candidateLevel, arrows: [arrow] }).valid)
-            throw new Error("Seeded directional-core arrow was invalid.");
-          for (const cell of arrow.path) occupied.add(cellKey(cell));
-          arrows.push(arrow);
-        }
-        occupied.add(cellKey(directionalSpot.spot.cell));
-        for (const cell of exitRay(
-          candidateLevel,
-          directionalSpot.spot.cell,
-          directionalSpot.spot.heading,
-        ).slice(1)) {
-          dirCells.add(cellKey(cell));
-          occupied.add(cellKey(cell));
-        }
-      }
-      for (const [index, length] of [2, 3, 4].entries()) {
-        const face = faces[index];
-        const heading = HEADINGS.map(
-          (_, offset) =>
-            HEADINGS[(headingOffset + index + offset) % HEADINGS.length],
-        ).find(
-          (direction) =>
-            !edgePolicies.some(
-              (rule) => rule.face === face && rule.edge === direction,
-            ),
-        );
-        if (!face || !heading)
-          throw new Error("Could not choose a seeded straight-arrow starter.");
-        const path = straightCandidate(
-          rng,
-          config.gridSize,
-          face,
-          heading,
-          length,
-          occupied,
-        );
-        if (!path) {
-          skip = "starter";
-          continue construction;
-        }
-        const arrow: ArrowDefinition = {
-          id: `r${id}-straight-${length}`,
-          path,
-        };
-        if (!validateLevel({ ...candidateLevel, arrows: [arrow] }).valid)
-          throw new Error("Seeded straight-arrow starter was invalid.");
-        for (const cell of path) occupied.add(cellKey(cell));
-        arrows.push(arrow);
-      }
-      for (let index = 0; index < edgePolicies.length; index += 2) {
-        let accepted = false;
-        for (let attempt = 0; attempt < config.gridSize * 4; attempt += 1) {
-          const rule = edgePolicies[index + (attempt % 2)];
-          if (!rule) continue;
+        for (const [index, length] of [2, 3, 4].entries()) {
+          const face = faces[index];
+          const heading = HEADINGS.map(
+            (_, offset) =>
+              HEADINGS[(headingOffset + index + offset) % HEADINGS.length],
+          ).find(
+            (direction) =>
+              !edgePolicies.some(
+                (rule) => rule.face === face && rule.edge === direction,
+              ),
+          );
+          if (!face || !heading)
+            throw new Error(
+              "Could not choose a seeded straight-arrow starter.",
+            );
           const path = straightCandidate(
             rng,
             config.gridSize,
-            rule.face,
-            rule.edge,
-            5 + index / 2,
+            face,
+            heading,
+            length,
             occupied,
           );
-          const head = path?.[path.length - 1];
-          if (!path || !head) continue;
-          const ray = exitRay(candidateLevel, head, rule.edge);
-          // The directional core's legs lead the certificate replay, so plain
-          // arrows drive only after the core has left: crossing the reserved
-          // corridor is harmless and must not starve wrap placement.
-          if (
-            ray.length === 0 ||
-            ray.some(
-              (cell) =>
-                occupied.has(cellKey(cell)) && !dirCells.has(cellKey(cell)),
-            )
-          )
-            continue;
+          if (!path) {
+            skip = "starter";
+            continue construction;
+          }
           const arrow: ArrowDefinition = {
-            id: `r${id}-wrap-${index / 2}`,
+            id: `r${id}-straight-${length}`,
+            path,
+          };
+          if (!validateLevel({ ...candidateLevel, arrows: [arrow] }).valid)
+            throw new Error("Seeded straight-arrow starter was invalid.");
+          for (const cell of path) occupied.add(cellKey(cell));
+          arrows.push(arrow);
+        }
+        for (let index = 0; index < edgePolicies.length; index += 2) {
+          let accepted = false;
+          for (let attempt = 0; attempt < config.gridSize * 4; attempt += 1) {
+            const rule = edgePolicies[index + (attempt % 2)];
+            if (!rule) continue;
+            const path = straightCandidate(
+              rng,
+              config.gridSize,
+              rule.face,
+              rule.edge,
+              5 + index / 2,
+              occupied,
+            );
+            const head = path?.[path.length - 1];
+            if (!path || !head) continue;
+            const ray = exitRay(candidateLevel, head, rule.edge);
+            // The directional core's legs lead the certificate replay, so plain
+            // arrows drive only after the core has left: crossing the reserved
+            // corridor is harmless and must not starve wrap placement.
+            if (
+              ray.length === 0 ||
+              ray.some(
+                (cell) =>
+                  occupied.has(cellKey(cell)) && !dirCells.has(cellKey(cell)),
+              )
+            )
+              continue;
+            const arrow: ArrowDefinition = {
+              id: `r${id}-wrap-${index / 2}`,
+              path,
+            };
+            if (!validateLevel({ ...candidateLevel, arrows: [arrow] }).valid)
+              continue;
+            for (const cell of path) occupied.add(cellKey(cell));
+            arrows.push(arrow);
+            accepted = true;
+            break;
+          }
+          if (!accepted) {
+            skip = "wrap";
+            continue construction;
+          }
+        }
+        for (
+          let attempt = 0;
+          arrows.length < config.arrowCount &&
+          attempt < config.arrowCount * 900;
+          attempt += 1
+        ) {
+          const path = candidate(
+            rng,
+            candidateLevel,
+            occupied,
+            Math.max(
+              2,
+              Math.floor(
+                targetLength(rng, id, config) *
+                  (1 - edgePolicies.length * 0.05),
+              ),
+            ),
+            directional ? dirCells : undefined,
+          );
+          if (!path) continue;
+          const arrow: ArrowDefinition = {
+            id: `r${id}-${arrows.length}`,
             path,
           };
           if (!validateLevel({ ...candidateLevel, arrows: [arrow] }).valid)
             continue;
           for (const cell of path) occupied.add(cellKey(cell));
           arrows.push(arrow);
-          accepted = true;
-          break;
         }
-        if (!accepted) {
-          skip = "wrap";
-          continue construction;
-        }
-      }
-      for (
-        let attempt = 0;
-        arrows.length < config.arrowCount && attempt < config.arrowCount * 900;
-        attempt += 1
-      ) {
-        const path = candidate(
-          rng,
-          candidateLevel,
-          occupied,
-          Math.max(
-            2,
-            Math.floor(
-              targetLength(rng, id, config) * (1 - edgePolicies.length * 0.05),
-            ),
-          ),
-          directional ? dirCells : undefined,
-        );
-        if (!path) continue;
-        const arrow: ArrowDefinition = { id: `r${id}-${arrows.length}`, path };
-        if (!validateLevel({ ...candidateLevel, arrows: [arrow] }).valid)
+        if (arrows.length < tier.minArrows) {
+          skip = "count";
           continue;
-        for (const cell of path) occupied.add(cellKey(cell));
-        arrows.push(arrow);
-      }
-      if (arrows.length !== config.arrowCount) {
-        skip = "count";
-        continue;
-      }
-      const coreFace = directionalSpot?.spot.cell.face;
-      const bearingFaces = (
-        coreFace
-          ? [coreFace, ...planFaceIds.filter((face) => face !== coreFace)]
-          : planFaceIds
-      ).slice(0, 4);
-      const extraSpots =
-        directionalSpot && planFaceIds.length > 0
-          ? extraDirectionalSpots(
-              id,
-              {
-                ...candidateLevel,
+        }
+        const coreFace = directionalSpot?.spot.cell.face;
+        const bearingFaces = (
+          coreFace
+            ? [coreFace, ...planFaceIds.filter((face) => face !== coreFace)]
+            : planFaceIds
+        ).slice(0, 4);
+        const extraSpots =
+          directionalSpot && planFaceIds.length > 0
+            ? extraDirectionalSpots(
+                id,
+                {
+                  ...candidateLevel,
+                  arrows,
+                  directionals: [directionalSpot.spot],
+                },
                 arrows,
-                directionals: [directionalSpot.spot],
-              },
-              arrows,
-              occupied,
-              bearingFaces
-                .filter((face) => face !== coreFace)
-                .map((face) => ({
-                  face,
-                  count: spotPlan[planFaceIds.indexOf(face)] as number,
-                })),
-              coreFace,
-            )
+                occupied,
+                bearingFaces
+                  .filter((face) => face !== coreFace)
+                  .map((face) => ({
+                    face,
+                    count: spotPlan[planFaceIds.indexOf(face)] as number,
+                  })),
+                coreFace,
+              )
+            : [];
+        const spots = directionalSpot
+          ? [directionalSpot.spot, ...extraSpots]
           : [];
-      const spots = directionalSpot
-        ? [directionalSpot.spot, ...extraSpots]
-        : [];
-      const decorative = chooseStops(
-        id,
-        {
-          ...candidateLevel,
-          ...(spots.length > 0 ? { directionals: spots } : {}),
-        },
-        arrows,
-        occupied,
-        getStopCount(id) - (core ? core.stops.length : 0),
-      );
-      const stops = core ? [...core.stops, ...decorative] : decorative;
-      const level: LevelDefinition = {
-        ...candidateLevel,
-        arrows,
-        ...(stops.length > 0 ? { stops } : {}),
-        ...(spots.length > 0 ? { directionals: spots } : {}),
-      };
-      const certificate = [
-        ...(core
-          ? core.stops.map(() => `${PARK_CERTIFICATE_PREFIX}${core.parkerId}`)
-          : []),
-        ...(directionalSpot
-          ? directionalSpot.arrows.map((arrow) => arrow.id)
-          : []),
-        ...[...arrows].reverse().map((arrow) => arrow.id),
-      ];
-      if (
-        directional &&
-        !level.arrows.some(
-          (arrow) => new Set(arrow.path.map((cell) => cell.face)).size >= 3,
-        )
-      ) {
-        skip = "faces";
-        continue;
-      }
-      if (validateGenerated(level, certificate)) return level;
-      skip = "replay";
-      if (spots.length > 1 && directionalSpot) {
-        // Extra spots bend real routes and can break the replay; the required
-        // core alone replays against the same certificate, so fall back to it
-        // rather than dropping directionals entirely.
-        const coreOnly: LevelDefinition = {
+        const decorative = chooseStops(
+          id,
+          {
+            ...candidateLevel,
+            ...(spots.length > 0 ? { directionals: spots } : {}),
+          },
+          arrows,
+          occupied,
+          getStopCount(id) - (core ? core.stops.length : 0),
+        );
+        const stops = core ? [...core.stops, ...decorative] : decorative;
+        const level: LevelDefinition = {
           ...candidateLevel,
           arrows,
           ...(stops.length > 0 ? { stops } : {}),
-          directionals: [directionalSpot.spot],
+          ...(spots.length > 0 ? { directionals: spots } : {}),
         };
-        if (validateGenerated(coreOnly, certificate)) return coreOnly;
+        const certificate = [
+          ...(core
+            ? core.stops.map(() => `${PARK_CERTIFICATE_PREFIX}${core.parkerId}`)
+            : []),
+          ...(directionalSpot
+            ? directionalSpot.arrows.map((arrow) => arrow.id)
+            : []),
+          ...[...arrows].reverse().map((arrow) => arrow.id),
+        ];
+        if (
+          directional &&
+          !level.arrows.some(
+            (arrow) => new Set(arrow.path.map((cell) => cell.face)).size >= 3,
+          )
+        ) {
+          skip = "faces";
+          continue;
+        }
+        const accepted = tier.certificate
+          ? validateGenerated(level, certificate)
+          : validateLevel(level).valid && solveLevel(level) !== undefined;
+        if (accepted) return level;
+        skip = "replay";
+        if (spots.length > 1 && directionalSpot) {
+          // Extra spots bend real routes and can break the replay; the required
+          // core alone replays against the same certificate, so fall back to it
+          // rather than dropping directionals entirely.
+          const coreOnly: LevelDefinition = {
+            ...candidateLevel,
+            arrows,
+            ...(stops.length > 0 ? { stops } : {}),
+            directionals: [directionalSpot.spot],
+          };
+          const coreAccepted = tier.certificate
+            ? validateGenerated(coreOnly, certificate)
+            : validateLevel(coreOnly).valid &&
+              solveLevel(coreOnly) !== undefined;
+          if (coreAccepted) return coreOnly;
+        }
       }
     }
   }

@@ -253,6 +253,10 @@ describe("runtime campaign generator", () => {
         }
       }
       expect(level.gridSize).toBeLessThanOrEqual(26);
+      // Tier one acceptance is exact: a count below the configured density
+      // means a relaxed fallback tier fired for a sampled id, i.e. strict
+      // construction regressed.
+      expect(level.arrows.length).toBe(getLevelConfig(id).arrowCount);
       expect(level.arrows.length).toBeLessThanOrEqual(264);
       expect(
         Math.max(...level.arrows.map((arrow) => arrow.path.length)),
