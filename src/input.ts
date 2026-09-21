@@ -26,7 +26,7 @@ const TAP_THRESHOLD = 9;
 const TOUCH_TAP_THRESHOLD = 16;
 /** Zoom engages only after every finger travels this far from where it landed. */
 const PINCH_ENGAGE_PX = 16;
-const PINCH_ZOOM_SCALE = 3.6;
+const PINCH_ZOOM_SCALE = 5.2;
 
 /** Normalizes mouse and touch gestures before handing actions to the game. */
 export class PointerInput {

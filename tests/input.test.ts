@@ -200,11 +200,11 @@ describe("PointerInput", () => {
     element.emit("pointermove", pointer(17, 0, 1, "touch"));
     element.emit("pointermove", pointer(29, 0, 2, "touch"));
     // The engagement move zooms from the second finger's landing baseline.
-    expect(zooms).toEqual([-7.2]);
+    expect(zooms).toEqual([-10.4]);
     element.emit("pointermove", pointer(48, 0, 2, "touch"));
     element.emit("pointerup", pointer(48, 0, 2, "touch"));
     element.emit("pointerup", pointer(17, 0, 1, "touch"));
-    expect(zooms).toEqual([-7.2, -68.4]);
+    expect(zooms).toEqual([-10.4, -98.8]);
     expect(taps).toEqual([]);
   });
 

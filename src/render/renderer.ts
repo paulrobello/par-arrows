@@ -819,7 +819,7 @@ export class PuzzleRenderer {
   zoom(delta: number): void {
     this.distance = clamp(
       this.distance + delta * 0.006,
-      this.fitDistance * 0.56,
+      this.fitDistance * 0.4,
       this.fitDistance * 1.7,
     );
     this.render();
