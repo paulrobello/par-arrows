@@ -98,10 +98,10 @@ Constraints preserved for every pattern:
 
 ### 3. Targeted blocked-arrow density
 
-New pure helper `blockedUnits(level)`: collapses arrows into tap units via
-`overlappingArrowIds` (a shared-tail group counts once) and returns the count
-of units whose immediate `simulateMove` at the initial state returns
-`blocked`. Exported for tests; no I/O.
+New pure helper `blockedStats(level)`: collapses arrows into tap units via
+`overlappingArrowIds` (a shared-tail group counts once) and returns `{ blocked,
+total }` — the count of units whose immediate `simulateMove` at the initial
+state returns `blocked`, and the total unit count. Exported for tests; no I/O.
 
 Target curve, also a pure exported function:
 
