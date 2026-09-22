@@ -309,10 +309,34 @@ export async function assertTutorialFlow(
       "overlap-intro-pair-a",
       "overlap-intro-pair-b",
     ]);
+
+    // Park the camera so the left face faces away: the trio step's highlight
+    // then sits on a hidden face, and reaching that step must rotate the cube
+    // to show it instead of instructing a tap on an invisible arrow.
+    await page.evaluate(() => window.__PAR_ARROWS_TEST__?.orbit(-84, 0));
+    const parkedIds = (await state(page)).visibleProjectedArrowPositions.map(
+      (entry) => entry.id,
+    );
+    assert.ok(
+      parkedIds.includes("overlap-intro-pair-b"),
+      "The front face must stay visible after parking the camera",
+    );
+    assert.ok(
+      !parkedIds.some((id) => id.startsWith("overlap-intro-trio")),
+      "The left-face trio must be hidden before the trio step",
+    );
     await clickArrow(page, "overlap-intro-pair-b");
     const freePlay = await tutorialState(page);
     assert.ok(freePlay.active && freePlay.stepIndex === 2);
     assert.equal(freePlay.gate, undefined);
+    await page.evaluate((amount) => window.advanceTime?.(amount), 900);
+    const trioStepIds = (await state(page)).visibleProjectedArrowPositions.map(
+      (entry) => entry.id,
+    );
+    assert.ok(
+      trioStepIds.includes("overlap-intro-trio-a"),
+      "The trio step must rotate the cube so its highlighted arrow is visible",
+    );
 
     // Steps were taken but no scripted cube was won, so nothing is recorded
     // as seen yet; the level 1 walkthrough above pins the on-win write.

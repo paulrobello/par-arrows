@@ -123,6 +123,8 @@ export class ParArrowsApp {
   private tutorialMove: { arrowId: string; kind: MoveKind } | undefined;
   private tutorialRunner: TutorialRunner | undefined;
   private tutorialNudgeMs = 0;
+  private tutorialFocusId: string | undefined;
+  private tutorialFocusMs = 0;
   private lifeLostFlashMs = 0;
   private pendingTap: string | undefined;
   private celebration: Celebration | undefined;
@@ -551,6 +553,12 @@ export class ParArrowsApp {
         this.renderUi();
       }
     }
+    if (this.tutorialFocusMs > 0 && !this.motion && !this.hint) {
+      this.tutorialFocusMs += delta;
+      const progress = Math.min(1, this.tutorialFocusMs / HINT_FOCUS_DURATION);
+      this.renderer.animateHintFocus(progress);
+      if (progress === 1) this.tutorialFocusMs = 0;
+    }
     if (this.motion) {
       this.motion.elapsed += delta;
       const progress = Math.min(1, this.motion.elapsed / this.motion.duration);
@@ -692,17 +700,38 @@ export class ParArrowsApp {
     if (!active || !script) {
       this.tutorialRunner = undefined;
       this.renderer.setTutorialHighlight(undefined);
+      this.tutorialFocusId = undefined;
+      this.tutorialFocusMs = 0;
       return;
     }
     if (!this.tutorialRunner || this.tutorialRunner.levelId !== this.level.id) {
       this.tutorialRunner = new TutorialRunner(script);
       this.tutorialRunner.attach(this.state.remainingIds);
     }
-    this.renderer.setTutorialHighlight(
-      this.tutorialRunner.done
-        ? undefined
-        : this.tutorialRunner.current.highlightId,
-    );
+    const highlight = this.tutorialRunner.done
+      ? undefined
+      : this.tutorialRunner.current.highlightId;
+    this.renderer.setTutorialHighlight(highlight);
+    if (highlight !== this.tutorialFocusId) {
+      this.tutorialFocusId = highlight;
+      this.tutorialFocusMs = 0;
+      if (highlight !== undefined && !this.motion && !this.hint) {
+        this.startTutorialFocus(highlight);
+      }
+    }
+  }
+
+  /**
+   * Rotates the cube so a freshly highlighted scripted arrow is on screen;
+   * a step that names an arrow must never leave it on a hidden face.
+   */
+  private startTutorialFocus(arrowId: string): void {
+    if (!this.renderer.focusArrow(arrowId)) return;
+    if (this.shouldReduceMotion()) {
+      this.renderer.animateHintFocus(1);
+      return;
+    }
+    this.tutorialFocusMs = 0.01;
   }
 
   private async restore(): Promise<void> {
@@ -1212,6 +1241,7 @@ export class ParArrowsApp {
         getLevel: () => this.level,
         activate: (id) => this.attempt(id),
         render: () => this.renderer.render(),
+        orbit: (deltaX, deltaY) => this.renderer.orbit(deltaX, deltaY),
       };
     }
   }

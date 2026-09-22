@@ -831,13 +831,7 @@ export class PuzzleRenderer {
     this.render();
   }
 
-  /** Focuses the chosen arrow's actual head face, without changing game state. */
-  beginHint(arrowId: string): boolean {
-    const visual = this.visuals.get(arrowId);
-    const face = visual?.head.userData.face as Cell["face"] | undefined;
-    if (!visual || !face || !visual.group.visible) {
-      return false;
-    }
+  private faceTargetOrientation(face: Cell["face"]): THREE.Quaternion {
     const [x, y, z] = faceNormal(face);
     const normal = new THREE.Vector3(x, y, z);
     const targetCamera = new THREE.PerspectiveCamera();
@@ -848,14 +842,48 @@ export class PuzzleRenderer {
       Math.abs(normal.y) > 0.9 ? -1 : 0,
     );
     targetCamera.lookAt(0, 0, 0);
+    return targetCamera.quaternion.clone();
+  }
+
+  private startFaceFocus(arrowId: string, face: Cell["face"]): void {
     this.hintFocus = {
       arrowId,
       fromOrientation: this.orientation.clone(),
-      targetOrientation: targetCamera.quaternion.clone(),
+      targetOrientation: this.faceTargetOrientation(face),
       fromDistance: this.distance,
     };
-    this.hintLit = false;
     this.render();
+  }
+
+  /** Focuses the chosen arrow's actual head face, without changing game state. */
+  beginHint(arrowId: string): boolean {
+    const visual = this.visuals.get(arrowId);
+    const face = visual?.head.userData.face as Cell["face"] | undefined;
+    if (!visual || !face || !visual.group.visible) {
+      return false;
+    }
+    this.hintLit = false;
+    this.startFaceFocus(arrowId, face);
+    return true;
+  }
+
+  /**
+   * Aims the camera at a tutorial highlight whose head face is hidden, so a
+   * scripted step never asks for a tap on an arrow the player cannot see.
+   * Returns false when the arrow is missing or already faces the camera.
+   */
+  focusArrow(arrowId: string): boolean {
+    const visual = this.visuals.get(arrowId);
+    const face = visual?.head.userData.face as Cell["face"] | undefined;
+    if (
+      !visual ||
+      !face ||
+      !visual.group.visible ||
+      this.isArrowFacingCamera(visual.arrow)
+    ) {
+      return false;
+    }
+    this.startFaceFocus(arrowId, face);
     return true;
   }
 
