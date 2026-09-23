@@ -33,6 +33,17 @@ import { STOP_INTRO_LEVEL } from "./stop-intro";
 export const GENERATOR_VERSION = 7;
 export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
 
+/** Authored teaching cubes; every other id is generated at runtime. */
+export const AUTHORED_LEVEL_IDS: readonly number[] = [1, 5, 11, 15, 20, 25];
+
+const AUTHORED = new Set(AUTHORED_LEVEL_IDS);
+
+/** True for the hand-authored teaching cubes. */
+export function isAuthoredLevel(id: number): boolean {
+  assertLevelId(id);
+  return AUTHORED.has(id);
+}
+
 const FACES: readonly FaceId[] = [
   "front",
   "back",
@@ -75,8 +86,7 @@ export function getStopCountWeights(
   id: number,
 ): readonly [number, number, number, number] {
   assertLevelId(id);
-  if (id <= 4 || id === 11 || id === 15 || id === 20 || id === 25)
-    return [1, 0, 0, 0];
+  if (id <= 4 || (isAuthoredLevel(id) && id > 10)) return [1, 0, 0, 0];
   if (id === 5 || id === 6) return [0, 1, 0, 0];
   const progress = Math.min(1, (id - 6) / 94);
   return [
@@ -106,7 +116,7 @@ export function getWrappingEdgeWeights(
   assertLevelId(id);
   if (id <= 10) return [1, 0, 0, 0];
   if (id === 11) return [0, 1, 0, 0];
-  if (id === 15 || id === 20 || id === 25) return [1, 0, 0, 0];
+  if (isAuthoredLevel(id)) return [1, 0, 0, 0];
   const progress = Math.min(1, (id - 11) / 89);
   return [
     0.25,
@@ -121,7 +131,7 @@ export function getWrappingEdgePolicies(
   id: number,
 ): readonly EdgePolicyDefinition[] {
   if (id === 11) return WRAP_INTRO_LEVEL.edgePolicies ?? [];
-  if (id === 15 || id === 20 || id === 25) return [];
+  if (isAuthoredLevel(id)) return [];
   const weights = getWrappingEdgeWeights(id);
   if (id <= 10) return [];
   const rng = new Rng(hashSeed(`${seedForLevel(id)}:edges`));
@@ -174,14 +184,7 @@ export function getWrappingEdgePolicies(
 
 export function getLevelConfig(id: number): LevelConfig {
   assertLevelId(id);
-  if (
-    id === 1 ||
-    id === 5 ||
-    id === 11 ||
-    id === 15 ||
-    id === 20 ||
-    id === 25
-  ) {
+  if (isAuthoredLevel(id)) {
     return { gridSize: 4, arrowCount: 6, lives: 5, arrowScale: 1 };
   }
   const early = [0, 60, 84, 108, 132, 156, 168, 180, 180, 180];
@@ -236,7 +239,7 @@ export function blockedStats(level: LevelDefinition): BlockedStats {
  */
 export function blockedTarget(id: number): number {
   assertLevelId(id);
-  if (id <= 10 || id === 11 || id === 15 || id === 20 || id === 25) return 0;
+  if (id <= 10 || isAuthoredLevel(id)) return 0;
   const progress = Math.min(1, (id - 12) / 48);
   return Math.min(0.55, 0.3 + 0.25 * progress);
 }

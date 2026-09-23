@@ -766,31 +766,12 @@ export class PuzzleRenderer {
     this.refreshSettledPaths(state);
     for (const [id, visual] of this.visuals) {
       visual.group.visible = state.remainingIds.includes(id);
-      const doubleFailed =
-        visual.arrow.kind === "double" &&
-        (state.failedPositions ?? []).includes(
-          failurePositionKey(
-            id,
-            this.level
-              ? settledPathOf(this.level, state, visual.arrow)
-              : visual.arrow.path,
-          ),
-        );
-      for (const segment of visual.segments) {
-        segment.failure.visible = doubleFailed && segment.ribbon.visible;
-      }
-      visual.headFailure.visible = doubleFailed && visual.head.visible;
-      if (visual.tailFailure && visual.tailHead) {
-        visual.tailFailure.visible = doubleFailed && visual.tailHead.visible;
-      }
     }
-    this.applySelection();
     this.render();
   }
 
   setSelected(target: MoveTarget | undefined): void {
     this.selectedTarget = target;
-    this.applySelection();
     this.render();
   }
 
@@ -822,7 +803,6 @@ export class PuzzleRenderer {
         mesh.material.color.set(palette.directional);
       }
     });
-    this.applySelection();
     this.render();
   }
 
@@ -1377,6 +1357,15 @@ export class PuzzleRenderer {
     for (const visual of this.visuals.values()) {
       const nudged =
         this.tutorialNudge && tutorialIds.includes(visual.arrow.id);
+      const doubleFailed =
+        visual.arrow.kind === "double" && this.level && this.state
+          ? (this.state.failedPositions ?? []).includes(
+              failurePositionKey(
+                visual.arrow.id,
+                settledPathOf(this.level, this.state, visual.arrow),
+              ),
+            )
+          : false;
       const endpointColor = (endpoint: MoveTarget["endpoint"]): number => {
         const endpointSelected =
           this.selectedTarget?.arrowId === visual.arrow.id &&
@@ -1417,9 +1406,11 @@ export class PuzzleRenderer {
         segment.material.color.set(
           exposed ? endpointColor(segment.endpoint) : this.palette.farSide,
         );
+        segment.failure.visible = doubleFailed && exposed;
       }
       const colorHead = (
         mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>,
+        failure: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>,
         endpoint: MoveTarget["endpoint"],
       ): void => {
         const face = mesh.userData.face as Cell["face"] | undefined;
@@ -1427,20 +1418,20 @@ export class PuzzleRenderer {
         const center = mesh.localToWorld(
           mesh.geometry.boundingSphere?.center.clone() ?? new THREE.Vector3(),
         );
-        mesh.material.opacity =
+        const facing =
           new THREE.Vector3(nx, ny, nz).dot(
             this.camera.position.clone().sub(center),
-          ) > 0
-            ? 1
-            : 0.32;
+          ) > 0;
+        mesh.material.opacity = facing ? 1 : 0.32;
         mesh.material.color.set(
-          mesh.material.opacity === 1
-            ? endpointColor(endpoint)
-            : this.palette.farSide,
+          facing ? endpointColor(endpoint) : this.palette.farSide,
         );
+        failure.visible = doubleFailed && facing && mesh.visible;
       };
-      colorHead(visual.head, "head");
-      if (visual.tailHead) colorHead(visual.tailHead, "tail");
+      colorHead(visual.head, visual.headFailure, "head");
+      if (visual.tailHead && visual.tailFailure) {
+        colorHead(visual.tailHead, visual.tailFailure, "tail");
+      }
     }
     this.renderer.render(this.scene, this.camera);
   }
@@ -1702,15 +1693,13 @@ export class PuzzleRenderer {
     const { ribbonWidth, headLength } = arrowDimensions(gridSize, arrowScale);
     const pickRadius = Math.min(PICK_RADIUS, pitch * 0.28);
     const material = new THREE.MeshBasicMaterial({
-      color:
-        arrow.kind === "double" ? this.palette.doubleHead : this.palette.arrow,
+      color: this.palette.arrow,
       transparent: true,
       forceSinglePass: true,
     });
     const tailMaterial =
       arrow.kind === "double"
         ? new THREE.MeshBasicMaterial({
-            color: this.palette.doubleTail,
             transparent: true,
             forceSinglePass: true,
           })
@@ -1720,7 +1709,6 @@ export class PuzzleRenderer {
       wireframe: true,
       transparent: true,
       opacity: 0.95,
-      depthTest: false,
     });
     const expanded = expandedPoints(arrow.path, gridSize);
     const segments: SegmentVisual[] = [];
@@ -1863,11 +1851,6 @@ export class PuzzleRenderer {
       segment.endpoint =
         split && midpointDistance < split.totalDistance / 2 ? "tail" : "head";
       segment.picker.userData.endpoint = segment.endpoint;
-      segment.material.color.set(
-        segment.endpoint === "tail" && visual.tailMaterial
-          ? visual.tailMaterial.color
-          : visual.material.color,
-      );
       travelled += length;
       const midpoint = start.clone().add(end).multiplyScalar(0.5);
       const [nx, ny, nz] = faceNormal(face);
@@ -1961,10 +1944,6 @@ export class PuzzleRenderer {
         tailFace,
       );
     }
-  }
-
-  private applySelection(): void {
-    this.render();
   }
 
   private get palette(): ThemePalette {

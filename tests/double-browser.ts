@@ -85,7 +85,7 @@ async function pressCell(
 
 async function colorCounts(
   page: Page,
-): Promise<{ violet: number; lime: number }> {
+): Promise<{ violet: number; lime: number; failed: number }> {
   const image = await page.screenshot();
   const { data } = await sharp(image)
     .removeAlpha()
@@ -93,14 +93,16 @@ async function colorCounts(
     .toBuffer({ resolveWithObject: true });
   let violet = 0;
   let lime = 0;
+  let failed = 0;
   for (let index = 0; index < data.length; index += 3) {
     const red = data[index] ?? 0;
     const green = data[index + 1] ?? 0;
     const blue = data[index + 2] ?? 0;
     if (blue > red * 1.15 && blue > green * 1.25) violet += 1;
     if (green > red * 1.1 && green > blue * 1.15) lime += 1;
+    if (red > 120 && red > green * 1.6 && red > blue * 1.6) failed += 1;
   }
-  return { violet, lime };
+  return { violet, lime, failed };
 }
 
 export async function assertDoubleIntro(
@@ -222,6 +224,19 @@ export async function assertDoubleIntro(
     const failed = await state(page);
     assert.equal(failed.lives, beforeFailure.lives - 1);
     assert.equal(failed.failedPositions.length, 1);
+    const failedColors = await colorCounts(page);
+    assert.ok(
+      failedColors.failed > 10,
+      "The whole-arrow failure outline must render",
+    );
+    await page.getByRole("button", { name: "Hint" }).click();
+    const hint = (
+      await page.evaluate(() =>
+        JSON.parse(window.render_game_to_text?.() ?? "{}"),
+      )
+    ).hint as { endpoint: string } | null;
+    assert.equal(hint?.endpoint, "tail", "The hint must target the safe half");
+    await page.evaluate(() => window.advanceTime?.(5000));
     await activate(page, CHOICE, "head");
     assert.equal((await state(page)).lives, failed.lives);
     await activate(page, CHOICE, "tail");

@@ -4,6 +4,7 @@ import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "../src/content/intro";
 import { OVERLAP_INTRO_LEVEL } from "../src/content/overlap-intro";
 import { STOP_INTRO_LEVEL } from "../src/content/stop-intro";
 import {
+  AUTHORED_LEVEL_IDS,
   blockerReserve,
   doubleArrowFrequency,
   GENERATOR_VERSION,
@@ -125,6 +126,7 @@ function normalizedShapeSignature(
 describe("generated double arrows", () => {
   test("uses v7 seeds and the planned frequency curve", () => {
     expect(GENERATOR_VERSION).toBe(7);
+    expect(AUTHORED_LEVEL_IDS).toEqual([1, 5, 11, 15, 20, 25]);
     expect(seedForLevel(25)).toBe(
       "par-arrows:runtime:7:level:25:double-intro:1",
     );
