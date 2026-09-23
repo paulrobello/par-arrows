@@ -1,6 +1,6 @@
 import { advanceHead, simulateMove } from "../core/movement";
 import { overlappingArrowIds } from "../core/overlap";
-import { arrowTrack } from "../core/stops";
+import { arrowTrack, currentPath, maximumOffset } from "../core/stops";
 import {
   cellKey,
   forwardInfo,
@@ -20,6 +20,7 @@ import type {
   MoveTarget,
 } from "../core/types";
 import {
+  hasStrandingState,
   solveLevel,
   solveLevelTargets,
   validateLevel,
@@ -1327,6 +1328,9 @@ function parkingCore(
       ...[...arrows].reverse().map((arrow) => arrow.id),
     ];
     if (!replayCertificate(coreLevel, certificate)) continue;
+    // Core arrows may park into each other's lanes; every collision-free
+    // order through the isolated core must still clear it.
+    if (hasStrandingState(coreLevel) !== false) continue;
     return { arrows, stops, parkLegs };
   }
   return undefined;
@@ -1670,11 +1674,76 @@ function extraDirectionalSpots(
 }
 
 /**
+ * A test for circles that can never strand a level. Parking moves an arrow
+ * onto new cells, and a new cell on another arrow's track can block that
+ * arrow while its body blocks the parked one. A circle passes only when every
+ * unit that can park on it reaches it before any member leaves and keeps
+ * every new cell off every other arrow's track, so parking there only ever
+ * frees cells for the rest of the board. Double arrows never park on a
+ * passing circle. Parking-core arrows may block one another on the core's own
+ * circles, which `parkingCore` proves safe by enumeration; any other circle
+ * on a core track is rejected so the core behaves exactly as enumerated.
+ */
+function strandSafeCircle(
+  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
+  arrows: readonly ArrowDefinition[],
+  coreIds: ReadonlySet<string>,
+  role: "decorative" | "core",
+): (cell: Cell) => boolean {
+  const board: LevelDefinition = {
+    ...level,
+    id: 0,
+    title: "",
+    lives: 1,
+    arrows,
+  };
+  const owners = new Map<string, Set<string>>();
+  const visits = new Map<string, { arrow: ArrowDefinition; index: number }[]>();
+  for (const arrow of arrows) {
+    const paths =
+      arrow.kind === "double"
+        ? [arrow.path, [...arrow.path].reverse()]
+        : [arrow.path];
+    for (const path of paths) {
+      const track = arrowTrack(level, { ...arrow, path });
+      track.forEach((cell, index) => {
+        const key = cellKey(cell);
+        owners.set(key, (owners.get(key) ?? new Set()).add(arrow.id));
+        if (index < arrow.path.length) return;
+        visits.set(key, [...(visits.get(key) ?? []), { arrow, index }]);
+      });
+    }
+  }
+  return (cell) =>
+    (visits.get(cellKey(cell)) ?? []).every(({ arrow, index }) => {
+      if (arrow.kind === "double") return false;
+      const core = coreIds.has(arrow.id);
+      if (core && role === "decorative") return false;
+      const unit = overlappingArrowIds(board, arrow.id);
+      const members = arrows.filter((candidate) => unit.includes(candidate.id));
+      const offset = index - arrow.path.length + 1;
+      if (members.some((member) => offset > maximumOffset(level, member)))
+        return false;
+      const own = new Set(
+        members.flatMap((member) => member.path.map(cellKey)),
+      );
+      return members.every((member) =>
+        currentPath(level, member, offset).every((moved) => {
+          const key = cellKey(moved);
+          if (own.has(key)) return true;
+          return [...(owners.get(key) ?? [])].every(
+            (id) => unit.includes(id) || (core && coreIds.has(id)),
+          );
+        }),
+      );
+    });
+}
+
+/**
  * Choose decorative circles on cells some arrow's head actually travels
  * through, so a circle is always reachable rather than decorative. The
- * load-bearing circle arrives with the parking core; these extras never change
- * whether a level can be cleared, because a head sweeps the same cells whether
- * or not it parks along the way.
+ * load-bearing circle arrives with the parking core; the extras must pass
+ * `strandSafeCircle`, and a level places fewer of them when too few cells do.
  */
 function chooseStops(
   id: number,
@@ -1682,6 +1751,7 @@ function chooseStops(
   arrows: readonly ArrowDefinition[],
   occupied: ReadonlySet<string>,
   decorativeCount: number,
+  coreIds: ReadonlySet<string>,
 ): readonly Cell[] {
   if (decorativeCount <= 0) return [];
   const candidates: Cell[] = [];
@@ -1714,7 +1784,9 @@ function chooseStops(
     candidates[index] = candidates[replacement] as Cell;
     candidates[replacement] = current;
   }
-  return candidates.slice(0, decorativeCount);
+  return candidates
+    .filter(strandSafeCircle(level, arrows, coreIds, "decorative"))
+    .slice(0, decorativeCount);
 }
 
 /**
@@ -2227,26 +2299,32 @@ export function generateLevel(id: number): LevelDefinition {
         const spots = directionalSpot
           ? [directionalSpot.spot, ...extraSpots]
           : [];
-        const decorative = chooseStops(
-          id,
-          {
-            ...candidateLevel,
-            ...(spots.length > 0 ? { directionals: spots } : {}),
-          },
-          arrows,
-          occupied,
-          getStopCount(id) - (core ? core.stops.length : 0),
-        );
-        const stops = core ? [...core.stops, ...decorative] : decorative;
-        // `level.arrows` is the SAME array as `arrows`: a later push (the
-        // assembled-board top-up below) is visible through `level` without
-        // rebuilding it.
-        const level: LevelDefinition = {
+        const coreIds = new Set(core?.arrows.map((arrow) => arrow.id) ?? []);
+        const stopBoard = {
+          ...candidateLevel,
+          ...(spots.length > 0 ? { directionals: spots } : {}),
+        };
+        const placeStops = (): readonly Cell[] => {
+          const decorative = chooseStops(
+            id,
+            stopBoard,
+            arrows,
+            occupied,
+            getStopCount(id) - (core ? core.stops.length : 0),
+            coreIds,
+          );
+          return core ? [...core.stops, ...decorative] : decorative;
+        };
+        const assemble = (stops: readonly Cell[]): LevelDefinition => ({
           ...candidateLevel,
           arrows,
           ...(stops.length > 0 ? { stops } : {}),
           ...(spots.length > 0 ? { directionals: spots } : {}),
-        };
+        });
+        // `level.arrows` is the SAME array as `arrows`: a later push (the
+        // assembled-board top-up below) is visible through `level` without
+        // rebuilding it.
+        let level = assemble(placeStops());
         if (
           directional &&
           !level.arrows.some(
@@ -2273,8 +2351,21 @@ export function generateLevel(id: number): LevelDefinition {
           // and must not thrash into silent under-target acceptance.
           blockedUnits = assembledStats.blocked;
           totalUnits = assembledStats.total;
+          const placedBefore = placed;
           runBlockerPass(level);
+          // A new blocker's track can cross a circle's parked window, so the
+          // circles are chosen again against the final arrows.
+          if (placed > placedBefore) level = assemble(placeStops());
           assembledStats = blockedStats(level);
+        }
+        if (
+          core &&
+          !core.stops.every(
+            strandSafeCircle(stopBoard, arrows, coreIds, "core"),
+          )
+        ) {
+          skip = "strand";
+          continue;
         }
         if (
           tier.certificate &&
@@ -2312,16 +2403,38 @@ export function generateLevel(id: number): LevelDefinition {
           // Extra spots bend real routes and can break the replay; the required
           // core alone replays against the same certificate, so fall back to it
           // rather than dropping directionals entirely.
-          const coreOnly: LevelDefinition = {
+          // Fewer spots change the tracks, so circles are chosen again.
+          const coreBoard = {
             ...candidateLevel,
-            arrows,
-            ...(stops.length > 0 ? { stops } : {}),
             directionals: [directionalSpot.spot],
           };
-          const coreAccepted = tier.certificate
-            ? validateGenerated(coreOnly, certificate)
-            : validateLevel(coreOnly).valid &&
-              solveLevelTargets(coreOnly) !== undefined;
+          const coreStops = [
+            ...(core ? core.stops : []),
+            ...chooseStops(
+              id,
+              coreBoard,
+              arrows,
+              occupied,
+              getStopCount(id) - (core ? core.stops.length : 0),
+              coreIds,
+            ),
+          ];
+          const coreOnly: LevelDefinition = {
+            ...coreBoard,
+            arrows,
+            ...(coreStops.length > 0 ? { stops: coreStops } : {}),
+          };
+          const coreSafe =
+            !core ||
+            core.stops.every(
+              strandSafeCircle(coreBoard, arrows, coreIds, "core"),
+            );
+          const coreAccepted =
+            coreSafe &&
+            (tier.certificate
+              ? validateGenerated(coreOnly, certificate)
+              : validateLevel(coreOnly).valid &&
+                solveLevelTargets(coreOnly) !== undefined);
           if (coreAccepted) return coreOnly;
         }
       }

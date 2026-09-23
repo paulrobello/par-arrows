@@ -69,7 +69,7 @@ export async function assertLevelPreview(
     unlockedLevelId: 3,
     state: campaignState,
     tutorialComplete: true,
-    contentVersion: 10,
+    contentVersion: 11,
     generatorVersion: GENERATOR_VERSION,
     seed: seedForLevel(2),
   });

@@ -274,7 +274,7 @@ describe("resumable campaign saves", () => {
     const state = exitedState(level);
     expect(save(state, 88)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 10,
+      contentVersion: 11,
       generatorVersion: 7,
       currentLevelId: 42,
       unlockedLevelId: 88,
@@ -630,6 +630,31 @@ describe("resumable campaign saves", () => {
     }
   });
 
+  test("content-10 saves resume unless the circle gate rebuilt the cube", async () => {
+    for (const [id, resumes] of [
+      [22, true],
+      [25, true],
+      [52, false],
+      [13, false],
+      [201, false],
+    ] as const) {
+      const level = generateLevel(id);
+      const state = exitedState(level);
+      expect(save(state, 300)).toBe(true);
+      entries.set(
+        CAMPAIGN_KEY,
+        JSON.stringify({ ...savedJson(), contentVersion: 10 }),
+      );
+      const restored = await loadCampaign(async () => level);
+      expect(restored.recovered).toBe(!resumes);
+      expect(restored.contentUpdated).toBe(!resumes);
+      expect(restored.value?.state).toEqual(
+        resumes ? state : createGameState(level),
+      );
+      expect(restored.value?.unlockedLevelId).toBe(300);
+    }
+  }, 30_000);
+
   test("saves an atomic overlap failure as one life and rejects partial groups", async () => {
     const level = OVERLAP_INTRO_LEVEL;
     const initial = createGameState(level);
@@ -687,7 +712,7 @@ describe("resumable campaign saves", () => {
       if (!restored.value) throw new Error("Expected restored campaign");
       expect(saveCampaign(restored.value)).toBe(true);
       expect(savedJson()).toMatchObject({
-        contentVersion: 10,
+        contentVersion: 11,
         generatorVersion: 7,
       });
     },

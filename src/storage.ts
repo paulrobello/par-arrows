@@ -12,7 +12,7 @@ import type { Cell, GameState, LevelDefinition } from "./core/types";
 
 const STORAGE_KEY = "par-arrows:campaign:v1";
 const SETTINGS_KEY = "par-arrows:settings:v1";
-const CONTENT_VERSION = 10;
+const CONTENT_VERSION = 11;
 
 export interface CampaignSave {
   readonly currentLevelId: number;
@@ -340,6 +340,25 @@ function isUnchangedSinceContentNine(levelId: number): boolean {
   return isUnchangedLevel(levelId) || isAuthoredLevel(levelId);
 }
 
+/**
+ * Generated cubes from 2 through 200 that content 11 rebuilt when decorative
+ * circles stopped accepting cells where a parked arrow could strand the level.
+ * Ids above 200 were not measured, so their content-10 saves restart.
+ */
+const REBUILT_IN_CONTENT_ELEVEN: ReadonlySet<number> = new Set([
+  13, 18, 27, 34, 37, 43, 46, 48, 52, 58, 59, 82, 83, 88, 94, 95, 96, 98, 100,
+  101, 107, 111, 114, 116, 118, 122, 124, 128, 131, 133, 134, 135, 139, 140,
+  142, 146, 151, 157, 158, 164, 165, 168, 170, 172, 178, 179, 182, 183, 189,
+  190, 194,
+]);
+
+function isUnchangedSinceContentTen(levelId: number): boolean {
+  return (
+    isAuthoredLevel(levelId) ||
+    (levelId <= 200 && !REBUILT_IN_CONTENT_ELEVEN.has(levelId))
+  );
+}
+
 function hasMatchingGeneratorMetadata(
   value: StoredCampaign,
   levelId: number,
@@ -422,6 +441,10 @@ export async function loadCampaign(
         hasMatchingGeneratorMetadata(parsed, currentLevelId)) ||
       (parsed.contentVersion === 9 &&
         isUnchangedSinceContentNine(currentLevelId) &&
+        isUnchangedSinceContentTen(currentLevelId) &&
+        hasMatchingGeneratorMetadata(parsed, currentLevelId)) ||
+      (parsed.contentVersion === 10 &&
+        isUnchangedSinceContentTen(currentLevelId) &&
         hasMatchingGeneratorMetadata(parsed, currentLevelId)));
   const restored = parsed.state as GameState | undefined;
   const value: LoadedCampaign = compatible

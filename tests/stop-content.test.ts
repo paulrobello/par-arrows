@@ -6,12 +6,61 @@ import {
   createGameState,
   simulateMove,
 } from "../src/core/game-state";
+import { overlappingArrowIds } from "../src/core/overlap";
+import { arrowTrack, currentPath } from "../src/core/stops";
 import { cellKey } from "../src/core/topology";
+import type { LevelDefinition } from "../src/core/types";
 import {
+  hasStrandingState,
   solveLevel,
   solveLevelTargets,
   validateLevel,
 } from "../src/core/validation";
+
+/**
+ * Pairs where parking a non-core unit on a circle moves one of its bodies
+ * onto a cell another arrow's track uses. Parking-core arrows are excluded
+ * because their own interplay is checked by enumeration.
+ */
+function crossingParks(level: LevelDefinition): readonly string[] {
+  const stops = new Set((level.stops ?? []).map(cellKey));
+  const owners = new Map<string, Set<string>>();
+  for (const arrow of level.arrows) {
+    const paths =
+      arrow.kind === "double"
+        ? [arrow.path, [...arrow.path].reverse()]
+        : [arrow.path];
+    for (const path of paths) {
+      for (const cell of arrowTrack(level, { ...arrow, path })) {
+        const key = cellKey(cell);
+        owners.set(key, (owners.get(key) ?? new Set()).add(arrow.id));
+      }
+    }
+  }
+  const found: string[] = [];
+  for (const arrow of level.arrows) {
+    if (arrow.kind === "double" || arrow.id.includes("-park-")) continue;
+    const unit = overlappingArrowIds(level, arrow.id);
+    const track = arrowTrack(level, arrow).map(cellKey);
+    for (let index = arrow.path.length; index < track.length; index += 1) {
+      if (!stops.has(track[index] as string)) continue;
+      const offset = index - arrow.path.length + 1;
+      for (const memberId of unit) {
+        const member = level.arrows.find((entry) => entry.id === memberId);
+        if (!member) continue;
+        const own = new Set(member.path.map(cellKey));
+        for (const cell of currentPath(level, member, offset)) {
+          const key = cellKey(cell);
+          if (own.has(key)) continue;
+          for (const other of owners.get(key) ?? []) {
+            if (!unit.includes(other)) found.push(`${memberId}->${other}`);
+          }
+        }
+      }
+    }
+  }
+  return found;
+}
 
 const PARKER = "stop-intro-parker";
 const FREED = "stop-intro-freed";
@@ -121,4 +170,63 @@ describe("stop-circle level content", () => {
       }
     }
   }, 20_000);
+
+  test("parking never moves an arrow onto another arrow's route", () => {
+    for (const id of [13, 18, 27, 34, 37, 43, 52, 58, 111, 124, 140]) {
+      const level = generateLevel(id);
+      expect(crossingParks(level)).toEqual([]);
+      const core = level.arrows.filter((arrow) => arrow.id.includes("-park-"));
+      if (core.length > 0) {
+        expect(hasStrandingState({ ...level, arrows: core })).toBe(false);
+      }
+    }
+  }, 60_000);
+
+  test("cube 52 can no longer park an arrow into a permanent deadlock", () => {
+    const level = generateLevel(52);
+    const kept = new Set(["r52-44"]);
+    let state = createGameState(level);
+    for (let pass = 0; pass < level.arrows.length; pass += 1) {
+      const before = state.remainingIds.length;
+      for (const arrowId of [...state.remainingIds]) {
+        if (kept.has(arrowId) || arrowId.includes("-park-")) continue;
+        const result = simulateMove(level, state, arrowId);
+        if (result.kind === "exit") state = applyMove(level, state, result);
+      }
+      if (state.remainingIds.length === before) break;
+    }
+    const endgame: LevelDefinition = {
+      ...level,
+      arrows: level.arrows.filter((arrow) =>
+        state.remainingIds.includes(arrow.id),
+      ),
+    };
+    expect(endgame.arrows.length).toBeGreaterThan(1);
+    expect(hasStrandingState(endgame)).toBe(false);
+  }, 30_000);
+
+  test("the stranding check finds a park that deadlocks two arrows", () => {
+    const cell = (x: number, y: number) => ({ face: "front" as const, x, y });
+    const trap: LevelDefinition = {
+      id: 900,
+      title: "Park trap",
+      gridSize: 6,
+      lives: 3,
+      arrows: [
+        { id: "parker", path: [cell(0, 2), cell(1, 2)] },
+        { id: "crosser", path: [cell(5, 3), cell(5, 2), cell(4, 2)] },
+      ],
+      stops: [cell(3, 2)],
+    };
+    expect(validateLevel(trap).valid).toBe(true);
+    const parked = applyMove(
+      trap,
+      createGameState(trap),
+      simulateMove(trap, createGameState(trap), "parker"),
+    );
+    expect(simulateMove(trap, parked, "parker").kind).toBe("blocked");
+    expect(simulateMove(trap, parked, "crosser").kind).toBe("blocked");
+    expect(hasStrandingState(trap)).toBe(true);
+    expect(hasStrandingState(STOP_INTRO_LEVEL)).toBe(false);
+  });
 });

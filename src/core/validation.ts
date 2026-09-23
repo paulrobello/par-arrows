@@ -416,6 +416,56 @@ function solveKey(state: GameState): string {
 const SOLVER_NODE_BUDGET = 4000;
 
 /**
+ * Enumerate every state reachable without a collision and report whether any
+ * of them can no longer be cleared. Undefined means the state space exceeded
+ * `limit`, so the answer is unknown; only small cores should be checked.
+ */
+export function hasStrandingState(
+  level: LevelDefinition,
+  limit = 5000,
+): boolean | undefined {
+  const states = new Map<string, readonly string[]>();
+  const pending = [createGameState(level)];
+  while (pending.length > 0) {
+    const state = pending.pop() as GameState;
+    const key = solveKey(state);
+    if (states.has(key)) continue;
+    if (states.size >= limit) return undefined;
+    const next: string[] = [];
+    for (const arrowId of state.remainingIds) {
+      for (const target of targetsFor(level, arrowId)) {
+        const result = simulateState(
+          level,
+          state,
+          target.arrowId,
+          target.endpoint,
+        );
+        if (result.kind !== "exit" && result.kind !== "paused") continue;
+        const settled = applyMove(level, state, result);
+        if (settled === state) continue;
+        next.push(solveKey(settled));
+        pending.push(settled);
+      }
+    }
+    states.set(key, next);
+  }
+  const winnable = new Set(
+    [...states.keys()].filter((key) => key.startsWith("#")),
+  );
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const [key, next] of states) {
+      if (!winnable.has(key) && next.some((entry) => winnable.has(entry))) {
+        winnable.add(key);
+        grew = true;
+      }
+    }
+  }
+  return winnable.size < states.size;
+}
+
+/**
  * Parking an arrow on a stop circle occupies new cells, so unlike clearing it
  * can strand other arrows and has to be explored with backtracking. Reverse
  * construction gives generated levels a drive-through certificate, so they
