@@ -24,7 +24,7 @@ import { DIRECTIONAL_INTRO_LEVEL } from "./directional-intro";
 import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
 import { STOP_INTRO_LEVEL } from "./stop-intro";
 
-export const GENERATOR_VERSION = 5;
+export const GENERATOR_VERSION = 6;
 export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
 
 const FACES: readonly FaceId[] = [
@@ -186,6 +186,50 @@ export function getLevelConfig(id: number): LevelConfig {
     lives: id <= 3 ? 5 : id <= 6 ? 4 : 3,
     arrowScale: gridSize / (id <= 3 ? 8 : id <= 6 ? 10 : 14),
   };
+}
+
+export interface BlockedStats {
+  readonly blocked: number;
+  readonly total: number;
+}
+
+/**
+ * Tap units (a single arrow or one shared-tail group) whose immediate move at
+ * the level's initial state is blocked. The denominator counts every unit.
+ */
+export function blockedStats(level: LevelDefinition): BlockedStats {
+  const remaining = level.arrows.map((arrow) => arrow.id);
+  const counted = new Set<string>();
+  let blocked = 0;
+  let total = 0;
+  for (const arrow of level.arrows) {
+    if (counted.has(arrow.id)) continue;
+    for (const memberId of overlappingArrowIds(level, arrow.id)) {
+      counted.add(memberId);
+    }
+    total += 1;
+    if (simulateMove(level, remaining, arrow.id).kind === "blocked") {
+      blocked += 1;
+    }
+  }
+  return { blocked, total };
+}
+
+/**
+ * Share of tap units that start blocked: 0 through the authored teaching ids,
+ * then 0.30 at level 12 rising linearly to 0.55 at level 60 and holding.
+ */
+export function blockedTarget(id: number): number {
+  assertLevelId(id);
+  if (id <= 10 || id === 11 || id === 15 || id === 20) return 0;
+  const progress = Math.min(1, (id - 12) / 48);
+  return Math.min(0.55, 0.3 + 0.25 * progress);
+}
+
+/** Extra arrows the blocker pass may spend toward the blocked target. */
+export function blockerReserve(id: number): number {
+  assertLevelId(id);
+  return Math.ceil(blockedTarget(id) * getLevelConfig(id).arrowCount);
 }
 
 class Rng {
@@ -801,17 +845,27 @@ interface ParkDelta {
  * same lanes. "cascade" adds a fourth arrow whose lane opens only after the
  * freed arrow leaves. "double" needs two parks: the blocker sits past the
  * second circle, so the parker's tail blocks the freed arrow's lane until
- * both parks are spent. A pattern is eligible only when the level's stop
- * budget covers its circles. `others` lists the non-parker arrows in reverse
- * unwinding order: the certificate tail drives arrows last-placed-first, so
- * the last listed arrow must be the one that moves immediately after the
- * park.
+ * both parks are spent. "twist" gives the freed arrow an L-shaped lane.
+ * "crossfire" interleaves a four-arrow unwind around one circle. "twin"
+ * stacks two independent one-circle deadlocks with two different parkers;
+ * its optional `second` unit repeats the shape, and the certificate parks
+ * both parkers before either unit unwinds. A pattern is eligible only when
+ * the level's stop budget covers its circles. `others` lists the non-parker
+ * arrows in reverse unwinding order: the certificate tail drives arrows
+ * last-placed-first, so the last listed arrow must be the one that moves
+ * immediately after the park.
  */
-const PARK_PATTERNS: readonly {
+export const PARK_PATTERNS: readonly {
   readonly name: string;
   readonly parker: readonly ParkDelta[];
   readonly stops: readonly ParkDelta[];
   readonly others: readonly (readonly ParkDelta[])[];
+  /** Optional second independent deadlock: another parker with its own circle and followers. */
+  readonly second?: {
+    readonly parker: readonly ParkDelta[];
+    readonly stops: readonly ParkDelta[];
+    readonly others: readonly (readonly ParkDelta[])[];
+  };
 }[] = [
   {
     name: "classic",
@@ -904,17 +958,107 @@ const PARK_PATTERNS: readonly {
       ],
     ],
   },
+  {
+    name: "twist",
+    parker: [
+      { dx: 0, dy: 0 },
+      { dx: 1, dy: 0 },
+    ],
+    stops: [{ dx: 2, dy: 0 }],
+    others: [
+      [
+        { dx: 3, dy: 0 },
+        { dx: 3, dy: 1 },
+        { dx: 2, dy: 1 },
+        { dx: 1, dy: 1 },
+      ],
+      [
+        { dx: 2, dy: 2 },
+        { dx: 1, dy: 2 },
+        { dx: 0, dy: 2 },
+        { dx: 0, dy: 1 },
+      ],
+    ],
+  },
+  {
+    name: "crossfire",
+    parker: [
+      { dx: 0, dy: 0 },
+      { dx: 1, dy: 0 },
+    ],
+    stops: [{ dx: 2, dy: 0 }],
+    others: [
+      [
+        { dx: 6, dy: 0 },
+        { dx: 6, dy: 1 },
+        { dx: 5, dy: 1 },
+      ],
+      [
+        { dx: 4, dy: 1 },
+        { dx: 3, dy: 1 },
+        { dx: 2, dy: 1 },
+      ],
+      [
+        { dx: 1, dy: 2 },
+        { dx: 0, dy: 2 },
+        { dx: 0, dy: 1 },
+      ],
+    ],
+  },
+  {
+    name: "twin",
+    parker: [
+      { dx: 0, dy: 0 },
+      { dx: 1, dy: 0 },
+    ],
+    stops: [{ dx: 2, dy: 0 }],
+    others: [
+      [
+        { dx: 3, dy: 0 },
+        { dx: 3, dy: 1 },
+        { dx: 2, dy: 1 },
+        { dx: 1, dy: 1 },
+      ],
+      [
+        { dx: 0, dy: 2 },
+        { dx: 0, dy: 1 },
+      ],
+    ],
+    second: {
+      parker: [
+        { dx: 0, dy: 4 },
+        { dx: 1, dy: 4 },
+      ],
+      stops: [{ dx: 2, dy: 4 }],
+      others: [
+        [
+          { dx: 3, dy: 4 },
+          { dx: 3, dy: 5 },
+          { dx: 2, dy: 5 },
+          { dx: 1, dy: 5 },
+        ],
+        [
+          { dx: 0, dy: 6 },
+          { dx: 0, dy: 5 },
+        ],
+      ],
+    },
+  },
 ];
 
 /** Ids for the non-parker core arrows, in pattern order. */
-const PARK_FOLLOWER_IDS = ["park-b", "park-f", "park-g"] as const;
+const PARK_FOLLOWER_IDS = ["park-b", "park-f", "park-g", "park-h"] as const;
+
+/** Patterns ids <= 10 draw from, so their layouts stay byte-identical. */
+const LEGACY_PARK_PATTERN_COUNT = 4;
 
 const PARK_CERTIFICATE_PREFIX = "park:";
 
 interface ParkingCore {
   readonly arrows: readonly ArrowDefinition[];
   readonly stops: readonly Cell[];
-  readonly parkerId: string;
+  /** Certificate park entries, one per circle, naming each circle's parker. */
+  readonly parkLegs: readonly string[];
 }
 
 function patternCell(
@@ -963,14 +1107,34 @@ function parkingCore(
 ): ParkingCore | undefined {
   const size = level.gridSize;
   const rng = coreStream(id, "park-core", restart);
-  const eligible = PARK_PATTERNS.filter(
-    (candidate) => candidate.stops.length <= stopCount,
+  const catalog =
+    id <= 10
+      ? PARK_PATTERNS.slice(0, LEGACY_PARK_PATTERN_COUNT)
+      : PARK_PATTERNS;
+  const patternCost = (pattern: (typeof PARK_PATTERNS)[number]): number =>
+    pattern.stops.length + (pattern.second?.stops.length ?? 0);
+  const eligible = catalog.filter(
+    (pattern) => patternCost(pattern) <= stopCount,
   );
   const pattern = eligible[
     rng.int(eligible.length)
   ] as (typeof PARK_PATTERNS)[number];
   const faces = shuffledFaces(rng);
-  const parkerId = `r${id}-park-p`;
+  const units = [
+    { parker: pattern.parker, stops: pattern.stops, others: pattern.others },
+    ...(pattern.second
+      ? [
+          {
+            parker: pattern.second.parker,
+            stops: pattern.second.stops,
+            others: pattern.second.others,
+          },
+        ]
+      : []),
+  ];
+  const parkerIds = units.map((_, index) =>
+    index === 0 ? `r${id}-park-p` : `r${id}-park-q`,
+  );
   for (let attempt = 0; attempt < 96; attempt += 1) {
     const face = faces[attempt % faces.length] as FaceId;
     const rotation = rng.int(4);
@@ -979,16 +1143,24 @@ function parkingCore(
       x: 1 + rng.int(Math.max(1, size - 2)),
       y: 1 + rng.int(Math.max(1, size - 2)),
     };
-    const parkerPath = pattern.parker.map(({ dx, dy }) =>
-      patternCell(base, dx, dy, rotation),
+    const parkerPaths = units.map((unit) =>
+      unit.parker.map(({ dx, dy }) => patternCell(base, dx, dy, rotation)),
     );
-    const followerPaths = pattern.others.map((deltas) =>
-      deltas.map(({ dx, dy }) => patternCell(base, dx, dy, rotation)),
+    // A second unit's exit lanes cross the first unit's cells, so the first
+    // unit must unwind first; the certificate drives arrows last-placed-first,
+    // so the second unit's followers place before the first's. Single-unit
+    // patterns are unaffected by the reversal.
+    const followerPaths = [...units]
+      .reverse()
+      .flatMap((unit) =>
+        unit.others.map((deltas) =>
+          deltas.map(({ dx, dy }) => patternCell(base, dx, dy, rotation)),
+        ),
+      );
+    const stops = units.flatMap((unit) =>
+      unit.stops.map(({ dx, dy }) => patternCell(base, dx, dy, rotation)),
     );
-    const stops = pattern.stops.map(({ dx, dy }) =>
-      patternCell(base, dx, dy, rotation),
-    );
-    const cells = [...parkerPath, ...followerPaths.flat(), ...stops];
+    const cells = [...parkerPaths.flat(), ...followerPaths.flat(), ...stops];
     const patternKeys = new Set(cells.map(cellKey));
     if (
       patternKeys.size !== cells.length ||
@@ -1018,7 +1190,10 @@ function parkingCore(
       );
     };
     const arrows: ArrowDefinition[] = [
-      { id: parkerId, path: parkerPath },
+      ...parkerPaths.map((path, index) => ({
+        id: parkerIds[index] as string,
+        path,
+      })),
       ...followerPaths.map((path, index) => ({
         id: `r${id}-${PARK_FOLLOWER_IDS[index]}`,
         path,
@@ -1029,12 +1204,18 @@ function parkingCore(
     // empty cube with the park legs already applied; prove that tail here so
     // a hostile wrap config rejects this placement instead of the level.
     const coreLevel: LevelDefinition = { ...level, arrows, stops };
+    const parkLegs = units.flatMap((unit, index) =>
+      Array.from(
+        { length: unit.stops.length },
+        () => `${PARK_CERTIFICATE_PREFIX}${parkerIds[index]}`,
+      ),
+    );
     const certificate = [
-      ...stops.map(() => `${PARK_CERTIFICATE_PREFIX}${parkerId}`),
+      ...parkLegs,
       ...[...arrows].reverse().map((arrow) => arrow.id),
     ];
     if (!replayCertificate(coreLevel, certificate)) continue;
-    return { arrows, stops, parkerId };
+    return { arrows, stops, parkLegs };
   }
   return undefined;
 }
@@ -1058,6 +1239,18 @@ const PERPENDICULAR: Record<Heading, readonly [Heading, Heading]> = {
 
 /** First generated level that can embed the required directional core. */
 const FIRST_DIRECTIONAL_LEVEL = 21;
+
+/**
+ * How many directional spots one traverser may bend through: single-bend
+ * cubes before the chain ramp opens a second bend at level 21 and a third at
+ * level 40.
+ */
+export function chainDepthLimit(id: number): 1 | 2 | 3 {
+  assertLevelId(id);
+  if (id < FIRST_DIRECTIONAL_LEVEL) return 1;
+  if (id < 40) return 2;
+  return 3;
+}
 
 /**
  * How many faces of a generated cube carry directional spots: the authored
@@ -1196,10 +1389,14 @@ interface ExtraSpotPlanEntry {
  * post-core tracks, so the core's bends already count — minus every reserved
  * cell and the parking core's own routes, which must keep their straight
  * replay. Each spot turns traversers perpendicular to their travel, mirroring
- * the core. A candidate is only placed if every traverser, simulated alone
- * with the candidate in place, still exits cleanly and its bent route avoids
- * every arrow that replays before it and the parking core's tracks; the
- * certificate replay below remains the final arbiter.
+ * the core. Candidates whose traversers have already bent through an earlier
+ * placed spot are preferred first, so extra spots deliberately chain into
+ * multi-bend routes up to the level's `chainDepthLimit`; plain single-bend
+ * candidates fill in once the chain opportunities are exhausted. A candidate
+ * is only placed if every traverser, simulated alone with the candidate in
+ * place, still exits cleanly and its bent route avoids every arrow that
+ * replays before it and the parking core's tracks; the certificate replay
+ * below remains the final arbiter.
  */
 function extraDirectionalSpots(
   id: number,
@@ -1209,6 +1406,7 @@ function extraDirectionalSpots(
   plan: readonly ExtraSpotPlanEntry[],
   coreFace: FaceId | undefined,
 ): readonly DirectionalSpotDefinition[] {
+  const limit = chainDepthLimit(id);
   const parkTrackKeys = new Set<string>();
   for (const arrow of arrows) {
     if (!arrow.id.startsWith(`r${id}-park-`)) continue;
@@ -1225,76 +1423,135 @@ function extraDirectionalSpots(
   const spots: DirectionalSpotDefinition[] = [];
   const rng = new Rng(hashSeed(`${seedForLevel(id)}:dir-cells`));
   for (const { face, count } of plan) {
-    let room = count - (coreFace === face ? 1 : 0);
-    if (room <= 0) continue;
-    const candidates = new Map<
-      string,
-      { cell: Cell; heading: Heading; traversers: number[] }
-    >();
-    for (let index = 0; index < arrows.length; index += 1) {
-      const arrow = arrows[index] as ArrowDefinition;
-      if (arrow.id.startsWith(`r${id}-park-`)) continue;
-      const track = arrowTrack(level, arrow);
-      for (let step = 1; step < track.length; step += 1) {
-        const cell = track[step] as Cell;
-        if (cell.face !== face) continue;
-        const key = cellKey(cell);
-        if (occupied.has(key) || parkTrackKeys.has(key)) continue;
-        const heading = headingForPath(
-          [track[step - 1] as Cell, cell],
-          level.gridSize,
-        );
-        if (!heading) continue;
-        const entry = candidates.get(key) ?? { cell, heading, traversers: [] };
-        entry.traversers.push(index);
-        candidates.set(key, entry);
-      }
-    }
-    const choices = [...candidates.values()];
-    for (let index = choices.length - 1; index > 0; index -= 1) {
-      const replacement = rng.int(index + 1);
-      const current = choices[index] as {
-        cell: Cell;
-        heading: Heading;
-        traversers: number[];
-      };
-      choices[index] = choices[replacement] as typeof current;
-      choices[replacement] = current;
-    }
-    for (const { cell, heading, traversers } of choices) {
-      if (room <= 0) break;
-      const key = cellKey(cell);
-      if (occupied.has(key)) continue;
-      const turn = PERPENDICULAR[heading][rng.int(2)] as Heading;
-      const trial: LevelDefinition = {
+    const room = count - (coreFace === face ? 1 : 0);
+    for (let placed = 0; placed < room; placed += 1) {
+      const spotLevel: LevelDefinition = {
         ...level,
-        directionals: [...(level.directionals ?? []), { cell, heading: turn }],
+        ...(spots.length > 0
+          ? { directionals: [...(level.directionals ?? []), ...spots] }
+          : {}),
       };
-      let fits = true;
-      for (const traverser of traversers) {
-        const alone = simulateMove(
-          trial,
-          [arrows[traverser]!!.id],
-          arrows[traverser]!!.id,
-        );
-        if (alone.kind !== "exit") {
-          fits = false;
-          break;
+      // Candidates from the post-spot tracks, each tagged with how many bends
+      // its first traverser has already taken before the cell.
+      const pool = new Map<
+        string,
+        {
+          cell: Cell;
+          heading: Heading;
+          traversers: number[];
+          depths: number[];
         }
-        const blocked = alone.route.some(
-          (routeCell) =>
-            parkTrackKeys.has(cellKey(routeCell)) ||
-            cellsBefore[traverser]!!.has(cellKey(routeCell)),
-        );
-        if (blocked) {
-          fits = false;
-          break;
+      >();
+      const spotCells = new Set(
+        (spotLevel.directionals ?? []).map((spot) => cellKey(spot.cell)),
+      );
+      for (let index = 0; index < arrows.length; index += 1) {
+        const arrow = arrows[index] as ArrowDefinition;
+        if (arrow.id.startsWith(`r${id}-park-`)) continue;
+        const track = arrowTrack(spotLevel, arrow);
+        let bends = 0;
+        for (let step = 1; step < track.length; step += 1) {
+          const cell = track[step] as Cell;
+          if (spotCells.has(cellKey(cell))) bends += 1;
+          if (cell.face !== face) continue;
+          const key = cellKey(cell);
+          if (occupied.has(key) || parkTrackKeys.has(key)) continue;
+          const heading = headingForPath(
+            [track[step - 1] as Cell, cell],
+            level.gridSize,
+          );
+          if (!heading) continue;
+          const entry = pool.get(key) ?? {
+            cell,
+            heading,
+            traversers: [],
+            depths: [],
+          };
+          entry.traversers.push(index);
+          entry.depths.push(bends);
+          pool.set(key, entry);
         }
       }
-      if (!fits) continue;
-      occupied.add(key);
-      spots.push({ cell, heading: turn });
-      room -= 1;
+      if (pool.size === 0) break;
+      const entries = [...pool.values()];
+      const shuffle = (list: typeof entries): typeof entries => {
+        for (let index = list.length - 1; index > 0; index -= 1) {
+          const replacement = rng.int(index + 1);
+          const current = list[index] as (typeof entries)[number];
+          list[index] = list[replacement] as typeof current;
+          list[replacement] = current;
+        }
+        return list;
+      };
+      // Chain candidates first: corridor cells past an already-placed bend,
+      // and only while every traverser stays inside the depth budget.
+      const chained = entries.filter(
+        (entry) =>
+          entry.depths.some((depth) => depth >= 1) &&
+          Math.max(...entry.depths) + 1 <= limit,
+      );
+      const plain = entries.filter((entry) =>
+        entry.depths.every((depth) => depth === 0),
+      );
+      let accepted = false;
+      for (const { cell, heading, traversers } of [
+        ...shuffle(chained),
+        ...shuffle(plain),
+      ]) {
+        const key = cellKey(cell);
+        if (occupied.has(key)) continue;
+        const turn = PERPENDICULAR[heading][rng.int(2)] as Heading;
+        const trial: LevelDefinition = {
+          ...spotLevel,
+          directionals: [
+            ...(spotLevel.directionals ?? []),
+            { cell, heading: turn },
+          ],
+        };
+        // The pre-trial depth tag only counts bends before this cell on the
+        // OLD route; the new spot can redirect a traverser onto a path that
+        // crosses spots the tag never saw (an earlier-placed spot further
+        // along, or a spot on another face reached via the new turn). Recheck
+        // each traverser's TOTAL bend count against the actual post-trial
+        // track rather than trusting the tag.
+        const trialSpots = new Set(
+          (trial.directionals ?? []).map((spot) => cellKey(spot.cell)),
+        );
+        let fits = true;
+        for (const traverser of traversers) {
+          const alone = simulateMove(
+            trial,
+            [arrows[traverser]!!.id],
+            arrows[traverser]!!.id,
+          );
+          if (alone.kind !== "exit") {
+            fits = false;
+            break;
+          }
+          const blocked = alone.route.some(
+            (routeCell) =>
+              parkTrackKeys.has(cellKey(routeCell)) ||
+              cellsBefore[traverser]!!.has(cellKey(routeCell)),
+          );
+          if (blocked) {
+            fits = false;
+            break;
+          }
+          const totalBends = arrowTrack(trial, arrows[traverser]!!).filter(
+            (routeCell) => trialSpots.has(cellKey(routeCell)),
+          ).length;
+          if (totalBends > limit) {
+            fits = false;
+            break;
+          }
+        }
+        if (!fits) continue;
+        occupied.add(key);
+        spots.push({ cell, heading: turn });
+        accepted = true;
+        break;
+      }
+      if (!accepted) break;
     }
   }
   return spots;
@@ -1446,6 +1703,7 @@ export function generateLevel(id: number): LevelDefinition {
   // restarts: it trades exact density and, in the last tier, the
   // reverse-construction certificate for a solver-proven level instead of
   // throwing.
+  const reserve = blockerReserve(id);
   const tiers = [
     { minArrows: config.arrowCount, certificate: true },
     { minArrows: config.arrowCount - 12, certificate: true },
@@ -1664,6 +1922,129 @@ export function generateLevel(id: number): LevelDefinition {
           for (const cell of path) occupied.add(cellKey(cell));
           arrows.push(arrow);
         }
+        // Shared-tail members may never have another arrow on their travel
+        // route, so blockers avoid every group member's solo route. Computed
+        // lazily and memoized: cheap relative to construction, but only
+        // needed when a blocker pass actually runs.
+        let blockerScaffold:
+          | { groupRouteCells: Set<string>; aheadKeys: string[][] }
+          | undefined;
+        const ensureBlockerScaffold = () => {
+          if (blockerScaffold) return blockerScaffold;
+          const groupRouteCells = new Set<string>();
+          for (const arrow of arrows) {
+            const group = overlappingArrowIds(
+              { ...candidateLevel, arrows },
+              arrow.id,
+            );
+            if (group.length < 2) continue;
+            for (const memberId of group) {
+              const route = simulateMove(
+                { ...candidateLevel, arrows },
+                [memberId],
+                memberId,
+              );
+              for (const cell of route.route) {
+                groupRouteCells.add(cellKey(cell));
+              }
+            }
+          }
+          const aheadKeys = arrows.map((arrow) =>
+            arrowTrack(candidateLevel, arrow)
+              .slice(arrow.path.length)
+              .map(cellKey),
+          );
+          blockerScaffold = { groupRouteCells, aheadKeys };
+          return blockerScaffold;
+        };
+        let blockedUnits = 0;
+        let totalUnits = 0;
+        let placed = 0;
+        // Places up to the remaining reserve, scored against `boardForScoring`
+        // — the object whose `blocked`/`paused` split decides whether a
+        // candidate actually helps. The bare board (first call, below) is a
+        // cheap estimate; once stops and directionals are known, a second
+        // call re-scores against the fully assembled level, since a stop can
+        // turn `blocked` into `paused` and a spot can bend a route clear.
+        const runBlockerPass = (
+          boardForScoring: Pick<
+            LevelDefinition,
+            "gridSize" | "edgePolicies" | "directionals" | "stops"
+          >,
+        ): void => {
+          const { groupRouteCells, aheadKeys } = ensureBlockerScaffold();
+          for (
+            let attempt = 0;
+            placed < reserve && attempt < reserve * 60;
+            attempt += 1
+          ) {
+            if (
+              totalUnits > 0 &&
+              blockedUnits / totalUnits >= blockedTarget(id) - 0.06
+            )
+              break;
+            const path = candidate(
+              rng,
+              candidateLevel,
+              occupied,
+              Math.max(
+                2,
+                Math.floor(
+                  targetLength(rng, id, config) *
+                    (1 - edgePolicies.length * 0.05),
+                ),
+              ),
+              directional ? dirCells : undefined,
+            );
+            if (!path) continue;
+            if (path.some((cell) => groupRouteCells.has(cellKey(cell))))
+              continue;
+            const blocker: ArrowDefinition = {
+              id: `r${id}-block-${placed}`,
+              path,
+            };
+            if (!validateLevel({ ...candidateLevel, arrows: [blocker] }).valid)
+              continue;
+            const pathKeys = new Set(path.map(cellKey));
+            const affected: number[] = [];
+            aheadKeys.forEach((keys, index) => {
+              if (keys.some((key) => pathKeys.has(key))) affected.push(index);
+            });
+            if (affected.length === 0) continue;
+            const blockedAmong = (board: readonly ArrowDefinition[]): number =>
+              affected.filter(
+                (index) =>
+                  simulateMove(
+                    { ...candidateLevel, ...boardForScoring, arrows: board },
+                    board.map((entry) => entry.id),
+                    arrows[index]!.id,
+                  ).kind === "blocked",
+              ).length;
+            const before = blockedAmong(arrows);
+            const after = blockedAmong([...arrows, blocker]);
+            if (after <= before) continue;
+            for (const cell of path) occupied.add(cellKey(cell));
+            arrows.push(blocker);
+            aheadKeys.push(
+              arrowTrack(candidateLevel, blocker)
+                .slice(blocker.path.length)
+                .map(cellKey),
+            );
+            blockedUnits += after - before;
+            totalUnits += 1;
+            placed += 1;
+          }
+        };
+        const naturalStats = blockedStats({ ...candidateLevel, arrows });
+        if (
+          reserve > 0 &&
+          naturalStats.total > 0 &&
+          naturalStats.blocked / naturalStats.total < blockedTarget(id) - 0.06
+        ) {
+          blockedUnits = naturalStats.blocked;
+          totalUnits = naturalStats.total;
+          runBlockerPass(candidateLevel);
+        }
         if (arrows.length < tier.minArrows) {
           skip = "count";
           continue;
@@ -1708,21 +2089,15 @@ export function generateLevel(id: number): LevelDefinition {
           getStopCount(id) - (core ? core.stops.length : 0),
         );
         const stops = core ? [...core.stops, ...decorative] : decorative;
+        // `level.arrows` is the SAME array as `arrows`: a later push (the
+        // assembled-board top-up below) is visible through `level` without
+        // rebuilding it.
         const level: LevelDefinition = {
           ...candidateLevel,
           arrows,
           ...(stops.length > 0 ? { stops } : {}),
           ...(spots.length > 0 ? { directionals: spots } : {}),
         };
-        const certificate = [
-          ...(core
-            ? core.stops.map(() => `${PARK_CERTIFICATE_PREFIX}${core.parkerId}`)
-            : []),
-          ...(directionalSpot
-            ? directionalSpot.arrows.map((arrow) => arrow.id)
-            : []),
-          ...[...arrows].reverse().map((arrow) => arrow.id),
-        ];
         if (
           directional &&
           !level.arrows.some(
@@ -1732,6 +2107,45 @@ export function generateLevel(id: number): LevelDefinition {
           skip = "faces";
           continue;
         }
+        let assembledStats = blockedStats(level);
+        if (
+          reserve > 0 &&
+          placed < reserve &&
+          assembledStats.total > 0 &&
+          assembledStats.blocked / assembledStats.total <
+            blockedTarget(id) - 0.06
+        ) {
+          // The bare-board estimate above said the natural fill already met
+          // target (or never ran the pass at all), but stops turn `blocked`
+          // into `paused` and spots bend routes, so the assembled level can
+          // still fall short. Top up against the real board rather than
+          // silently accepting a below-target level — including in the
+          // no-certificate fallback tier, which has no share gate of its own
+          // and must not thrash into silent under-target acceptance.
+          blockedUnits = assembledStats.blocked;
+          totalUnits = assembledStats.total;
+          runBlockerPass(level);
+          assembledStats = blockedStats(level);
+        }
+        if (
+          tier.certificate &&
+          assembledStats.total > 0 &&
+          assembledStats.blocked / assembledStats.total <
+            blockedTarget(id) - 0.06
+        ) {
+          skip = "blockers";
+          continue;
+        }
+        // Built after any assembled-board top-up so newly placed blockers —
+        // always the latest-pushed `arrows` entries — lead the reversed
+        // replay, matching the reverse-construction safety argument.
+        const certificate = [
+          ...(core ? core.parkLegs : []),
+          ...(directionalSpot
+            ? directionalSpot.arrows.map((arrow) => arrow.id)
+            : []),
+          ...[...arrows].reverse().map((arrow) => arrow.id),
+        ];
         const accepted = tier.certificate
           ? validateGenerated(level, certificate)
           : validateLevel(level).valid && solveLevel(level) !== undefined;

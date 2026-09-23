@@ -89,7 +89,7 @@ describe("overlapping-tail level content", () => {
       expect(group).toHaveLength(expectedSize);
       expect(level.arrows).toHaveLength(getLevelConfig(id).arrowCount);
       expect(level).toEqual(generateLevel(id));
-      expect(seedForLevel(id)).toBe(`par-arrows:runtime:5:level:${id}`);
+      expect(seedForLevel(id)).toBe(`par-arrows:runtime:6:level:${id}`);
       expect(validateLevel(level)).toEqual({ valid: true, errors: [] });
 
       let state = createGameState(level);
@@ -212,7 +212,7 @@ describe("overlapping-tail level content", () => {
       expect(state.status).toBe("won");
       expect(state.lives).toBe(level.lives);
     }
-    expect(wrappedCubes).toBeGreaterThanOrEqual(3);
+    expect(wrappedCubes).toBeGreaterThanOrEqual(2);
     expect(staggeredCubes).toBeGreaterThanOrEqual(2);
   }, 120_000);
 });

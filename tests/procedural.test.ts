@@ -4,6 +4,7 @@ import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "../src/content/intro";
 import { OVERLAP_INTRO_LEVEL } from "../src/content/overlap-intro";
 import { STOP_INTRO_LEVEL } from "../src/content/stop-intro";
 import {
+  blockerReserve,
   GENERATOR_VERSION,
   generateLevel,
   getLevelConfig,
@@ -99,7 +100,7 @@ function normalizedShapeSignature(
 
 describe("runtime campaign generator", () => {
   test("has a versioned stable seed and rejects unsafe ids", () => {
-    expect(GENERATOR_VERSION).toBe(5);
+    expect(GENERATOR_VERSION).toBe(6);
     expect(seedForLevel(1_000_000)).toBe(seedForLevel(1_000_000));
     expect(seedForLevel(1_000_000)).not.toBe(seedForLevel(1_000_001));
     for (const id of [0, -1, 1.5, Number.MAX_SAFE_INTEGER, MAX_LEVEL_ID + 1])
@@ -121,13 +122,13 @@ describe("runtime campaign generator", () => {
       "48bf3896852038155c179facccc7174e71e86e0d24d6e5ccac99f770b41a9512",
     );
     expect(geometryHash(generateLevel(12))).toBe(
-      "7941eba92f4c256311b0922b0301650c710d8bbf029d59d2c20122234496f3a6",
+      "77f903b7dc2f7a9a725105ef4c21c4c8d2851b4f4e492a2dfcee5b23655c4db9",
     );
     expect(geometryHash(generateLevel(13))).toBe(
-      "76f3bdc93d2ab36a70aaa4e920c50a73c7463edc9021f946ddc52363c950c4a1",
+      "630f67ac290a391d91b3b328d2b9600fc2b68b044945f762e415eba10348c4e3",
     );
     expect(geometryHash(generateLevel(14))).toBe(
-      "97d80bdcf208ab0cac9846d107556c1774c8209b3bc5d21402c72a097af08983",
+      "310baf38c7f79039dad552090dd5ff00e27b5f3e00346d169bf35d492da9fbe1",
     );
     expect(geometryHash(generateLevel(3))).toBe(
       "4a1a8de68f8e033d11be45dd73ed6dc80a47289922f98aea82666c4380c5f48b",
@@ -238,7 +239,7 @@ describe("runtime campaign generator", () => {
     for (const id of diverseLevelIds()) {
       const level = generateLevel(id);
       expect(seedForLevel(id)).toBe(
-        `par-arrows:runtime:${id <= 4 ? 1 : id <= 10 ? 4 : 5}:level:${id}`,
+        `par-arrows:runtime:${id <= 4 ? 1 : id <= 10 ? 4 : 6}:level:${id}`,
       );
       expect(validateLevel(level).valid).toBe(true);
       const spots = level.directionals ?? [];
@@ -253,10 +254,13 @@ describe("runtime campaign generator", () => {
         }
       }
       expect(level.gridSize).toBeLessThanOrEqual(26);
-      // Tier one acceptance is exact: a count below the configured density
-      // means a relaxed fallback tier fired for a sampled id, i.e. strict
-      // construction regressed.
-      expect(level.arrows.length).toBe(getLevelConfig(id).arrowCount);
+      // Tier-one fills to the exact historical count; the rare-shortfall
+      // blocker pass only ever adds arrows on top of it, so a count below the
+      // configured density still means a relaxed fallback tier fired for a
+      // sampled id, i.e. strict construction regressed.
+      expect(level.arrows.length).toBeGreaterThanOrEqual(
+        getLevelConfig(id).arrowCount,
+      );
       expect(level.arrows.length).toBeLessThanOrEqual(264);
       expect(
         Math.max(...level.arrows.map((arrow) => arrow.path.length)),
@@ -484,8 +488,16 @@ describe("runtime campaign generator", () => {
         )}`,
       );
     }
-    // classic 3:8, cascade 4:9, double 3:10, long 3:11.
-    expect([...shapes].sort()).toEqual(["3:10", "3:11", "3:8", "4:9"]);
+    // classic 3:8, cascade 4:9, crossfire 4:11, double/twist 3:10, long 3:11,
+    // twin 6:16.
+    expect([...shapes].sort()).toEqual([
+      "3:10",
+      "3:11",
+      "3:8",
+      "4:11",
+      "4:9",
+      "6:16",
+    ]);
   }, 20_000);
 
   test("double-circle cores stay deadlocked after one park and open after two", () => {
