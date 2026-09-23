@@ -314,6 +314,40 @@ describe("overlapping arrow groups", () => {
       "Shared-tail group four|one|three|two has more than three arrows.",
     );
   });
+
+  test("rejects a stop the group cannot reach before a sibling exits", () => {
+    const fixture: LevelDefinition = {
+      ...level(
+        [
+          {
+            id: "north",
+            path: [
+              faceCell(0, 3),
+              faceCell(1, 3),
+              faceCell(2, 3),
+              faceCell(2, 2),
+            ],
+          },
+          {
+            id: "south",
+            path: [
+              faceCell(0, 3),
+              faceCell(1, 3),
+              faceCell(2, 3),
+              faceCell(2, 4),
+            ],
+          },
+        ],
+        8,
+      ),
+      stops: [faceCell(2, 7)],
+    };
+    expect(validateLevel(fixture).errors).toContain(
+      "Shared-tail group north|south has a stop circle it can never park on.",
+    );
+    const reachable = { ...fixture, stops: [faceCell(2, 1)] };
+    expect(validateLevel(reachable).valid).toBe(true);
+  });
 });
 
 describe("wrapped shared-tail groups", () => {

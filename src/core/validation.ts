@@ -7,6 +7,7 @@ import { advanceHead, simulateMove } from "./movement";
 import { spotHeadingAt } from "./directionals";
 import { cellKey, headingForPath, linkKey, seamTransition } from "./topology";
 import { overlappingArrowIds, sharedDirectedSegment } from "./overlap";
+import { arrowTrack, maximumOffset } from "./stops";
 import type {
   ArrowDefinition,
   Cell,
@@ -284,6 +285,22 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
     if (members.some((member) => member.kind === "double")) {
       errors.push(
         `Shared-tail group ${groupKey} cannot contain double-ended arrows.`,
+      );
+    }
+    // Members share one offset and the group stops advancing as soon as any
+    // member would leave, so a stop deeper than the shortest travel parks a
+    // head the group can never actually move it to.
+    const reach = Math.min(
+      ...members.map((member) => maximumOffset(level, member)),
+    );
+    const unreachable = members.some((member) =>
+      arrowTrack(level, member)
+        .slice(member.path.length + reach)
+        .some((cell) => stopCells.has(cellKey(cell))),
+    );
+    if (unreachable) {
+      errors.push(
+        `Shared-tail group ${groupKey} has a stop circle it can never park on.`,
       );
     }
     for (let firstIndex = 0; firstIndex < members.length; firstIndex += 1) {
