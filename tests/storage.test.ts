@@ -274,7 +274,7 @@ describe("resumable campaign saves", () => {
     const state = exitedState(level);
     expect(save(state, 88)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 9,
+      contentVersion: 10,
       generatorVersion: 7,
       currentLevelId: 42,
       unlockedLevelId: 88,
@@ -288,8 +288,8 @@ describe("resumable campaign saves", () => {
     expect(restored.value?.level).toEqual(level);
   });
 
-  test("restores an exact partial v6 generator-v1 attempt through level four", async () => {
-    const level = levelFor(4);
+  test("restores an exact partial v6 generator-v1 attempt on unchanged cube two", async () => {
+    const level = levelFor(2);
     const state = exitedState(level);
     writeVersionOneGeneratorSave(state, 15, false);
 
@@ -299,6 +299,17 @@ describe("resumable campaign saves", () => {
     expect(restored.value?.state).toEqual(state);
     expect(restored.value?.unlockedLevelId).toBe(15);
     expect(restored.value?.tutorialComplete).toBe(false);
+  });
+
+  test("refreshes a v6 generator-v1 attempt on cube four rebuilt by the seam fix", async () => {
+    const level = levelFor(4);
+    writeVersionOneGeneratorSave(exitedState(level), 15, false);
+
+    const restored = await loadCampaign(resolveFixture);
+    expect(restored.recovered).toBe(true);
+    expect(restored.contentUpdated).toBe(true);
+    expect(restored.value?.state).toEqual(createGameState(level));
+    expect(restored.value?.unlockedLevelId).toBe(15);
   });
 
   test("refreshes a v6 generator-v1 attempt above level four", async () => {
@@ -314,8 +325,8 @@ describe("resumable campaign saves", () => {
     expect(restored.value?.tutorialComplete).toBe(false);
   });
 
-  test("preserves unchanged v6 generator content through level four and cube eleven", async () => {
-    for (const id of [2, 3, 4, 11]) {
+  test("preserves unchanged v6 generator content on cubes two and eleven", async () => {
+    for (const id of [2, 11]) {
       const level = generateLevel(id);
       const state = exitedState(level);
       expect(save(state, 29)).toBe(true);
@@ -576,7 +587,7 @@ describe("resumable campaign saves", () => {
   });
 
   test("resumes v8 generator-v6 saves on unchanged seeded levels", async () => {
-    for (const id of [2, 7, 11, 20]) {
+    for (const id of [2, 8, 11, 20]) {
       const level = generateLevel(id);
       const state = exitedState(level);
       expect(save(state, 30)).toBe(true);
@@ -592,6 +603,30 @@ describe("resumable campaign saves", () => {
       const restored = await loadCampaign(async () => level);
       expect(restored.recovered).toBe(false);
       expect(restored.value?.state).toEqual(state);
+    }
+  });
+
+  test("content-9 saves resume on unchanged cubes and refresh on seam-fix rebuilds", async () => {
+    for (const [id, resumes] of [
+      [8, true],
+      [25, true],
+      [10, false],
+      [22, false],
+    ] as const) {
+      const level = generateLevel(id);
+      const state = exitedState(level);
+      expect(save(state, 30)).toBe(true);
+      entries.set(
+        CAMPAIGN_KEY,
+        JSON.stringify({ ...savedJson(), contentVersion: 9 }),
+      );
+      const restored = await loadCampaign(async () => level);
+      expect(restored.recovered).toBe(!resumes);
+      expect(restored.contentUpdated).toBe(!resumes);
+      expect(restored.value?.state).toEqual(
+        resumes ? state : createGameState(level),
+      );
+      expect(restored.value?.unlockedLevelId).toBe(30);
     }
   });
 
@@ -652,7 +687,7 @@ describe("resumable campaign saves", () => {
       if (!restored.value) throw new Error("Expected restored campaign");
       expect(saveCampaign(restored.value)).toBe(true);
       expect(savedJson()).toMatchObject({
-        contentVersion: 9,
+        contentVersion: 10,
         generatorVersion: 7,
       });
     },

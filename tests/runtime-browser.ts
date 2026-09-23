@@ -185,10 +185,10 @@ export async function assertRuntimeCampaign(
   assert.deepEqual(errors, []);
   await context.close();
 
-  // Level 4 keeps its version-1 seed, so a legacy save for it still resumes
-  // exactly; levels from 5 carry stop circles under generator version 4 and
-  // refresh instead (covered by the level-twelve case below).
-  const migrationLevel = generateLevel(4);
+  // Cube 2 keeps its version-1 seed and layout, so a legacy save for it still
+  // resumes exactly; cubes 3 and 4 were rebuilt by the content-10 seam fix and
+  // refresh, as do generated cubes from 5 (covered by the level-twelve case).
+  const migrationLevel = generateLevel(2);
   const initialMigrationState = createGameState(migrationLevel);
   const migrationBlocker = migrationLevel.arrows.find(
     (arrow) =>
@@ -201,24 +201,24 @@ export async function assertRuntimeCampaign(
     initialMigrationState,
     simulateMove(migrationLevel, initialMigrationState, migrationBlocker.id),
   );
-  const levelFourLegacySave = JSON.stringify({
-    currentLevelId: 4,
+  const levelTwoLegacySave = JSON.stringify({
+    currentLevelId: 2,
     unlockedLevelId: 14,
     state: partialMigrationState,
     tutorialComplete: true,
     contentVersion: 6,
     generatorVersion: 1,
-    seed: "par-arrows:runtime:1:level:4",
+    seed: "par-arrows:runtime:1:level:2",
   });
   const migration = await browser.newContext();
   await migration.addInitScript(
     ({ key, saved }) => localStorage.setItem(key, saved),
-    { key: KEY, saved: levelFourLegacySave },
+    { key: KEY, saved: levelTwoLegacySave },
   );
   const migrationPage = await migration.newPage();
   await migrationPage.goto(url);
   await waitForReady(migrationPage);
-  assert.equal((await state(migrationPage)).level.id, 4);
+  assert.equal((await state(migrationPage)).level.id, 2);
   assert.deepEqual(
     (await state(migrationPage)).remainingIds,
     partialMigrationState.remainingIds,

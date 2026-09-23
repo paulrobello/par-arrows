@@ -198,11 +198,12 @@ describe("runtime campaign generator", () => {
     expect(geometryHash(generateLevel(14))).toBe(
       "add0737d3e4429c25a35bdc6bc0432fd2e9eb2fdf6464516f8f07150b7906615",
     );
+    // Cubes 3 and 4 were rebuilt when content 10 fixed seam-crossing heads.
     expect(geometryHash(generateLevel(3))).toBe(
-      "4a1a8de68f8e033d11be45dd73ed6dc80a47289922f98aea82666c4380c5f48b",
+      "27e46b2b26a34ecd41a6321be6b24d212d1d793b1d98c50dfe5defb17b0eca7f",
     );
     expect(geometryHash(generateLevel(4))).toBe(
-      "d11fe1d894bcce87c0e1c068cbce30d1dee3c1d9e05136e4c3e5d8419eb6878f",
+      "f6b5538b04b4998cdc46983400c149d181948d814ddfbff82af6effd09878eba",
     );
     expect(generateLevel(5)).toBe(STOP_INTRO_LEVEL);
     expect(generateLevel(15)).toBe(OVERLAP_INTRO_LEVEL);
@@ -539,7 +540,7 @@ describe("runtime campaign generator", () => {
 
   test("park cores vary in shape across the campaign", () => {
     const shapes = new Set<string>();
-    for (let id = 6; id <= 40; id += 1) {
+    for (let id = 6; id <= 60; id += 1) {
       const level = generateLevel(id);
       if ((level.stops ?? []).length === 0) continue;
       const parkArrows = level.arrows.filter((arrow) =>
@@ -562,7 +563,7 @@ describe("runtime campaign generator", () => {
       "4:9",
       "6:16",
     ]);
-  }, 20_000);
+  }, 40_000);
 
   test("double-circle cores stay deadlocked after one park and open after two", () => {
     let checked = 0;

@@ -237,7 +237,11 @@ export function headingBetween(
   });
 }
 
-/** Derive the active head heading from the final link of a tail-to-head route. */
+/**
+ * Derive the active head heading from the final link of a tail-to-head route.
+ * A link that crosses a seam is labelled in the previous face's frame, so the
+ * head continues along the heading it entered its own face with.
+ */
 export function headingForPath(
   path: readonly Cell[],
   gridSize: number,
@@ -250,7 +254,9 @@ export function headingForPath(
   if (!previous || !head) {
     return undefined;
   }
-  return headingBetween(previous, head, gridSize);
+  const heading = headingBetween(previous, head, gridSize);
+  if (!heading || previous.face === head.face) return heading;
+  return seamTransition(previous, heading, gridSize).heading;
 }
 
 export function cellsEqual(first: Cell, second: Cell): boolean {

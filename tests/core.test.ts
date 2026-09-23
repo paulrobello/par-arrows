@@ -99,6 +99,49 @@ describe("cube topology", () => {
     const head = stepAcrossSeam(tail, "east", 4);
     expect(headingForPath([tail, head], 4)).toBe("east");
   });
+
+  test("a head just past a seam keeps the heading it entered with", () => {
+    for (const face of faces) {
+      for (const heading of Object.keys(boundaries) as Heading[]) {
+        const tail = {
+          face,
+          x: heading === "east" ? 3 : heading === "west" ? 0 : 1,
+          y: heading === "south" ? 3 : heading === "north" ? 0 : 1,
+        };
+        const transition = seamTransition(tail, heading, 4);
+        expect(headingForPath([tail, transition.cell], 4)).toBe(
+          transition.heading,
+        );
+      }
+    }
+  });
+
+  test("an arrow whose head sits past a seam travels the way it is drawn", () => {
+    const level: LevelDefinition = {
+      id: 1,
+      title: "Seam head",
+      gridSize: 4,
+      lives: 1,
+      arrows: [
+        {
+          id: "wrapped",
+          path: [
+            { face: "top", x: 2, y: 0 },
+            { face: "top", x: 3, y: 0 },
+            { face: "right", x: 3, y: 0 },
+          ],
+        },
+      ],
+    };
+    const result = simulatePath(level, ["wrapped"], "wrapped");
+    expect(result.kind).toBe("exit");
+    expect(result.route).toEqual([
+      { face: "right", x: 3, y: 0 },
+      { face: "right", x: 3, y: 1 },
+      { face: "right", x: 3, y: 2 },
+      { face: "right", x: 3, y: 3 },
+    ]);
+  });
 });
 
 describe("settled game results", () => {

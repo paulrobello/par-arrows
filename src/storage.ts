@@ -1,5 +1,6 @@
 import {
   GENERATOR_VERSION,
+  isAuthoredLevel,
   MAX_LEVEL_ID,
   seedForLevel,
 } from "./content/procedural";
@@ -11,7 +12,7 @@ import type { Cell, GameState, LevelDefinition } from "./core/types";
 
 const STORAGE_KEY = "par-arrows:campaign:v1";
 const SETTINGS_KEY = "par-arrows:settings:v1";
-const CONTENT_VERSION = 9;
+const CONTENT_VERSION = 10;
 
 export interface CampaignSave {
   readonly currentLevelId: number;
@@ -315,14 +316,28 @@ function isLegacyContentVersion(value: unknown): boolean {
   );
 }
 
-/** Levels whose seed and geometry this release leaves exactly as they were. */
+/**
+ * Levels whose seed and geometry have not moved since the v4 generator. The
+ * content-10 seam-heading fix rebuilt cubes 3, 4, 6, 7 and 10.
+ */
 function isUnchangedLevel(levelId: number): boolean {
   return (
-    (levelId >= 2 && levelId <= 10) ||
+    levelId === 2 ||
+    levelId === 8 ||
+    levelId === 9 ||
     levelId === 11 ||
     levelId === 15 ||
     levelId === 20
   );
+}
+
+/**
+ * Levels a content-9 save still describes exactly. The seam-heading fix
+ * rebuilt 77 of the generated cubes from 2 through 200, and generated ids are
+ * not enumerated beyond the verified-unchanged set.
+ */
+function isUnchangedSinceContentNine(levelId: number): boolean {
+  return isUnchangedLevel(levelId) || isAuthoredLevel(levelId);
 }
 
 function hasMatchingGeneratorMetadata(
@@ -332,15 +347,15 @@ function hasMatchingGeneratorMetadata(
   if (value.seed !== seedForLevel(levelId)) return false;
   const stored = value.generatorVersion;
   if (stored === GENERATOR_VERSION) return true;
-  if ((stored === 5 || stored === 6) && isUnchangedLevel(levelId)) return true;
   // A matching seed on an unchanged level still describes the same cube, so an
   // older generator stamp is not by itself a reason to restart the attempt.
-  if (stored === 4) {
-    // v4-stamped saves sit on cubes the v5 release left byte-identical.
-    return (levelId >= 2 && levelId <= 11) || levelId === 15 || levelId === 20;
-  }
+  if (
+    (stored === 4 || stored === 5 || stored === 6) &&
+    isUnchangedLevel(levelId)
+  )
+    return true;
   return (
-    (levelId <= 4 && (stored === 1 || stored === 2 || stored === 3)) ||
+    (levelId === 2 && (stored === 1 || stored === 2 || stored === 3)) ||
     (levelId === 11 && (stored === 2 || stored === 3)) ||
     (levelId === 15 && stored === 3)
   );
@@ -404,6 +419,9 @@ export async function loadCampaign(
         parsed.contentVersion === 7 ||
         parsed.contentVersion === 8) &&
         isUnchangedLevel(currentLevelId) &&
+        hasMatchingGeneratorMetadata(parsed, currentLevelId)) ||
+      (parsed.contentVersion === 9 &&
+        isUnchangedSinceContentNine(currentLevelId) &&
         hasMatchingGeneratorMetadata(parsed, currentLevelId)));
   const restored = parsed.state as GameState | undefined;
   const value: LoadedCampaign = compatible
