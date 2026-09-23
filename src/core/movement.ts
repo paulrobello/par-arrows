@@ -165,16 +165,6 @@ function simulateSingle(
       );
     }
     distance += 1;
-    const movingBody = [...path, ...route.slice(1)].slice(1 - path.length);
-    if (movingBody.some((cell) => cellKey(cell) === cellKey(next))) {
-      return invalid(
-        arrowId,
-        endpoint,
-        stateRevision,
-        offset,
-        "Move contacted its own moving body.",
-      );
-    }
     route.push(next);
     const blockerId = occupied.get(cellKey(next));
     if (blockerId) {

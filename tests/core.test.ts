@@ -415,7 +415,7 @@ describe("settled game results", () => {
     );
   });
 
-  test("rejects self-contact with the remaining body after a continuation seam", () => {
+  test("a head past a continuation seam passes back over its own body", () => {
     const path: readonly Cell[] = [
       { face: "right", x: 2, y: 1 },
       { face: "right", x: 1, y: 1 },
@@ -442,11 +442,9 @@ describe("settled game results", () => {
       ],
     };
     expect(
-      simulatePath(level, ["wrapped-contact"], "wrapped-contact").reason,
-    ).toContain("own moving body");
-    expect(validateLevel(level).errors).toContain(
-      "Arrow wrapped-contact can contact its own body from its head endpoint.",
-    );
+      simulatePath(level, ["wrapped-contact"], "wrapped-contact").kind,
+    ).toBe("exit");
+    expect(validateLevel(level).valid).toBe(true);
 
     const vacatedTailLevel = {
       ...level,
@@ -490,7 +488,7 @@ describe("settled game results", () => {
 });
 
 describe("level validation", () => {
-  test("rejects a self-contact even when another arrow blocks the earlier route", () => {
+  test("reports no self-contact for an arrow whose route crosses its own body", () => {
     const invalid: LevelDefinition = {
       id: 1,
       title: "Hidden self contact",
@@ -524,8 +522,11 @@ describe("level validation", () => {
     };
     const result = validateLevel(invalid);
     expect(result.valid).toBe(false);
+    expect(result.errors).toContain(
+      "Arrow external-blocker overlaps cell front:2:2 already used by loop.",
+    );
     expect(
       result.errors.some((error) => error.includes("contact its own body")),
-    ).toBe(true);
+    ).toBe(false);
   });
 });

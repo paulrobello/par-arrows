@@ -33,7 +33,7 @@ function inBounds(cell: Cell, gridSize: number): boolean {
   return cell.x >= 0 && cell.y >= 0 && cell.x < gridSize && cell.y < gridSize;
 }
 
-function selfContactError(
+function loopError(
   arrow: ArrowDefinition,
   level: LevelDefinition,
   endpoint: Endpoint,
@@ -49,7 +49,6 @@ function selfContactError(
   }
   let head: Cell = initialHead;
   let currentHeading = heading;
-  const route: Cell[] = [initialHead];
   const visited = new Set<string>();
   const maximumSteps = 6 * level.gridSize * level.gridSize * 4;
   for (let step = 1; step <= maximumSteps; step += 1) {
@@ -66,18 +65,13 @@ function selfContactError(
     if (!next) {
       return `Arrow ${arrow.id} has an incomplete topology step.`;
     }
-    const movingBody = [...path, ...route.slice(1)].slice(1 - path.length);
-    if (movingBody.some((cell) => cellKey(cell) === cellKey(next))) {
-      return `Arrow ${arrow.id} can contact its own body from its ${endpoint} endpoint.`;
-    }
-    route.push(next);
     head = next;
     currentHeading = spotHeadingAt(level, head) ?? forward.heading;
   }
   return `Arrow ${arrow.id} has a nonterminating continuation loop from its ${endpoint} endpoint.`;
 }
 
-/** Structural validation and independent full-motion self-contact checks. */
+/** Structural validation and independent full-motion loop checks. */
 export function validateLevel(level: LevelDefinition): ValidationResult {
   const errors: string[] = [];
   if (!Number.isInteger(level.id) || level.id < 0) {
@@ -215,9 +209,9 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
     for (const endpoint of arrow.kind === "double"
       ? (["head", "tail"] as const)
       : (["head"] as const)) {
-      const selfError = selfContactError(arrow, level, endpoint);
-      if (selfError) {
-        errors.push(selfError);
+      const loopProblem = loopError(arrow, level, endpoint);
+      if (loopProblem) {
+        errors.push(loopProblem);
       }
     }
   }

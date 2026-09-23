@@ -159,7 +159,7 @@ describe("directional spots", () => {
     expect(retry.lives).toBe(2);
   });
 
-  test("a 180-degree redirect into the arrow's own body is invalid and free", () => {
+  test("a head that enters a spot head-on reverses back over its own body", () => {
     const level = spotLevel({
       arrows: [
         {
@@ -170,11 +170,47 @@ describe("directional spots", () => {
       spots: [spot(4, 2, "west")],
     });
     const state = createGameState(level);
-
     const result = simulateMove(level, state, "long");
+    expect(result.kind).toBe("exit");
+    expect(result.route.map(cellKey)).toEqual(
+      [
+        cell("front", 3, 2),
+        cell("front", 4, 2),
+        cell("front", 3, 2),
+        cell("front", 2, 2),
+        cell("front", 1, 2),
+        cell("front", 0, 2),
+      ].map(cellKey),
+    );
+    expect(validateLevel(level).valid).toBe(true);
+    expect(applyMove(level, state, result).status).toBe("won");
+  });
+
+  test("a head travelling the spot's direction passes straight through", () => {
+    const level = spotLevel({
+      arrows: [
+        { id: "runner", path: [cell("front", 0, 2), cell("front", 1, 2)] },
+      ],
+      spots: [spot(3, 2, "east")],
+    });
+    const result = simulateMove(level, createGameState(level), "runner");
+    expect(result.kind).toBe("exit");
+    expect(result.route.at(-1)).toEqual(cell("front", 5, 2));
+  });
+
+  test("two spots facing each other are rejected as a loop, not a self-collision", () => {
+    const level = spotLevel({
+      arrows: [
+        { id: "ping", path: [cell("front", 0, 2), cell("front", 1, 2)] },
+      ],
+      spots: [spot(3, 2, "west"), spot(2, 2, "east")],
+    });
+    const result = simulateMove(level, createGameState(level), "ping");
     expect(result.kind).toBe("invalid");
-    expect(result.reason).toContain("own moving body");
-    expect(applyMove(level, state, result)).toBe(state);
+    expect(result.reason).toContain("nonterminating continuation cycle");
+    expect(validateLevel(level).errors).toContain(
+      "Arrow ping has a nonterminating continuation loop from its head endpoint.",
+    );
   });
 
   test("a redirected head that meets another arrow blocks once, then retries free", () => {
