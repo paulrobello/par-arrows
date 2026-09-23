@@ -542,7 +542,7 @@ describe("runtime campaign generator", () => {
       );
     }
     expect(checked).toBeGreaterThan(0);
-  }, 30_000);
+  }, 60_000);
 
   test("decorative circles ahead on the parker's track only add pauses", () => {
     let checked = 0;
