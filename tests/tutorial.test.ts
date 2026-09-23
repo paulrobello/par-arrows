@@ -12,8 +12,8 @@ function runnerFor(levelId: number): TutorialRunner {
 }
 
 describe("tutorial scripts", () => {
-  test("exposes exactly the five intro levels", () => {
-    expect(SCRIPTED_LEVEL_IDS).toEqual([1, 5, 11, 15, 20]);
+  test("exposes exactly the six intro levels", () => {
+    expect(SCRIPTED_LEVEL_IDS).toEqual([1, 5, 11, 15, 20, 25]);
     expect(scriptForLevel(2)).toBeUndefined();
     for (const levelId of SCRIPTED_LEVEL_IDS)
       expect(scriptForLevel(levelId)?.levelId).toBe(levelId);
@@ -122,6 +122,28 @@ describe("overlap intro runner", () => {
     expect(runner.current.advance.kind).toBe("won");
     runner.onWon();
     expect(runner.done).toBe(true);
+  });
+});
+
+describe("double intro runner", () => {
+  test("requires the tail endpoint before advancing", () => {
+    const runner = runnerFor(25);
+    expect(runner.gateTarget).toEqual({
+      arrowIds: new Set(["double-intro-choice"]),
+      endpoint: "tail",
+    });
+    runner.onMove({
+      arrowId: "double-intro-choice",
+      endpoint: "head",
+      kind: "blocked",
+    });
+    expect(runner.stepIndex).toBe(0);
+    runner.onMove({
+      arrowId: "double-intro-choice",
+      endpoint: "tail",
+      kind: "exit",
+    });
+    expect(runner.current.highlightId).toBe("double-intro-blocker");
   });
 });
 

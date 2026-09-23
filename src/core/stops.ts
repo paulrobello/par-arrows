@@ -65,6 +65,26 @@ export function currentPath(
     : track.slice(start, start + arrow.path.length);
 }
 
+/** The exact occupied path of an active arrow in a settled state. */
+export function settledPathOf(
+  level: LevelDefinition,
+  state: Pick<GameState, "offsets" | "settledPaths">,
+  arrow: ArrowDefinition,
+): readonly Cell[] {
+  if (arrow.kind === "double") {
+    return state.settledPaths?.[arrow.id] ?? arrow.path;
+  }
+  return currentPath(level, arrow, offsetOf(state.offsets, arrow.id));
+}
+
+/** A paid-failure key shared by both endpoints at one settled position. */
+export function failurePositionKey(
+  arrowId: string,
+  path: readonly Cell[],
+): string {
+  return `${arrowId}:${path.map(cellKey).join("|")}`;
+}
+
 /** Read one arrow's settled offset, treating a missing entry as unmoved. */
 export function offsetOf(
   offsets: Readonly<Record<string, number>> | undefined,

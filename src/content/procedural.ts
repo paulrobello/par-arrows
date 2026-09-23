@@ -17,14 +17,20 @@ import type {
   FaceId,
   Heading,
   LevelDefinition,
+  MoveTarget,
 } from "../core/types";
-import { solveLevel, validateLevel } from "../core/validation";
+import {
+  solveLevel,
+  solveLevelTargets,
+  validateLevel,
+} from "../core/validation";
 import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "./intro";
 import { DIRECTIONAL_INTRO_LEVEL } from "./directional-intro";
+import { DOUBLE_INTRO_LEVEL } from "./double-intro";
 import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
 import { STOP_INTRO_LEVEL } from "./stop-intro";
 
-export const GENERATOR_VERSION = 6;
+export const GENERATOR_VERSION = 7;
 export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
 
 const FACES: readonly FaceId[] = [
@@ -54,6 +60,7 @@ export function seedForLevel(id: number): string {
   // Cubes this release leaves byte-identical keep their v4 seed strings so
   // existing saves still match metadata and resume instead of refreshing.
   if (id === 20) return "par-arrows:runtime:4:level:20:directional-intro:1";
+  if (id === 25) return "par-arrows:runtime:7:level:25:double-intro:1";
   if (id <= 10) return `par-arrows:runtime:4:level:${id}`;
   return `par-arrows:runtime:${GENERATOR_VERSION}:level:${id}`;
 }
@@ -68,7 +75,8 @@ export function getStopCountWeights(
   id: number,
 ): readonly [number, number, number, number] {
   assertLevelId(id);
-  if (id <= 4 || id === 11 || id === 15 || id === 20) return [1, 0, 0, 0];
+  if (id <= 4 || id === 11 || id === 15 || id === 20 || id === 25)
+    return [1, 0, 0, 0];
   if (id === 5 || id === 6) return [0, 1, 0, 0];
   const progress = Math.min(1, (id - 6) / 94);
   return [
@@ -98,7 +106,7 @@ export function getWrappingEdgeWeights(
   assertLevelId(id);
   if (id <= 10) return [1, 0, 0, 0];
   if (id === 11) return [0, 1, 0, 0];
-  if (id === 15 || id === 20) return [1, 0, 0, 0];
+  if (id === 15 || id === 20 || id === 25) return [1, 0, 0, 0];
   const progress = Math.min(1, (id - 11) / 89);
   return [
     0.25,
@@ -113,7 +121,7 @@ export function getWrappingEdgePolicies(
   id: number,
 ): readonly EdgePolicyDefinition[] {
   if (id === 11) return WRAP_INTRO_LEVEL.edgePolicies ?? [];
-  if (id === 15 || id === 20) return [];
+  if (id === 15 || id === 20 || id === 25) return [];
   const weights = getWrappingEdgeWeights(id);
   if (id <= 10) return [];
   const rng = new Rng(hashSeed(`${seedForLevel(id)}:edges`));
@@ -166,7 +174,14 @@ export function getWrappingEdgePolicies(
 
 export function getLevelConfig(id: number): LevelConfig {
   assertLevelId(id);
-  if (id === 1 || id === 5 || id === 11 || id === 15 || id === 20) {
+  if (
+    id === 1 ||
+    id === 5 ||
+    id === 11 ||
+    id === 15 ||
+    id === 20 ||
+    id === 25
+  ) {
     return { gridSize: 4, arrowCount: 6, lives: 5, arrowScale: 1 };
   }
   const early = [0, 60, 84, 108, 132, 156, 168, 180, 180, 180];
@@ -221,9 +236,17 @@ export function blockedStats(level: LevelDefinition): BlockedStats {
  */
 export function blockedTarget(id: number): number {
   assertLevelId(id);
-  if (id <= 10 || id === 11 || id === 15 || id === 20) return 0;
+  if (id <= 10 || id === 11 || id === 15 || id === 20 || id === 25) return 0;
   const progress = Math.min(1, (id - 12) / 48);
   return Math.min(0.55, 0.3 + 0.25 * progress);
+}
+
+/** Probability that a generated level attempts a required-use double-arrow core. */
+export function doubleArrowFrequency(id: number): number {
+  assertLevelId(id);
+  if (id < 26) return 0;
+  const progress = Math.min(1, (id - 26) / 34);
+  return 0.2 + 0.25 * progress;
 }
 
 /** Extra arrows the blocker pass may spend toward the blocked target. */
@@ -1061,6 +1084,92 @@ interface ParkingCore {
   readonly parkLegs: readonly string[];
 }
 
+interface DoubleCore {
+  readonly arrows: readonly ArrowDefinition[];
+  readonly certificate: readonly MoveTarget[];
+}
+
+function doubleCore(
+  id: number,
+  level: LevelDefinition,
+  occupied: ReadonlySet<string>,
+  restart: number,
+): DoubleCore | undefined {
+  const planned = coreStream(id, "double-plan", 0).next();
+  if (id < 26 || planned >= doubleArrowFrequency(id)) return undefined;
+  const rng = coreStream(id, "double-core", restart);
+  const pattern = [
+    {
+      id: "double",
+      kind: "double" as const,
+      cells: [
+        [0, 0],
+        [1, 0],
+      ],
+    },
+    {
+      id: "a",
+      cells: [
+        [0, 2],
+        [0, 1],
+      ],
+    },
+    {
+      id: "b",
+      cells: [
+        [3, 0],
+        [2, 0],
+      ],
+    },
+  ] as const;
+  const faces = shuffledFaces(rng);
+  for (let attempt = 0; attempt < 48; attempt += 1) {
+    const face = faces[attempt % faces.length] as FaceId;
+    const rotation = rng.int(4);
+    const base: Cell = {
+      face,
+      x: 1 + rng.int(Math.max(1, level.gridSize - 5)),
+      y: 1 + rng.int(Math.max(1, level.gridSize - 4)),
+    };
+    const arrows: ArrowDefinition[] = pattern.map((entry) => ({
+      id: `r${id}-double-${entry.id}`,
+      ...(entry.id === "double" ? { kind: "double" as const } : {}),
+      path: entry.cells.map(([dx, dy]) => patternCell(base, dx, dy, rotation)),
+    }));
+    const cells = arrows.flatMap((arrow) => arrow.path);
+    const keys = cells.map(cellKey);
+    if (
+      new Set(keys).size !== keys.length ||
+      cells.some(
+        (cell) =>
+          cell.x < 0 ||
+          cell.y < 0 ||
+          cell.x >= level.gridSize ||
+          cell.y >= level.gridSize ||
+          occupied.has(cellKey(cell)),
+      )
+    )
+      continue;
+    const coreLevel: LevelDefinition = { ...level, arrows };
+    if (!validateLevel(coreLevel).valid) continue;
+    const certificate = solveLevelTargets(coreLevel);
+    const doubleId = `r${id}-double-double`;
+    if (
+      !certificate ||
+      !certificate.some(
+        (target) => target.arrowId === doubleId && target.endpoint === "tail",
+      )
+    )
+      continue;
+    const coreIds = new Set(arrows.map((arrow) => arrow.id));
+    return {
+      arrows,
+      certificate: certificate.filter((target) => coreIds.has(target.arrowId)),
+    };
+  }
+  return undefined;
+}
+
 function patternCell(
   base: Cell,
   dx: number,
@@ -1610,25 +1719,33 @@ function chooseStops(
  * its next circle and leaves it parked there; every other entry is driven
  * through its pauses until it exits before the next arrow is tried.
  */
+type CertificateEntry = string | MoveTarget;
+
 function replayCertificate(
   level: LevelDefinition,
-  certificate: readonly string[],
+  certificate: readonly CertificateEntry[],
 ): boolean {
   let remaining = level.arrows.map((arrow) => arrow.id);
   const offsets: Record<string, number> = {};
+  const settledPaths: Record<string, readonly Cell[]> = {};
   const maximumLegs = level.gridSize * 6 + 2;
   for (const entry of certificate) {
-    const park = entry.startsWith(PARK_CERTIFICATE_PREFIX);
-    const arrowId = park ? entry.slice(PARK_CERTIFICATE_PREFIX.length) : entry;
+    const encoded = typeof entry === "string" ? entry : entry.arrowId;
+    const endpoint = typeof entry === "string" ? "head" : entry.endpoint;
+    const park = encoded.startsWith(PARK_CERTIFICATE_PREFIX);
+    const arrowId = park
+      ? encoded.slice(PARK_CERTIFICATE_PREFIX.length)
+      : encoded;
     if (!remaining.includes(arrowId)) continue;
     if (park) {
       const result = simulateMove(
         level,
         remaining,
         arrowId,
-        "head",
+        endpoint,
         0,
         offsets,
+        settledPaths,
       );
       if (result.kind !== "paused" || !result.pausedSteps) return false;
       for (const memberId of overlappingArrowIds(level, arrowId)) {
@@ -1642,15 +1759,23 @@ function replayCertificate(
         level,
         remaining,
         arrowId,
-        "head",
+        endpoint,
         0,
         offsets,
+        settledPaths,
       );
       if (result.kind === "exit") {
         cleared = true;
       } else if (result.kind === "paused" && result.pausedSteps) {
-        for (const id of overlappingArrowIds(level, arrowId)) {
-          offsets[id] = (offsets[id] ?? 0) + result.pausedSteps;
+        const arrow = level.arrows.find(
+          (candidate) => candidate.id === arrowId,
+        );
+        if (arrow?.kind === "double" && result.settledPath) {
+          settledPaths[arrowId] = result.settledPath;
+        } else {
+          for (const id of overlappingArrowIds(level, arrowId)) {
+            offsets[id] = (offsets[id] ?? 0) + result.pausedSteps;
+          }
         }
       } else {
         return false;
@@ -1659,7 +1784,10 @@ function replayCertificate(
     if (!cleared) return false;
     const clearedIds = overlappingArrowIds(level, arrowId);
     remaining = remaining.filter((id) => !clearedIds.includes(id));
-    for (const id of clearedIds) delete offsets[id];
+    for (const id of clearedIds) {
+      delete offsets[id];
+      delete settledPaths[id];
+    }
   }
   return remaining.length === 0;
 }
@@ -1667,7 +1795,7 @@ function replayCertificate(
 /** Replay the certificate of a level that passes validation. */
 function validateGenerated(
   level: LevelDefinition,
-  certificate: readonly string[],
+  certificate: readonly CertificateEntry[],
 ): boolean {
   return validateLevel(level).valid && replayCertificate(level, certificate);
 }
@@ -1687,6 +1815,7 @@ export function generateLevel(id: number): LevelDefinition {
   if (id === 11) return WRAP_INTRO_LEVEL;
   if (id === 15) return OVERLAP_INTRO_LEVEL;
   if (id === 20) return DIRECTIONAL_INTRO_LEVEL;
+  if (id === 25) return DOUBLE_INTRO_LEVEL;
   const config = getLevelConfig(id);
   const baseSeed = hashSeed(seedForLevel(id));
   const edgePolicies = getWrappingEdgePolicies(id);
@@ -1727,6 +1856,7 @@ export function generateLevel(id: number): LevelDefinition {
         } as const;
         const faces = shuffledFaces(rng);
         const headingOffset = rng.int(HEADINGS.length);
+        let double: DoubleCore | undefined;
         const planFaceIds =
           spotPlan.length > 0
             ? shuffledFaces(
@@ -1812,6 +1942,22 @@ export function generateLevel(id: number): LevelDefinition {
           ).slice(1)) {
             dirCells.add(cellKey(cell));
             occupied.add(cellKey(cell));
+          }
+        }
+        double = tier.certificate
+          ? doubleCore(id, { ...candidateLevel, arrows }, occupied, restart)
+          : undefined;
+        if (double) {
+          for (const arrow of double.arrows) {
+            arrows.push(arrow);
+            for (const path of [arrow.path, [...arrow.path].reverse()]) {
+              for (const cell of arrowTrack(candidateLevel, {
+                ...arrow,
+                path,
+              })) {
+                occupied.add(cellKey(cell));
+              }
+            }
           }
         }
         for (const [index, length] of [2, 3, 4].entries()) {
@@ -1975,7 +2121,7 @@ export function generateLevel(id: number): LevelDefinition {
           const { groupRouteCells, aheadKeys } = ensureBlockerScaffold();
           for (
             let attempt = 0;
-            placed < reserve && attempt < reserve * 60;
+            placed < reserve && arrows.length < 264 && attempt < reserve * 60;
             attempt += 1
           ) {
             if (
@@ -2139,16 +2285,24 @@ export function generateLevel(id: number): LevelDefinition {
         // Built after any assembled-board top-up so newly placed blockers —
         // always the latest-pushed `arrows` entries — lead the reversed
         // replay, matching the reverse-construction safety argument.
-        const certificate = [
+        const doubleIds = new Set(
+          double?.arrows.map((arrow) => arrow.id) ?? [],
+        );
+        const certificate: CertificateEntry[] = [
+          ...(double ? double.certificate : []),
           ...(core ? core.parkLegs : []),
           ...(directionalSpot
             ? directionalSpot.arrows.map((arrow) => arrow.id)
             : []),
-          ...[...arrows].reverse().map((arrow) => arrow.id),
+          ...[...arrows]
+            .reverse()
+            .filter((arrow) => !doubleIds.has(arrow.id))
+            .map((arrow) => arrow.id),
         ];
         const accepted = tier.certificate
           ? validateGenerated(level, certificate)
-          : validateLevel(level).valid && solveLevel(level) !== undefined;
+          : validateLevel(level).valid &&
+            solveLevelTargets(level) !== undefined;
         if (accepted) return level;
         skip = "replay";
         if (spots.length > 1 && directionalSpot) {
@@ -2164,7 +2318,7 @@ export function generateLevel(id: number): LevelDefinition {
           const coreAccepted = tier.certificate
             ? validateGenerated(coreOnly, certificate)
             : validateLevel(coreOnly).valid &&
-              solveLevel(coreOnly) !== undefined;
+              solveLevelTargets(coreOnly) !== undefined;
           if (coreAccepted) return coreOnly;
         }
       }

@@ -56,6 +56,10 @@ export interface GameState {
   readonly levelId: number;
   readonly remainingIds: readonly string[];
   readonly failedIds: readonly string[];
+  /** Exact occupied paths of parked double arrows. */
+  readonly settledPaths?: Readonly<Record<string, readonly Cell[]>>;
+  /** Paid double-arrow failures, keyed by arrow and settled path. */
+  readonly failedPositions?: readonly string[];
   readonly lives: number;
   readonly status: GameStatus;
   /** Increments after every accepted settled outcome and guards stale results. */
@@ -65,6 +69,11 @@ export interface GameState {
 }
 
 export type Endpoint = "head" | "tail";
+
+export interface MoveTarget {
+  readonly arrowId: string;
+  readonly endpoint: Endpoint;
+}
 
 export type MoveKind = "exit" | "blocked" | "invalid" | "paused";
 
@@ -104,6 +113,8 @@ export interface MoveResult {
   readonly offset: number;
   /** Forward steps this attempt travels before parking on a stop circle. */
   readonly pausedSteps?: number;
+  /** Exact occupied path after a double arrow parks. */
+  readonly settledPath?: readonly Cell[];
   readonly blockerId?: string;
   readonly contact?: ContactTrace;
   readonly exit?: ExitTrace;

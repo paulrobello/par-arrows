@@ -14,6 +14,7 @@ export function sharedDirectedSegment(
   first: ArrowDefinition,
   second: ArrowDefinition,
 ): SharedSegment | undefined {
+  if (first.kind === "double" || second.kind === "double") return undefined;
   const runs: { cells: Set<string>; links: Set<string> }[] = [];
   for (
     let firstIndex = 0;
@@ -80,6 +81,8 @@ export function overlappingArrowIds(
   level: LevelDefinition,
   arrowId: string,
 ): readonly string[] {
+  const selected = level.arrows.find((arrow) => arrow.id === arrowId);
+  if (selected?.kind === "double") return [arrowId];
   let cache = GROUPS.get(level);
   if (!cache) {
     const parents = new Map(level.arrows.map((arrow) => [arrow.id, arrow.id]));

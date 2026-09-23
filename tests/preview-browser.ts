@@ -69,7 +69,7 @@ export async function assertLevelPreview(
     unlockedLevelId: 3,
     state: campaignState,
     tutorialComplete: true,
-    contentVersion: 8,
+    contentVersion: 9,
     generatorVersion: GENERATOR_VERSION,
     seed: seedForLevel(2),
   });
@@ -110,6 +110,11 @@ export async function assertLevelPreview(
       false,
       "Public test links must work without the automation flag",
     );
+    await assertSaveUnchanged();
+    await page.goto(previewUrl(url, "feature=double&test=1"));
+    await waitForReady(page);
+    assert.equal((await state(page)).level.id, 25);
+    assert.equal((await state(page)).preview?.active, true);
     await assertSaveUnchanged();
     assert.equal(
       await page.getByRole("link", { name: "Return to campaign" }).isVisible(),

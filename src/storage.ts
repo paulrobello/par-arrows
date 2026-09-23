@@ -5,13 +5,13 @@ import {
 } from "./content/procedural";
 import { createGameState } from "./core/game-state";
 import { overlappingArrowIds } from "./core/overlap";
-import { currentPath, maximumOffset } from "./core/stops";
-import { cellKey } from "./core/topology";
-import type { GameState, LevelDefinition } from "./core/types";
+import { arrowTrack, currentPath, maximumOffset } from "./core/stops";
+import { cellKey, headingForPath } from "./core/topology";
+import type { Cell, GameState, LevelDefinition } from "./core/types";
 
 const STORAGE_KEY = "par-arrows:campaign:v1";
 const SETTINGS_KEY = "par-arrows:settings:v1";
-const CONTENT_VERSION = 8;
+const CONTENT_VERSION = 9;
 
 export interface CampaignSave {
   readonly currentLevelId: number;
@@ -118,6 +118,109 @@ function hasValidOffsets(
   return true;
 }
 
+function isCell(value: unknown, gridSize: number): value is Cell {
+  if (!value || typeof value !== "object") return false;
+  const cell = value as Partial<Cell>;
+  return (
+    ["front", "back", "right", "left", "top", "bottom"].includes(
+      cell.face ?? "",
+    ) &&
+    Number.isSafeInteger(cell.x) &&
+    Number.isSafeInteger(cell.y) &&
+    (cell.x ?? -1) >= 0 &&
+    (cell.y ?? -1) >= 0 &&
+    (cell.x ?? gridSize) < gridSize &&
+    (cell.y ?? gridSize) < gridSize
+  );
+}
+
+function reachableSettledPath(
+  level: LevelDefinition,
+  arrowId: string,
+  expected: readonly Cell[],
+): boolean {
+  const arrow = level.arrows.find((candidate) => candidate.id === arrowId);
+  if (!arrow || arrow.kind !== "double") return false;
+  const wanted = expected.map(cellKey).join("|");
+  const tracks = [
+    arrowTrack(level, arrow),
+    arrowTrack(level, { ...arrow, path: [...arrow.path].reverse() }),
+  ];
+  return tracks.some((track) =>
+    Array.from(
+      { length: Math.max(0, track.length - arrow.path.length + 1) },
+      (_, start) => track.slice(start, start + arrow.path.length),
+    ).some((path) => path.map(cellKey).join("|") === wanted),
+  );
+}
+
+function hasValidSettledPaths(
+  value: unknown,
+  level: LevelDefinition,
+  remainingIds: ReadonlySet<string>,
+): value is Readonly<Record<string, readonly Cell[]>> {
+  if (value === undefined) return true;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  for (const [id, pathValue] of Object.entries(value)) {
+    const arrow = level.arrows.find((candidate) => candidate.id === id);
+    if (
+      !arrow ||
+      arrow.kind !== "double" ||
+      !remainingIds.has(id) ||
+      !Array.isArray(pathValue) ||
+      pathValue.length !== arrow.path.length ||
+      !pathValue.every((cell) => isCell(cell, level.gridSize))
+    ) {
+      return false;
+    }
+    const path = pathValue as readonly Cell[];
+    if (new Set(path.map(cellKey)).size !== path.length) return false;
+    for (let index = 1; index < path.length; index += 1) {
+      const previous = path[index - 1];
+      const current = path[index];
+      if (
+        !previous ||
+        !current ||
+        !headingForPath([previous, current], level.gridSize)
+      ) {
+        return false;
+      }
+    }
+    if (!reachableSettledPath(level, id, path)) return false;
+  }
+  return true;
+}
+
+function hasValidFailedPositions(
+  value: unknown,
+  level: LevelDefinition,
+): value is readonly string[] {
+  if (value === undefined) return true;
+  if (!Array.isArray(value) || new Set(value).size !== value.length)
+    return false;
+  const doubles = level.arrows
+    .filter((arrow) => arrow.kind === "double")
+    .sort((left, right) => right.id.length - left.id.length);
+  return value.every((key) => {
+    if (typeof key !== "string") return false;
+    const arrow = doubles.find((candidate) =>
+      key.startsWith(`${candidate.id}:`),
+    );
+    if (!arrow) return false;
+    const encoded = key.slice(arrow.id.length + 1);
+    const path = encoded.split("|").map((part): Cell | undefined => {
+      const [face, x, y] = part.split(":");
+      const candidate = { face, x: Number(x), y: Number(y) };
+      return isCell(candidate, level.gridSize) ? candidate : undefined;
+    });
+    return (
+      path.length === arrow.path.length &&
+      path.every((cell): cell is Cell => cell !== undefined) &&
+      reachableSettledPath(level, arrow.id, path)
+    );
+  });
+}
+
 function isState(value: unknown, level: LevelDefinition): value is GameState {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<GameState>;
@@ -163,8 +266,15 @@ function isState(value: unknown, level: LevelDefinition): value is GameState {
     (failed as string[]).filter((id) => !groupedIds.has(id)).length +
     [...overlapGroups.values()].filter((group) =>
       failedIds.has(group[0] as string),
-    ).length;
+    ).length +
+    (candidate.failedPositions?.length ?? 0);
   if (!hasValidOffsets(candidate.offsets, level, remainingIds, overlapGroups)) {
+    return false;
+  }
+  if (!hasValidSettledPaths(candidate.settledPaths, level, remainingIds)) {
+    return false;
+  }
+  if (!hasValidFailedPositions(candidate.failedPositions, level)) {
     return false;
   }
   const expectedStatus =
@@ -207,7 +317,12 @@ function isLegacyContentVersion(value: unknown): boolean {
 
 /** Levels whose seed and geometry this release leaves exactly as they were. */
 function isUnchangedLevel(levelId: number): boolean {
-  return (levelId >= 2 && levelId <= 4) || levelId === 11 || levelId === 15;
+  return (
+    (levelId >= 2 && levelId <= 10) ||
+    levelId === 11 ||
+    levelId === 15 ||
+    levelId === 20
+  );
 }
 
 function hasMatchingGeneratorMetadata(
@@ -217,6 +332,7 @@ function hasMatchingGeneratorMetadata(
   if (value.seed !== seedForLevel(levelId)) return false;
   const stored = value.generatorVersion;
   if (stored === GENERATOR_VERSION) return true;
+  if ((stored === 5 || stored === 6) && isUnchangedLevel(levelId)) return true;
   // A matching seed on an unchanged level still describes the same cube, so an
   // older generator stamp is not by itself a reason to restart the attempt.
   if (stored === 4) {
@@ -284,7 +400,9 @@ export async function loadCampaign(
   const compatible =
     currentStateIsValid &&
     (exactCurrentContent ||
-      ((parsed.contentVersion === 6 || parsed.contentVersion === 7) &&
+      ((parsed.contentVersion === 6 ||
+        parsed.contentVersion === 7 ||
+        parsed.contentVersion === 8) &&
         isUnchangedLevel(currentLevelId) &&
         hasMatchingGeneratorMetadata(parsed, currentLevelId)));
   const restored = parsed.state as GameState | undefined;
@@ -295,6 +413,8 @@ export async function loadCampaign(
         state: {
           ...(restored as GameState),
           offsets: restored?.offsets ?? {},
+          settledPaths: restored?.settledPaths ?? {},
+          failedPositions: restored?.failedPositions ?? [],
         },
         tutorialComplete: parsed.tutorialComplete === true,
         level,

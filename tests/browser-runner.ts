@@ -29,6 +29,7 @@ import { LEVELS, waitForReady } from "./runtime-fixtures";
 import { assertSeamFills } from "./seam-fill-browser";
 import { assertStopIntro } from "./stop-browser";
 import { assertDirectionalIntro } from "./directional-browser";
+import { assertDoubleIntro } from "./double-browser";
 import { assertReliableTaps } from "./tap-browser";
 import {
   assertFirstRunWalkthrough,
@@ -103,6 +104,7 @@ const TUTORIAL_ONLY_COMPLETE = Symbol("tutorial-only-complete");
 const OVERLAP_ONLY_COMPLETE = Symbol("overlap-only-complete");
 const STOP_ONLY_COMPLETE = Symbol("stop-only-complete");
 const DIRECTIONAL_ONLY_COMPLETE = Symbol("directional-only-complete");
+const DOUBLE_ONLY_COMPLETE = Symbol("double-only-complete");
 const RESIZE_ONLY_COMPLETE = Symbol("resize-only-complete");
 const deadline = setTimeout(() => {
   console.error("Browser verification exceeded its 180-second deadline.");
@@ -1000,6 +1002,20 @@ try {
     throw DIRECTIONAL_ONLY_COMPLETE;
   }
 
+  if (process.env.DOUBLE_ONLY === "1") {
+    await assertDoubleIntro(browser, url, output);
+    assert.deepEqual(failures, [], "Browser must not report uncaught errors");
+    await Bun.write(
+      `${output}/double-summary.json`,
+      JSON.stringify(
+        { passed: true, browser: engine.name(), physicalDevice: false },
+        null,
+        2,
+      ),
+    );
+    throw DOUBLE_ONLY_COMPLETE;
+  }
+
   if (process.env.OVERLAP_ONLY === "1") {
     await assertOverlapIntro(browser, url, output);
     assert.deepEqual(failures, [], "Browser must not report uncaught errors");
@@ -1470,6 +1486,7 @@ try {
   await assertWrapIntro(browser, url, output);
   await assertStopIntro(browser, url, output);
   await assertDirectionalIntro(browser, url, output);
+  await assertDoubleIntro(browser, url, output);
   await assertTutorialFlow(browser, url, output);
   await assertConsistentMotion(browser, url, output);
   await assertReliableTaps(browser, url, output);
@@ -1479,12 +1496,10 @@ try {
   await assertContextRecovery(browser, url, output);
   await assertLevelPreview(browser, url, output);
   await assertWrappingEdges(browser, url, output, {
-    // Level 411 is the generated cube carrying exactly one front-east seam
-    // under the current generator, with a crossing arrow that exits alone and
-    // is blocked among its neighbours. Directional cubes bend their wrap
-    // arrows across circles, so the fixture stays on a non-directional id.
-    movementLevelId: 411,
-    reboundLevelId: 411,
+    // Level 28 is the nearest v7 cube carrying one front-east physical seam,
+    // with crossing arrows suitable for movement and rebound evidence.
+    movementLevelId: 28,
+    reboundLevelId: 28,
   });
   await assertVersionReload(page);
   await assertThemeBootstrap(browser);
@@ -1503,6 +1518,7 @@ try {
     error !== OVERLAP_ONLY_COMPLETE &&
     error !== STOP_ONLY_COMPLETE &&
     error !== DIRECTIONAL_ONLY_COMPLETE &&
+    error !== DOUBLE_ONLY_COMPLETE &&
     error !== RESIZE_ONLY_COMPLETE &&
     error !== CONTEXT_ONLY_COMPLETE &&
     error !== TUTORIAL_ONLY_COMPLETE

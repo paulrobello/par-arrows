@@ -44,9 +44,9 @@ export async function assertSeamFills(
       select.value = "dark";
       select.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    // Level 19 is the nearest generated cube carrying a front-east yellow seam
-    // under the current generator; level 10 has none, which is the contrast.
-    for (const id of [10, 19]) {
+    // Level 18 is the nearest v7 cube carrying a front-east yellow seam;
+    // level 10 has none, which is the contrast.
+    for (const id of [10, 18]) {
       await page.evaluate(
         (id) => window.__PAR_ARROWS_TEST__?.loadLevel(id),
         id,
@@ -68,7 +68,7 @@ export async function assertSeamFills(
             policy.edge === "east" &&
             policy.policy === "continue",
         ) ?? false,
-        id === 19,
+        id === 18,
         "Keep one ordinary-edge fixture and one yellow-edge fixture",
       );
       const bounds = await page.locator("canvas").boundingBox();

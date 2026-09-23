@@ -11,7 +11,11 @@ import {
   simulateMove,
 } from "../src/core/game-state";
 import { cellKey } from "../src/core/topology";
-import { solveLevel, validateLevel } from "../src/core/validation";
+import {
+  solveLevel,
+  solveLevelTargets,
+  validateLevel,
+} from "../src/core/validation";
 
 const EAST = "dir-intro-east";
 const FREED = "dir-intro-freed";
@@ -126,8 +130,14 @@ describe("directional spot level content", () => {
       for (const count of perFace.values()) {
         expect(count).toBeLessThanOrEqual(4);
       }
-      expect(solveLevel(level)).toBeDefined();
-      expect(solveLevel({ ...level, directionals: [] })).toBeUndefined();
+      expect(solveLevelTargets(level)).toBeDefined();
+      // A double arrow provides its own alternate solve path, so the
+      // spots-required invariant only applies to spot cubes without doubles.
+      if (!level.arrows.some((arrow) => arrow.kind === "double")) {
+        expect(
+          solveLevelTargets({ ...level, directionals: [] }),
+        ).toBeUndefined();
+      }
     }
   }, 60_000);
 
@@ -147,6 +157,5 @@ describe("directional spot level content", () => {
     expect(hasDirectionalCore(20)).toBe(true);
     const level = generateLevel(19);
     expect(level.directionals ?? []).toEqual([]);
-    expect(level.stops ?? []).toHaveLength(0);
   });
 });

@@ -10,11 +10,14 @@ import {
 import type { Cell, Endpoint, LevelDefinition, MoveResult } from "./types";
 import { spotHeadingAt } from "./directionals";
 import { overlappingArrowIds } from "./overlap";
-import { currentPath, offsetOf, stopKeys } from "./stops";
+import { offsetOf, settledPathOf, stopKeys } from "./stops";
 
 export { advanceHead } from "./topology";
 
-type Offsets = Readonly<Record<string, number>>;
+type SettledState = Readonly<{
+  offsets: Readonly<Record<string, number>>;
+  settledPaths?: Readonly<Record<string, readonly Cell[]>>;
+}>;
 
 function invalid(
   arrowId: string,
@@ -44,7 +47,7 @@ function invalid(
 function simulateSingle(
   level: LevelDefinition,
   remainingIds: readonly string[],
-  offsets: Offsets,
+  settledState: SettledState,
   arrowId: string,
   endpoint: Endpoint = "head",
   stateRevision = 0,
@@ -52,7 +55,7 @@ function simulateSingle(
   stepLimit = Number.POSITIVE_INFINITY,
 ): MoveResult {
   const arrow = level.arrows.find((candidate) => candidate.id === arrowId);
-  const offset = offsetOf(offsets, arrowId);
+  const offset = offsetOf(settledState.offsets, arrowId);
   if (!arrow || !remainingIds.includes(arrowId)) {
     return invalid(
       arrowId,
@@ -71,16 +74,7 @@ function simulateSingle(
       "Single-ended arrows only accept their head endpoint.",
     );
   }
-  if (endpoint === "tail" && offset > 0) {
-    return invalid(
-      arrowId,
-      endpoint,
-      stateRevision,
-      offset,
-      "An arrow parked on a stop circle only continues forward.",
-    );
-  }
-  const settled = currentPath(level, arrow, offset);
+  const settled = settledPathOf(level, settledState, arrow);
   const path = endpoint === "head" ? settled : [...settled].reverse();
   const initialHead = path[path.length - 1];
   if (!initialHead) {
@@ -111,11 +105,7 @@ function simulateSingle(
       !ignoredIds.has(other.id) &&
       remainingIds.includes(other.id)
     ) {
-      for (const cell of currentPath(
-        level,
-        other,
-        offsetOf(offsets, other.id),
-      )) {
+      for (const cell of settledPathOf(level, settledState, other)) {
         occupied.set(cellKey(cell), other.id);
       }
     }
@@ -219,6 +209,9 @@ function simulateSingle(
       };
     }
     if (stops.has(cellKey(next)) || step >= stepLimit) {
+      const settledPath = [...path, ...route.slice(1)].slice(-path.length);
+      const authoredOrder =
+        endpoint === "head" ? settledPath : [...settledPath].reverse();
       return {
         arrowId,
         endpoint,
@@ -229,6 +222,7 @@ function simulateSingle(
         stateRevision,
         offset,
         pausedSteps: step,
+        ...(arrow.kind === "double" ? { settledPath: authoredOrder } : {}),
       };
     }
     current = next;
@@ -260,8 +254,10 @@ export function simulateMove(
   arrowId: string,
   endpoint: Endpoint = "head",
   stateRevision = 0,
-  offsets: Offsets = {},
+  offsets: Readonly<Record<string, number>> = {},
+  settledPaths: Readonly<Record<string, readonly Cell[]>> = {},
 ): MoveResult {
+  const settledState: SettledState = { offsets, settledPaths };
   const ids = overlappingArrowIds(level, arrowId).filter((id) =>
     remainingIds.includes(id),
   );
@@ -269,7 +265,7 @@ export function simulateMove(
     return simulateSingle(
       level,
       remainingIds,
-      offsets,
+      settledState,
       arrowId,
       endpoint,
       stateRevision,
@@ -281,7 +277,7 @@ export function simulateMove(
       simulateSingle(
         level,
         remainingIds,
-        offsets,
+        settledState,
         id,
         id === arrowId ? endpoint : "head",
         stateRevision,
@@ -312,7 +308,7 @@ export function simulateMove(
     return simulateSingle(
       level,
       remainingIds,
-      offsets,
+      settledState,
       arrowId,
       endpoint,
       stateRevision,

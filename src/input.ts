@@ -1,22 +1,18 @@
-export interface PointerInputHandlers {
-  readonly pick: (
-    x: number,
-    y: number,
-    pointerType: string,
-  ) => string | undefined;
-  readonly onPress: (id: string | undefined) => void;
-  readonly onTap: (id: string) => void;
+export interface PointerInputHandlers<T = string> {
+  readonly pick: (x: number, y: number, pointerType: string) => T | undefined;
+  readonly onPress: (target: T | undefined) => void;
+  readonly onTap: (target: T) => void;
   readonly onOrbit: (deltaX: number, deltaY: number) => void;
   readonly onZoom: (delta: number) => void;
 }
 
-interface ActivePointer {
+interface ActivePointer<T> {
   readonly id: number;
   readonly x: number;
   readonly y: number;
   readonly pressX: number;
   readonly pressY: number;
-  readonly arrowId: string | undefined;
+  readonly target: T | undefined;
   readonly dragging: boolean;
   readonly tapThreshold: number;
 }
@@ -29,8 +25,8 @@ const PINCH_ENGAGE_PX = 16;
 const PINCH_ZOOM_SCALE = 5.2;
 
 /** Normalizes mouse and touch gestures before handing actions to the game. */
-export class PointerInput {
-  private active: ActivePointer | undefined;
+export class PointerInput<T = string> {
+  private active: ActivePointer<T> | undefined;
   private pinchDistance: number | undefined;
   private pinchEngaged = false;
   private readonly touches = new Map<number, PointerEvent>();
@@ -39,7 +35,7 @@ export class PointerInput {
 
   constructor(
     private readonly element: HTMLElement,
-    private readonly handlers: PointerInputHandlers,
+    private readonly handlers: PointerInputHandlers<T>,
   ) {
     this.view = element.ownerDocument?.defaultView ?? null;
     this.view?.addEventListener("blur", this.cancel);
@@ -84,7 +80,7 @@ export class PointerInput {
       return;
     }
     this.element.setPointerCapture(event.pointerId);
-    const arrowId = this.handlers.pick(
+    const target = this.handlers.pick(
       event.clientX,
       event.clientY,
       event.pointerType,
@@ -95,12 +91,12 @@ export class PointerInput {
       y: event.clientY,
       pressX: event.clientX,
       pressY: event.clientY,
-      arrowId,
+      target,
       dragging: false,
       tapThreshold:
         event.pointerType === "touch" ? TOUCH_TAP_THRESHOLD : TAP_THRESHOLD,
     };
-    this.handlers.onPress(arrowId);
+    this.handlers.onPress(target);
   };
 
   private readonly onPointerMove = (event: PointerEvent): void => {
@@ -145,7 +141,7 @@ export class PointerInput {
         ...this.active,
         x: event.clientX,
         y: event.clientY,
-        arrowId: undefined,
+        target: undefined,
         dragging: true,
       };
       this.handlers.onPress(undefined);
@@ -169,13 +165,13 @@ export class PointerInput {
     this.active = undefined;
     this.handlers.onPress(undefined);
     if (
-      active.arrowId &&
+      active.target &&
       !active.dragging &&
       event.button === 0 &&
       Math.hypot(event.clientX - active.pressX, event.clientY - active.pressY) <
         active.tapThreshold
     ) {
-      this.handlers.onTap(active.arrowId);
+      this.handlers.onTap(active.target);
     }
   };
 

@@ -1,9 +1,10 @@
-import type { MoveKind } from "./core/types";
+import type { Endpoint, MoveKind } from "./core/types";
 
 export type TutorialAdvance =
   | {
       kind: "move";
       arrowIds: readonly string[];
+      endpoint?: Endpoint;
       outcomes?: readonly MoveKind[];
     }
   | { kind: "won" };
@@ -20,7 +21,7 @@ export interface TutorialScript {
   readonly steps: readonly TutorialStep[];
 }
 
-export const SCRIPTED_LEVEL_IDS: readonly number[] = [1, 5, 11, 15, 20];
+export const SCRIPTED_LEVEL_IDS: readonly number[] = [1, 5, 11, 15, 20, 25];
 
 const LEVEL_ONE_SCRIPT: TutorialScript = {
   levelId: 1,
@@ -191,12 +192,43 @@ const DIRECTIONAL_INTRO_SCRIPT: TutorialScript = {
   ],
 };
 
+export const DOUBLE_INTRO_SCRIPT: TutorialScript = {
+  levelId: 25,
+  title: "Choose a direction.",
+  steps: [
+    {
+      copy: "Each colored half chooses which head moves. Tap the violet half to send this arrow toward its tail and open the lane.",
+      highlightId: "double-intro-choice",
+      advance: {
+        kind: "move",
+        arrowIds: ["double-intro-choice"],
+        endpoint: "tail",
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "The blocker is free. Clear it, then finish the cube.",
+      highlightId: "double-intro-blocker",
+      advance: {
+        kind: "move",
+        arrowIds: ["double-intro-blocker"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "Two-headed arrows can move in either direction. Clear the remaining arrows.",
+      advance: { kind: "won" },
+    },
+  ],
+};
+
 const SCRIPTS: readonly TutorialScript[] = [
   LEVEL_ONE_SCRIPT,
   STOP_INTRO_SCRIPT,
   WRAP_INTRO_SCRIPT,
   OVERLAP_INTRO_SCRIPT,
   DIRECTIONAL_INTRO_SCRIPT,
+  DOUBLE_INTRO_SCRIPT,
 ];
 
 export function scriptForLevel(levelId: number): TutorialScript | undefined {
@@ -236,11 +268,20 @@ export class TutorialRunner {
    * Arrow ids the current step accepts taps for, or undefined once the
    * script is finished or reaches its final free-play "won" step.
    */
-  get gate(): ReadonlySet<string> | undefined {
+  get gateTarget():
+    | { readonly arrowIds: ReadonlySet<string>; readonly endpoint?: Endpoint }
+    | undefined {
     if (this.done) return undefined;
     const advance = this.current.advance;
     if (advance.kind === "won") return undefined;
-    return new Set(advance.arrowIds);
+    return {
+      arrowIds: new Set(advance.arrowIds),
+      ...(advance.endpoint ? { endpoint: advance.endpoint } : {}),
+    };
+  }
+
+  get gate(): ReadonlySet<string> | undefined {
+    return this.gateTarget?.arrowIds;
   }
 
   /** Skips steps whose every named arrow has already left the board. */
@@ -258,14 +299,18 @@ export class TutorialRunner {
     }
   }
 
-  onMove(result: { arrowId: string; kind: MoveKind }): void {
+  onMove(result: {
+    arrowId: string;
+    endpoint?: Endpoint;
+    kind: MoveKind;
+  }): void {
     let i = this.index;
     for (const step of this.script.steps.slice(this.index)) {
       const advance = step.advance;
       if (
         advance.kind === "move" &&
         advance.arrowIds.includes(result.arrowId) &&
-        this.matches(advance, result.kind)
+        this.matches(advance, result.kind, result.endpoint)
       ) {
         this.index = i + 1;
         return;
@@ -289,8 +334,12 @@ export class TutorialRunner {
   private matches(
     advance: Extract<TutorialAdvance, { kind: "move" }>,
     kind: MoveKind,
+    endpoint?: Endpoint,
   ): boolean {
     if (kind === "invalid") return false;
+    if (advance.endpoint !== undefined && advance.endpoint !== endpoint) {
+      return false;
+    }
     return advance.outcomes ? advance.outcomes.includes(kind) : true;
   }
 }

@@ -1,6 +1,8 @@
-/** A pickable arrow and how far the pointer landed from it, in CSS pixels. */
+import type { MoveTarget } from "./core/types";
+
+/** A pickable arrow endpoint and how far the pointer landed from it, in CSS pixels. */
 export interface PickCandidate {
-  readonly arrowId: string;
+  readonly target: MoveTarget;
   readonly distancePx: number;
 }
 
@@ -13,12 +15,18 @@ export interface PickCandidate {
  */
 export function resolvePick(
   candidates: readonly PickCandidate[],
-  isSafe: (arrowId: string) => boolean,
-): string | undefined {
-  const ordered = [...candidates].sort((a, b) => a.distancePx - b.distancePx);
-  const direct = ordered.filter((candidate) => candidate.distancePx === 0);
+  isSafe: (target: MoveTarget) => boolean,
+): MoveTarget | undefined {
+  const direct = candidates.filter((candidate) => candidate.distancePx === 0);
+  const ordered = [...candidates].sort(
+    (a, b) =>
+      a.distancePx - b.distancePx ||
+      a.target.arrowId.localeCompare(b.target.arrowId) ||
+      Number(a.target.endpoint === "tail") -
+        Number(b.target.endpoint === "tail"),
+  );
   const contested = direct.length > 0 ? direct : ordered;
   return (
-    contested.find((candidate) => isSafe(candidate.arrowId)) ?? contested[0]
-  )?.arrowId;
+    contested.find((candidate) => isSafe(candidate.target)) ?? contested[0]
+  )?.target;
 }

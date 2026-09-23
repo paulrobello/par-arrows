@@ -10,6 +10,7 @@ import {
   stepAcrossSeam,
 } from "../src/core/topology";
 import type { Cell, FaceId, Heading, MoveResult } from "../src/core/types";
+import { splitExpandedPath } from "../src/render/ribbon-geometry";
 import {
   arrowMotionDuration,
   arrowMotionTrack,
@@ -79,7 +80,92 @@ function polylineLength(points: readonly THREE.Vector3[]): number {
     );
 }
 
+describe("double-arrow midpoint geometry", () => {
+  test.each([
+    ["even", [0, 1, 2, 3, 4]],
+    ["odd", [0, 1, 3, 6]],
+    ["short", [0, 2]],
+  ])("splits %s paths by accumulated distance", (_name, coordinates) => {
+    const points = coordinates.map((x) => new THREE.Vector3(x, 0, 1));
+    const faces = coordinates.slice(1).map(() => "front" as const);
+    const split = splitExpandedPath(points, faces, 0.5);
+    expect(split.tail.endDistance).toBeCloseTo(split.totalDistance / 2);
+    expect(split.head.startDistance).toBeCloseTo(split.totalDistance / 2);
+    expect(split.tail.points.at(-1)).toEqual(split.head.points[0]);
+    expect(polylineLength(split.tail.points)).toBeCloseTo(
+      split.totalDistance / 2,
+    );
+    expect(polylineLength(split.head.points)).toBeCloseTo(
+      split.totalDistance / 2,
+    );
+  });
+
+  test("keeps point and face counts aligned at an exact midpoint vertex", () => {
+    const points = [0, 1, 2].map((x) => new THREE.Vector3(x, 0, 1));
+    const split = splitExpandedPath(points, ["front", "front"], 0.5);
+    for (const half of [split.tail, split.head]) {
+      expect(half.points.length).toBe(half.segmentFaces.length + 1);
+      expect(polylineLength(half.points)).toBeCloseTo(1);
+    }
+    expect(split.head.points).toHaveLength(2);
+  });
+
+  test("keeps point and face counts aligned when the midpoint is a seam vertex", () => {
+    const points = [
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(1, 0, 1),
+      new THREE.Vector3(1, 0, 0),
+    ];
+    const split = splitExpandedPath(points, ["front", "right"], 0.5);
+    for (const half of [split.tail, split.head]) {
+      expect(half.points.length).toBe(half.segmentFaces.length + 1);
+    }
+    expect(split.head.segmentFaces).toEqual(["right"]);
+  });
+
+  test("keeps the seam face on both sides of an interpolated midpoint", () => {
+    const points = [
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(1, 0, 1),
+      new THREE.Vector3(1, 0, 0),
+    ];
+    const split = splitExpandedPath(points, ["front", "right"], 0.5);
+    expect(split.tail.points.at(-1)).toEqual(split.head.points[0]);
+    expect(split.tail.segmentFaces.at(-1)).toBe("front");
+    expect(split.head.segmentFaces[0]).toBe("right");
+  });
+});
+
 describe("flat ribbon geometry", () => {
+  test("tail motion extends from the tail without folding through the authored head", () => {
+    const path = expandedPoints(
+      [
+        { face: "front", x: 1, y: 2 },
+        { face: "front", x: 2, y: 2 },
+      ],
+      4,
+    );
+    const move = {
+      ...result(
+        "exit",
+        [
+          { face: "front", x: 1, y: 2 },
+          { face: "front", x: 0, y: 2 },
+        ],
+        edgePoint({ face: "front", x: 0, y: 2 }, "west", 4),
+        [-1, 0, 0],
+      ),
+      endpoint: "tail" as const,
+    };
+    const motion = arrowMotionTrack(path, move, 4);
+    expect((motion.track.points[0] as THREE.Vector3).x).toBeGreaterThan(
+      (motion.track.points[1] as THREE.Vector3).x,
+    );
+    const surfaceXs = motion.track.points.slice(0, 3).map((point) => point.x);
+    expect(surfaceXs[1]).toBeLessThan(surfaceXs[0] ?? 0);
+    expect(surfaceXs[2]).toBeLessThan(surfaceXs[1] ?? 0);
+  });
+
   test("a short group member keeps its whole ribbon while traveling beside a longer member", () => {
     const path = expandedPoints(
       [

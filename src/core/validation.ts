@@ -13,6 +13,7 @@ import type {
   Endpoint,
   GameState,
   LevelDefinition,
+  MoveTarget,
 } from "./types";
 
 export interface ValidationResult {
@@ -314,20 +315,40 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
  * Drive one arrow from its settled position to an exit, parking on every stop
  * circle along the way. Undefined means some leg of that drive was blocked.
  */
+function targetsFor(
+  level: LevelDefinition,
+  arrowId: string,
+): readonly MoveTarget[] {
+  const arrow = level.arrows.find((candidate) => candidate.id === arrowId);
+  return arrow?.kind === "double"
+    ? [
+        { arrowId, endpoint: "head" },
+        { arrowId, endpoint: "tail" },
+      ]
+    : [{ arrowId, endpoint: "head" }];
+}
+
 function driveThrough(
   level: LevelDefinition,
   state: GameState,
-  arrowId: string,
-): { readonly state: GameState; readonly taps: readonly string[] } | undefined {
+  target: MoveTarget,
+):
+  | { readonly state: GameState; readonly taps: readonly MoveTarget[] }
+  | undefined {
   const maximumTaps = level.gridSize * 6 + 2;
-  const taps: string[] = [];
+  const taps: MoveTarget[] = [];
   let current = state;
   for (let tap = 0; tap < maximumTaps; tap += 1) {
-    const result = simulateState(level, current, arrowId);
+    const result = simulateState(
+      level,
+      current,
+      target.arrowId,
+      target.endpoint,
+    );
     if (result.kind !== "exit" && result.kind !== "paused") return undefined;
     const next = applyMove(level, current, result);
     if (next === current) return undefined;
-    taps.push(arrowId);
+    taps.push(target);
     current = next;
     if (result.kind === "exit") return { state: current, taps };
   }
@@ -342,14 +363,16 @@ function driveThrough(
 function clearWhatExits(
   level: LevelDefinition,
   state: GameState,
-): { readonly state: GameState; readonly taps: readonly string[] } {
-  const taps: string[] = [];
+): { readonly state: GameState; readonly taps: readonly MoveTarget[] } {
+  const taps: MoveTarget[] = [];
   let current = state;
   for (let pass = 0; pass <= level.arrows.length; pass += 1) {
     const before = current.remainingIds.length;
     for (const arrowId of [...current.remainingIds]) {
       if (!current.remainingIds.includes(arrowId)) continue;
-      const cleared = driveThrough(level, current, arrowId);
+      const cleared = targetsFor(level, arrowId)
+        .map((target) => driveThrough(level, current, target))
+        .find((result) => result !== undefined);
       if (!cleared) continue;
       current = cleared.state;
       taps.push(...cleared.taps);
@@ -365,7 +388,12 @@ function solveKey(state: GameState): string {
     .map(([id, value]) => `${id}@${value}`)
     .sort()
     .join(",");
-  return `${[...state.remainingIds].sort().join("|")}#${parked}`;
+  const settled = Object.entries(state.settledPaths ?? {})
+    .map(([id, path]) => `${id}@${path.map(cellKey).join(">")}`)
+    .sort()
+    .join(",");
+  const failures = [...(state.failedPositions ?? [])].sort().join(",");
+  return `${[...state.remainingIds].sort().join("|")}#${parked}#${settled}#${failures}`;
 }
 
 const SOLVER_NODE_BUDGET = 4000;
@@ -381,21 +409,28 @@ function searchSolution(
   state: GameState,
   visited: Set<string>,
   budget: { remaining: number },
-): readonly string[] | undefined {
+): readonly MoveTarget[] | undefined {
   const cleared = clearWhatExits(level, state);
   if (cleared.state.remainingIds.length === 0) return cleared.taps;
   const key = solveKey(cleared.state);
   if (visited.has(key)) return undefined;
   visited.add(key);
   for (const arrowId of cleared.state.remainingIds) {
-    if (budget.remaining <= 0) return undefined;
-    budget.remaining -= 1;
-    const result = simulateState(level, cleared.state, arrowId);
-    if (result.kind !== "paused") continue;
-    const parked = applyMove(level, cleared.state, result);
-    if (parked === cleared.state) continue;
-    const rest = searchSolution(level, parked, visited, budget);
-    if (rest) return [...cleared.taps, arrowId, ...rest];
+    for (const target of targetsFor(level, arrowId)) {
+      if (budget.remaining <= 0) return undefined;
+      budget.remaining -= 1;
+      const result = simulateState(
+        level,
+        cleared.state,
+        target.arrowId,
+        target.endpoint,
+      );
+      if (result.kind !== "paused") continue;
+      const parked = applyMove(level, cleared.state, result);
+      if (parked === cleared.state) continue;
+      const rest = searchSolution(level, parked, visited, budget);
+      if (rest) return [...cleared.taps, target, ...rest];
+    }
   }
   return undefined;
 }
@@ -406,13 +441,31 @@ function searchSolution(
  * circle appears once per leg. Undefined means no legal full-clear sequence was
  * found.
  */
-export function solveLevel(
+export function solveLevelTargets(
   level: LevelDefinition,
-): readonly string[] | undefined {
+): readonly MoveTarget[] | undefined {
   if (!validateLevel(level).valid) {
     return undefined;
   }
   return searchSolution(level, createGameState(level), new Set(), {
     remaining: SOLVER_NODE_BUDGET,
   });
+}
+
+/** Legacy string certificate for levels containing only single-ended arrows. */
+export function solveLevel(
+  level: LevelDefinition,
+): readonly string[] | undefined {
+  const targets = solveLevelTargets(level);
+  if (!targets) return undefined;
+  if (
+    targets.some(
+      (target) =>
+        level.arrows.find((arrow) => arrow.id === target.arrowId)?.kind ===
+        "double",
+    )
+  ) {
+    return undefined;
+  }
+  return targets.map((target) => target.arrowId);
 }

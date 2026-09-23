@@ -1,6 +1,11 @@
 import { simulateMove as simulate } from "./movement";
 import { overlappingArrowIds } from "./overlap";
-import { maximumOffset, offsetOf } from "./stops";
+import {
+  failurePositionKey,
+  maximumOffset,
+  offsetOf,
+  settledPathOf,
+} from "./stops";
 import type { Endpoint, GameState, LevelDefinition, MoveResult } from "./types";
 
 export function createGameState(level: LevelDefinition): GameState {
@@ -8,6 +13,8 @@ export function createGameState(level: LevelDefinition): GameState {
     levelId: level.id,
     remainingIds: level.arrows.map((arrow) => arrow.id),
     failedIds: [],
+    settledPaths: {},
+    failedPositions: [],
     lives: level.lives,
     status: "playing",
     revision: 0,
@@ -41,6 +48,7 @@ export function simulateMove(
     endpoint,
     state.revision,
     state.offsets,
+    state.settledPaths,
   );
 }
 
@@ -75,6 +83,26 @@ export function applyMove(
   if (result.kind === "paused") {
     const steps = result.pausedSteps ?? 0;
     if (steps <= 0) return state;
+    const clicked = level.arrows.find(
+      (candidate) => candidate.id === result.arrowId,
+    );
+    if (!clicked) return state;
+    if (clicked.kind === "double") {
+      if (
+        groupIds.length !== 1 ||
+        result.settledPath?.length !== clicked.path.length
+      ) {
+        return state;
+      }
+      return {
+        ...state,
+        settledPaths: {
+          ...(state.settledPaths ?? {}),
+          [clicked.id]: result.settledPath,
+        },
+        revision: state.revision + 1,
+      };
+    }
     const offsets = { ...state.offsets };
     for (const id of groupIds) {
       const arrow = level.arrows.find((candidate) => candidate.id === id);
@@ -90,12 +118,39 @@ export function applyMove(
       (id) => !groupIds.includes(id),
     );
     const offsets = { ...state.offsets };
-    for (const id of groupIds) delete offsets[id];
+    const settledPaths = { ...(state.settledPaths ?? {}) };
+    for (const id of groupIds) {
+      delete offsets[id];
+      delete settledPaths[id];
+    }
     return {
       ...state,
       remainingIds,
       offsets,
+      settledPaths,
       status: remainingIds.length === 0 ? "won" : "playing",
+      revision: state.revision + 1,
+    };
+  }
+  const clicked = level.arrows.find(
+    (candidate) => candidate.id === result.arrowId,
+  );
+  if (clicked?.kind === "double") {
+    const key = failurePositionKey(
+      clicked.id,
+      settledPathOf(level, state, clicked),
+    );
+    const previousFailures = state.failedPositions ?? [];
+    const hasFailed = previousFailures.includes(key);
+    const failedPositions = hasFailed
+      ? previousFailures
+      : [...previousFailures, key];
+    const lives = hasFailed ? state.lives : Math.max(0, state.lives - 1);
+    return {
+      ...state,
+      failedPositions,
+      lives,
+      status: lives === 0 ? "lost" : "playing",
       revision: state.revision + 1,
     };
   }

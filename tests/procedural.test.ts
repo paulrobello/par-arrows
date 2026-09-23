@@ -5,6 +5,7 @@ import { OVERLAP_INTRO_LEVEL } from "../src/content/overlap-intro";
 import { STOP_INTRO_LEVEL } from "../src/content/stop-intro";
 import {
   blockerReserve,
+  doubleArrowFrequency,
   GENERATOR_VERSION,
   generateLevel,
   getLevelConfig,
@@ -20,6 +21,7 @@ import {
   simulateMove as simulateGameMove,
 } from "../src/core/game-state";
 import { simulateMove as simulateCoreMove } from "../src/core/movement";
+import { overlappingArrowIds } from "../src/core/overlap";
 import { arrowTrack } from "../src/core/stops";
 import {
   cellKey,
@@ -28,7 +30,11 @@ import {
   seamTransition,
 } from "../src/core/topology";
 import type { LevelDefinition } from "../src/core/types";
-import { solveLevel, validateLevel } from "../src/core/validation";
+import {
+  solveLevel,
+  solveLevelTargets,
+  validateLevel,
+} from "../src/core/validation";
 
 function geometryHash(level: LevelDefinition): string {
   return createHash("sha256")
@@ -43,6 +49,24 @@ function geometryHash(level: LevelDefinition): string {
       }),
     )
     .digest("hex");
+}
+
+function replaySolution(level: LevelDefinition): void {
+  const solution = solveLevelTargets(level);
+  if (!solution) throw new Error(`Expected a solution for ${level.id}.`);
+  let state = createGameState(level);
+  for (const target of solution) {
+    const result = simulateGameMove(
+      level,
+      state,
+      target.arrowId,
+      target.endpoint,
+    );
+    expect(["exit", "paused"]).toContain(result.kind);
+    state = applyMove(level, state, result);
+  }
+  expect(state.status).toBe("won");
+  expect(state.lives).toBe(level.lives);
 }
 
 function diverseLevelIds(): readonly number[] {
@@ -98,9 +122,51 @@ function normalizedShapeSignature(
     .join("");
 }
 
+describe("generated double arrows", () => {
+  test("uses v7 seeds and the planned frequency curve", () => {
+    expect(GENERATOR_VERSION).toBe(7);
+    expect(seedForLevel(25)).toBe(
+      "par-arrows:runtime:7:level:25:double-intro:1",
+    );
+    expect(doubleArrowFrequency(25)).toBe(0);
+    expect(doubleArrowFrequency(26)).toBeCloseTo(0.2);
+    expect(doubleArrowFrequency(60)).toBeCloseTo(0.45);
+    expect(doubleArrowFrequency(1_000)).toBeCloseTo(0.45);
+  });
+
+  test("deterministically omits doubles before 26 and includes required-use samples", () => {
+    for (const id of [2, 10, 12, 20, 24]) {
+      expect(
+        generateLevel(id).arrows.some((arrow) => arrow.kind === "double"),
+      ).toBe(false);
+    }
+    const samples = Array.from({ length: 20 }, (_, index) => 26 + index);
+    const withDouble = samples
+      .map(generateLevel)
+      .filter((level) => level.arrows.some((arrow) => arrow.kind === "double"));
+    expect(withDouble.length).toBeGreaterThan(0);
+    for (const level of withDouble) {
+      expect(generateLevel(level.id)).toEqual(level);
+      const doubles = level.arrows.filter((arrow) => arrow.kind === "double");
+      expect(doubles).toHaveLength(1);
+      expect(overlappingArrowIds(level, doubles[0]?.id ?? "")).toHaveLength(1);
+      const solution = solveLevelTargets(level);
+      expect(solution).toBeDefined();
+      expect(
+        solution?.some(
+          (target) =>
+            doubles.some((arrow) => arrow.id === target.arrowId) &&
+            target.endpoint === "tail",
+        ),
+      ).toBe(true);
+      expect(level.arrows.length).toBeLessThanOrEqual(264);
+    }
+  }, 60_000);
+});
+
 describe("runtime campaign generator", () => {
   test("has a versioned stable seed and rejects unsafe ids", () => {
-    expect(GENERATOR_VERSION).toBe(6);
+    expect(GENERATOR_VERSION).toBe(7);
     expect(seedForLevel(1_000_000)).toBe(seedForLevel(1_000_000));
     expect(seedForLevel(1_000_000)).not.toBe(seedForLevel(1_000_001));
     for (const id of [0, -1, 1.5, Number.MAX_SAFE_INTEGER, MAX_LEVEL_ID + 1])
@@ -122,13 +188,13 @@ describe("runtime campaign generator", () => {
       "48bf3896852038155c179facccc7174e71e86e0d24d6e5ccac99f770b41a9512",
     );
     expect(geometryHash(generateLevel(12))).toBe(
-      "77f903b7dc2f7a9a725105ef4c21c4c8d2851b4f4e492a2dfcee5b23655c4db9",
+      "7eceadbf7a784a2dc049d543d586451d388b75a292a3152da9307e5e28177014",
     );
     expect(geometryHash(generateLevel(13))).toBe(
-      "630f67ac290a391d91b3b328d2b9600fc2b68b044945f762e415eba10348c4e3",
+      "115803f829284b338527f53fba71fab9f0b4f42bdfb8e72bf76105d503db4b71",
     );
     expect(geometryHash(generateLevel(14))).toBe(
-      "310baf38c7f79039dad552090dd5ff00e27b5f3e00346d169bf35d492da9fbe1",
+      "add0737d3e4429c25a35bdc6bc0432fd2e9eb2fdf6464516f8f07150b7906615",
     );
     expect(geometryHash(generateLevel(3))).toBe(
       "4a1a8de68f8e033d11be45dd73ed6dc80a47289922f98aea82666c4380c5f48b",
@@ -143,7 +209,9 @@ describe("runtime campaign generator", () => {
   });
 
   test("builds bounded valid levels with reverse construction certificates", () => {
-    const layouts = [2, 3, 7, 10, 14, 16, 1_000, 1_000_000].map(generateLevel);
+    const layouts = [2, 3, 7, 10, 14, 16, 327, 1_000, 1_000_000].map(
+      generateLevel,
+    );
     expect(
       new Set(layouts.map((level) => JSON.stringify(level.arrows))).size,
     ).toBe(layouts.length);
@@ -178,25 +246,24 @@ describe("runtime campaign generator", () => {
       expect(Math.max(...shapeCopies.values())).toBeLessThanOrEqual(
         Math.max(6, Math.ceil(level.arrows.length * 0.03)),
       );
-      if ((level.stops ?? []).length > 0) {
-        // The parking deadlock breaks the plain reverse order, so circle
-        // levels replay the solver's park-prefixed solution instead.
-        const solution = solveLevel(level);
-        if (!solution) throw new Error("Expected a generated solution.");
-        let solverState = createGameState(level);
-        for (const arrowId of solution) {
-          const result = simulateGameMove(level, solverState, arrowId);
-          expect(["exit", "paused"]).toContain(result.kind);
-          solverState = applyMove(level, solverState, result);
-        }
-        expect(solverState.status).toBe("won");
-        expect(solverState.lives).toBe(level.lives);
+      if (
+        (level.stops ?? []).length > 0 ||
+        level.arrows.some((arrow) => arrow.kind === "double")
+      ) {
+        // Parking deadlocks and double arrows replay the endpoint-aware
+        // solver solution instead of the plain reverse order.
+        replaySolution(level);
       } else {
         let certificateState = createGameState(level);
         for (const arrow of [...level.arrows].reverse()) {
           // An arrow whose route crosses a stop circle needs one tap per leg.
           while (certificateState.remainingIds.includes(arrow.id)) {
-            const result = simulateGameMove(level, certificateState, arrow.id);
+            const result = simulateGameMove(
+              level,
+              certificateState,
+              arrow.id,
+              arrow.kind === "double" ? "tail" : "head",
+            );
             expect(["exit", "paused"]).toContain(result.kind);
             const next = applyMove(level, certificateState, result);
             expect(next).not.toBe(certificateState);
@@ -239,7 +306,7 @@ describe("runtime campaign generator", () => {
     for (const id of diverseLevelIds()) {
       const level = generateLevel(id);
       expect(seedForLevel(id)).toBe(
-        `par-arrows:runtime:${id <= 4 ? 1 : id <= 10 ? 4 : 6}:level:${id}`,
+        `par-arrows:runtime:${id <= 4 ? 1 : id <= 10 ? 4 : 7}:level:${id}`,
       );
       expect(validateLevel(level).valid).toBe(true);
       const spots = level.directionals ?? [];
@@ -292,12 +359,12 @@ describe("runtime campaign generator", () => {
     expect(getWrappingEdgeWeights(MAX_LEVEL_ID)).toEqual(final);
     for (let id = 12; id <= 100; id += 1) {
       const current = getWrappingEdgeWeights(id);
-      if (id === 15 || id === 20) {
+      if (id === 15 || id === 20 || id === 25) {
         expect(current).toEqual([1, 0, 0, 0]);
         continue;
       }
       const previous = getWrappingEdgeWeights(
-        id === 16 ? 14 : id === 21 ? 19 : id - 1,
+        id === 16 ? 14 : id === 21 ? 19 : id === 26 ? 24 : id - 1,
       );
       expect(current[0]).toBe(0.25);
       expect(
@@ -459,17 +526,12 @@ describe("runtime campaign generator", () => {
       expect(stops).toHaveLength(getStopCount(id));
       if (stops.length === 0) continue;
       const stripped = { ...level, stops: [] };
-      expect(solveLevel(stripped)).toBeUndefined();
-      const solution = solveLevel(level);
-      if (!solution) throw new Error(`Expected a parking solution for ${id}.`);
-      let state = createGameState(level);
-      for (const arrowId of solution) {
-        const result = simulateGameMove(level, state, arrowId);
-        expect(["exit", "paused"]).toContain(result.kind);
-        state = applyMove(level, state, result);
+      // A double arrow provides its own alternate solve path, so the
+      // parking-required invariant only applies to circle cubes without doubles.
+      if (!level.arrows.some((arrow) => arrow.kind === "double")) {
+        expect(solveLevelTargets(stripped)).toBeUndefined();
       }
-      expect(state.status).toBe("won");
-      expect(state.lives).toBe(level.lives);
+      replaySolution(level);
     }
   }, 20_000);
 

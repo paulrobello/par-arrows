@@ -224,11 +224,11 @@ Provisional targets: responsive input feedback within 100 ms, 60 frames per seco
 
 ## 9. Future mechanic contracts
 
-### 9.1 Double-ended blue/green arrows — Q16
+### 9.1 Two-headed violet/lime arrows — Q16
 
-One logical arrow has two selectable travel directions. A selection carries both arrow identity and chosen endpoint. Reversing traversal must reverse the ordered path consistently across face seams. The path is removed as a single entity after a successful attempt in either direction.
+One logical arrow has two selectable travel directions. A selection carries both arrow identity and chosen endpoint. Violet and lime halves split at the midpoint by distance along the full rendered surface path, and each endpoint has its own arrowhead so direction does not depend on color alone. Selecting either half moves toward that half's head; reversing traversal reverses the settled ordered path consistently across face seams. The path is removed as a single entity after a successful attempt in either direction.
 
-Define the two halves by distance along the full surface path, not by a screen-space bounding box. The halfway point, very short arrows, hidden halves, the middle selection dead zone, and persistent collision-red feedback overriding blue/green must be resolved before shipping this mechanic. Direction must also be conveyed by endpoint shape or another non-color cue. Q23 must decide whether first failure exempts both endpoints from further penalties or each direction has separate failure history.
+A stop may park the selected head, after which either endpoint may resume. Directional spots bend the selected moving head, and parked double arrows store their complete settled path because a signed offset cannot reconstruct branched routes. A collision preserves both colors, adds a whole-arrow red outline or glow, rewinds to the attempt's starting path, and charges only the first failure for that arrow at that settled position; both endpoints share the exemption. Double arrows never join overlapping-tail groups. Level 25 introduces the mechanic, generated required-use cases begin at level 26, and `?feature=double` opens the introduction without changing campaign saves. The complete approved contract is in `docs/superpowers/specs/2026-09-22-double-arrow-design.md`.
 
 ### 9.2 Yellow continuation edges — Q17, Q18
 

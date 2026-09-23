@@ -237,6 +237,12 @@ const MECHANIC_INTROS: readonly {
     first: "overlap-intro-blocker",
     gate: ["overlap-intro-blocker"],
   },
+  {
+    level: 25,
+    title: "Choose a direction.",
+    first: "double-intro-choice",
+    gate: ["double-intro-choice"],
+  },
 ];
 
 /**

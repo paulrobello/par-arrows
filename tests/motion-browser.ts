@@ -121,7 +121,7 @@ export async function assertConsistentMotion(
         currentLevelId: fixture.level.id,
         unlockedLevelId: fixture.level.id,
         tutorialComplete: true,
-        contentVersion: 8,
+        contentVersion: 9,
         generatorVersion: GENERATOR_VERSION,
         seed: seedForLevel(fixture.level.id),
         state: {

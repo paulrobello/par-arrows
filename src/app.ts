@@ -23,6 +23,7 @@ import type {
   LevelDefinition,
   MoveKind,
   MoveResult,
+  MoveTarget,
 } from "./core/types";
 import { PointerInput } from "./input";
 import { PwaInstallPrompt } from "./pwa";
@@ -56,7 +57,7 @@ interface Celebration {
 }
 
 interface Hint {
-  readonly arrowId: string;
+  readonly target: MoveTarget;
   phase: "rotating" | "flashing";
   elapsed: number;
   lit: boolean;
@@ -75,7 +76,7 @@ const TOUCH_PICK_MARGIN_PX = 44;
 export class ParArrowsApp {
   private readonly root: HTMLElement;
   private readonly renderer: PuzzleRenderer;
-  private readonly input: PointerInput;
+  private readonly input: PointerInput<MoveTarget>;
   private readonly stage: HTMLElement;
   private readonly levelLabel: HTMLElement;
   private readonly livesLabel: HTMLElement;
@@ -120,13 +121,15 @@ export class ParArrowsApp {
   private tutorialComplete = false;
   private settings: PlayerSettings = loadSettings();
   private motion: Motion | undefined;
-  private tutorialMove: { arrowId: string; kind: MoveKind } | undefined;
+  private tutorialMove:
+    | { arrowId: string; endpoint: MoveTarget["endpoint"]; kind: MoveKind }
+    | undefined;
   private tutorialRunner: TutorialRunner | undefined;
   private tutorialNudgeMs = 0;
-  private tutorialFocusId: string | undefined;
+  private tutorialFocusTarget: MoveTarget | undefined;
   private tutorialFocusMs = 0;
   private lifeLostFlashMs = 0;
-  private pendingTap: string | undefined;
+  private pendingTap: MoveTarget | undefined;
   private celebration: Celebration | undefined;
   private hint: Hint | undefined;
   private animationFrame = 0;
@@ -232,7 +235,7 @@ export class ParArrowsApp {
     this.renderer = new PuzzleRenderer(this.stage);
     this.renderer.setGridLines(this.settings.gridLines);
     this.applyTheme();
-    this.input = new PointerInput(this.renderer.canvas, {
+    this.input = new PointerInput<MoveTarget>(this.renderer.canvas, {
       pick: (x, y, pointerType) =>
         this.loading || this.loadingError
           ? undefined
@@ -328,6 +331,7 @@ export class ParArrowsApp {
       mode: this.preview.active ? "preview" : "campaign",
       level: { id: this.level.id, title: this.level.title },
       selectedArrowId: this.renderer.selectedArrowId(),
+      selectedEndpoint: this.renderer.selectedEndpoint(),
       preview: {
         active: this.preview.active,
         ...(this.preview.active
@@ -361,6 +365,8 @@ export class ParArrowsApp {
       lives: this.displayedState.lives,
       remainingIds: this.displayedState.remainingIds,
       failedIds: this.displayedState.failedIds,
+      settledPaths: this.displayedState.settledPaths ?? {},
+      failedPositions: this.displayedState.failedPositions ?? [],
       overlappingGroups: this.level.arrows
         .map((arrow) => overlappingArrowIds(this.level, arrow.id))
         .filter(
@@ -395,7 +401,8 @@ export class ParArrowsApp {
         : { active: false, elapsed: 0, duration: CELEBRATION_DURATION },
       hint: this.hint
         ? {
-            arrowId: this.hint.arrowId,
+            arrowId: this.hint.target.arrowId,
+            endpoint: this.hint.target.endpoint,
             phase: this.hint.phase,
             elapsed: Math.round(this.hint.elapsed),
             lit: this.hint.lit,
@@ -607,28 +614,34 @@ export class ParArrowsApp {
   }
 
   /** During a scripted walkthrough, only the current step's arrows respond. */
-  private gateAllows(arrowId: string): boolean {
-    const gate = this.tutorialRunner?.gate;
+  private gateAllows(target: MoveTarget): boolean {
+    const gate = this.tutorialRunner?.gateTarget;
     if (!gate) return true;
-    return overlappingArrowIds(this.level, arrowId).some((id) => gate.has(id));
+    if (gate.endpoint !== undefined && gate.endpoint !== target.endpoint) {
+      return false;
+    }
+    return overlappingArrowIds(this.level, target.arrowId).some((id) =>
+      gate.arrowIds.has(id),
+    );
   }
 
-  private attempt(arrowId: string): void {
+  private attempt(target: MoveTarget): void {
+    const { arrowId, endpoint } = target;
     this.cancelHint();
     if (this.loading || this.loadingError || this.motion) {
       return;
     }
-    if (!this.gateAllows(arrowId)) {
+    if (!this.gateAllows(target)) {
       this.tutorialNudgeMs = TUTORIAL_NUDGE_MS;
       return;
     }
-    const result = simulateMove(this.level, this.state, arrowId);
+    const result = simulateMove(this.level, this.state, arrowId, endpoint);
     const next = applyMove(this.level, this.state, result);
     if (result.kind === "invalid" || next === this.state) {
       return;
     }
     this.state = next;
-    this.tutorialMove = { arrowId, kind: result.kind };
+    this.tutorialMove = { arrowId, endpoint, kind: result.kind };
     if (next.status === "won") {
       this.unlockedLevelId = Math.max(
         this.unlockedLevelId,
@@ -700,7 +713,7 @@ export class ParArrowsApp {
     if (!active || !script) {
       this.tutorialRunner = undefined;
       this.renderer.setTutorialHighlight(undefined);
-      this.tutorialFocusId = undefined;
+      this.tutorialFocusTarget = undefined;
       this.tutorialFocusMs = 0;
       return;
     }
@@ -708,12 +721,19 @@ export class ParArrowsApp {
       this.tutorialRunner = new TutorialRunner(script);
       this.tutorialRunner.attach(this.state.remainingIds);
     }
-    const highlight = this.tutorialRunner.done
+    const highlightId = this.tutorialRunner.done
       ? undefined
       : this.tutorialRunner.current.highlightId;
+    const endpoint = this.tutorialRunner.gateTarget?.endpoint ?? "head";
+    const highlight = highlightId
+      ? { arrowId: highlightId, endpoint }
+      : undefined;
     this.renderer.setTutorialHighlight(highlight);
-    if (highlight !== this.tutorialFocusId) {
-      this.tutorialFocusId = highlight;
+    if (
+      highlight?.arrowId !== this.tutorialFocusTarget?.arrowId ||
+      highlight?.endpoint !== this.tutorialFocusTarget?.endpoint
+    ) {
+      this.tutorialFocusTarget = highlight;
       this.tutorialFocusMs = 0;
       if (highlight !== undefined && !this.motion && !this.hint) {
         this.startTutorialFocus(highlight);
@@ -725,8 +745,8 @@ export class ParArrowsApp {
    * Rotates the cube so a freshly highlighted scripted arrow is on screen;
    * a step that names an arrow must never leave it on a hidden face.
    */
-  private startTutorialFocus(arrowId: string): void {
-    if (!this.renderer.focusArrow(arrowId)) return;
+  private startTutorialFocus(target: MoveTarget): void {
+    if (!this.renderer.focusArrow(target)) return;
     if (this.shouldReduceMotion()) {
       this.renderer.animateHintFocus(1);
       return;
@@ -1074,21 +1094,22 @@ export class ParArrowsApp {
     x: number,
     y: number,
     pointerType: string,
-  ): string | undefined {
+  ): MoveTarget | undefined {
     return resolvePick(
       this.renderer.pickCandidates(
         x,
         y,
         pointerType === "touch" ? TOUCH_PICK_MARGIN_PX : MOUSE_PICK_MARGIN_PX,
       ),
-      (arrowId) => this.isSafeMove(arrowId),
+      (target) => this.isSafeMove(target),
     );
   }
 
   /** True when tapping this arrow costs no life. */
-  private isSafeMove(arrowId: string): boolean {
+  private isSafeMove(target: MoveTarget): boolean {
     return ["exit", "paused"].includes(
-      simulateMove(this.level, this.state, arrowId).kind,
+      simulateMove(this.level, this.state, target.arrowId, target.endpoint)
+        .kind,
     );
   }
 
@@ -1102,14 +1123,25 @@ export class ParArrowsApp {
     ) {
       return;
     }
-    const arrowId = this.state.remainingIds
-      .filter((id) => this.gateAllows(id))
-      .find((id) => this.isSafeMove(id));
-    if (!arrowId || !this.renderer.beginHint(arrowId)) {
+    const target = this.state.remainingIds
+      .flatMap((arrowId): MoveTarget[] => {
+        const arrow = this.level.arrows.find(
+          (candidate) => candidate.id === arrowId,
+        );
+        return arrow?.kind === "double"
+          ? [
+              { arrowId, endpoint: "head" },
+              { arrowId, endpoint: "tail" },
+            ]
+          : [{ arrowId, endpoint: "head" }];
+      })
+      .filter((candidate) => this.gateAllows(candidate))
+      .find((candidate) => this.isSafeMove(candidate));
+    if (!target || !this.renderer.beginHint(target)) {
       return;
     }
     this.hint = {
-      arrowId,
+      target,
       phase: this.shouldReduceMotion() ? "flashing" : "rotating",
       elapsed: 0,
       lit: this.shouldReduceMotion(),
@@ -1239,7 +1271,8 @@ export class ParArrowsApp {
         resetProgress: () => this.resetProgress(),
         getState: () => this.diagnosticText(),
         getLevel: () => this.level,
-        activate: (id) => this.attempt(id),
+        activate: (id, endpoint = "head") =>
+          this.attempt({ arrowId: id, endpoint }),
         render: () => this.renderer.render(),
         orbit: (deltaX, deltaY) => this.renderer.orbit(deltaX, deltaY),
       };

@@ -1,5 +1,6 @@
 import type { LevelDefinition } from "../core/types";
 import { LEVEL_ONE } from "./intro";
+import { DOUBLE_INTRO_LEVEL } from "./double-intro";
 
 interface GenerateRequest {
   readonly type: "generate";
@@ -32,7 +33,10 @@ const GENERATION_TIMEOUT_MS = 12_000;
 
 /** Resolves deterministic campaign levels without blocking the interactive view. */
 export class LevelLoader {
-  private readonly cache = new Map<number, LevelDefinition>([[1, LEVEL_ONE]]);
+  private readonly cache = new Map<number, LevelDefinition>([
+    [1, LEVEL_ONE],
+    [25, DOUBLE_INTRO_LEVEL],
+  ]);
   private readonly pending = new Map<number, PendingRequest>();
   private worker: Worker | undefined;
   private nextRequestId = 1;

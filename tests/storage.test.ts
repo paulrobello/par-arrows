@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { LEVELS } from "../src/content/levels";
+import { DOUBLE_INTRO_LEVEL } from "../src/content/double-intro";
 import { OVERLAP_INTRO_LEVEL } from "../src/content/overlap-intro";
 import { generateLevel, seedForLevel } from "../src/content/procedural";
 import { STOP_INTRO_LEVEL } from "../src/content/stop-intro";
@@ -117,6 +118,34 @@ function writeVersionOneGeneratorSave(
       seed: `par-arrows:runtime:1:level:${state.levelId}`,
     }),
   );
+}
+
+function parkedDoubleLevel(): LevelDefinition {
+  return {
+    id: 25,
+    title: "Stored double",
+    gridSize: 6,
+    lives: 4,
+    arrows: [
+      {
+        id: "double",
+        kind: "double",
+        path: [
+          { face: "front", x: 1, y: 3 },
+          { face: "front", x: 2, y: 3 },
+        ],
+      },
+      {
+        id: "wall",
+        path: [
+          { face: "front", x: 4, y: 1 },
+          { face: "front", x: 3, y: 1 },
+        ],
+      },
+    ],
+    directionals: [{ cell: { face: "front", x: 3, y: 3 }, heading: "north" }],
+    stops: [{ face: "front", x: 3, y: 2 }],
+  };
 }
 
 function exitedState(level: LevelDefinition): GameState {
@@ -245,8 +274,8 @@ describe("resumable campaign saves", () => {
     const state = exitedState(level);
     expect(save(state, 88)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 8,
-      generatorVersion: 6,
+      contentVersion: 9,
+      generatorVersion: 7,
       currentLevelId: 42,
       unlockedLevelId: 88,
     });
@@ -392,6 +421,180 @@ describe("resumable campaign saves", () => {
     expect(restored.value?.unlockedLevelId).toBe(12);
   });
 
+  test("round-trips a bent parked double path and position failure", async () => {
+    const level = parkedDoubleLevel();
+    const initial = createGameState(level);
+    const paused = simulateMove(level, initial, "double", "head");
+    expect(paused.kind).toBe("paused");
+    let state = applyMove(level, initial, paused);
+    const blocked = simulateMove(level, state, "double", "head");
+    expect(blocked.kind).toBe("blocked");
+    state = applyMove(level, state, blocked);
+    expect(state.settledPaths?.double).toEqual(paused.settledPath);
+    expect(state.failedPositions).toHaveLength(1);
+    expect(save(state, 40)).toBe(true);
+
+    const restored = await loadCampaign(async () => level);
+    expect(restored.recovered).toBe(false);
+    expect(restored.value?.state).toEqual(state);
+    expect(restored.value?.unlockedLevelId).toBe(40);
+  });
+
+  test("refreshes malformed double paths while preserving campaign progress", async () => {
+    const level = parkedDoubleLevel();
+    const initial = createGameState(level);
+    const parked = applyMove(
+      level,
+      initial,
+      simulateMove(level, initial, "double", "head"),
+    );
+    expect(save(parked, 40)).toBe(true);
+    const goodPath = parked.settledPaths?.double;
+    if (!goodPath) throw new Error("Expected parked double path.");
+    const malformed: GameState[] = [
+      { ...parked, settledPaths: { double: [goodPath[0]!] } },
+      { ...parked, settledPaths: { double: [goodPath[0]!, goodPath[0]!] } },
+      {
+        ...parked,
+        settledPaths: {
+          double: [goodPath[0]!, { face: "front", x: 99, y: 99 }],
+        },
+      },
+      {
+        ...parked,
+        settledPaths: {
+          double: [goodPath[0]!, { face: "front", x: 5, y: 5 }],
+        },
+      },
+      { ...parked, settledPaths: { wall: goodPath } },
+      { ...parked, remainingIds: ["wall"], settledPaths: { double: goodPath } },
+      { ...parked, failedPositions: ["double:wrong"] },
+    ];
+    for (const state of malformed) {
+      entries.set(
+        CAMPAIGN_KEY,
+        JSON.stringify({ ...savedJson(), state, tutorialComplete: false }),
+      );
+      const restored = await loadCampaign(async () => level);
+      expect(restored.recovered).toBe(true);
+      expect(restored.value?.currentLevelId).toBe(25);
+      expect(restored.value?.unlockedLevelId).toBe(40);
+      expect(restored.value?.tutorialComplete).toBe(false);
+      expect(restored.value?.state).toEqual(createGameState(level));
+    }
+  });
+
+  test("restores a spent double failure after that arrow exits", async () => {
+    const level = DOUBLE_INTRO_LEVEL;
+    let state = createGameState(level);
+    const blocked = simulateMove(level, state, "double-intro-choice", "head");
+    expect(blocked.kind).toBe("blocked");
+    state = applyMove(level, state, blocked);
+    state = applyMove(
+      level,
+      state,
+      simulateMove(level, state, "double-intro-choice", "tail"),
+    );
+    expect(state.remainingIds).not.toContain("double-intro-choice");
+    expect(state.lives).toBe(level.lives - 1);
+    expect(state.failedPositions).toHaveLength(1);
+    expect(save(state, 30)).toBe(true);
+    const restored = await loadCampaign(async () => level);
+    expect(restored.recovered).toBe(false);
+    expect(restored.value?.state).toEqual(state);
+  });
+
+  test("restores failure history from an earlier parked double position", async () => {
+    const level = parkedDoubleLevel();
+    let state = createGameState(level);
+    state = applyMove(
+      level,
+      state,
+      simulateMove(level, state, "double", "head"),
+    );
+    const firstPath = state.settledPaths?.double;
+    if (!firstPath) throw new Error("Expected first parked path.");
+    const failureKey = `double:${firstPath.map((cell) => `${cell.face}:${cell.x}:${cell.y}`).join("|")}`;
+    state = {
+      ...state,
+      failedPositions: [failureKey],
+      lives: level.lives - 1,
+      revision: state.revision + 1,
+    };
+    const secondPath = [
+      { face: "front" as const, x: 3, y: 1 },
+      { face: "front" as const, x: 3, y: 0 },
+    ];
+    state = {
+      ...state,
+      settledPaths: { double: secondPath },
+      revision: state.revision + 1,
+    };
+    expect(save(state, 30)).toBe(true);
+    const restored = await loadCampaign(async () => level);
+    expect(restored.recovered).toBe(false);
+    expect(restored.value?.state.failedPositions).toEqual([failureKey]);
+  });
+
+  test("restores a parked path reached after another arrow leaves", async () => {
+    const level: LevelDefinition = {
+      id: 25,
+      title: "Freed double",
+      gridSize: 6,
+      lives: 4,
+      stops: [{ face: "front", x: 4, y: 3 }],
+      arrows: [
+        {
+          id: "double",
+          kind: "double",
+          path: [
+            { face: "front", x: 1, y: 3 },
+            { face: "front", x: 2, y: 3 },
+          ],
+        },
+        {
+          id: "wall",
+          path: [
+            { face: "front", x: 3, y: 2 },
+            { face: "front", x: 3, y: 3 },
+          ],
+        },
+      ],
+    };
+    let state = createGameState(level);
+    state = applyMove(level, state, simulateMove(level, state, "wall"));
+    state = applyMove(
+      level,
+      state,
+      simulateMove(level, state, "double", "head"),
+    );
+    expect(state.settledPaths?.double).toBeDefined();
+    expect(save(state, 30)).toBe(true);
+    const restored = await loadCampaign(async () => level);
+    expect(restored.recovered).toBe(false);
+    expect(restored.value?.state).toEqual(state);
+  });
+
+  test("resumes v8 generator-v6 saves on unchanged seeded levels", async () => {
+    for (const id of [2, 7, 11, 20]) {
+      const level = generateLevel(id);
+      const state = exitedState(level);
+      expect(save(state, 30)).toBe(true);
+      entries.set(
+        CAMPAIGN_KEY,
+        JSON.stringify({
+          ...savedJson(),
+          contentVersion: 8,
+          generatorVersion: 6,
+          seed: seedForLevel(id),
+        }),
+      );
+      const restored = await loadCampaign(async () => level);
+      expect(restored.recovered).toBe(false);
+      expect(restored.value?.state).toEqual(state);
+    }
+  });
+
   test("saves an atomic overlap failure as one life and rejects partial groups", async () => {
     const level = OVERLAP_INTRO_LEVEL;
     const initial = createGameState(level);
@@ -449,8 +652,8 @@ describe("resumable campaign saves", () => {
       if (!restored.value) throw new Error("Expected restored campaign");
       expect(saveCampaign(restored.value)).toBe(true);
       expect(savedJson()).toMatchObject({
-        contentVersion: 8,
-        generatorVersion: 6,
+        contentVersion: 9,
+        generatorVersion: 7,
       });
     },
   );

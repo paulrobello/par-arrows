@@ -2,7 +2,8 @@ import * as THREE from "three";
 
 import { overlappingArrowIds } from "../core/overlap";
 import type { PickCandidate } from "../pick";
-import { currentPath, offsetOf } from "../core/stops";
+import { splitExpandedPath } from "./ribbon-geometry";
+import { failurePositionKey, settledPathOf } from "../core/stops";
 import {
   cellKey,
   cellToWorld,
@@ -17,6 +18,7 @@ import type {
   Heading,
   LevelDefinition,
   MoveResult,
+  MoveTarget,
 } from "../core/types";
 
 const PICK_RADIUS = 0.14;
@@ -52,10 +54,12 @@ interface ThemePalette {
   readonly farSide: number;
   readonly stop: number;
   readonly directional: number;
+  readonly doubleTail: number;
+  readonly doubleHead: number;
 }
 
 interface HintFocus {
-  readonly arrowId: string;
+  readonly target: MoveTarget;
   readonly fromOrientation: THREE.Quaternion;
   readonly targetOrientation: THREE.Quaternion;
   readonly fromDistance: number;
@@ -74,6 +78,8 @@ const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     farSide: 0x6f9fb2,
     stop: 0x1d9a86,
     directional: 0x0f7fa8,
+    doubleTail: 0x6d28d9,
+    doubleHead: 0x4d7c0f,
   },
   dark: {
     background: 0x101820,
@@ -87,6 +93,8 @@ const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     farSide: 0x516a7a,
     stop: 0x3fe0c0,
     directional: 0x3ac8f0,
+    doubleTail: 0xc084fc,
+    doubleHead: 0xa3e635,
   },
 };
 
@@ -108,6 +116,8 @@ interface SegmentVisual {
   readonly ribbon: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
   readonly picker: THREE.Mesh<THREE.CylinderGeometry, THREE.MeshBasicMaterial>;
   readonly material: THREE.MeshBasicMaterial;
+  readonly failure: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+  endpoint: MoveTarget["endpoint"];
   face: Cell["face"] | undefined;
 }
 
@@ -116,7 +126,17 @@ interface ArrowVisual {
   readonly group: THREE.Group;
   readonly segments: readonly SegmentVisual[];
   readonly head: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+  readonly tailHead?: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
   readonly material: THREE.MeshBasicMaterial;
+  readonly tailMaterial?: THREE.MeshBasicMaterial;
+  readonly headFailure: THREE.Mesh<
+    THREE.BufferGeometry,
+    THREE.MeshBasicMaterial
+  >;
+  readonly tailFailure?: THREE.Mesh<
+    THREE.BufferGeometry,
+    THREE.MeshBasicMaterial
+  >;
   readonly pickers: readonly THREE.Object3D[];
   path: ExpandedPath;
   /** Cell-key fingerprint of the settled path currently laid out. */
@@ -500,6 +520,13 @@ export function slicePath(
   return { points, segmentFaces, headFace: segmentFaces.at(-1) };
 }
 
+function reversePath(path: ExpandedPath): ExpandedPath {
+  return {
+    points: [...path.points].reverse(),
+    segmentFaces: [...path.segmentFaces].reverse(),
+  };
+}
+
 function concatPaths(first: ExpandedPath, second: ExpandedPath): ExpandedPath {
   return {
     points: [...first.points, ...second.points.slice(1)],
@@ -521,8 +548,9 @@ export function arrowMotionTrack(
   minimumDistance = 0,
 ): ArrowMotionTrack {
   const route = expandedPoints(result.route, gridSize);
-  const bodyLength = pathLength(path);
-  let track = concatPaths(path, route);
+  const orientedPath = result.endpoint === "tail" ? reversePath(path) : path;
+  const bodyLength = pathLength(orientedPath);
+  let track = concatPaths(orientedPath, route);
   if (result.kind === "exit") {
     const tail = track.points.at(-1) ?? new THREE.Vector3();
     const lastFace =
@@ -657,10 +685,10 @@ export class PuzzleRenderer {
   private theme: Theme = "light";
   private level: LevelDefinition | undefined;
   private state: GameState | undefined;
-  private selectedId: string | undefined;
+  private selectedTarget: MoveTarget | undefined;
   private hintFocus: HintFocus | undefined;
   private hintLit = false;
-  private tutorialHighlightId: string | undefined;
+  private tutorialHighlightTarget: MoveTarget | undefined;
   private tutorialNudge = false;
   private readonly orientation = INITIAL_CAMERA_ORIENTATION.clone();
   private distance = 7.5;
@@ -710,7 +738,7 @@ export class PuzzleRenderer {
 
   setLevel(level: LevelDefinition, state: GameState): void {
     this.clearHint();
-    this.tutorialHighlightId = undefined;
+    this.tutorialHighlightTarget = undefined;
     this.clearArrows();
     this.clearWrappingEdges();
     this.clearStopCircles();
@@ -727,6 +755,7 @@ export class PuzzleRenderer {
       this.arrowsGroup.add(visual.group);
       this.pickers.push(...visual.pickers);
       this.pickers.push(visual.head);
+      if (visual.tailHead) this.pickers.push(visual.tailHead);
     }
     this.updateState(state);
     this.render();
@@ -737,20 +766,30 @@ export class PuzzleRenderer {
     this.refreshSettledPaths(state);
     for (const [id, visual] of this.visuals) {
       visual.group.visible = state.remainingIds.includes(id);
-      const red = state.failedIds.includes(id);
-      visual.material.color.set(red ? this.palette.failed : this.palette.arrow);
-      for (const segment of visual.segments) {
-        segment.material.color.set(
-          red ? this.palette.failed : this.palette.arrow,
+      const doubleFailed =
+        visual.arrow.kind === "double" &&
+        (state.failedPositions ?? []).includes(
+          failurePositionKey(
+            id,
+            this.level
+              ? settledPathOf(this.level, state, visual.arrow)
+              : visual.arrow.path,
+          ),
         );
+      for (const segment of visual.segments) {
+        segment.failure.visible = doubleFailed && segment.ribbon.visible;
+      }
+      visual.headFailure.visible = doubleFailed && visual.head.visible;
+      if (visual.tailFailure && visual.tailHead) {
+        visual.tailFailure.visible = doubleFailed && visual.tailHead.visible;
       }
     }
     this.applySelection();
     this.render();
   }
 
-  setSelected(id: string | undefined): void {
-    this.selectedId = id;
+  setSelected(target: MoveTarget | undefined): void {
+    this.selectedTarget = target;
     this.applySelection();
     this.render();
   }
@@ -845,9 +884,9 @@ export class PuzzleRenderer {
     return targetCamera.quaternion.clone();
   }
 
-  private startFaceFocus(arrowId: string, face: Cell["face"]): void {
+  private startFaceFocus(target: MoveTarget, face: Cell["face"]): void {
     this.hintFocus = {
-      arrowId,
+      target,
       fromOrientation: this.orientation.clone(),
       targetOrientation: this.faceTargetOrientation(face),
       fromDistance: this.distance,
@@ -856,14 +895,16 @@ export class PuzzleRenderer {
   }
 
   /** Focuses the chosen arrow's actual head face, without changing game state. */
-  beginHint(arrowId: string): boolean {
-    const visual = this.visuals.get(arrowId);
-    const face = visual?.head.userData.face as Cell["face"] | undefined;
+  beginHint(target: MoveTarget): boolean {
+    const visual = this.visuals.get(target.arrowId);
+    const hintedHead =
+      target.endpoint === "tail" ? visual?.tailHead : visual?.head;
+    const face = hintedHead?.userData.face as Cell["face"] | undefined;
     if (!visual || !face || !visual.group.visible) {
       return false;
     }
     this.hintLit = false;
-    this.startFaceFocus(arrowId, face);
+    this.startFaceFocus(target, face);
     return true;
   }
 
@@ -872,18 +913,21 @@ export class PuzzleRenderer {
    * scripted step never asks for a tap on an arrow the player cannot see.
    * Returns false when the arrow is missing or already faces the camera.
    */
-  focusArrow(arrowId: string): boolean {
-    const visual = this.visuals.get(arrowId);
-    const face = visual?.head.userData.face as Cell["face"] | undefined;
+  focusArrow(target: MoveTarget): boolean {
+    const visual = this.visuals.get(target.arrowId);
+    const focusedHead =
+      target.endpoint === "tail" ? visual?.tailHead : visual?.head;
+    const face = focusedHead?.userData.face as Cell["face"] | undefined;
     if (
       !visual ||
       !face ||
+      !focusedHead ||
       !visual.group.visible ||
-      this.isArrowFacingCamera(visual.arrow)
+      this.isFrontFacing(focusedHead)
     ) {
       return false;
     }
-    this.startFaceFocus(arrowId, face);
+    this.startFaceFocus(target, face);
     return true;
   }
 
@@ -914,9 +958,13 @@ export class PuzzleRenderer {
   }
 
   /** Sustains the tutorial's step highlight without moving the camera. */
-  setTutorialHighlight(arrowId: string | undefined): void {
-    if (this.tutorialHighlightId === arrowId) return;
-    this.tutorialHighlightId = arrowId;
+  setTutorialHighlight(target: MoveTarget | undefined): void {
+    if (
+      this.tutorialHighlightTarget?.arrowId === target?.arrowId &&
+      this.tutorialHighlightTarget?.endpoint === target?.endpoint
+    )
+      return;
+    this.tutorialHighlightTarget = target;
     this.render();
   }
 
@@ -944,21 +992,32 @@ export class PuzzleRenderer {
     this.pointer.x = ((clientX - bounds.left) / bounds.width) * 2 - 1;
     this.pointer.y = -((clientY - bounds.top) / bounds.height) * 2 + 1;
     this.raycaster.setFromCamera(this.pointer, this.camera);
-    const direct: string[] = [];
+    const direct: MoveTarget[] = [];
     for (const hit of this.raycaster.intersectObjects(
       this.pickers.filter((picker) => this.isPickable(picker)),
       false,
     )) {
       const id = hit.object.userData.arrowId as string | undefined;
+      const endpoint = hit.object.userData.endpoint as
+        | MoveTarget["endpoint"]
+        | undefined;
       const face = hit.object.userData.face as Cell["face"] | undefined;
-      if (!id || !face || direct.includes(id)) continue;
+      if (
+        !id ||
+        !endpoint ||
+        !face ||
+        direct.some(
+          (target) => target.arrowId === id && target.endpoint === endpoint,
+        )
+      )
+        continue;
       const [nx, ny, nz] = faceNormal(face);
       if (
         new THREE.Vector3(nx, ny, nz).dot(
           this.camera.position.clone().sub(hit.point),
         ) > FACING_EPSILON
       ) {
-        direct.push(id);
+        direct.push({ arrowId: id, endpoint });
       }
     }
 
@@ -970,21 +1029,27 @@ export class PuzzleRenderer {
     const nearby: PickCandidate[] = [];
     for (const [arrowId, visual] of this.visuals) {
       if (
-        direct.includes(arrowId) ||
+        direct.some((target) => target.arrowId === arrowId) ||
         !visual.group.visible ||
         !this.state.remainingIds.includes(arrowId)
       )
         continue;
-      const distancePx = this.screenDistanceToArrow(visual, pointer, bounds);
-      if (distancePx !== undefined && distancePx <= marginPx) {
-        nearby.push({ arrowId, distancePx });
+      const endpoints: readonly MoveTarget["endpoint"][] =
+        visual.arrow.kind === "double" ? ["head", "tail"] : ["head"];
+      for (const endpoint of endpoints) {
+        const distancePx = this.screenDistanceToArrow(
+          visual,
+          endpoint,
+          pointer,
+          bounds,
+        );
+        if (distancePx !== undefined && distancePx <= marginPx) {
+          nearby.push({ target: { arrowId, endpoint }, distancePx });
+        }
       }
     }
     nearby.sort((a, b) => a.distancePx - b.distancePx);
-    return [
-      ...direct.map((arrowId) => ({ arrowId, distancePx: 0 })),
-      ...nearby,
-    ];
+    return [...direct.map((target) => ({ target, distancePx: 0 })), ...nearby];
   }
 
   private isPickable(object: THREE.Object3D): boolean {
@@ -1033,6 +1098,7 @@ export class PuzzleRenderer {
   /** Nearest screen gap between the pointer and the arrow's exposed parts. */
   private screenDistanceToArrow(
     visual: ArrowVisual,
+    endpoint: MoveTarget["endpoint"],
     pointer: THREE.Vector3,
     bounds: DOMRect,
   ): number | undefined {
@@ -1040,11 +1106,12 @@ export class PuzzleRenderer {
     const consider = (distance: number): void => {
       nearest = nearest === undefined ? distance : Math.min(nearest, distance);
     };
-    if (visual.head.visible && this.isFrontFacing(visual.head)) {
-      const positions = visual.head.geometry.getAttribute("position");
+    const endpointHead = endpoint === "tail" ? visual.tailHead : visual.head;
+    if (endpointHead?.visible && this.isFrontFacing(endpointHead)) {
+      const positions = endpointHead.geometry.getAttribute("position");
       const [a, b, c] = [0, 1, 2].map((index) =>
         this.toScreen(
-          visual.head.localToWorld(
+          endpointHead.localToWorld(
             new THREE.Vector3().fromBufferAttribute(positions, index),
           ),
           bounds,
@@ -1058,8 +1125,13 @@ export class PuzzleRenderer {
         );
       }
     }
-    for (const { picker } of visual.segments) {
-      if (!picker.visible || !this.isFrontFacing(picker)) continue;
+    for (const { picker, endpoint: segmentEndpoint } of visual.segments) {
+      if (
+        segmentEndpoint !== endpoint ||
+        !picker.visible ||
+        !this.isFrontFacing(picker)
+      )
+        continue;
       const start = this.toScreen(
         picker.localToWorld(new THREE.Vector3(0, -0.5, 0)),
         bounds,
@@ -1093,9 +1165,15 @@ export class PuzzleRenderer {
         this.level.gridSize,
         distance,
       );
+      const slice = slicePath(track, travel * distance, bodyLength);
       this.updatePathVisual(
         visual,
-        slicePath(track, travel * distance, bodyLength),
+        member.endpoint === "tail"
+          ? {
+              ...reversePath(slice),
+              headFace: slice.segmentFaces[0],
+            }
+          : slice,
       );
     }
     this.render();
@@ -1202,7 +1280,11 @@ export class PuzzleRenderer {
   }
 
   selectedArrowId(): string | undefined {
-    return this.selectedId;
+    return this.selectedTarget?.arrowId;
+  }
+
+  selectedEndpoint(): MoveTarget["endpoint"] | undefined {
+    return this.selectedTarget?.endpoint;
   }
 
   arrowHeadFace(arrowId: string): Cell["face"] | undefined {
@@ -1249,16 +1331,16 @@ export class PuzzleRenderer {
         this.gridLinesEnabled && normal.dot(this.camera.position) > 0;
     }
     const selectedIds =
-      this.level && this.selectedId
-        ? overlappingArrowIds(this.level, this.selectedId)
+      this.level && this.selectedTarget
+        ? overlappingArrowIds(this.level, this.selectedTarget.arrowId)
         : [];
     const tutorialIds =
-      this.level && this.tutorialHighlightId
-        ? overlappingArrowIds(this.level, this.tutorialHighlightId)
+      this.level && this.tutorialHighlightTarget
+        ? overlappingArrowIds(this.level, this.tutorialHighlightTarget.arrowId)
         : [];
     const hintedIds =
       this.level && this.hintFocus && this.hintLit
-        ? overlappingArrowIds(this.level, this.hintFocus.arrowId)
+        ? overlappingArrowIds(this.level, this.hintFocus.target.arrowId)
         : tutorialIds;
     for (const child of this.wrappingEdgesGroup.children) {
       const mesh = child as THREE.Mesh<
@@ -1295,15 +1377,35 @@ export class PuzzleRenderer {
     for (const visual of this.visuals.values()) {
       const nudged =
         this.tutorialNudge && tutorialIds.includes(visual.arrow.id);
-      const activeColor = nudged
-        ? this.palette.nudge
-        : hintedIds.includes(visual.arrow.id)
-          ? this.palette.selected
-          : selectedIds.includes(visual.arrow.id)
-            ? this.palette.selected
-            : this.state?.failedIds.includes(visual.arrow.id)
-              ? this.palette.failed
-              : this.palette.arrow;
+      const endpointColor = (endpoint: MoveTarget["endpoint"]): number => {
+        const endpointSelected =
+          this.selectedTarget?.arrowId === visual.arrow.id &&
+          this.selectedTarget.endpoint === endpoint;
+        const endpointHinted =
+          this.hintFocus?.target.arrowId === visual.arrow.id &&
+          this.hintFocus.target.endpoint === endpoint &&
+          this.hintLit;
+        const endpointTutorial =
+          this.tutorialHighlightTarget?.arrowId === visual.arrow.id &&
+          this.tutorialHighlightTarget.endpoint === endpoint;
+        if (nudged) return this.palette.nudge;
+        if (endpointSelected || endpointHinted || endpointTutorial)
+          return this.palette.selected;
+        if (visual.arrow.kind === "double") {
+          return endpoint === "tail"
+            ? this.palette.doubleTail
+            : this.palette.doubleHead;
+        }
+        if (
+          hintedIds.includes(visual.arrow.id) ||
+          selectedIds.includes(visual.arrow.id)
+        ) {
+          return this.palette.selected;
+        }
+        return this.state?.failedIds.includes(visual.arrow.id)
+          ? this.palette.failed
+          : this.palette.arrow;
+      };
       for (const segment of visual.segments) {
         const face = segment.picker.userData.face as Cell["face"] | undefined;
         const [nx, ny, nz] = face ? faceNormal(face) : [0, 0, 0];
@@ -1313,24 +1415,32 @@ export class PuzzleRenderer {
           ) > 0;
         segment.material.opacity = exposed ? 1 : 0.32;
         segment.material.color.set(
-          exposed ? activeColor : this.palette.farSide,
+          exposed ? endpointColor(segment.endpoint) : this.palette.farSide,
         );
       }
-      const headFace = visual.head.userData.face as Cell["face"] | undefined;
-      const [nx, ny, nz] = headFace ? faceNormal(headFace) : [0, 0, 0];
-      const headCenter = visual.head.localToWorld(
-        visual.head.geometry.boundingSphere?.center.clone() ??
-          new THREE.Vector3(),
-      );
-      visual.material.opacity =
-        new THREE.Vector3(nx, ny, nz).dot(
-          this.camera.position.clone().sub(headCenter),
-        ) > 0
-          ? 1
-          : 0.32;
-      visual.material.color.set(
-        visual.material.opacity === 1 ? activeColor : this.palette.farSide,
-      );
+      const colorHead = (
+        mesh: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>,
+        endpoint: MoveTarget["endpoint"],
+      ): void => {
+        const face = mesh.userData.face as Cell["face"] | undefined;
+        const [nx, ny, nz] = face ? faceNormal(face) : [0, 0, 0];
+        const center = mesh.localToWorld(
+          mesh.geometry.boundingSphere?.center.clone() ?? new THREE.Vector3(),
+        );
+        mesh.material.opacity =
+          new THREE.Vector3(nx, ny, nz).dot(
+            this.camera.position.clone().sub(center),
+          ) > 0
+            ? 1
+            : 0.32;
+        mesh.material.color.set(
+          mesh.material.opacity === 1
+            ? endpointColor(endpoint)
+            : this.palette.farSide,
+        );
+      };
+      colorHead(visual.head, "head");
+      if (visual.tailHead) colorHead(visual.tailHead, "tail");
     }
     this.renderer.render(this.scene, this.camera);
   }
@@ -1570,11 +1680,7 @@ export class PuzzleRenderer {
     for (const arrow of this.level.arrows) {
       const visual = this.visuals.get(arrow.id);
       if (!visual) continue;
-      const cells = currentPath(
-        this.level,
-        arrow,
-        offsetOf(state.offsets, arrow.id),
-      );
+      const cells = settledPathOf(this.level, state, arrow);
       const key = cells.map(cellKey).join("|");
       if (visual.settledKey === key) continue;
       visual.settledKey = key;
@@ -1596,19 +1702,47 @@ export class PuzzleRenderer {
     const { ribbonWidth, headLength } = arrowDimensions(gridSize, arrowScale);
     const pickRadius = Math.min(PICK_RADIUS, pitch * 0.28);
     const material = new THREE.MeshBasicMaterial({
-      color: this.palette.arrow,
+      color:
+        arrow.kind === "double" ? this.palette.doubleHead : this.palette.arrow,
       transparent: true,
       forceSinglePass: true,
+    });
+    const tailMaterial =
+      arrow.kind === "double"
+        ? new THREE.MeshBasicMaterial({
+            color: this.palette.doubleTail,
+            transparent: true,
+            forceSinglePass: true,
+          })
+        : undefined;
+    const failureMaterial = new THREE.MeshBasicMaterial({
+      color: this.palette.failed,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.95,
+      depthTest: false,
     });
     const expanded = expandedPoints(arrow.path, gridSize);
     const segments: SegmentVisual[] = [];
     const pickers: THREE.Object3D[] = [];
     const segmentCount = Math.max(1, arrow.path.length * 3 + 8);
     for (let index = 0; index < segmentCount; index += 1) {
-      const segmentMaterial = material.clone();
+      const endpoint: MoveTarget["endpoint"] =
+        arrow.kind === "double" && index < segmentCount / 2 ? "tail" : "head";
+      const segmentMaterial =
+        endpoint === "tail" && tailMaterial
+          ? tailMaterial.clone()
+          : material.clone();
       segmentMaterial.side = THREE.DoubleSide;
       const ribbon = new THREE.Mesh(makeRibbonGeometry(4), segmentMaterial);
       ribbon.frustumCulled = false;
+      const failure = new THREE.Mesh(
+        makeRibbonGeometry(4),
+        failureMaterial.clone(),
+      );
+      failure.frustumCulled = false;
+      failure.visible = false;
+      failure.renderOrder = 5;
       const picker = new THREE.Mesh(
         new THREE.CylinderGeometry(pickRadius, pickRadius, 1, 8),
         new THREE.MeshBasicMaterial({
@@ -1619,12 +1753,15 @@ export class PuzzleRenderer {
       );
       picker.layers.set(PICK_LAYER);
       picker.userData.arrowId = arrow.id;
+      picker.userData.endpoint = endpoint;
       picker.userData.face = expanded.segmentFaces[index];
-      group.add(ribbon, picker);
+      group.add(ribbon, failure, picker);
       segments.push({
         ribbon,
         picker,
         material: segmentMaterial,
+        failure,
+        endpoint,
         face: expanded.segmentFaces[index],
       });
       pickers.push(picker);
@@ -1634,13 +1771,41 @@ export class PuzzleRenderer {
     head.frustumCulled = false;
     head.layers.enable(PICK_LAYER);
     head.userData.arrowId = arrow.id;
-    group.add(head);
+    head.userData.endpoint = "head";
+    const headFailure = new THREE.Mesh(
+      makeHeadGeometry(),
+      failureMaterial.clone(),
+    );
+    headFailure.visible = false;
+    headFailure.renderOrder = 5;
+    const tailHead = tailMaterial
+      ? new THREE.Mesh(makeHeadGeometry(), tailMaterial)
+      : undefined;
+    if (tailHead) {
+      tailHead.frustumCulled = false;
+      tailHead.layers.enable(PICK_LAYER);
+      tailHead.userData.arrowId = arrow.id;
+      tailHead.userData.endpoint = "tail";
+    }
+    const tailFailure = tailHead
+      ? new THREE.Mesh(makeHeadGeometry(), failureMaterial.clone())
+      : undefined;
+    if (tailFailure) {
+      tailFailure.visible = false;
+      tailFailure.renderOrder = 5;
+    }
+    group.add(head, headFailure);
+    if (tailHead && tailFailure) group.add(tailHead, tailFailure);
     const visual: ArrowVisual = {
       arrow,
       group,
       segments,
       head,
+      ...(tailHead ? { tailHead } : {}),
       material,
+      ...(tailMaterial ? { tailMaterial } : {}),
+      headFailure,
+      ...(tailFailure ? { tailFailure } : {}),
       pickers,
       path: expanded,
       settledKey: arrow.path.map(cellKey).join("|"),
@@ -1656,28 +1821,54 @@ export class PuzzleRenderer {
 
   private updatePathVisual(visual: ArrowVisual, path: RibbonSlice): void {
     const up = new THREE.Vector3(0, 1, 0);
+    const split =
+      visual.arrow.kind === "double"
+        ? splitExpandedPath(path.points, path.segmentFaces, 0.5)
+        : undefined;
+    const layoutPath: RibbonSlice = split
+      ? {
+          points: [...split.tail.points, ...split.head.points.slice(1)],
+          segmentFaces: [
+            ...split.tail.segmentFaces,
+            ...split.head.segmentFaces,
+          ],
+          headFace: path.headFace,
+        }
+      : path;
     const sections = ribbonSections(
-      path.points,
-      path.segmentFaces,
+      layoutPath.points,
+      layoutPath.segmentFaces,
       visual.ribbonWidth,
     );
+    let travelled = 0;
     for (let index = 0; index < visual.segments.length; index += 1) {
       const segment = visual.segments[index];
       if (!segment) {
         continue;
       }
-      const start = path.points[index];
-      const end = path.points[index + 1];
-      const face = path.segmentFaces[index];
+      const start = layoutPath.points[index];
+      const end = layoutPath.points[index + 1];
+      const face = layoutPath.segmentFaces[index];
       if (!start || !end || !face) {
         segment.ribbon.visible = false;
         segment.picker.visible = false;
+        segment.failure.visible = false;
         segment.face = undefined;
         segment.picker.userData.face = undefined;
         continue;
       }
       const direction = end.clone().sub(start);
       const length = Math.max(direction.length(), 0.001);
+      const midpointDistance = travelled + length / 2;
+      segment.endpoint =
+        split && midpointDistance < split.totalDistance / 2 ? "tail" : "head";
+      segment.picker.userData.endpoint = segment.endpoint;
+      segment.material.color.set(
+        segment.endpoint === "tail" && visual.tailMaterial
+          ? visual.tailMaterial.color
+          : visual.material.color,
+      );
+      travelled += length;
       const midpoint = start.clone().add(end).multiplyScalar(0.5);
       const [nx, ny, nz] = faceNormal(face);
       const vertices = ribbonVertices(
@@ -1693,6 +1884,11 @@ export class PuzzleRenderer {
       ) as THREE.BufferAttribute;
       attribute.array.set(vertices);
       attribute.needsUpdate = true;
+      const failureAttribute = segment.failure.geometry.getAttribute(
+        "position",
+      ) as THREE.BufferAttribute;
+      failureAttribute.array.set(vertices);
+      failureAttribute.needsUpdate = true;
       segment.ribbon.visible = true;
       segment.face = face;
       segment.picker.userData.face = face;
@@ -1701,59 +1897,74 @@ export class PuzzleRenderer {
       segment.picker.quaternion.setFromUnitVectors(up, direction.normalize());
       segment.picker.visible = true;
     }
-    const headPoint = path.points.at(-1) ?? new THREE.Vector3();
+    const layoutHead = (
+      head: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>,
+      failure: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>,
+      headPoint: THREE.Vector3,
+      previous: THREE.Vector3,
+      face: Cell["face"],
+    ): void => {
+      const heading = headPoint.clone().sub(previous).normalize();
+      const [nx, ny, nz] = faceNormal(face);
+      const normal = new THREE.Vector3(nx, ny, nz);
+      const side = normal
+        .clone()
+        .cross(heading)
+        .normalize()
+        .multiplyScalar(visual.ribbonWidth * 0.8);
+      const base = headPoint.clone().addScaledVector(normal, 0.005);
+      const vertices = new Float32Array([
+        base.x - side.x,
+        base.y - side.y,
+        base.z - side.z,
+        base.x + side.x,
+        base.y + side.y,
+        base.z + side.z,
+        base.x + heading.x * visual.headLength,
+        base.y + heading.y * visual.headLength,
+        base.z + heading.z * visual.headLength,
+      ]);
+      for (const mesh of [head, failure]) {
+        const attribute = mesh.geometry.getAttribute(
+          "position",
+        ) as THREE.BufferAttribute;
+        attribute.array.set(vertices);
+        attribute.needsUpdate = true;
+        mesh.geometry.computeBoundingBox();
+        mesh.geometry.computeBoundingSphere();
+        mesh.userData.face = face;
+        mesh.visible = path.points.length > 1 && mesh === head;
+      }
+    };
+    const headPoint = layoutPath.points.at(-1) ?? new THREE.Vector3();
     const previous =
-      path.points.at(-2) ?? headPoint.clone().add(new THREE.Vector3(0, -1, 0));
-    const heading = headPoint.clone().sub(previous).normalize();
-    const face = path.headFace ?? arrowFace(visual.arrow);
-    const [nx, ny, nz] = faceNormal(face);
-    const normal = new THREE.Vector3(nx, ny, nz);
-    const side = normal
-      .clone()
-      .cross(heading)
-      .normalize()
-      .multiplyScalar(visual.ribbonWidth * 0.8);
-    const base = headPoint.clone().addScaledVector(normal, 0.005);
-    const headVertices = new Float32Array([
-      base.x - side.x,
-      base.y - side.y,
-      base.z - side.z,
-      base.x + side.x,
-      base.y + side.y,
-      base.z + side.z,
-      base.x + heading.x * visual.headLength,
-      base.y + heading.y * visual.headLength,
-      base.z + heading.z * visual.headLength,
-    ]);
-    const headAttribute = visual.head.geometry.getAttribute(
-      "position",
-    ) as THREE.BufferAttribute;
-    headAttribute.array.set(headVertices);
-    headAttribute.needsUpdate = true;
-    visual.head.geometry.computeBoundingBox();
-    visual.head.geometry.computeBoundingSphere();
-    visual.head.userData.face = face;
-    visual.head.visible = path.points.length > 1;
+      layoutPath.points.at(-2) ??
+      headPoint.clone().add(new THREE.Vector3(0, -1, 0));
+    layoutHead(
+      visual.head,
+      visual.headFailure,
+      headPoint,
+      previous,
+      path.headFace ?? arrowFace(visual.arrow),
+    );
+    if (visual.tailHead && visual.tailFailure) {
+      const tailPoint = layoutPath.points[0] ?? new THREE.Vector3();
+      const next =
+        layoutPath.points[1] ??
+        tailPoint.clone().add(new THREE.Vector3(0, 1, 0));
+      const tailFace = layoutPath.segmentFaces[0] ?? arrowFace(visual.arrow);
+      layoutHead(
+        visual.tailHead,
+        visual.tailFailure,
+        tailPoint,
+        next,
+        tailFace,
+      );
+    }
   }
 
   private applySelection(): void {
-    const selectedIds =
-      this.level && this.selectedId
-        ? overlappingArrowIds(this.level, this.selectedId)
-        : [];
-    for (const [id, visual] of this.visuals) {
-      const selected = selectedIds.includes(id);
-      visual.material.color.set(
-        selected
-          ? this.palette.selected
-          : this.state?.failedIds.includes(id)
-            ? this.palette.failed
-            : this.palette.arrow,
-      );
-      for (const segment of visual.segments) {
-        segment.material.color.copy(visual.material.color);
-      }
-    }
+    this.render();
   }
 
   private get palette(): ThemePalette {
@@ -1761,9 +1972,10 @@ export class PuzzleRenderer {
   }
 
   private isArrowFacingCamera(arrow: ArrowDefinition): boolean {
-    const cells = this.level
-      ? currentPath(this.level, arrow, offsetOf(this.state?.offsets, arrow.id))
-      : arrow.path;
+    const cells =
+      this.level && this.state
+        ? settledPathOf(this.level, this.state, arrow)
+        : arrow.path;
     const visibleCell = cells.find((cell) => {
       const point = cellPoint(cell, this.level?.gridSize ?? 1);
       const [nx, ny, nz] = faceNormal(cell.face);

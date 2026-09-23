@@ -16,7 +16,7 @@ interface Window {
     resetProgress(): void;
     getState(): string;
     getLevel(): import("./core/types").LevelDefinition;
-    activate(arrowId: string): void;
+    activate(arrowId: string, endpoint?: import("./core/types").Endpoint): void;
     render(): void;
     orbit(deltaX: number, deltaY: number): void;
   };

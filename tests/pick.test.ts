@@ -1,103 +1,98 @@
 import { describe, expect, test } from "bun:test";
-import { resolvePick } from "../src/pick";
+import { resolvePick, type PickCandidate } from "../src/pick";
+import type { Endpoint, MoveTarget } from "../src/core/types";
+
+function target(arrowId: string, endpoint: Endpoint = "head"): MoveTarget {
+  return { arrowId, endpoint };
+}
+
+function candidate(
+  arrowId: string,
+  distancePx: number,
+  endpoint: Endpoint = "head",
+): PickCandidate {
+  return { target: target(arrowId, endpoint), distancePx };
+}
 
 const safeOnly =
-  (...ids: string[]) =>
-  (arrowId: string) =>
-    ids.includes(arrowId);
+  (...targets: MoveTarget[]) =>
+  (value: MoveTarget) =>
+    targets.some(
+      (target) =>
+        target.arrowId === value.arrowId && target.endpoint === value.endpoint,
+    );
 
 describe("resolvePick", () => {
   test("returns nothing when the pointer reached no arrow", () => {
     expect(resolvePick([], safeOnly())).toBeUndefined();
   });
 
-  test("returns the only candidate even when it would collide", () => {
-    expect(resolvePick([{ arrowId: "a", distancePx: 12 }], safeOnly())).toBe(
-      "a",
-    );
+  test("returns the only target even when it would collide", () => {
+    expect(resolvePick([candidate("a", 12)], safeOnly())).toEqual(target("a"));
   });
 
-  test("prefers a safe arrow over a closer colliding one", () => {
+  test("prefers the safe endpoint of one double arrow", () => {
+    const tail = target("double", "tail");
     expect(
       resolvePick(
-        [
-          { arrowId: "blocked", distancePx: 2 },
-          { arrowId: "safe", distancePx: 17 },
-        ],
-        safeOnly("safe"),
+        [candidate("double", 2, "head"), candidate("double", 17, "tail")],
+        safeOnly(tail),
       ),
-    ).toBe("safe");
+    ).toEqual(tail);
   });
 
-  test("picks the closest safe arrow when several would not collide", () => {
+  test("picks the closest safe target when several would not collide", () => {
+    const far = target("far");
+    const near = target("near");
     expect(
       resolvePick(
-        [
-          { arrowId: "far", distancePx: 20 },
-          { arrowId: "near", distancePx: 4 },
-        ],
-        safeOnly("far", "near"),
+        [candidate("far", 20), candidate("near", 4)],
+        safeOnly(far, near),
       ),
-    ).toBe("near");
+    ).toEqual(near);
   });
 
-  test("falls back to the closest arrow when every candidate collides", () => {
+  test("falls back to the closest target when every candidate collides", () => {
+    expect(
+      resolvePick([candidate("far", 19), candidate("near", 3)], safeOnly()),
+    ).toEqual(target("near"));
+  });
+
+  test("uses a deterministic endpoint for an exact nearby midpoint tie", () => {
     expect(
       resolvePick(
-        [
-          { arrowId: "far", distancePx: 19 },
-          { arrowId: "near", distancePx: 3 },
-        ],
+        [candidate("double", 5, "tail"), candidate("double", 5, "head")],
         safeOnly(),
       ),
-    ).toBe("near");
+    ).toEqual(target("double", "head"));
   });
 
-  test("keeps the supplied order when distances tie", () => {
+  test("preserves direct-hit order when exact midpoint pickers tie", () => {
     expect(
       resolvePick(
-        [
-          { arrowId: "first", distancePx: 0 },
-          { arrowId: "second", distancePx: 0 },
-        ],
+        [candidate("double", 0, "tail"), candidate("double", 0, "head")],
         safeOnly(),
       ),
-    ).toBe("first");
+    ).toEqual(target("double", "tail"));
   });
 
-  test("keeps a direct hit even when a nearby arrow would not collide", () => {
+  test("keeps a direct hit even when a nearby target is safe", () => {
+    const safe = target("safe");
     expect(
       resolvePick(
-        [
-          { arrowId: "aimed", distancePx: 0 },
-          { arrowId: "safe", distancePx: 11 },
-        ],
-        safeOnly("safe"),
+        [candidate("aimed", 0), candidate("safe", 11)],
+        safeOnly(safe),
       ),
-    ).toBe("aimed");
+    ).toEqual(target("aimed"));
   });
 
-  test("prefers the safe arrow when the press landed on several at once", () => {
+  test("prefers a safe direct endpoint when the press landed on both", () => {
+    const tail = target("double", "tail");
     expect(
       resolvePick(
-        [
-          { arrowId: "blocked", distancePx: 0 },
-          { arrowId: "safe", distancePx: 0 },
-        ],
-        safeOnly("safe"),
+        [candidate("double", 0, "head"), candidate("double", 0, "tail")],
+        safeOnly(tail),
       ),
-    ).toBe("safe");
-  });
-
-  test("prefers a safe direct hit over a safe nearby arrow", () => {
-    expect(
-      resolvePick(
-        [
-          { arrowId: "direct", distancePx: 0 },
-          { arrowId: "nearby", distancePx: 9 },
-        ],
-        safeOnly("direct", "nearby"),
-      ),
-    ).toBe("direct");
+    ).toEqual(tail);
   });
 });

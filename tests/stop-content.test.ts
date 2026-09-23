@@ -7,7 +7,11 @@ import {
   simulateMove,
 } from "../src/core/game-state";
 import { cellKey } from "../src/core/topology";
-import { solveLevel, validateLevel } from "../src/core/validation";
+import {
+  solveLevel,
+  solveLevelTargets,
+  validateLevel,
+} from "../src/core/validation";
 
 const PARKER = "stop-intro-parker";
 const FREED = "stop-intro-freed";
@@ -106,10 +110,14 @@ describe("stop-circle level content", () => {
         expect(bodies.has(cellKey(stop))).toBe(false);
       }
       expect((level.stops ?? []).length).toBeLessThanOrEqual(3);
-      expect(solveLevel(level)).toBeDefined();
-      if ((level.stops ?? []).length > 0) {
-        // The circle is load-bearing: without it the deadlock never breaks.
-        expect(solveLevel({ ...level, stops: [] })).toBeUndefined();
+      expect(solveLevelTargets(level)).toBeDefined();
+      if (
+        (level.stops ?? []).length > 0 &&
+        !level.arrows.some((arrow) => arrow.kind === "double")
+      ) {
+        // The circle is load-bearing for non-double cubes; a double arrow
+        // carries its own alternate solve path past the stripped deadlock.
+        expect(solveLevelTargets({ ...level, stops: [] })).toBeUndefined();
       }
     }
   }, 20_000);

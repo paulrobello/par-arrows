@@ -272,7 +272,7 @@ export async function assertWrappingEdges(
         saved.tutorialComplete = true;
         // A current save, so the single-arrow state resumes instead of
         // refreshing to a full cube the crossing arrow could not leave.
-        saved.contentVersion = 8;
+        saved.contentVersion = 9;
         saved.generatorVersion = generatorVersion;
         saved.seed = seed;
         localStorage.setItem(key, JSON.stringify(saved));
