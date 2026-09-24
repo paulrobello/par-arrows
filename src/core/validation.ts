@@ -1,13 +1,13 @@
+import { flippedHeading, spotHeadingAt } from "./directionals";
 import {
   applyMove,
   createGameState,
   simulateMove as simulateState,
 } from "./game-state";
 import { advanceHead, simulateMove } from "./movement";
-import { flippedHeading, spotHeadingAt } from "./directionals";
-import { cellKey, headingForPath, linkKey, seamTransition } from "./topology";
 import { overlappingArrowIds, sharedDirectedSegment } from "./overlap";
-import { arrowTrack, maximumOffset } from "./stops";
+import { arrowTrack, maximumOffset, settledPathOf } from "./stops";
+import { cellKey, headingForPath, linkKey, seamTransition } from "./topology";
 import type {
   ArrowDefinition,
   Cell,
@@ -15,6 +15,7 @@ import type {
   GameState,
   Heading,
   LevelDefinition,
+  MoveResult,
   MoveTarget,
 } from "./types";
 
@@ -444,10 +445,49 @@ function targetsFor(
     : [{ arrowId, endpoint: "head" }];
 }
 
+/** True when `arrowId` may be tapped; a proof probe restricts taps to a region. */
+function tappable(
+  tapFilter: ((arrowId: string) => boolean) | undefined,
+  arrowId: string,
+): boolean {
+  return tapFilter ? tapFilter(arrowId) : true;
+}
+
+/**
+ * Simulate one tap with optional extra static occupancy. A blocked cell acts
+ * exactly like an arrow sitting on it: the head stops on the first route cell
+ * (after its own) that carries one, which also outranks a stop circle on the
+ * same cell, matching the engine's per-step collision-before-pause order.
+ */
+function probeMove(
+  level: LevelDefinition,
+  state: GameState,
+  arrowId: string,
+  endpoint: Endpoint,
+  blockedCells?: ReadonlySet<string>,
+): MoveResult {
+  const result = simulateState(level, state, arrowId, endpoint);
+  if (!blockedCells || blockedCells.size === 0) return result;
+  for (let index = 1; index < result.route.length; index += 1) {
+    const step = result.route[index];
+    if (!step || !blockedCells.has(cellKey(step))) continue;
+    const route = result.route.slice(0, index + 1);
+    return {
+      ...result,
+      kind: "blocked",
+      distance: index - 0.5,
+      route,
+      waypoints: route.map((cell) => ({ cell, phase: "surface" as const })),
+    };
+  }
+  return result;
+}
+
 function driveThrough(
   level: LevelDefinition,
   state: GameState,
   target: MoveTarget,
+  blockedCells?: ReadonlySet<string>,
 ):
   | { readonly state: GameState; readonly taps: readonly MoveTarget[] }
   | undefined {
@@ -455,11 +495,12 @@ function driveThrough(
   const taps: MoveTarget[] = [];
   let current = state;
   for (let tap = 0; tap < maximumTaps; tap += 1) {
-    const result = simulateState(
+    const result = probeMove(
       level,
       current,
       target.arrowId,
       target.endpoint,
+      blockedCells,
     );
     if (result.kind !== "exit" && result.kind !== "paused") return undefined;
     const next = applyMove(level, current, result);
@@ -480,15 +521,18 @@ function driveThrough(
 function clearWhatExits(
   level: LevelDefinition,
   state: GameState,
+  tapFilter?: (arrowId: string) => boolean,
+  blockedCells?: ReadonlySet<string>,
 ): { readonly state: GameState; readonly taps: readonly MoveTarget[] } {
   const taps: MoveTarget[] = [];
   let current = state;
   for (let pass = 0; pass <= level.arrows.length; pass += 1) {
     const before = current.remainingIds.length;
     for (const arrowId of [...current.remainingIds]) {
+      if (!tappable(tapFilter, arrowId)) continue;
       if (!current.remainingIds.includes(arrowId)) continue;
       const cleared = targetsFor(level, arrowId)
-        .map((target) => driveThrough(level, current, target))
+        .map((target) => driveThrough(level, current, target, blockedCells))
         .find((result) => result !== undefined);
       if (!cleared) continue;
       current = cleared.state;
@@ -520,39 +564,51 @@ const SOLVER_NODE_BUDGET = 4000;
  * Enumerate every state reachable without a collision and report whether any
  * of them can no longer be cleared. Undefined means the state space exceeded
  * `limit`, so the answer is unknown; only small cores should be checked.
+ * `tapFilter` restricts which arrows may be tapped and `blockedCells` adds
+ * static occupancy; with neither, this is the whole-level check.
  */
-export function hasStrandingState(
+function enumerateStranding(
   level: LevelDefinition,
+  state: GameState,
   limit = 5000,
+  tapFilter?: (arrowId: string) => boolean,
+  blockedCells?: ReadonlySet<string>,
 ): boolean | undefined {
   const states = new Map<string, readonly string[]>();
-  const pending = [createGameState(level)];
+  const winnableSeeds = new Set<string>();
+  const pending = [state];
   while (pending.length > 0) {
-    const state = pending.pop() as GameState;
-    const key = solveKey(level, state);
+    const current = pending.pop() as GameState;
+    const key = solveKey(level, current);
     if (states.has(key)) continue;
     if (states.size >= limit) return undefined;
     const next: string[] = [];
-    for (const arrowId of state.remainingIds) {
-      for (const target of targetsFor(level, arrowId)) {
-        const result = simulateState(
-          level,
-          state,
-          target.arrowId,
-          target.endpoint,
-        );
-        if (result.kind !== "exit" && result.kind !== "paused") continue;
-        const settled = applyMove(level, state, result);
-        if (settled === state) continue;
-        next.push(solveKey(level, settled));
-        pending.push(settled);
+    // Without a filter a state is clearable only once nothing remains, which
+    // is the empty-remainingIds terminal the whole-level check relied on.
+    if (current.remainingIds.every((id) => !tappable(tapFilter, id))) {
+      winnableSeeds.add(key);
+    } else {
+      for (const arrowId of current.remainingIds) {
+        if (!tappable(tapFilter, arrowId)) continue;
+        for (const target of targetsFor(level, arrowId)) {
+          const result = probeMove(
+            level,
+            current,
+            target.arrowId,
+            target.endpoint,
+            blockedCells,
+          );
+          if (result.kind !== "exit" && result.kind !== "paused") continue;
+          const settled = applyMove(level, current, result);
+          if (settled === current) continue;
+          next.push(solveKey(level, settled));
+          pending.push(settled);
+        }
       }
     }
     states.set(key, next);
   }
-  const winnable = new Set(
-    [...states.keys()].filter((key) => key.startsWith("#")),
-  );
+  const winnable = new Set(winnableSeeds);
   let grew = true;
   while (grew) {
     grew = false;
@@ -567,54 +623,74 @@ export function hasStrandingState(
 }
 
 /**
+ * Enumerate every state reachable without a collision and report whether any
+ * of them can no longer be cleared. Undefined means the state space exceeded
+ * `limit`, so the answer is unknown; only small cores should be checked.
+ */
+export function hasStrandingState(
+  level: LevelDefinition,
+  limit = 5000,
+): boolean | undefined {
+  return enumerateStranding(level, createGameState(level), limit);
+}
+
+/**
  * True when some collision-free reachable state has an arrow whose tap is
  * safe with the flip spots as they are and a collision with them reversed,
  * or the other way round. Undefined when the state space exceeds `limit`.
+ * `tapFilter` restricts which arrows may be tapped and `blockedCells` adds
+ * static occupancy; with neither, this is the whole-level check.
  */
-export function flipInterest(
+function enumeratedFlipInterest(
   level: LevelDefinition,
+  state: GameState,
   limit = 5000,
+  tapFilter?: (arrowId: string) => boolean,
+  blockedCells?: ReadonlySet<string>,
 ): boolean | undefined {
   const flips = (level.directionals ?? []).filter(
     (spot) => spot.kind === "flip",
   );
   if (flips.length === 0) return false;
   const seen = new Set<string>();
-  const pending = [createGameState(level)];
+  const pending = [state];
   const safe = (kind: string): boolean => kind === "exit" || kind === "paused";
   while (pending.length > 0) {
-    const state = pending.pop() as GameState;
-    const key = solveKey(level, state);
+    const current = pending.pop() as GameState;
+    const key = solveKey(level, current);
     if (seen.has(key)) continue;
     if (seen.size >= limit) return undefined;
     seen.add(key);
-    for (const arrowId of state.remainingIds) {
+    for (const arrowId of current.remainingIds) {
+      if (!tappable(tapFilter, arrowId)) continue;
       for (const target of targetsFor(level, arrowId)) {
-        const result = simulateState(
+        const result = probeMove(
           level,
-          state,
+          current,
           target.arrowId,
           target.endpoint,
+          blockedCells,
         );
         for (const spot of flips) {
           const spotKey = cellKey(spot.cell);
-          const current = spotHeadingAt(
+          const spotHeading = spotHeadingAt(
             level,
             spot.cell,
-            state.spotHeadings,
+            current.spotHeadings,
           ) as Heading;
           const reversed: GameState = {
-            ...state,
+            ...current,
             spotHeadings: {
-              ...(state.spotHeadings ?? {}),
-              [spotKey]: flippedHeading(current),
+              ...(current.spotHeadings ?? {}),
+              [spotKey]: flippedHeading(spotHeading),
             },
           };
-          const other = simulateState(
+          const other = probeMove(
             level,
             reversed,
             target.arrowId,
             target.endpoint,
+            blockedCells,
           );
           if (
             safe(result.kind) !== safe(other.kind) &&
@@ -624,12 +700,24 @@ export function flipInterest(
           }
         }
         if (!safe(result.kind)) continue;
-        const next = applyMove(level, state, result);
-        if (next !== state) pending.push(next);
+        const next = applyMove(level, current, result);
+        if (next !== current) pending.push(next);
       }
     }
   }
   return false;
+}
+
+/**
+ * True when some collision-free reachable state has an arrow whose tap is
+ * safe with the flip spots as they are and a collision with them reversed,
+ * or the other way round. Undefined when the state space exceeds `limit`.
+ */
+export function flipInterest(
+  level: LevelDefinition,
+  limit = 5000,
+): boolean | undefined {
+  return enumeratedFlipInterest(level, createGameState(level), limit);
 }
 
 /**
@@ -643,30 +731,66 @@ function searchSolution(
   state: GameState,
   visited: Set<string>,
   budget: { remaining: number },
+  tapFilter?: (arrowId: string) => boolean,
+  blockedCells?: ReadonlySet<string>,
 ): readonly MoveTarget[] | undefined {
-  const cleared = clearWhatExits(level, state);
-  if (cleared.state.remainingIds.length === 0) return cleared.taps;
+  const cleared = clearWhatExits(level, state, tapFilter, blockedCells);
+  if (cleared.state.remainingIds.every((id) => !tappable(tapFilter, id)))
+    return cleared.taps;
   const key = solveKey(level, cleared.state);
   if (visited.has(key)) return undefined;
   visited.add(key);
   for (const arrowId of cleared.state.remainingIds) {
+    if (!tappable(tapFilter, arrowId)) continue;
     for (const target of targetsFor(level, arrowId)) {
       if (budget.remaining <= 0) return undefined;
       budget.remaining -= 1;
-      const result = simulateState(
+      const result = probeMove(
         level,
         cleared.state,
         target.arrowId,
         target.endpoint,
+        blockedCells,
       );
       if (result.kind !== "paused") continue;
       const parked = applyMove(level, cleared.state, result);
       if (parked === cleared.state) continue;
-      const rest = searchSolution(level, parked, visited, budget);
+      const rest = searchSolution(
+        level,
+        parked,
+        visited,
+        budget,
+        tapFilter,
+        blockedCells,
+      );
       if (rest) return [...cleared.taps, target, ...rest];
     }
   }
   return undefined;
+}
+
+/**
+ * True when the greedy-plus-parking search clears every arrow the filter
+ * allows, with optional static occupancy from outside blockers. This is the
+ * same search the solver runs, restricted to what may be tapped.
+ */
+function enumeratedSolvable(
+  level: LevelDefinition,
+  state: GameState,
+  tapFilter?: (arrowId: string) => boolean,
+  blockedCells?: ReadonlySet<string>,
+): boolean {
+  const solution = searchSolution(
+    level,
+    state,
+    new Set(),
+    {
+      remaining: SOLVER_NODE_BUDGET,
+    },
+    tapFilter,
+    blockedCells,
+  );
+  return solution !== undefined;
 }
 
 /**
@@ -702,4 +826,158 @@ export function solveLevel(
     return undefined;
   }
   return targets.map((target) => target.arrowId);
+}
+
+export interface InteractionRegion {
+  /** Arrow ids in the region, including the seed arrows. */
+  readonly arrowIds: readonly string[];
+  /** Flip-spot and stop cell keys inside the region. */
+  readonly spotKeys: readonly string[];
+  readonly stopKeys: readonly string[];
+  /** Every cell any region arrow can occupy under any spot state (tracks + bodies). */
+  readonly cells: ReadonlySet<string>;
+}
+
+/**
+ * Cell keys an arrow occupies now or can ever occupy (its authored body plus
+ * its track) under any flip-spot state, so a closure derived from these keys
+ * stays valid whatever a spot's current direction is.
+ */
+function occupancyKeys(
+  level: LevelDefinition,
+  arrow: ArrowDefinition,
+): ReadonlySet<string> {
+  const keys = new Set<string>();
+  const probes = flipHeadingProbes(level);
+  for (const probe of probes) {
+    for (const cell of arrowTrack(probe, arrow)) {
+      keys.add(cellKey(cell));
+    }
+  }
+  return keys;
+}
+
+/** Level variants covering every direction each flip spot can hold. */
+function flipHeadingProbes(level: LevelDefinition): readonly LevelDefinition[] {
+  const flips = (level.directionals ?? []).filter(
+    (spot) => spot.kind === "flip",
+  );
+  if (flips.length === 0) return [level];
+  let probes: LevelDefinition[] = [level];
+  for (const spot of flips) {
+    const reversed = flippedHeading(spot.heading);
+    probes = probes.flatMap((probe) => [
+      probe,
+      {
+        ...probe,
+        directionals: (probe.directionals ?? []).map((candidate) =>
+          cellKey(candidate.cell) === cellKey(spot.cell)
+            ? { ...candidate, heading: reversed }
+            : candidate,
+        ),
+      },
+    ]);
+  }
+  return probes;
+}
+
+/**
+ * Close seed arrows under reachability: any arrow whose track touches a cell
+ * a region arrow can occupy joins the region. Undefined past `maxArrows`.
+ */
+export function interactionRegion(
+  level: LevelDefinition,
+  seedArrowIds: readonly string[],
+  maxArrows = 6,
+): InteractionRegion | undefined {
+  const byId = new Map(level.arrows.map((arrow) => [arrow.id, arrow]));
+  const stopSet = new Set((level.stops ?? []).map(cellKey));
+  const spotSet = new Set(
+    (level.directionals ?? []).map((spot) => cellKey(spot.cell)),
+  );
+  const occupancy = new Map<string, ReadonlySet<string>>();
+  const occupancyOf = (arrow: ArrowDefinition): ReadonlySet<string> => {
+    let keys = occupancy.get(arrow.id);
+    if (!keys) {
+      keys = occupancyKeys(level, arrow);
+      occupancy.set(arrow.id, keys);
+    }
+    return keys;
+  };
+  const members = new Set<string>();
+  const cells = new Set<string>();
+  const frontier = [...seedArrowIds];
+  while (frontier.length > 0) {
+    const id = frontier.pop() as string;
+    if (members.has(id)) continue;
+    const arrow = byId.get(id);
+    if (!arrow) continue;
+    if (members.size >= maxArrows) return undefined;
+    members.add(id);
+    for (const key of occupancyOf(arrow)) cells.add(key);
+    for (const key of occupancyOf(arrow)) {
+      if (stopSet.has(key) || spotSet.has(key)) continue;
+      for (const other of level.arrows) {
+        if (members.has(other.id) || frontier.includes(other.id)) continue;
+        if (occupancyOf(other).has(key)) frontier.push(other.id);
+      }
+    }
+  }
+  return {
+    arrowIds: [...members],
+    spotKeys: [...spotSet].filter((key) => cells.has(key)),
+    stopKeys: [...stopSet].filter((key) => cells.has(key)),
+    cells,
+  };
+}
+
+/**
+ * Prove a region with outside arrows as static blockers: occupancy includes
+ * their settled cells, but they are never tapped. A blocker only removes
+ * options, so clearable-under-blockers implies clearable-in-game.
+ */
+export function proveRegion(
+  level: LevelDefinition,
+  state: GameState,
+  region: InteractionRegion,
+  limit = 5000,
+): {
+  readonly ok: boolean;
+  readonly reason?: "stranded" | "uninteresting" | "unsolvable" | "overflow";
+} {
+  const inside = new Set(region.arrowIds);
+  const blocked = new Set<string>();
+  for (const arrow of level.arrows) {
+    if (inside.has(arrow.id) || !state.remainingIds.includes(arrow.id))
+      continue;
+    for (const cell of settledPathOf(level, state, arrow)) {
+      blocked.add(cellKey(cell));
+    }
+  }
+  const stranded = enumerateStranding(
+    level,
+    state,
+    limit,
+    (id) => inside.has(id),
+    blocked,
+  );
+  if (stranded === undefined) return { ok: false, reason: "overflow" };
+  if (stranded === true) return { ok: false, reason: "stranded" };
+  const interesting = enumeratedFlipInterest(
+    level,
+    state,
+    limit,
+    (id) => inside.has(id),
+    blocked,
+  );
+  if (interesting !== true) {
+    return {
+      ok: false,
+      reason: interesting === undefined ? "overflow" : "uninteresting",
+    };
+  }
+  if (!enumeratedSolvable(level, state, (id) => inside.has(id), blocked)) {
+    return { ok: false, reason: "unsolvable" };
+  }
+  return { ok: true };
 }
