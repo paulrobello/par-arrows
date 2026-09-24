@@ -17,6 +17,8 @@ import {
   expandedPoints,
   ribbonSections,
   ribbonVertices,
+  SELF_OVERLAP_LIFT,
+  selfOverlapLayers,
   slicePath,
   stopCircleOpacity,
   wrappingEdgeOpacity,
@@ -69,6 +71,19 @@ function result(
     offset: 0,
     ...(edgePoint && tangent ? { exit: { edgePoint, tangent } } : {}),
   };
+}
+
+function uTurn(): ReturnType<typeof expandedPoints> {
+  return expandedPoints(
+    [
+      { face: "front", x: 1, y: 2 },
+      { face: "front", x: 2, y: 2 },
+      { face: "front", x: 3, y: 2 },
+      { face: "front", x: 2, y: 2 },
+      { face: "front", x: 1, y: 2 },
+    ],
+    4,
+  );
 }
 
 function polylineLength(points: readonly THREE.Vector3[]): number {
@@ -813,6 +828,115 @@ describe("flat ribbon geometry", () => {
         straight[0]?.start.left.distanceTo(new THREE.Vector3()),
       ).toBeGreaterThan(0.9);
     }
+  });
+
+  test("folds a U-turn ribbon with finite, full-width sections", () => {
+    const path = uTurn();
+    const sections = ribbonSections(path.points, path.segmentFaces, 0.09);
+    expect(sections).toHaveLength(4);
+    for (const section of sections) {
+      for (const cross of [section.start, section.end]) {
+        for (const point of [cross.left, cross.right]) {
+          expect(Number.isFinite(point.x)).toBe(true);
+          expect(Number.isFinite(point.y)).toBe(true);
+          expect(Number.isFinite(point.z)).toBe(true);
+        }
+        expect(cross.left.distanceTo(cross.right)).toBeCloseTo(0.09, 6);
+      }
+    }
+    const turn = path.points[2] as THREE.Vector3;
+    expect(sections[1]?.end.left.x).toBeCloseTo(turn.x, 6);
+    expect(sections[2]?.start.left.x).toBeCloseTo(turn.x, 6);
+  });
+
+  test("draws the head side of a U-turn above the tail side it covers", () => {
+    const path = uTurn();
+    expect(selfOverlapLayers(path.points, path.segmentFaces, 0.09)).toEqual([
+      0, 0, 1, 1,
+    ]);
+    const sections = ribbonSections(path.points, path.segmentFaces, 0.09);
+    const normal = new THREE.Vector3(0, 0, 1);
+    const height = (index: number): number => {
+      const section = sections[index];
+      if (!section) throw new Error("Missing section.");
+      return Math.min(
+        section.start.left.dot(normal),
+        section.start.right.dot(normal),
+        section.end.left.dot(normal),
+        section.end.right.dot(normal),
+      );
+    };
+    expect(height(3)).toBeGreaterThan(height(0));
+    expect(height(2)).toBeGreaterThan(height(1));
+    expect(height(3) - height(0)).toBeCloseTo(SELF_OVERLAP_LIFT, 7);
+    expect(height(0)).toBeCloseTo(1.004, 6);
+    expect(sections[3]?.lift).toBe(SELF_OVERLAP_LIFT);
+    const reversed = ribbonSections(path.points, path.segmentFaces, 0.09, true);
+    expect(reversed[0]?.lift).toBe(SELF_OVERLAP_LIFT);
+    expect(reversed[3]?.lift).toBeUndefined();
+  });
+
+  test("keeps unfolded bent, seam and sliced ribbons byte-identical", () => {
+    const boundary: Cell = { face: "front", x: 3, y: 1 };
+    const bent = expandedPoints(
+      [
+        { face: "front", x: 0, y: 2 },
+        { face: "front", x: 1, y: 2 },
+        { face: "front", x: 1, y: 1 },
+        { face: "front", x: 2, y: 1 },
+        boundary,
+        stepAcrossSeam(boundary, "east", 4),
+        { face: "right", x: 1, y: 1 },
+        { face: "right", x: 1, y: 2 },
+      ],
+      4,
+    );
+    const hook = expandedPoints(
+      [
+        { face: "front", x: 0, y: 0 },
+        { face: "front", x: 1, y: 0 },
+        { face: "front", x: 1, y: 1 },
+        { face: "front", x: 0, y: 1 },
+      ],
+      4,
+    );
+    const tiny = slicePath(
+      {
+        points: [
+          new THREE.Vector3(0, 0, 1),
+          new THREE.Vector3(1, 0, 1),
+          new THREE.Vector3(2, 0, 1),
+          new THREE.Vector3(2, 1, 1),
+        ],
+        segmentFaces: ["front", "front", "front"],
+      },
+      0.99999999,
+      2,
+    );
+    const hasher = new Bun.CryptoHasher("sha256");
+    for (const path of [bent, hook, tiny, slicePath(bent, 0.13, 1.21)]) {
+      expect(
+        selfOverlapLayers(path.points, path.segmentFaces, 0.09).every(
+          (layer) => layer === 0,
+        ),
+      ).toBe(true);
+      const sections = ribbonSections(path.points, path.segmentFaces, 0.09);
+      path.segmentFaces.forEach((face, index) => {
+        const vertices = ribbonVertices(
+          path.points[index] as THREE.Vector3,
+          path.points[index + 1] as THREE.Vector3,
+          new THREE.Vector3(...faceNormal(face)),
+          0.09,
+          sections[index]?.start,
+          sections[index]?.end,
+        );
+        hasher.update(new Uint8Array(vertices.buffer));
+      });
+    }
+    // Digest of the same vertices taken before self-overlap layering existed.
+    expect(hasher.digest("hex")).toBe(
+      "c961e153fa6c89eedc051add8b73374446d2e64a0c9c0fffc0ace4a40eed3b33",
+    );
   });
 
   test("stop circles dim when their face turns away from the camera", () => {

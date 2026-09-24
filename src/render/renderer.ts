@@ -347,6 +347,146 @@ export interface RibbonCrossSection {
 interface SegmentCrossSections {
   start: RibbonCrossSection;
   end: RibbonCrossSection;
+  /** Extra normal offset of a segment that folds over earlier ribbon. */
+  lift?: number;
+}
+
+/**
+ * Normal offset per self-overlap layer. A 24-bit depth buffer with the
+ * camera's 0.1 near plane resolves about 2.5e-4 world units at distance 20,
+ * and the arrowhead sits only 0.001 above its ribbon.
+ */
+export const SELF_OVERLAP_LIFT = 0.0015;
+
+function segmentOverlaps(
+  start: THREE.Vector3,
+  end: THREE.Vector3,
+  startArc: number,
+  otherStart: THREE.Vector3,
+  otherEnd: THREE.Vector3,
+  otherStartArc: number,
+  width: number,
+): boolean {
+  const length = start.distanceTo(end);
+  const other = otherEnd.clone().sub(otherStart);
+  const otherLength = other.length();
+  const samples = Math.max(2, Math.ceil(length / (width / 2)) + 1);
+  const point = new THREE.Vector3();
+  const closest = new THREE.Vector3();
+  const relative = new THREE.Vector3();
+  for (let sample = 0; sample < samples; sample += 1) {
+    const t = (sample / (samples - 1)) * length;
+    point.copy(start).lerp(end, length === 0 ? 0 : t / length);
+    const s =
+      otherLength === 0
+        ? 0
+        : THREE.MathUtils.clamp(
+            relative.copy(point).sub(otherStart).dot(other) / otherLength,
+            0,
+            otherLength,
+          );
+    closest
+      .copy(otherStart)
+      .lerp(otherEnd, otherLength === 0 ? 0 : s / otherLength);
+    const distance = point.distanceTo(closest);
+    const gap = startArc + t - (otherStartArc + s);
+    // Along a straight run or a mitered turn the arc gap never exceeds
+    // sqrt(2) times the chord, so only a fold or crossing passes this; the
+    // width margin ignores sub-width slice artifacts next to a corner.
+    if (distance < width * 0.95 && gap > distance * 1.5 + width * 0.25)
+      return true;
+  }
+  return false;
+}
+
+/** Monotone overlap layer per segment, rising toward the last segment. */
+export function selfOverlapLayers(
+  points: readonly THREE.Vector3[],
+  segmentFaces: readonly Cell["face"][],
+  width: number,
+): readonly number[] {
+  const layers: number[] = [];
+  const arcs: number[] = [];
+  let arc = 0;
+  for (let index = 0; index < segmentFaces.length; index += 1) {
+    const start = points[index];
+    const end = points[index + 1];
+    const face = segmentFaces[index];
+    arcs.push(arc);
+    if (!start || !end || !face) {
+      layers.push(layers.at(-1) ?? 0);
+      continue;
+    }
+    let layer = layers.at(-1) ?? 0;
+    const reach = start.distanceTo(end) + width;
+    for (let earlier = 0; earlier < index; earlier += 1) {
+      if (segmentFaces[earlier] !== face) continue;
+      const earlierLayer = layers[earlier] ?? 0;
+      if (earlierLayer + 1 <= layer) continue;
+      const otherStart = points[earlier];
+      const otherEnd = points[earlier + 1];
+      if (!otherStart || !otherEnd) continue;
+      if (
+        start.distanceTo(otherStart) >
+        reach + otherStart.distanceTo(otherEnd)
+      )
+        continue;
+      if (
+        segmentOverlaps(
+          start,
+          end,
+          arc,
+          otherStart,
+          otherEnd,
+          arcs[earlier] ?? 0,
+          width,
+        )
+      )
+        layer = earlierLayer + 1;
+    }
+    layers.push(layer);
+    arc += start.distanceTo(end);
+  }
+  return layers;
+}
+
+function liftedSection(
+  section: RibbonCrossSection,
+  lift: THREE.Vector3,
+): RibbonCrossSection {
+  return {
+    left: section.left.clone().add(lift),
+    right: section.right.clone().add(lift),
+  };
+}
+
+function liftOverlaps(
+  sections: readonly SegmentCrossSections[],
+  segmentFaces: readonly Cell["face"][],
+  layers: readonly number[],
+): readonly SegmentCrossSections[] {
+  return sections.map((section, index) => {
+    const layer = layers[index] ?? 0;
+    const face = segmentFaces[index];
+    if (layer === 0 || !face) return { ...section };
+    const lift = layer * SELF_OVERLAP_LIFT;
+    const normal = new THREE.Vector3(...faceNormal(face));
+    const offsetAt = (neighbor: Cell["face"] | undefined): THREE.Vector3 => {
+      const offset = normal.clone().multiplyScalar(lift);
+      // A seam corner lies on both lifted planes and must stay on both.
+      if (neighbor && neighbor !== face)
+        offset.addScaledVector(
+          new THREE.Vector3(...faceNormal(neighbor)),
+          lift,
+        );
+      return offset;
+    };
+    return {
+      start: liftedSection(section.start, offsetAt(segmentFaces[index - 1])),
+      end: liftedSection(section.end, offsetAt(segmentFaces[index + 1])),
+      lift,
+    };
+  });
 }
 
 function crossSection(
@@ -367,11 +507,16 @@ function crossSection(
   };
 }
 
-/** Joins same-face turns and lifted cube folds with shared cross-sections. */
+/**
+ * Joins same-face turns and lifted cube folds with shared cross-sections.
+ * Ribbon that folds back over itself is layered so the moving end, the last
+ * segment unless `risesTowardStart`, draws on top.
+ */
 export function ribbonSections(
   points: readonly THREE.Vector3[],
   segmentFaces: readonly Cell["face"][],
   width: number,
+  risesTowardStart = false,
 ): readonly SegmentCrossSections[] {
   const sections: SegmentCrossSections[] = [];
   for (let index = 0; index < segmentFaces.length; index += 1) {
@@ -460,7 +605,18 @@ export function ribbonSections(
       next.start = shared;
     }
   }
-  return sections;
+  const layers = risesTowardStart
+    ? [
+        ...selfOverlapLayers(
+          [...points].reverse(),
+          [...segmentFaces].reverse(),
+          width,
+        ),
+      ].reverse()
+    : selfOverlapLayers(points, segmentFaces, width);
+  // Unfolded paths keep their exact vertices, including signed zeros.
+  if (layers.every((layer) => layer === 0)) return sections;
+  return liftOverlaps(sections, segmentFaces, layers);
 }
 
 /** Returns a face-parallel ribbon quad, suitable for geometry buffer updates. */
@@ -1184,6 +1340,7 @@ export class PuzzleRenderer {
               headFace: slice.segmentFaces[0],
             }
           : slice,
+        member.endpoint === "tail",
       );
     }
     this.flipMotion = progress < 1;
@@ -1915,7 +2072,11 @@ export class PuzzleRenderer {
     return visual;
   }
 
-  private updatePathVisual(visual: ArrowVisual, path: RibbonSlice): void {
+  private updatePathVisual(
+    visual: ArrowVisual,
+    path: RibbonSlice,
+    movingTail = false,
+  ): void {
     const up = new THREE.Vector3(0, 1, 0);
     const split =
       visual.arrow.kind === "double"
@@ -1935,6 +2096,7 @@ export class PuzzleRenderer {
       layoutPath.points,
       layoutPath.segmentFaces,
       visual.ribbonWidth,
+      movingTail,
     );
     let travelled = 0;
     for (let index = 0; index < visual.segments.length; index += 1) {
@@ -1994,6 +2156,7 @@ export class PuzzleRenderer {
       headPoint: THREE.Vector3,
       previous: THREE.Vector3,
       face: Cell["face"],
+      lift: number,
     ): void => {
       const heading = headPoint.clone().sub(previous).normalize();
       const [nx, ny, nz] = faceNormal(face);
@@ -2003,7 +2166,7 @@ export class PuzzleRenderer {
         .cross(heading)
         .normalize()
         .multiplyScalar(visual.ribbonWidth * 0.8);
-      const base = headPoint.clone().addScaledVector(normal, 0.005);
+      const base = headPoint.clone().addScaledVector(normal, 0.005 + lift);
       const vertices = new Float32Array([
         base.x - side.x,
         base.y - side.y,
@@ -2037,6 +2200,7 @@ export class PuzzleRenderer {
       headPoint,
       previous,
       path.headFace ?? arrowFace(visual.arrow),
+      sections.at(-1)?.lift ?? 0,
     );
     if (visual.tailHead && visual.tailFailure) {
       const tailPoint = layoutPath.points[0] ?? new THREE.Vector3();
@@ -2050,6 +2214,7 @@ export class PuzzleRenderer {
         tailPoint,
         next,
         tailFace,
+        sections[0]?.lift ?? 0,
       );
     }
   }
