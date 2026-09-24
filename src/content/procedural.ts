@@ -1,3 +1,8 @@
+import {
+  flippedHeading,
+  hasFlipSpots,
+  spotHeadingAt,
+} from "../core/directionals";
 import { advanceHead, simulateMove } from "../core/movement";
 import { overlappingArrowIds } from "../core/overlap";
 import { arrowTrack, currentPath, maximumOffset } from "../core/stops";
@@ -17,9 +22,11 @@ import type {
   FaceId,
   Heading,
   LevelDefinition,
+  MoveResult,
   MoveTarget,
 } from "../core/types";
 import {
+  flipInterest,
   hasStrandingState,
   solveLevel,
   solveLevelTargets,
@@ -253,6 +260,20 @@ export function doubleArrowFrequency(id: number): number {
   if (id < 26) return 0;
   const progress = Math.min(1, (id - 26) / 34);
   return 0.2 + 0.25 * progress;
+}
+
+/** First generated level that can embed a flip core. */
+const FIRST_FLIP_LEVEL = 31;
+
+/** Probability that a generated level attempts a flip core. */
+export function flipCoreFrequency(id: number): number {
+  assertLevelId(id);
+  if (id < FIRST_FLIP_LEVEL || isAuthoredLevel(id)) return 0;
+  const progress = Math.min(
+    1,
+    (id - FIRST_FLIP_LEVEL) / (70 - FIRST_FLIP_LEVEL),
+  );
+  return 0.25 + 0.25 * progress;
 }
 
 /** Extra arrows the blocker pass may spend toward the blocked target. */
@@ -1176,6 +1197,226 @@ function doubleCore(
   return undefined;
 }
 
+/**
+ * Flip-core layouts relative to the spot cell at (2, 2). Every arrow's head
+ * aims at the spot or passes it, so all of the core's routes run through or
+ * beside it; the whole reachable footprint is reserved before other arrows
+ * are placed. "gate": the opener turns north and flips the spot south, which
+ * frees the waiter. "bounce": the reverser U-turns out of the spot, after
+ * which the runner turns into the cap until it is cleared. "relay": two
+ * passes in a row, so the east arrow's safety depends on the pass count.
+ */
+export const FLIP_PATTERNS: readonly {
+  readonly name: "gate" | "bounce" | "relay";
+  readonly heading: Heading;
+  readonly arrows: readonly {
+    readonly name: string;
+    readonly cells: readonly (readonly [number, number])[];
+  }[];
+}[] = [
+  {
+    name: "gate",
+    heading: "north",
+    arrows: [
+      {
+        name: "opener",
+        cells: [
+          [0, 2],
+          [1, 2],
+        ],
+      },
+      {
+        name: "waiter",
+        cells: [
+          [4, 2],
+          [3, 2],
+        ],
+      },
+      {
+        name: "lid",
+        cells: [
+          [2, 1],
+          [2, 0],
+        ],
+      },
+    ],
+  },
+  {
+    name: "bounce",
+    heading: "south",
+    arrows: [
+      {
+        name: "reverser",
+        cells: [
+          [2, 4],
+          [2, 3],
+        ],
+      },
+      {
+        name: "runner",
+        cells: [
+          [4, 2],
+          [3, 2],
+        ],
+      },
+      {
+        name: "cap",
+        cells: [
+          [1, 0],
+          [2, 0],
+        ],
+      },
+    ],
+  },
+  {
+    name: "relay",
+    heading: "north",
+    arrows: [
+      {
+        name: "west",
+        cells: [
+          [0, 2],
+          [1, 2],
+        ],
+      },
+      {
+        name: "east",
+        cells: [
+          [4, 2],
+          [3, 2],
+        ],
+      },
+      {
+        name: "northcap",
+        cells: [
+          [1, 0],
+          [2, 0],
+        ],
+      },
+      {
+        name: "southcap",
+        cells: [
+          [3, 4],
+          [2, 4],
+        ],
+      },
+    ],
+  },
+];
+
+interface FlipCore {
+  readonly arrows: readonly ArrowDefinition[];
+  readonly spot: DirectionalSpotDefinition;
+  /** Every cell any core arrow can reach under either spot direction. */
+  readonly footprint: ReadonlySet<string>;
+  /** The isolated core's own clearing order. */
+  readonly certificate: readonly MoveTarget[];
+}
+
+/** Every cell of every track an arrow can drive, both ends for a double. */
+function trackKeys(
+  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
+  arrow: ArrowDefinition,
+): string[] {
+  const paths =
+    arrow.kind === "double"
+      ? [arrow.path, [...arrow.path].reverse()]
+      : [arrow.path];
+  return paths.flatMap((path) =>
+    arrowTrack(level, { ...arrow, path }).map(cellKey),
+  );
+}
+
+/**
+ * Place a flip core on its own seeded streams. The pattern rotates about its
+ * spot, which keeps a two-cell margin from every face edge so each rotation
+ * fits. The footprint — every cell a core arrow can reach with the spot held
+ * either way — must avoid every reserved cell and every track already placed;
+ * the caller reserves it so nothing placed later can touch the core. With the
+ * rest of the cube kept off the footprint, the core plays exactly as it does
+ * alone, which is where it is proven never to strand and to make its flip
+ * matter. A head that could re-enter the spot through a wrapping edge is
+ * rejected, because the two static probes only bound a single pass.
+ */
+function flipCore(
+  id: number,
+  level: LevelDefinition,
+  occupied: ReadonlySet<string>,
+  restart: number,
+): FlipCore | undefined {
+  const size = level.gridSize;
+  const rng = coreStream(id, "flip-core", restart);
+  const pattern = FLIP_PATTERNS[
+    rng.int(FLIP_PATTERNS.length)
+  ] as (typeof FLIP_PATTERNS)[number];
+  const faces = shuffledFaces(rng);
+  const placedTracks = new Set(
+    level.arrows.flatMap((arrow) => trackKeys(level, arrow)),
+  );
+  for (let attempt = 0; attempt < 64; attempt += 1) {
+    const face = faces[attempt % faces.length] as FaceId;
+    const rotation = rng.int(4);
+    const spotCell: Cell = {
+      face,
+      x: 2 + rng.int(Math.max(1, size - 4)),
+      y: 2 + rng.int(Math.max(1, size - 4)),
+    };
+    const at = ([dx, dy]: readonly [number, number]): Cell =>
+      patternCell(spotCell, dx - 2, dy - 2, rotation);
+    const spot: DirectionalSpotDefinition = {
+      cell: spotCell,
+      heading: rotateHeading(pattern.heading, rotation),
+      kind: "flip",
+    };
+    const arrows: ArrowDefinition[] = pattern.arrows.map((entry) => ({
+      id: `r${id}-flip-${pattern.name}-${entry.name}`,
+      path: entry.cells.map(at),
+    }));
+    const cells = [...arrows.flatMap((arrow) => arrow.path), spot.cell];
+    if (
+      cells.some(
+        (cell) =>
+          cell.x < 0 ||
+          cell.y < 0 ||
+          cell.x >= size ||
+          cell.y >= size ||
+          occupied.has(cellKey(cell)),
+      )
+    )
+      continue;
+    const spotKey = cellKey(spot.cell);
+    const footprint = new Set<string>([spotKey]);
+    let singlePass = true;
+    for (const heading of [spot.heading, oppositeHeading(spot.heading)]) {
+      const probe = { ...level, directionals: [{ cell: spot.cell, heading }] };
+      for (const arrow of arrows) {
+        const keys = arrowTrack(probe, arrow).map(cellKey);
+        if (keys.filter((key) => key === spotKey).length > 1)
+          singlePass = false;
+        for (const key of keys) footprint.add(key);
+      }
+    }
+    if (
+      !singlePass ||
+      [...footprint].some((key) => occupied.has(key) || placedTracks.has(key))
+    )
+      continue;
+    const coreLevel: LevelDefinition = {
+      ...level,
+      arrows,
+      directionals: [spot],
+      stops: [],
+    };
+    if (!validateLevel(coreLevel).valid) continue;
+    if (hasStrandingState(coreLevel) !== false) continue;
+    if (flipInterest(coreLevel) !== true) continue;
+    const certificate = solveLevelTargets(coreLevel);
+    if (!certificate || !replayCertificate(coreLevel, certificate)) continue;
+    return { arrows, spot, footprint, certificate };
+  }
+  return undefined;
+}
+
 function patternCell(
   base: Cell,
   dx: number,
@@ -1805,55 +2046,68 @@ function replayCertificate(
   let remaining = level.arrows.map((arrow) => arrow.id);
   const offsets: Record<string, number> = {};
   const settledPaths: Record<string, readonly Cell[]> = {};
+  const spotHeadings: Record<string, Heading> = {};
+  const flipLevel = hasFlipSpots(level);
   const maximumLegs = level.gridSize * 6 + 2;
+  const foldFlips = (result: MoveResult): void => {
+    for (const member of result.members ?? [result]) {
+      for (const flip of member.spotFlips ?? []) {
+        spotHeadings[cellKey(flip.cell)] = flippedHeading(
+          spotHeadingAt(level, flip.cell, spotHeadings) as Heading,
+        );
+      }
+    }
+  };
+  // Mirrors `applyMove`: a double, or a lone single on a flip level, parks by
+  // its exact settled path; everything else advances its group's offsets.
+  const park = (arrowId: string, result: MoveResult): void => {
+    const arrow = level.arrows.find((candidate) => candidate.id === arrowId);
+    const group = overlappingArrowIds(level, arrowId);
+    if (
+      result.settledPath &&
+      (arrow?.kind === "double" || (flipLevel && group.length === 1))
+    ) {
+      settledPaths[arrowId] = result.settledPath;
+    } else {
+      for (const id of group) {
+        offsets[id] = (offsets[id] ?? 0) + (result.pausedSteps ?? 0);
+      }
+    }
+    foldFlips(result);
+  };
+  const attempt = (arrowId: string, endpoint: MoveTarget["endpoint"]) =>
+    simulateMove(
+      level,
+      remaining,
+      arrowId,
+      endpoint,
+      0,
+      offsets,
+      settledPaths,
+      spotHeadings,
+    );
   for (const entry of certificate) {
     const encoded = typeof entry === "string" ? entry : entry.arrowId;
     const endpoint = typeof entry === "string" ? "head" : entry.endpoint;
-    const park = encoded.startsWith(PARK_CERTIFICATE_PREFIX);
-    const arrowId = park
+    const parkLeg = encoded.startsWith(PARK_CERTIFICATE_PREFIX);
+    const arrowId = parkLeg
       ? encoded.slice(PARK_CERTIFICATE_PREFIX.length)
       : encoded;
     if (!remaining.includes(arrowId)) continue;
-    if (park) {
-      const result = simulateMove(
-        level,
-        remaining,
-        arrowId,
-        endpoint,
-        0,
-        offsets,
-        settledPaths,
-      );
+    if (parkLeg) {
+      const result = attempt(arrowId, endpoint);
       if (result.kind !== "paused" || !result.pausedSteps) return false;
-      for (const memberId of overlappingArrowIds(level, arrowId)) {
-        offsets[memberId] = (offsets[memberId] ?? 0) + result.pausedSteps;
-      }
+      park(arrowId, result);
       continue;
     }
     let cleared = false;
     for (let leg = 0; leg < maximumLegs && !cleared; leg += 1) {
-      const result = simulateMove(
-        level,
-        remaining,
-        arrowId,
-        endpoint,
-        0,
-        offsets,
-        settledPaths,
-      );
+      const result = attempt(arrowId, endpoint);
       if (result.kind === "exit") {
+        foldFlips(result);
         cleared = true;
       } else if (result.kind === "paused" && result.pausedSteps) {
-        const arrow = level.arrows.find(
-          (candidate) => candidate.id === arrowId,
-        );
-        if (arrow?.kind === "double" && result.settledPath) {
-          settledPaths[arrowId] = result.settledPath;
-        } else {
-          for (const id of overlappingArrowIds(level, arrowId)) {
-            offsets[id] = (offsets[id] ?? 0) + result.pausedSteps;
-          }
-        }
+        park(arrowId, result);
       } else {
         return false;
       }
@@ -1916,8 +2170,23 @@ export function generateLevel(id: number): LevelDefinition {
     { minArrows: config.arrowCount - 12, certificate: true },
     { minArrows: config.arrowCount - 12, certificate: false },
   ];
+  // A planned flip core gets its own pass ahead of the first tier's ordinary
+  // passes; later tiers never retry it, which bounds the extra restarts. A
+  // level that ends without a flip core must come out of the ordinary passes
+  // exactly as it did before flip cores existed, so the flip pass shares no
+  // stream with them and they run unchanged after it.
+  const flipPlanned =
+    flipCoreFrequency(id) > 0 &&
+    coreStream(id, "flip-plan", 0).next() < flipCoreFrequency(id);
   for (const tier of tiers) {
-    for (const spotPlan of [plannedSpotPlan, [] as number[]]) {
+    const passes = [
+      ...(flipPlanned && tier === tiers[0]
+        ? [{ spotPlan: plannedSpotPlan, flipPass: true }]
+        : []),
+      { spotPlan: plannedSpotPlan, flipPass: false },
+      { spotPlan: [] as readonly number[], flipPass: false },
+    ];
+    for (const { spotPlan, flipPass } of passes) {
       construction: for (let restart = 0; restart < 8; restart += 1) {
         const rng = new Rng(
           (baseSeed + Math.imul(restart + 1, 0x9e3779b9)) >>> 0,
@@ -1942,7 +2211,7 @@ export function generateLevel(id: number): LevelDefinition {
               ).slice(0, spotPlan.length)
             : [];
         const directional = spotPlan.length > 0;
-        if (!directional && id >= 16) {
+        if (!directional && !flipPass && id >= 16) {
           const group = overlapStarter(
             id,
             config.gridSize,
@@ -2037,6 +2306,17 @@ export function generateLevel(id: number): LevelDefinition {
               }
             }
           }
+        }
+        const flip = flipPass
+          ? flipCore(id, { ...candidateLevel, arrows }, occupied, restart)
+          : undefined;
+        if (flipPass && !flip) {
+          skip = "flip-core";
+          continue construction;
+        }
+        if (flip) {
+          for (const arrow of flip.arrows) arrows.push(arrow);
+          for (const key of flip.footprint) occupied.add(key);
         }
         for (const [index, length] of [2, 3, 4].entries()) {
           const face = faces[index];
@@ -2299,9 +2579,10 @@ export function generateLevel(id: number): LevelDefinition {
                 coreFace,
               )
             : [];
-        const spots = directionalSpot
-          ? [directionalSpot.spot, ...extraSpots]
-          : [];
+        const spots = [
+          ...(directionalSpot ? [directionalSpot.spot, ...extraSpots] : []),
+          ...(flip ? [flip.spot] : []),
+        ];
         const coreIds = new Set(core?.arrows.map((arrow) => arrow.id) ?? []);
         const stopBoard = {
           ...candidateLevel,
@@ -2370,6 +2651,24 @@ export function generateLevel(id: number): LevelDefinition {
           skip = "strand";
           continue;
         }
+        // Nothing outside the flip core may reach its footprint, or the core
+        // would no longer play as the isolated core it was proven as.
+        const flipIsolated = (
+          board: Pick<
+            LevelDefinition,
+            "gridSize" | "edgePolicies" | "directionals"
+          >,
+        ): boolean =>
+          !flip ||
+          arrows.every(
+            (arrow) =>
+              arrow.id.includes("-flip-") ||
+              !trackKeys(board, arrow).some((key) => flip.footprint.has(key)),
+          );
+        if (!flipIsolated(level)) {
+          skip = "flip";
+          continue;
+        }
         if (
           tier.certificate &&
           assembledStats.total > 0 &&
@@ -2386,6 +2685,7 @@ export function generateLevel(id: number): LevelDefinition {
           double?.arrows.map((arrow) => arrow.id) ?? [],
         );
         const certificate: CertificateEntry[] = [
+          ...(flip ? flip.certificate : []),
           ...(double ? double.certificate : []),
           ...(core ? core.parkLegs : []),
           ...(directionalSpot
@@ -2402,14 +2702,14 @@ export function generateLevel(id: number): LevelDefinition {
             solveLevelTargets(level) !== undefined;
         if (accepted) return level;
         skip = "replay";
-        if (spots.length > 1 && directionalSpot) {
+        if (extraSpots.length > 0 && directionalSpot) {
           // Extra spots bend real routes and can break the replay; the required
           // core alone replays against the same certificate, so fall back to it
           // rather than dropping directionals entirely.
           // Fewer spots change the tracks, so circles are chosen again.
           const coreBoard = {
             ...candidateLevel,
-            directionals: [directionalSpot.spot],
+            directionals: [directionalSpot.spot, ...(flip ? [flip.spot] : [])],
           };
           const coreStops = [
             ...(core ? core.stops : []),
@@ -2428,10 +2728,11 @@ export function generateLevel(id: number): LevelDefinition {
             ...(coreStops.length > 0 ? { stops: coreStops } : {}),
           };
           const coreSafe =
-            !core ||
-            core.stops.every(
-              strandSafeCircle(coreBoard, arrows, coreIds, "core"),
-            );
+            flipIsolated(coreBoard) &&
+            (!core ||
+              core.stops.every(
+                strandSafeCircle(coreBoard, arrows, coreIds, "core"),
+              ));
           const coreAccepted =
             coreSafe &&
             (tier.certificate

@@ -312,7 +312,10 @@ describe("runtime campaign generator", () => {
         `par-arrows:runtime:${id <= 4 ? 1 : id <= 10 ? 4 : 7}:level:${id}`,
       );
       expect(validateLevel(level).valid).toBe(true);
-      const spots = level.directionals ?? [];
+      // The face plan governs static spots; a flip core's spot is separate.
+      const spots = (level.directionals ?? []).filter(
+        (spot) => spot.kind !== "flip",
+      );
       if (spots.length > 0) {
         const perFace = new Map<string, number>();
         for (const spot of spots) {
