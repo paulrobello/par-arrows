@@ -72,45 +72,86 @@ function loopError(
   return `Arrow ${arrow.id} has a nonterminating continuation loop from its ${endpoint} endpoint.`;
 }
 
+/** Spot state as a key fragment; a spot stored at its authored heading is left out. */
+function spotStateKey(
+  level: LevelDefinition,
+  spotHeadings: Readonly<Record<string, Heading>> | undefined,
+): string {
+  const authored = new Map(
+    (level.directionals ?? []).map((spot) => [
+      cellKey(spot.cell),
+      spot.heading,
+    ]),
+  );
+  return Object.entries(spotHeadings ?? {})
+    .filter(([key, heading]) => authored.get(key) !== heading)
+    .map(([key, heading]) => `${key}=${heading}`)
+    .sort()
+    .join(",");
+}
+
+interface FoldState {
+  /** Settled body in authored order. */
+  readonly body: readonly Cell[];
+  readonly spots: Readonly<Record<string, Heading>>;
+}
+
 /**
- * Drive one arrow alone through every stop it can reach and report a stop
- * that would park it with its body covering one cell twice. Folds never
- * depend on other arrows; the arrow's own flips carry from leg to leg.
+ * Report a stop circle that would park an arrow with its body covering one
+ * cell twice. Searches every sequence of the arrow's own taps, from either
+ * end of a double, starting from each given spot state and carrying the
+ * arrow's own flips between legs. Other arrows are left out, so a flip that
+ * another arrow makes between this arrow's legs is not modelled.
  */
 function foldedStopError(
   level: LevelDefinition,
   arrow: ArrowDefinition,
-  endpoint: Endpoint,
-  initialSpots: Readonly<Record<string, Heading>>,
+  startSpots: readonly Readonly<Record<string, Heading>>[],
 ): string | undefined {
   const alone: LevelDefinition = { ...level, arrows: [arrow] };
-  let body = [...orientedPath(arrow, endpoint)];
-  let settledPaths: Record<string, readonly Cell[]> = {};
-  const spotHeadings: Record<string, Heading> = { ...initialSpots };
-  for (let leg = 0; leg < level.gridSize * 6 + 2; leg += 1) {
-    const result = simulateMove(
-      alone,
-      [arrow.id],
-      arrow.id,
-      endpoint,
-      0,
-      {},
-      settledPaths,
-      spotHeadings,
-    );
-    if (result.kind !== "paused") return undefined;
-    for (const flip of result.spotFlips ?? []) {
-      spotHeadings[cellKey(flip.cell)] = flippedHeading(
-        spotHeadingAt(level, flip.cell, spotHeadings) as Heading,
+  const endpoints: readonly Endpoint[] =
+    arrow.kind === "double" ? ["head", "tail"] : ["head"];
+  const seen = new Set<string>();
+  const pending: FoldState[] = startSpots.map((spots) => ({
+    body: arrow.path,
+    spots,
+  }));
+  while (pending.length > 0) {
+    const { body, spots } = pending.pop() as FoldState;
+    const key = `${body.map(cellKey).join(">")}#${spotStateKey(level, spots)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    for (const endpoint of endpoints) {
+      const result = simulateMove(
+        alone,
+        [arrow.id],
+        arrow.id,
+        endpoint,
+        0,
+        {},
+        { [arrow.id]: body },
+        spots,
       );
+      if (result.kind !== "paused") continue;
+      const oriented = endpoint === "head" ? body : [...body].reverse();
+      const parked = [...oriented, ...result.route.slice(1)].slice(
+        -oriented.length,
+      );
+      const stop = result.route.at(-1);
+      if (stop && new Set(parked.map(cellKey)).size !== parked.length) {
+        return `Stop circle ${cellKey(stop)} would park arrow ${arrow.id} folded over itself.`;
+      }
+      const next: Record<string, Heading> = { ...spots };
+      for (const flip of result.spotFlips ?? []) {
+        next[cellKey(flip.cell)] = flippedHeading(
+          spotHeadingAt(level, flip.cell, next) as Heading,
+        );
+      }
+      pending.push({
+        body: endpoint === "head" ? parked : [...parked].reverse(),
+        spots: next,
+      });
     }
-    body = [...body, ...result.route.slice(1)].slice(-body.length);
-    const stop = result.route.at(-1);
-    if (stop && new Set(body.map(cellKey)).size !== body.length) {
-      return `Stop circle ${cellKey(stop)} would park arrow ${arrow.id} folded over itself.`;
-    }
-    const oriented = endpoint === "head" ? body : [...body].reverse();
-    settledPaths = { [arrow.id]: oriented };
   }
   return undefined;
 }
@@ -310,26 +351,20 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
     }
   }
 
-  // A fold can only park on a stop circle, so levels without one skip the walk.
+  // A fold can only park on a stop circle, so levels without one skip the search.
   if (stopCells.size > 0) {
     const combos: Record<string, Heading>[] = [{}];
-    for (const spot of (level.directionals ?? [])
-      .filter((candidate) => candidate.kind === "flip")
-      .slice(0, 3)) {
+    for (const spot of (level.directionals ?? []).filter(
+      (candidate) => candidate.kind === "flip",
+    )) {
       const key = cellKey(spot.cell);
       for (const combo of [...combos]) {
         combos.push({ ...combo, [key]: flippedHeading(spot.heading) });
       }
     }
     for (const arrow of level.arrows) {
-      for (const endpoint of arrow.kind === "double"
-        ? (["head", "tail"] as const)
-        : (["head"] as const)) {
-        for (const combo of combos) {
-          const problem = foldedStopError(level, arrow, endpoint, combo);
-          if (problem && !errors.includes(problem)) errors.push(problem);
-        }
-      }
+      const problem = foldedStopError(level, arrow, combos);
+      if (problem && !errors.includes(problem)) errors.push(problem);
     }
   }
 
@@ -475,18 +510,7 @@ function solveKey(level: LevelDefinition, state: GameState): string {
     .sort()
     .join(",");
   const failures = [...(state.failedPositions ?? [])].sort().join(",");
-  // A spot stored at its authored heading is the same state as an unstored one.
-  const authored = new Map(
-    (level.directionals ?? []).map((spot) => [
-      cellKey(spot.cell),
-      spot.heading,
-    ]),
-  );
-  const spots = Object.entries(state.spotHeadings ?? {})
-    .filter(([key, heading]) => authored.get(key) !== heading)
-    .map(([key, heading]) => `${key}=${heading}`)
-    .sort()
-    .join(",");
+  const spots = spotStateKey(level, state.spotHeadings);
   return `${[...state.remainingIds].sort().join("|")}#${parked}#${settled}#${failures}#${spots}`;
 }
 

@@ -314,4 +314,20 @@ describe("flip validation and solving", () => {
     );
     expect(validateLevel(level).errors).toEqual([]);
   });
+
+  test("a double arrow folded by switching endpoints between parks is rejected", () => {
+    // Two head taps park the body on (3,3) (3,4) (3,5); a tail tap then
+    // runs north into the south spot at (3,2), turns back onto the stop at
+    // (3,3), and parks as (3,3) (3,2) (3,3).
+    const level = flipLevel(
+      [{ id: "d", kind: "double", path: [cell(0, 2), cell(1, 2), cell(2, 2)] }],
+      [{ x: 3, y: 2, heading: "south", kind: "static" }],
+      [cell(3, 3), cell(3, 5)],
+      8,
+    );
+    expect(validateLevel(level).errors).toContain(
+      "Stop circle front:3:3 would park arrow d folded over itself.",
+    );
+    expect(validateLevel({ ...level, stops: [] }).valid).toBe(true);
+  });
 });
