@@ -30,6 +30,7 @@ import { assertSeamFills } from "./seam-fill-browser";
 import { assertStopIntro } from "./stop-browser";
 import { assertDirectionalIntro } from "./directional-browser";
 import { assertDoubleIntro } from "./double-browser";
+import { assertFlipIntro } from "./flip-browser";
 import { assertReliableTaps } from "./tap-browser";
 import {
   assertFirstRunWalkthrough,
@@ -105,6 +106,7 @@ const OVERLAP_ONLY_COMPLETE = Symbol("overlap-only-complete");
 const STOP_ONLY_COMPLETE = Symbol("stop-only-complete");
 const DIRECTIONAL_ONLY_COMPLETE = Symbol("directional-only-complete");
 const DOUBLE_ONLY_COMPLETE = Symbol("double-only-complete");
+const FLIP_ONLY_COMPLETE = Symbol("flip-only-complete");
 const RESIZE_ONLY_COMPLETE = Symbol("resize-only-complete");
 const deadline = setTimeout(() => {
   console.error("Browser verification exceeded its 180-second deadline.");
@@ -1016,6 +1018,20 @@ try {
     throw DOUBLE_ONLY_COMPLETE;
   }
 
+  if (process.env.FLIP_ONLY === "1") {
+    await assertFlipIntro(browser, url, output);
+    assert.deepEqual(failures, [], "Browser must not report uncaught errors");
+    await Bun.write(
+      `${output}/flip-summary.json`,
+      JSON.stringify(
+        { passed: true, browser: engine.name(), physicalDevice: false },
+        null,
+        2,
+      ),
+    );
+    throw FLIP_ONLY_COMPLETE;
+  }
+
   if (process.env.OVERLAP_ONLY === "1") {
     await assertOverlapIntro(browser, url, output);
     assert.deepEqual(failures, [], "Browser must not report uncaught errors");
@@ -1487,6 +1503,7 @@ try {
   await assertStopIntro(browser, url, output);
   await assertDirectionalIntro(browser, url, output);
   await assertDoubleIntro(browser, url, output);
+  await assertFlipIntro(browser, url, output);
   await assertTutorialFlow(browser, url, output);
   await assertConsistentMotion(browser, url, output);
   await assertReliableTaps(browser, url, output);
@@ -1519,6 +1536,7 @@ try {
     error !== STOP_ONLY_COMPLETE &&
     error !== DIRECTIONAL_ONLY_COMPLETE &&
     error !== DOUBLE_ONLY_COMPLETE &&
+    error !== FLIP_ONLY_COMPLETE &&
     error !== RESIZE_ONLY_COMPLETE &&
     error !== CONTEXT_ONLY_COMPLETE &&
     error !== TUTORIAL_ONLY_COMPLETE
