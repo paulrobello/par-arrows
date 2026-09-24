@@ -12,6 +12,8 @@ const BLOCKER = "dir-intro-blocker";
 interface DirectionalSpotText {
   cell: string;
   heading: string;
+  kind: string;
+  current: string;
 }
 
 interface State {
@@ -118,7 +120,12 @@ async function assertScriptedWalkthrough(
       "The campaign loader opens the directional introduction",
     );
     assert.deepEqual(opened.directionals, [
-      { cell: cellKey({ face: "front", x: 2, y: 1 }), heading: "north" },
+      {
+        cell: cellKey({ face: "front", x: 2, y: 1 }),
+        heading: "north",
+        kind: "static",
+        current: "north",
+      },
     ]);
     const script = await tutorialState(page);
     assert.ok(script.active, "The walkthrough must run on first sight");
