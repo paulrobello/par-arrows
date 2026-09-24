@@ -8,7 +8,13 @@ import {
 export interface LevelPreview {
   readonly active: boolean;
   readonly requestedLevelId?: number;
-  readonly feature?: "wrap" | "overlap" | "stop" | "directional" | "double";
+  readonly feature?:
+    | "wrap"
+    | "overlap"
+    | "stop"
+    | "directional"
+    | "double"
+    | "flip";
   readonly wraps?: number;
   readonly resolvedLevelId?: number;
   readonly error?: string;
@@ -56,6 +62,7 @@ export function parseLevelPreview(search: string): LevelPreview {
     | "stop"
     | "directional"
     | "double"
+    | "flip"
     | undefined;
   if (rawFeature !== null) {
     const normalized = rawFeature.toLowerCase();
@@ -69,6 +76,8 @@ export function parseLevelPreview(search: string): LevelPreview {
       feature = "directional";
     } else if (["double", "twoheaded", "two-headed"].includes(normalized)) {
       feature = "double";
+    } else if (["flip", "flips", "flipspot"].includes(normalized)) {
+      feature = "flip";
     } else {
       return { active: true, error: `Unknown test feature: ${rawFeature}.` };
     }
@@ -127,6 +136,9 @@ export function resolveLevelPreview(
   const requiresWrap = preview.feature === "wrap" || (preview.wraps ?? 0) > 0;
   if (preview.feature === "double") {
     return { ...preview, resolvedLevelId: 25 };
+  }
+  if (preview.feature === "flip") {
+    return { ...preview, resolvedLevelId: 30 };
   }
   const startLevelId =
     preview.feature === "overlap"

@@ -28,6 +28,7 @@ import {
 import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "./intro";
 import { DIRECTIONAL_INTRO_LEVEL } from "./directional-intro";
 import { DOUBLE_INTRO_LEVEL } from "./double-intro";
+import { FLIP_INTRO_LEVEL } from "./flip-intro";
 import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
 import { STOP_INTRO_LEVEL } from "./stop-intro";
 
@@ -35,7 +36,7 @@ export const GENERATOR_VERSION = 7;
 export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
 
 /** Authored teaching cubes; every other id is generated at runtime. */
-export const AUTHORED_LEVEL_IDS: readonly number[] = [1, 5, 11, 15, 20, 25];
+export const AUTHORED_LEVEL_IDS: readonly number[] = [1, 5, 11, 15, 20, 25, 30];
 
 const AUTHORED = new Set(AUTHORED_LEVEL_IDS);
 
@@ -73,6 +74,7 @@ export function seedForLevel(id: number): string {
   // existing saves still match metadata and resume instead of refreshing.
   if (id === 20) return "par-arrows:runtime:4:level:20:directional-intro:1";
   if (id === 25) return "par-arrows:runtime:7:level:25:double-intro:1";
+  if (id === 30) return "par-arrows:runtime:7:level:30:flip-intro:1";
   if (id <= 10) return `par-arrows:runtime:4:level:${id}`;
   return `par-arrows:runtime:${GENERATOR_VERSION}:level:${id}`;
 }
@@ -1891,6 +1893,7 @@ export function generateLevel(id: number): LevelDefinition {
   if (id === 15) return OVERLAP_INTRO_LEVEL;
   if (id === 20) return DIRECTIONAL_INTRO_LEVEL;
   if (id === 25) return DOUBLE_INTRO_LEVEL;
+  if (id === 30) return FLIP_INTRO_LEVEL;
   const config = getLevelConfig(id);
   const baseSeed = hashSeed(seedForLevel(id));
   const edgePolicies = getWrappingEdgePolicies(id);

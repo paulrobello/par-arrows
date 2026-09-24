@@ -21,7 +21,7 @@ export interface TutorialScript {
   readonly steps: readonly TutorialStep[];
 }
 
-export const SCRIPTED_LEVEL_IDS: readonly number[] = [1, 5, 11, 15, 20, 25];
+export const SCRIPTED_LEVEL_IDS: readonly number[] = [1, 5, 11, 15, 20, 25, 30];
 
 const LEVEL_ONE_SCRIPT: TutorialScript = {
   levelId: 1,
@@ -222,6 +222,44 @@ export const DOUBLE_INTRO_SCRIPT: TutorialScript = {
   ],
 };
 
+const FLIP_INTRO_SCRIPT: TutorialScript = {
+  levelId: 30,
+  title: "Read the flip.",
+  steps: [
+    {
+      copy: "Magenta spots flip. An arrow that runs into one head-on turns around and travels back over itself. Tap this arrow.",
+      highlightId: "flip-intro-reverser",
+      advance: {
+        kind: "move",
+        arrowIds: ["flip-intro-reverser"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "The spot flipped once that arrow had fully passed. Now it would turn the other arrow into this one, so clear this one first.",
+      highlightId: "flip-intro-guard",
+      advance: {
+        kind: "move",
+        arrowIds: ["flip-intro-guard"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "The lane is open. Send this arrow through the spot.",
+      highlightId: "flip-intro-runner",
+      advance: {
+        kind: "move",
+        arrowIds: ["flip-intro-runner"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "Every pass flips the spot again. Clear the remaining arrows.",
+      advance: { kind: "won" },
+    },
+  ],
+};
+
 const SCRIPTS: readonly TutorialScript[] = [
   LEVEL_ONE_SCRIPT,
   STOP_INTRO_SCRIPT,
@@ -229,6 +267,7 @@ const SCRIPTS: readonly TutorialScript[] = [
   OVERLAP_INTRO_SCRIPT,
   DIRECTIONAL_INTRO_SCRIPT,
   DOUBLE_INTRO_SCRIPT,
+  FLIP_INTRO_SCRIPT,
 ];
 
 export function scriptForLevel(levelId: number): TutorialScript | undefined {

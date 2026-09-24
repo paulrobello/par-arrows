@@ -895,6 +895,28 @@ describe("resumable campaign saves", () => {
     expect((await loadCampaign(async () => level)).recovered).toBe(false);
   }, 30_000);
 
+  test("a content-11 save on level 30 refreshes onto the authored flip cube", async () => {
+    const level = generateLevel(30);
+    expect(CONTENT_ELEVEN_LAYOUTS[30]).not.toBe(layoutFingerprint(level));
+    for (const seed of [seedForLevel(30), "par-arrows:runtime:7:level:30"]) {
+      expect(save(exitedState(level), 34, level)).toBe(true);
+      const { layout: _dropped, ...legacy } = savedJson();
+      entries.set(
+        CAMPAIGN_KEY,
+        JSON.stringify({ ...legacy, contentVersion: 11, seed }),
+      );
+      const restored = await loadCampaign(async () => level);
+      expect(restored.recovered).toBe(true);
+      expect(restored.contentUpdated).toBe(true);
+      expect(restored.value).toMatchObject({
+        currentLevelId: 30,
+        unlockedLevelId: 34,
+        tutorialComplete: true,
+        state: createGameState(level),
+      });
+    }
+  });
+
   test("saves an atomic overlap failure as one life and rejects partial groups", async () => {
     const level = OVERLAP_INTRO_LEVEL;
     const initial = createGameState(level);

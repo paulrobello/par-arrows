@@ -106,7 +106,7 @@ describe("directional spot level content", () => {
   });
 
   test("generated cubes draw 0-4 spot faces with 1-4 spots per face", () => {
-    for (const id of [21, 22, 23, 24, 25, 26, 27, 28, 29, 30]) {
+    for (const id of [21, 22, 23, 24, 25, 26, 27, 28, 29]) {
       const planFaces = directionalFaceCount(id);
       const level = generateLevel(id);
       expect(validateLevel(level).valid).toBe(true);
@@ -148,7 +148,7 @@ describe("directional spot level content", () => {
     }
     // Uniform draw over 0-4 faces puts a spot plan on ~80% of cubes; the
     // seeded streams make the exact split deterministic per generator.
-    expect(carriers).toBe(33);
+    expect(carriers).toBe(32);
   });
 
   test("levels through nineteen are untouched by the directional plan", () => {

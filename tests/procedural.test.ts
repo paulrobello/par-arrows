@@ -126,7 +126,7 @@ function normalizedShapeSignature(
 describe("generated double arrows", () => {
   test("uses v7 seeds and the planned frequency curve", () => {
     expect(GENERATOR_VERSION).toBe(7);
-    expect(AUTHORED_LEVEL_IDS).toEqual([1, 5, 11, 15, 20, 25]);
+    expect(AUTHORED_LEVEL_IDS).toEqual([1, 5, 11, 15, 20, 25, 30]);
     expect(seedForLevel(25)).toBe(
       "par-arrows:runtime:7:level:25:double-intro:1",
     );
@@ -300,7 +300,7 @@ describe("runtime campaign generator", () => {
     expect(getLevelConfig(6).lives).toBe(4);
     expect(getLevelConfig(7).lives).toBe(3);
     expect(getLevelConfig(12).arrowCount).toBe(186);
-    expect(getLevelConfig(30).arrowCount).toBe(240);
+    expect(getLevelConfig(31).arrowCount).toBe(240);
     expect(getLevelConfig(1_000_000).gridSize).toBe(26);
     expect(getLevelConfig(1_000_000).arrowCount).toBe(264);
   });
@@ -362,12 +362,20 @@ describe("runtime campaign generator", () => {
     expect(getWrappingEdgeWeights(MAX_LEVEL_ID)).toEqual(final);
     for (let id = 12; id <= 100; id += 1) {
       const current = getWrappingEdgeWeights(id);
-      if (id === 15 || id === 20 || id === 25) {
+      if (id === 15 || id === 20 || id === 25 || id === 30) {
         expect(current).toEqual([1, 0, 0, 0]);
         continue;
       }
       const previous = getWrappingEdgeWeights(
-        id === 16 ? 14 : id === 21 ? 19 : id === 26 ? 24 : id - 1,
+        id === 16
+          ? 14
+          : id === 21
+            ? 19
+            : id === 26
+              ? 24
+              : id === 31
+                ? 29
+                : id - 1,
       );
       expect(current[0]).toBe(0.25);
       expect(
