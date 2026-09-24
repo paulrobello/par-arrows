@@ -11,6 +11,12 @@ import {
 } from "../src/core/game-state";
 import { cellKey } from "../src/core/topology";
 import type { Cell, Heading, LevelDefinition } from "../src/core/types";
+import {
+  flipInterest,
+  hasStrandingState,
+  solveLevelTargets,
+  validateLevel,
+} from "../src/core/validation";
 
 export function cell(x: number, y: number): Cell {
   return { face: "front", x, y };
@@ -103,6 +109,8 @@ describe("flip movement", () => {
     expect(result.spotFlips?.map((flip) => cellKey(flip.cell))).toEqual([
       cellKey(cell(1, 1)),
     ]);
+    // The head enters (1,1) at step 1 and reverses; the body leaves it at step 3.
+    expect(result.spotFlips?.map((flip) => flip.step)).toEqual([3]);
     const next = applyMove(level, state, result);
     expect(next.spotHeadings).toEqual({ [cellKey(cell(1, 1))]: "north" });
   });
@@ -226,5 +234,84 @@ describe("flip movement", () => {
     const result = simulateMove(level, createGameState(level), "long");
     expect(result.kind).toBe("invalid");
     expect(result.reason).toContain("cycle");
+  });
+});
+
+describe("flip validation and solving", () => {
+  const introLevel = () =>
+    flipLevel(
+      [
+        { id: "reverser", path: [cell(1, 3), cell(1, 2)] },
+        { id: "guard", path: [cell(0, 0), cell(1, 0)] },
+        { id: "runner", path: [cell(3, 1), cell(2, 1)] },
+      ],
+      [{ x: 1, y: 1, heading: "south" }],
+      [],
+      4,
+    );
+
+  test("the level-30 layout solves, never strands, and the flip matters", () => {
+    const level = introLevel();
+    expect(validateLevel(level).valid).toBe(true);
+    expect(solveLevelTargets(level)).toBeDefined();
+    expect(hasStrandingState(level)).toBe(false);
+    expect(flipInterest(level)).toBe(true);
+  });
+
+  test("a static spot in the same place carries no flip interest", () => {
+    const level = introLevel();
+    const still: LevelDefinition = {
+      ...level,
+      directionals: (level.directionals ?? []).map((spot) => ({
+        ...spot,
+        kind: "static" as const,
+      })),
+    };
+    expect(flipInterest(still)).toBe(false);
+  });
+
+  test("rejects a flip spot on a stop circle", () => {
+    const level = flipLevel(
+      [{ id: "a", path: [cell(0, 0), cell(1, 0)] }],
+      [{ x: 3, y: 3, heading: "north" }],
+      [cell(3, 3)],
+    );
+    expect(validateLevel(level).errors).toContain(
+      "Flip spot front:3:3 shares its cell with a stop circle.",
+    );
+  });
+
+  test("a stop reached while the arrow is folded over itself is rejected", () => {
+    // First tap parks the head on the stop at (4,2): body (1,2)..(4,2).
+    // Second tap: the head enters the west spot at (5,2), reverses, and
+    // re-enters the stop at (4,2) with body (3,2) (4,2) (5,2) (4,2), which
+    // holds (4,2) twice. Verified in the rules model on 2026-09-23.
+    const level = flipLevel(
+      [{ id: "long", path: [cell(0, 2), cell(1, 2), cell(2, 2), cell(3, 2)] }],
+      [{ x: 5, y: 2, heading: "west", kind: "static" }],
+      [cell(4, 2)],
+    );
+    expect(validateLevel(level).errors).toContain(
+      "Stop circle front:4:2 would park arrow long folded over itself.",
+    );
+    expect(validateLevel({ ...level, stops: [] }).valid).toBe(true);
+  });
+
+  test("the fold walk carries the arrow's own flips into its next leg", () => {
+    // From the combination with (5,1) reversed south, the first tap parks at
+    // (5,4) and the second parks there again after flipping (5,5) to south and
+    // (5,1) back to north, so the third exits south through (5,5). Reading
+    // (5,5) as authored north instead would turn the head back onto the stop
+    // at (5,4) and report a fold. In play (5,1) starts north and the second
+    // tap exits, so no fold is reachable.
+    const level = flipLevel(
+      [{ id: "a", path: [cell(1, 5), cell(2, 5), cell(3, 5)] }],
+      [
+        { x: 5, y: 5, heading: "north" },
+        { x: 5, y: 1, heading: "north" },
+      ],
+      [cell(5, 4)],
+    );
+    expect(validateLevel(level).errors).toEqual([]);
   });
 });

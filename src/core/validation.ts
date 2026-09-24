@@ -4,7 +4,7 @@ import {
   simulateMove as simulateState,
 } from "./game-state";
 import { advanceHead, simulateMove } from "./movement";
-import { spotHeadingAt } from "./directionals";
+import { flippedHeading, spotHeadingAt } from "./directionals";
 import { cellKey, headingForPath, linkKey, seamTransition } from "./topology";
 import { overlappingArrowIds, sharedDirectedSegment } from "./overlap";
 import { arrowTrack, maximumOffset } from "./stops";
@@ -13,6 +13,7 @@ import type {
   Cell,
   Endpoint,
   GameState,
+  Heading,
   LevelDefinition,
   MoveTarget,
 } from "./types";
@@ -69,6 +70,49 @@ function loopError(
     currentHeading = spotHeadingAt(level, head) ?? forward.heading;
   }
   return `Arrow ${arrow.id} has a nonterminating continuation loop from its ${endpoint} endpoint.`;
+}
+
+/**
+ * Drive one arrow alone through every stop it can reach and report a stop
+ * that would park it with its body covering one cell twice. Folds never
+ * depend on other arrows; the arrow's own flips carry from leg to leg.
+ */
+function foldedStopError(
+  level: LevelDefinition,
+  arrow: ArrowDefinition,
+  endpoint: Endpoint,
+  initialSpots: Readonly<Record<string, Heading>>,
+): string | undefined {
+  const alone: LevelDefinition = { ...level, arrows: [arrow] };
+  let body = [...orientedPath(arrow, endpoint)];
+  let settledPaths: Record<string, readonly Cell[]> = {};
+  const spotHeadings: Record<string, Heading> = { ...initialSpots };
+  for (let leg = 0; leg < level.gridSize * 6 + 2; leg += 1) {
+    const result = simulateMove(
+      alone,
+      [arrow.id],
+      arrow.id,
+      endpoint,
+      0,
+      {},
+      settledPaths,
+      spotHeadings,
+    );
+    if (result.kind !== "paused") return undefined;
+    for (const flip of result.spotFlips ?? []) {
+      spotHeadings[cellKey(flip.cell)] = flippedHeading(
+        spotHeadingAt(level, flip.cell, spotHeadings) as Heading,
+      );
+    }
+    body = [...body, ...result.route.slice(1)].slice(-body.length);
+    const stop = result.route.at(-1);
+    if (stop && new Set(body.map(cellKey)).size !== body.length) {
+      return `Stop circle ${cellKey(stop)} would park arrow ${arrow.id} folded over itself.`;
+    }
+    const oriented = endpoint === "head" ? body : [...body].reverse();
+    settledPaths = { [arrow.id]: oriented };
+  }
+  return undefined;
 }
 
 /** Structural validation and independent full-motion loop checks. */
@@ -248,6 +292,9 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
         `Directional spot ${key} shares its cell with a stop circle.`,
       );
     }
+    if (spot.kind === "flip" && stopCells.has(key)) {
+      errors.push(`Flip spot ${key} shares its cell with a stop circle.`);
+    }
     if (arrowCells.has(key)) {
       errors.push(`Directional spot ${key} sits on an arrow's starting cell.`);
     }
@@ -260,6 +307,29 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
       errors.push(
         "A level with directional spots cannot contain shared-tail groups.",
       );
+    }
+  }
+
+  // A fold can only park on a stop circle, so levels without one skip the walk.
+  if (stopCells.size > 0) {
+    const combos: Record<string, Heading>[] = [{}];
+    for (const spot of (level.directionals ?? [])
+      .filter((candidate) => candidate.kind === "flip")
+      .slice(0, 3)) {
+      const key = cellKey(spot.cell);
+      for (const combo of [...combos]) {
+        combos.push({ ...combo, [key]: flippedHeading(spot.heading) });
+      }
+    }
+    for (const arrow of level.arrows) {
+      for (const endpoint of arrow.kind === "double"
+        ? (["head", "tail"] as const)
+        : (["head"] as const)) {
+        for (const combo of combos) {
+          const problem = foldedStopError(level, arrow, endpoint, combo);
+          if (problem && !errors.includes(problem)) errors.push(problem);
+        }
+      }
     }
   }
 
@@ -369,7 +439,8 @@ function driveThrough(
 /**
  * Remove every arrow that can currently reach its exit. Removing an arrow only
  * ever frees cells, so clearing greedily can never strand another arrow and
- * needs no backtracking.
+ * needs no backtracking. An exit can also flip a spot; flip cores get the same
+ * guarantee from enumerating their states (`hasStrandingState`), not from this.
  */
 function clearWhatExits(
   level: LevelDefinition,
@@ -393,7 +464,7 @@ function clearWhatExits(
   return { state: current, taps };
 }
 
-function solveKey(state: GameState): string {
+function solveKey(level: LevelDefinition, state: GameState): string {
   const parked = Object.entries(state.offsets)
     .filter(([, value]) => value > 0)
     .map(([id, value]) => `${id}@${value}`)
@@ -404,7 +475,19 @@ function solveKey(state: GameState): string {
     .sort()
     .join(",");
   const failures = [...(state.failedPositions ?? [])].sort().join(",");
-  return `${[...state.remainingIds].sort().join("|")}#${parked}#${settled}#${failures}`;
+  // A spot stored at its authored heading is the same state as an unstored one.
+  const authored = new Map(
+    (level.directionals ?? []).map((spot) => [
+      cellKey(spot.cell),
+      spot.heading,
+    ]),
+  );
+  const spots = Object.entries(state.spotHeadings ?? {})
+    .filter(([key, heading]) => authored.get(key) !== heading)
+    .map(([key, heading]) => `${key}=${heading}`)
+    .sort()
+    .join(",");
+  return `${[...state.remainingIds].sort().join("|")}#${parked}#${settled}#${failures}#${spots}`;
 }
 
 const SOLVER_NODE_BUDGET = 4000;
@@ -422,7 +505,7 @@ export function hasStrandingState(
   const pending = [createGameState(level)];
   while (pending.length > 0) {
     const state = pending.pop() as GameState;
-    const key = solveKey(state);
+    const key = solveKey(level, state);
     if (states.has(key)) continue;
     if (states.size >= limit) return undefined;
     const next: string[] = [];
@@ -437,7 +520,7 @@ export function hasStrandingState(
         if (result.kind !== "exit" && result.kind !== "paused") continue;
         const settled = applyMove(level, state, result);
         if (settled === state) continue;
-        next.push(solveKey(settled));
+        next.push(solveKey(level, settled));
         pending.push(settled);
       }
     }
@@ -460,6 +543,72 @@ export function hasStrandingState(
 }
 
 /**
+ * True when some collision-free reachable state has an arrow whose tap is
+ * safe with the flip spots as they are and a collision with them reversed,
+ * or the other way round. Undefined when the state space exceeds `limit`.
+ */
+export function flipInterest(
+  level: LevelDefinition,
+  limit = 5000,
+): boolean | undefined {
+  const flips = (level.directionals ?? []).filter(
+    (spot) => spot.kind === "flip",
+  );
+  if (flips.length === 0) return false;
+  const seen = new Set<string>();
+  const pending = [createGameState(level)];
+  const safe = (kind: string): boolean => kind === "exit" || kind === "paused";
+  while (pending.length > 0) {
+    const state = pending.pop() as GameState;
+    const key = solveKey(level, state);
+    if (seen.has(key)) continue;
+    if (seen.size >= limit) return undefined;
+    seen.add(key);
+    for (const arrowId of state.remainingIds) {
+      for (const target of targetsFor(level, arrowId)) {
+        const result = simulateState(
+          level,
+          state,
+          target.arrowId,
+          target.endpoint,
+        );
+        for (const spot of flips) {
+          const spotKey = cellKey(spot.cell);
+          const current = spotHeadingAt(
+            level,
+            spot.cell,
+            state.spotHeadings,
+          ) as Heading;
+          const reversed: GameState = {
+            ...state,
+            spotHeadings: {
+              ...(state.spotHeadings ?? {}),
+              [spotKey]: flippedHeading(current),
+            },
+          };
+          const other = simulateState(
+            level,
+            reversed,
+            target.arrowId,
+            target.endpoint,
+          );
+          if (
+            safe(result.kind) !== safe(other.kind) &&
+            (result.kind === "blocked" || other.kind === "blocked")
+          ) {
+            return true;
+          }
+        }
+        if (!safe(result.kind)) continue;
+        const next = applyMove(level, state, result);
+        if (next !== state) pending.push(next);
+      }
+    }
+  }
+  return false;
+}
+
+/**
  * Parking an arrow on a stop circle occupies new cells, so unlike clearing it
  * can strand other arrows and has to be explored with backtracking. Reverse
  * construction gives generated levels a drive-through certificate, so they
@@ -473,7 +622,7 @@ function searchSolution(
 ): readonly MoveTarget[] | undefined {
   const cleared = clearWhatExits(level, state);
   if (cleared.state.remainingIds.length === 0) return cleared.taps;
-  const key = solveKey(cleared.state);
+  const key = solveKey(level, cleared.state);
   if (visited.has(key)) return undefined;
   visited.add(key);
   for (const arrowId of cleared.state.remainingIds) {

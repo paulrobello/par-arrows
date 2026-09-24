@@ -58,7 +58,7 @@ export interface GameState {
   readonly levelId: number;
   readonly remainingIds: readonly string[];
   readonly failedIds: readonly string[];
-  /** Exact occupied paths of parked double arrows. */
+  /** Exact occupied paths of parked double arrows, and of parked single arrows on flip levels. */
   readonly settledPaths?: Readonly<Record<string, readonly Cell[]>>;
   /** Paid double-arrow failures, keyed by arrow and settled path. */
   readonly failedPositions?: readonly string[];
@@ -119,11 +119,14 @@ export interface MoveResult {
   readonly route: readonly Cell[];
   readonly waypoints: readonly MoveWaypoint[];
   readonly stateRevision: number;
-  /** Forward steps already travelled before this attempt began. */
+  /**
+   * Forward steps already travelled before this attempt began. A parked
+   * single arrow on a flip level reports 0: its position lives in `settledPaths`.
+   */
   readonly offset: number;
   /** Forward steps this attempt travels before parking on a stop circle. */
   readonly pausedSteps?: number;
-  /** Exact occupied path after a double arrow parks. */
+  /** Exact occupied path after a double arrow, or any arrow on a flip level, parks. */
   readonly settledPath?: readonly Cell[];
   /** Flip spots the moving body cleared, in order; rewound on a collision. */
   readonly spotFlips?: readonly SpotFlip[];
