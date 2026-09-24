@@ -8,6 +8,7 @@ import { cellKey } from "../src/core/topology";
 import type { Cell, LevelDefinition } from "../src/core/types";
 import {
   interactionRegion,
+  probeMove,
   proveRegion,
   validateLevel,
 } from "../src/core/validation";
@@ -99,29 +100,51 @@ describe("interaction regions", () => {
   });
 
   test("proveRegion rejects a stranded region with reasons", () => {
-    // The runner parks onto the reverser's only exit lane and nothing else
-    // can clear: build via parking on a stop that blocks the flip lane.
+    // The parker parks on the stop at (3,2); parked, its body [(3,1),(3,2)]
+    // seals the blocker's only exit lane, and its own resume meets the
+    // blocker's head at (3,3). Nothing tappable can clear from there.
     const stranded = level(
       [
-        { id: "reverser", path: [cell(1, 3), cell(1, 2)] },
-        { id: "guard", path: [cell(0, 0), cell(1, 0)] },
-        { id: "runner", path: [cell(3, 1), cell(2, 1)] },
+        { id: "blocker", path: [cell(3, 4), cell(3, 3)] },
+        { id: "parker", path: [cell(3, 0), cell(3, 1)] },
       ],
-      [{ x: 1, y: 1, heading: "south", kind: "flip" }],
-      [cell(0, 1)],
+      [],
+      [cell(3, 2)],
     );
-    const region = interactionRegion(stranded, ["reverser"]);
+    const region = interactionRegion(stranded, ["parker"]);
+    expect([...(region?.arrowIds ?? [])].sort()).toEqual(["blocker", "parker"]);
     const verdict =
       region && proveRegion(stranded, createGameState(stranded), region);
-    // A rejected region always carries one of the named reasons.
-    if (!verdict?.ok) {
-      expect(verdict?.reason).toBeOneOf([
-        "stranded",
-        "uninteresting",
-        "unsolvable",
-        "overflow",
-      ]);
-    }
+    expect(verdict).toEqual({ ok: false, reason: "stranded" });
+  });
+
+  test("proveRegion reports an uninteresting flip spot", () => {
+    // Both directions of the spot at (3,1) leave the loner's exit safe, so
+    // the region fails the flip-interest gate.
+    const uninteresting = level(
+      [{ id: "loner", path: [cell(0, 1), cell(1, 1), cell(2, 1)] }],
+      [{ x: 3, y: 1, heading: "north", kind: "flip" }],
+    );
+    const region = interactionRegion(uninteresting, ["loner"]);
+    const verdict =
+      region &&
+      proveRegion(uninteresting, createGameState(uninteresting), region);
+    expect(verdict).toEqual({ ok: false, reason: "uninteresting" });
+  });
+
+  test("proveRegion reports overflow past its state limit", () => {
+    const stranded = level(
+      [
+        { id: "blocker", path: [cell(3, 4), cell(3, 3)] },
+        { id: "parker", path: [cell(3, 0), cell(3, 1)] },
+      ],
+      [],
+      [cell(3, 2)],
+    );
+    const region = interactionRegion(stranded, ["parker"]);
+    const verdict =
+      region && proveRegion(stranded, createGameState(stranded), region, 1);
+    expect(verdict).toEqual({ ok: false, reason: "overflow" });
   });
 
   test("the model matches the engine on a clearing sequence", () => {
@@ -138,5 +161,75 @@ describe("interaction regions", () => {
       state = applyMove(legal, state, simulateMove(legal, state, id));
     }
     expect(state.status).toBe("won");
+  });
+});
+
+describe("probeMove blocker occupancy", () => {
+  // `loner` occupies [(0,3),(1,3),(2,3)] and heads east through (3,3),(4,3),
+  // (5,3), then exits; the stop variant parks at (3,3).
+  const lane = (stops: Cell[] = []): LevelDefinition =>
+    level(
+      [{ id: "loner", path: [cell(0, 3), cell(1, 3), cell(2, 3)] }],
+      [],
+      stops,
+    );
+
+  test("a blocker mid-route converts the exit to blocked", () => {
+    const verdict = probeMove(
+      lane(),
+      createGameState(lane()),
+      "loner",
+      "head",
+      new Set([cellKey(cell(4, 3))]),
+    );
+    expect(verdict.kind).toBe("blocked");
+    expect(verdict.route.at(-1) && cellKey(verdict.route.at(-1) as Cell)).toBe(
+      cellKey(cell(4, 3)),
+    );
+  });
+
+  test("a blocker on a stop cell blocks rather than parks", () => {
+    const withStop = lane([cell(3, 3)]);
+    const verdict = probeMove(
+      withStop,
+      createGameState(withStop),
+      "loner",
+      "head",
+      new Set([cellKey(cell(3, 3))]),
+    );
+    expect(verdict.kind).toBe("blocked");
+    expect(verdict.route.at(-1) && cellKey(verdict.route.at(-1) as Cell)).toBe(
+      cellKey(cell(3, 3)),
+    );
+  });
+
+  test("a blocker past the park cell leaves the pause untouched", () => {
+    const withStop = lane([cell(3, 3)]);
+    const verdict = probeMove(
+      withStop,
+      createGameState(withStop),
+      "loner",
+      "head",
+      new Set([cellKey(cell(4, 3))]),
+    );
+    expect(verdict.kind).toBe("paused");
+    expect(verdict.route.at(-1) && cellKey(verdict.route.at(-1) as Cell)).toBe(
+      cellKey(cell(3, 3)),
+    );
+  });
+
+  test("an empty blocker set returns the engine result unchanged", () => {
+    const empty = probeMove(
+      lane(),
+      createGameState(lane()),
+      "loner",
+      "head",
+      new Set<string>(),
+    );
+    expect(empty.kind).toBe("exit");
+    expect(
+      probeMove(lane(), createGameState(lane()), "loner", "head", undefined)
+        .kind,
+    ).toBe("exit");
   });
 });

@@ -459,7 +459,7 @@ function tappable(
  * (after its own) that carries one, which also outranks a stop circle on the
  * same cell, matching the engine's per-step collision-before-pause order.
  */
-function probeMove(
+export function probeMove(
   level: LevelDefinition,
   state: GameState,
   arrowId: string,
