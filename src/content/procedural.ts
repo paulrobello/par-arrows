@@ -2035,7 +2035,8 @@ function chooseStops(
 /**
  * Replay a construction certificate. A park entry advances the named arrow to
  * its next circle and leaves it parked there; every other entry is driven
- * through its pauses until it exits before the next arrow is tried.
+ * through its pauses until it exits before the next arrow is tried. Flip-spot
+ * directions carry from move to move, as they do in play.
  */
 type CertificateEntry = string | MoveTarget;
 
@@ -2137,7 +2138,8 @@ function validateGenerated(
  * real no-mistake solution certificate. Levels carrying stop circles also embed
  * the parking core, whose circles are reserved from every later arrow so the
  * replayed certificate — the park legs, then the reverse drive — can never
- * fail because of parking.
+ * fail because of parking. A flip core's whole footprint is reserved the same
+ * way, and its own clearing order leads the certificate.
  */
 export function generateLevel(id: number): LevelDefinition {
   assertLevelId(id);
@@ -2152,15 +2154,15 @@ export function generateLevel(id: number): LevelDefinition {
   const baseSeed = hashSeed(seedForLevel(id));
   const edgePolicies = getWrappingEdgePolicies(id);
   let skip = "never-entered";
-  // Pass one builds the planned directional layout; if every restart of that
-  // pass fails its replay, pass two rebuilds the same id with the plan forced
-  // empty — a cube without spots is always legal, and generation must never
-  // give up on an id.
+  // The ordinary passes: the first builds the planned directional layout; if
+  // every restart of that pass fails its replay, the second rebuilds the same
+  // id with the plan forced empty — a cube without spots is always legal, and
+  // generation must never give up on an id.
   const plannedSpotPlan = directionalFacePlan(id);
-  // Acceptance tiers, tried strictly in order. Tier one is the historical
-  // exact-count, certificate-replayed construction, so every level that
-  // constructs today stays byte-identical. A later tier only sees an id that
-  // every earlier tier rejected across both spot plans and all eight
+  // Acceptance tiers, tried strictly in order. Tier one's ordinary passes are
+  // the historical exact-count, certificate-replayed construction, so every
+  // level without a flip core stays byte-identical. A later tier only sees an
+  // id that every earlier tier rejected across both spot plans and all eight
   // restarts: it trades exact density and, in the last tier, the
   // reverse-construction certificate for a solver-proven level instead of
   // throwing.
