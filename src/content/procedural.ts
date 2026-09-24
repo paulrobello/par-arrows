@@ -3,6 +3,7 @@ import {
   hasFlipSpots,
   spotHeadingAt,
 } from "../core/directionals";
+import { createGameState } from "../core/game-state";
 import { advanceHead, simulateMove } from "../core/movement";
 import { overlappingArrowIds } from "../core/overlap";
 import { arrowTrack, currentPath, maximumOffset } from "../core/stops";
@@ -28,6 +29,8 @@ import type {
 import {
   flipInterest,
   hasStrandingState,
+  interactionRegion,
+  proveRegion,
   solveLevel,
   solveLevelTargets,
   validateLevel,
@@ -1415,6 +1418,36 @@ function flipCore(
     return { arrows, spot, footprint, certificate };
   }
   return undefined;
+}
+
+/**
+ * Accept a flip placement by proving its interaction region: seed arrows are
+ * the flip core's, outside placed arrows block but are never tapped. Returns
+ * the region cells for occupancy; ok:false means fall back to an isolated
+ * core placement.
+ */
+export function acceptFlipRegion(
+  board: Pick<
+    LevelDefinition,
+    "id" | "title" | "gridSize" | "lives" | "edgePolicies"
+  >,
+  arrows: readonly ArrowDefinition[],
+  spot: DirectionalSpotDefinition,
+  stops: readonly Cell[],
+): { ok: boolean; cells: ReadonlySet<string> } {
+  const level: LevelDefinition = {
+    ...board,
+    arrows: [...arrows],
+    directionals: [spot],
+    ...(stops.length > 0 ? { stops } : {}),
+  };
+  const seeds = arrows
+    .filter((arrow) => arrow.id.includes("-flip-"))
+    .map((arrow) => arrow.id);
+  const region = interactionRegion(level, seeds);
+  if (!region) return { ok: false, cells: new Set() };
+  const verdict = proveRegion(level, createGameState(level), region);
+  return { ok: verdict.ok, cells: region.cells };
 }
 
 function patternCell(
