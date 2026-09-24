@@ -235,9 +235,58 @@ export async function assertFlipIntro(
   output: string,
 ): Promise<void> {
   await mkdir(`${output}/flip`, { recursive: true });
+  await assertPreviewEntry(browser, url, output);
   await assertScriptedWalkthrough(browser, url, output);
   await assertSeenPlayAndReload(browser, url, output);
   await assertGeneratedReversal(browser, url, output);
+}
+
+/**
+ * `?feature=flip` opens the introduction as a preview: no walkthrough runs
+ * and no campaign save is written.
+ */
+async function assertPreviewEntry(
+  browser: Browser,
+  url: string,
+  output: string,
+): Promise<void> {
+  const context = await browser.newContext({
+    viewport: { width: 1100, height: 760 },
+    colorScheme: "light",
+  });
+  const page = await context.newPage();
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  try {
+    // `url` already carries `?test=1`.
+    await page.goto(`${url}&feature=flip`);
+    await waitForReady(page);
+    const current = await state(page);
+    assert.equal(current.mode, "preview");
+    assert.equal(current.level.id, FLIP_INTRO_LEVEL.id);
+    assert.deepEqual(
+      current.directionals.map((spot) => [spot.cell, spot.kind, spot.current]),
+      [["front:1:1", "flip", "south"]],
+    );
+    assert.deepEqual(current.pendingFlips, []);
+    assert.equal(
+      (await tutorialState(page)).active,
+      false,
+      "A preview must not run the walkthrough",
+    );
+    assert.equal(
+      await page.evaluate(() => localStorage.getItem("par-arrows:campaign:v1")),
+      null,
+      "Flip preview must not create campaign state",
+    );
+    await page.screenshot({ path: `${output}/flip/00-preview.png` });
+    assert.deepEqual(errors, [], "No page errors in the flip preview");
+  } finally {
+    await context.close();
+  }
 }
 
 /**
@@ -560,13 +609,19 @@ async function assertGeneratedReversal(
     await page.goto(url);
     await waitForReady(page);
     await openCampaignLevel(page, levelId);
-    const ids = await page.evaluate(
-      () =>
+    const pagePath = await page.evaluate(
+      (id) =>
         window.__PAR_ARROWS_TEST__
           ?.getLevel()
-          .arrows.map((arrow) => arrow.id) ?? [],
+          .arrows.find((arrow) => arrow.id === id)
+          ?.path.map((cell) => `${cell.face}:${cell.x}:${cell.y}`),
+      reverser.id,
     );
-    assert.ok(ids.includes(reverser.id), "The page must build the same cube");
+    assert.deepEqual(
+      pagePath,
+      reverser.path.map(cellKey),
+      "The page must build the same cube as the Node generator",
+    );
 
     // Turn the camera until the face carrying the reversal faces it.
     const route = simulateMove(level, initial, reverser.id).route;
