@@ -48,9 +48,9 @@ The four additional photos supplied on 2026-09-14 are preserved as references 04
 | R13 | Movement follows the arrow's path: the tail follows the head. Existing wrapped bodies unwrap through ordinary seams; only a new head crossing determines exit versus continuation. |
 | R14 | Allow continuous rotation in every drag direction with no axis stops, including repeated turns over the top and bottom, plus mouse-wheel and pinch zoom. Far-side arrows remain faintly visible and become selectable only when rotated onto exposed faces. |
 | R15 | At zero lives, allow unlimited retries of the same puzzle, restoring its configured starting lives. |
-| R16 | Level 1 is the unchanged authored teaching cube. Levels 2–10, 12–14, and 16 onward are generated at runtime from their level number and validated for solvability; level 11 introduces yellow wrapping and level 15 introduces overlapping tails. A given generated level is the same seeded puzzle for every player. |
-| R17 | Arrow paths use grid-aligned 90-degree turns, with no crossings or overpasses, except the shared tail segments defined in R33. |
-| R18 | Reject any level where an arrow could contact its own body. Do not turn self-contact into an ordinary life-costing gameplay event. |
+| R16 | Level 1 is the unchanged authored teaching cube. Levels 5, 11, 15, 20, 25, and 30 are authored mechanic introductions (stop circles, yellow wrapping, overlapping tails, chevron spots, two-headed arrows, and flip spots); every other level is generated at runtime from its level number and validated for solvability. A given generated level is the same seeded puzzle for every player. |
+| R17 | Arrow paths use grid-aligned 90-degree turns, with no crossings or overpasses, except the shared tail segments defined in R33. A moving arrow may pass back over its own body; settled arrows never overlap themselves. |
+| R18 | Arrows never collide with themselves; reject any level where an arrow could loop forever. |
 | R19 | Only one arrow or connected tail group moves or rebounds at a time. Ignore additional arrow taps while rotation and zoom remain available. |
 | R20 | Runtime progression is endless. Difficulty grows from 60 to 180 arrows early, then caps at 264 arrows; grids grow to 26 × 26 cells per face and path length is bounded at 40. Lives never fall below three. Retry resets lives and red-arrow history. |
 | R21 | Refresh/reopen resumes the exact logical state, preserving removed arrows, lives, and failure history, including the result of an interrupted move. |
@@ -66,6 +66,7 @@ The four additional photos supplied on 2026-09-14 are preserved as references 04
 | R31 | Support dark mode with system-preference detection and a persistent manual appearance control. |
 | R32 | Add a Hint button that finds a safely removable arrow, rotates the cube to expose it, and then flashes that arrow. |
 | R33 | Two or three arrows may overlap along tail segments, with separate heads and no crossings. Touching any portion of any member activates the whole connected group. Members never collide with each other or cross each other's travel paths. If any member hits an outside arrow, all members rewind and remain red. |
+| R34 | Confirmed 2026-09-23: every spot sends an entering head along its current direction — straight through, back the way it came, or bent from the side. A flip spot reverses its direction once an arrow has fully passed it; a collision restores every spot to its direction at the start of the move. Flip spots never make a level require its flip, and no collision-free move may strand a level. Level 30 introduces flip spots, and generated cubes may carry them from level 31. The approved contract is in `docs/superpowers/specs/2026-09-23-flip-spot-design.md`. |
 
 ## 4. MVP boundary
 
@@ -111,9 +112,9 @@ Collision uses logical surface occupancy and the swept movement path, not screen
 
 **Proposed occupancy contract:** Paths occupy ordered face-cell centers and the grid links connecting them. Distinct arrows cannot share a cell or connecting link except for a validated same-direction tail segment in a group of two or three. Heads remain separate, and point crossings are invalid. Connections across a face seam have one canonical link identity, regardless of traversal direction. Neighboring face cells remain distinct cells. A seam is not an extra turn or duplicated cell. Routes pass through edge lanes away from physical cube vertices. A shared logical path endpoint counts as contact; merely adjacent lanes do not. Logical cell/link contact drives the simulation and validator, while visual stroke thickness and expanded touch regions do not alter it. Test swept link traversal so crossing or opposite-direction motion cannot skip contact between cells.
 
-**Confirmed self-contact rule:** Reject levels where any arrow could contact its own body. Check the full motion, not just the initial layout. Validate each arrow with other arrows removed so an initial blocker cannot hide a later self-collision. Use simultaneous body/tail movement for geometric contact checks rather than treating the entire original path as permanently occupied. Proposed tie interpretation: a just-vacated tail location is not self-contact if there is no overlap during the continuous motion. This exact boundary remains to be confirmed.
+**Confirmed self-pass rule (2026-09-23, supersedes the 2026-09-14 self-contact rejection):** Arrows never collide with themselves. Occupancy comes from other arrows only, so a head that a spot sends back the way it came travels over its own body. Validation instead rejects any level where an arrow could loop forever, checking each endpoint of each arrow alone so an initial blocker cannot hide a later loop, and rejects any stop circle that would park an arrow folded over its own body, so settled arrows never overlap themselves. A runtime loop detected despite validation is a content error, must restore a stable state, and must not charge a life.
 
-Initial self-intersections and starting overlaps outside the validated tail-group rule are invalid authoring data. A runtime self-contact detected despite validation is a content error, must restore a stable state, and must not charge a life. For future bidirectional arrows, validate both directions before accepting their level.
+Initial self-intersections and starting overlaps outside the validated tail-group rule are invalid authoring data. For bidirectional arrows, validate both directions before accepting their level.
 
 An attempt is simulated before its result is committed. If blocked, animate to first contact and back, then restore the exact original path. If successful, animate the complete exit and remove the whole arrow. Animation frame rate must not change the result.
 
@@ -189,7 +190,7 @@ Keyboard puzzle navigation and a nonvisual equivalent of the spatial puzzle need
 
 Generation uses a worker, caches the three most recent results, and times out after 12 seconds. A stale request, reset, or failed restore must never replace a newer accepted state. Never present an unvalidated puzzle merely to meet a count target.
 
-References [04](docs/references/reference-04.jpeg), [05](docs/references/reference-05.jpeg), and [06](docs/references/reference-06.jpeg) establish the later visual direction: mix short and long arrows, single and multiple bends, hooked returns, stepped zigzags, and winding paths, with close spacing across multiple faces. Preserve each arrow's readable identity and validate self-contact and solvability. The pictured late-game density is a progression reference; level 1 and the level 11 mechanic introduction keep their simple teaching layouts. Screenshot counters do not set campaign arrow quotas.
+References [04](docs/references/reference-04.jpeg), [05](docs/references/reference-05.jpeg), and [06](docs/references/reference-06.jpeg) establish the later visual direction: mix short and long arrows, single and multiple bends, hooked returns, stepped zigzags, and winding paths, with close spacing across multiple faces. Preserve each arrow's readable identity and validate loops and solvability. The pictured late-game density is a progression reference; level 1 and the level 11 mechanic introduction keep their simple teaching layouts. Screenshot counters do not set campaign arrow quotas.
 
 The owner identified stamped S-curve repetition in content version 3. Version 4 addresses the [reference complexity criteria](docs/references/arrow-complexity-study.md) with paths grown around neighboring routes, varied footprints and run lengths, and distributed heads. Automated checks count rotated, mirrored, reversed, and seam-crossing copies together; whole-board visual review remains required. Higher arrow counts or bend totals alone do not satisfy the requirement. See the [comparison and verification report](docs/verification/irregular-routes.md).
 
@@ -200,9 +201,9 @@ The owner identified stamped S-curve repetition in content version 3. Version 4 
 - L3: A successful removal should not create a dead end in the basic MVP rules. If simulation is purely removal-monotone, prove and test that property before using a simpler solver. Future mechanics may invalidate it and require state search.
 - L4: Increase difficulty using dependency depth, number of initially available moves, wrapping, turn count, occlusion, and density. Lives alone do not define difficulty.
 - L5: The onboarding demo shows a failed touch followed by a successful touch on a small cube with few arrows. Proposed isolation: demonstrate penalties in demo state while leaving campaign lives and progress untouched.
-- L6: Reject any arrow with possible self-contact over its full motion, including after other arrows are removed. A complete solution alone does not waive this constraint.
+- L6: Reject any arrow that could loop forever over its full motion, including after other arrows are removed, and any stop circle that would park an arrow folded over itself. A complete solution alone does not waive this constraint.
 
-Levels 1, 11, and 15 are authored; other levels are generated and checked at runtime. Player-facing editor tooling remains deferred. The solver/validator checks content independently of the approved player-facing Hint feature.
+Levels 1, 5, 11, 15, 20, 25, and 30 are authored; other levels are generated and checked at runtime. Player-facing editor tooling remains deferred. The solver/validator checks content independently of the approved player-facing Hint feature.
 
 ## 8. Save and platform expectations — Q11, Q14, Q15
 
@@ -238,7 +239,7 @@ In [reference 07](docs/references/reference-07.jpeg), yellow highlights the spec
 
 Implemented defaults: yellow marks a whole physical cube edge and applies reciprocally in both crossing directions. The transition is a right-angle face change with paths aligned away from vertices. Level 11 has one guaranteed reciprocal front-west/left-east edge, with two safe arrows wrapping across it and four arrows exiting ordinarily. Generated edge selection uses a separate deterministic stream from layout construction, so retries do not change the edge choices. Generated layouts from level 12 (except authored level 15) retain the existing curve: zero edges remain at 25%, while the other edge-count weights shift toward 15% for one, 30% for two, and 30% for three edges by level 100, then stay capped. Authored levels 11 and 15 are excluded from random edge-count and density selection. Each generated layout must pass validation and the solver before presentation.
 
-A path may encounter several yellow edges before an ordinary exit. Simulation terminates on a continuation cycle or self-collision, and invalid content is rejected before play. Dynamic mechanics that could introduce new cycles remain outside the current campaign.
+A path may encounter several yellow edges before an ordinary exit. Simulation terminates on a continuation cycle, and invalid content is rejected before play. Flip spots make a route depend on spot state, so on levels that carry them the runtime cycle check also keys on spot state and body position.
 
 ### 9.3 Other shapes and mechanics — Q19
 
@@ -283,7 +284,7 @@ Answer the blocking rules first. An unanswered proposal remains a proposal, even
 ### 11.2 Movement and fairness edge cases
 
 - **Q7 — Confirmed 2026-09-14:** Grid-aligned 90-degree paths with no crossings or overpasses, except the shared tail segments defined in R33. Adjacent lanes remain a proposed authoring convention.
-- **Q8 — Confirmed 2026-09-14:** Reject any level where an arrow could contact itself. Follow-up boundary still open: does a head entering an exactly vacated tail location count as forbidden contact when there is no simultaneous overlap? Proposed: no. Exterior-flight collision against later concave shapes also remains open; proposed: no further surface collision after departure.
+- **Q8 — Confirmed 2026-09-14, self-contact part superseded 2026-09-23:** Reject any level where an arrow could contact itself. The owner replaced this on 2026-09-23: arrows never collide with themselves (R18). Follow-up boundary still open: does a head entering an exactly vacated tail location count as forbidden contact when there is no simultaneous overlap? Proposed: no. Exterior-flight collision against later concave shapes also remains open; proposed: no further surface collision after departure.
 - **Q9 — Confirmed 2026-09-14:** One arrow or connected tail-group attempt at a time; ignore further taps, with rotation and zoom still available.
 - **Q10 — Superseded 2026-09-15:** The former 1–10 tier curve is replaced by runtime level budgets that decline to a three-life floor. Retry restores lives and clears red-arrow history.
 - **Q11 — Confirmed 2026-09-14:** Resume exact logical state, including removed arrows, lives, red-arrow history, and the result of an interrupted move.
