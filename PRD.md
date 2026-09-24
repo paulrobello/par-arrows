@@ -44,7 +44,7 @@ The four additional photos supplied on 2026-09-14 are preserved as references 04
 | R9 | Later levels can be much denser and need not use perfect cubes. |
 | R10 | Future double-ended arrows have blue and green halves. The half clicked determines travel direction. |
 | R11 | Special physical cube edges are marked yellow. A head reaching one continues onto the adjoining face instead of flying off. |
-| R12 | The engine design must allow additional mechanics beyond R10 and R11. Level 11 is an authored, low-density introduction to yellow continuation edges; level 15 introduces overlapping tails and overlapping groups enter generated layouts at level 16. Blue/green two-ended arrows remain deferred. |
+| R12 | The engine design must allow additional mechanics beyond R10 and R11. Level 11 is an authored, low-density introduction to yellow continuation edges; level 15 introduces overlapping tails and overlapping groups enter generated layouts at level 16. Blue/green two-ended arrows shipped at authored level 25 (see R16). |
 | R13 | Movement follows the arrow's path: the tail follows the head. Existing wrapped bodies unwrap through ordinary seams; only a new head crossing determines exit versus continuation. |
 | R14 | Allow continuous rotation in every drag direction with no axis stops, including repeated turns over the top and bottom, plus mouse-wheel and pinch zoom. Far-side arrows remain faintly visible and become selectable only when rotated onto exposed faces. |
 | R15 | At zero lives, allow unlimited retries of the same puzzle, restoring its configured starting lives. |
@@ -85,7 +85,7 @@ The count, curated source, life curve, exact resume behavior, browser `localStor
 
 ### 4.2 Deferred content and features
 
-- X1: Playable blue/green double-ended arrows remain deferred. Level 11 introduces yellow continuation edges in an authored teaching layout; generated layouts from level 12 onward, except authored level 15, use the rule contract recorded in section 9.2.
+- X1: Yellow continuation edges and two-headed arrows shipped: level 11 introduces yellow continuation edges in an authored teaching layout, and generated layouts from level 12 onward, except authored level 15, use the rule contract recorded in section 9.2. Two-headed arrows shipped at authored level 25 and generate from level 26. Blue/green arrow variants beyond the shipped violet/lime two-ended form remain future work pending Q16/Q23.
 - X2: Non-cube content. First extension candidate: rectangular cuboids, followed by grid-aligned compound solids. Arbitrary curved surfaces, holes, and concave shapes need a separate scope decision.
 - X3: Further unspecified mechanics. Provide explicit rule boundaries, not a general plugin or scripting platform.
 - X4: Accounts, cloud saves, leaderboards, monetization, advertisements, energy timers, purchases, and social features.
@@ -279,7 +279,7 @@ Answer the blocking rules first. An unanswered proposal remains a proposal, even
 | Q3 | How long does collision red persist, and are repeat failures charged? | Red until removed; additional failures of that red arrow cost no extra lives. | Confirmed 2026-09-14. |
 | Q4 | Free orbit or fixed face views? Should far-side arrows be visible and selectable? | Free orbit, faint far-side arrows, exposed surfaces only selectable. Mouse-wheel and pinch zoom also requested. | Confirmed 2026-09-14. |
 | Q5 | What happens at zero lives? Does retry restore the same puzzle and full lives? | Unlimited retries of the same layout with full per-level lives. | Confirmed 2026-09-14. |
-| Q6 | How many MVP levels, and authored, generated, or both? | Superseded: the prior ten-curated-cube policy. Current: authored levels 1, 11, and 15 plus endless deterministic, solver-validated runtime generation for levels 2–10, 12–14, and 16 onward. | Superseded and replaced 2026-09-15. |
+| Q6 | How many MVP levels, and authored, generated, or both? | Superseded: the prior ten-curated-cube policy. Current: authored levels 1, 5, 11, 15, 20, 25, and 30 plus endless deterministic, solver-validated runtime generation for every other level; flip spots appear in generated cubes from level 31. | Superseded and replaced 2026-09-15. |
 
 ### 11.2 Movement and fairness edge cases
 

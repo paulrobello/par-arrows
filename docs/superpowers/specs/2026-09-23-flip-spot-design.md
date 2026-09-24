@@ -3,6 +3,20 @@
 Date: 2026-09-23
 Status: Approved design (D1–D8, 2026-09-23), awaiting spec review
 
+> **Implementation status (2026-09-24).** Shipped with five deviations from
+> the text below; the body is unchanged as the approved design record.
+> 1. The loop check runs at movement level, not only in validation, and its
+>    repeated-state key includes the live spot state (and body cells on flip
+>    levels).
+> 2. The glyph turn window is measured in world units of travel (a fixed
+>    fraction of the move's distance), not a fixed 150 ms.
+> 3. Flip cores hold 3–4 arrows, not 3–5 (the relay pattern uses four).
+> 4. Content-11 resume uses a fingerprint table of every level's layout
+>    (revising R2's hand-maintained changed-level set).
+> 5. Core membership is enforced by generation isolation rather than by
+>    `validateLevel`, which has no notion of a core.
+> The rulings ledger in the branch history records the reasoning for each.
+
 ## Problem
 
 Directional spots are static and only ever bend a head that arrives from the

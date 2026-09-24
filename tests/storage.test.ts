@@ -310,27 +310,32 @@ describe("resumable campaign saves", () => {
     expect(restored.value?.tutorialComplete).toBe(false);
   });
 
-  test("refreshes a v6 generator-v1 attempt on cube four rebuilt by the seam fix", async () => {
-    const level = levelFor(4);
-    writeVersionOneGeneratorSave(exitedState(level), 15, false);
+  test("refreshes a v6 generator-v1 attempt on a rebuilt cube", async () => {
+    // Level 29 was rebuilt when self-contact rejection was removed, so its
+    // current layout differs from the frozen content-11 table and the
+    // refresh fires for that reason, not because the fixture is synthetic.
+    const level = generateLevel(29);
+    expect(CONTENT_ELEVEN_LAYOUTS[29]).not.toBe(layoutFingerprint(level));
+    writeVersionOneGeneratorSave(exitedState(level), 31, false);
 
-    const restored = await loadCampaign(resolveFixture);
+    const restored = await loadCampaign(async (id) => generateLevel(id));
     expect(restored.recovered).toBe(true);
     expect(restored.contentUpdated).toBe(true);
     expect(restored.value?.state).toEqual(createGameState(level));
-    expect(restored.value?.unlockedLevelId).toBe(15);
+    expect(restored.value?.unlockedLevelId).toBe(31);
   });
 
   test("refreshes a v6 generator-v1 attempt above level four", async () => {
-    const level = levelFor(11);
-    writeVersionOneGeneratorSave(exitedState(level), 17, false);
+    const level = generateLevel(60);
+    expect(CONTENT_ELEVEN_LAYOUTS[60]).not.toBe(layoutFingerprint(level));
+    writeVersionOneGeneratorSave(exitedState(level), 62, false);
 
-    const restored = await loadCampaign(resolveFixture);
+    const restored = await loadCampaign(async (id) => generateLevel(id));
     expect(restored.recovered).toBe(true);
     expect(restored.contentUpdated).toBe(true);
     expect(restored.value?.state).toEqual(createGameState(level));
-    expect(restored.value?.currentLevelId).toBe(11);
-    expect(restored.value?.unlockedLevelId).toBe(17);
+    expect(restored.value?.currentLevelId).toBe(60);
+    expect(restored.value?.unlockedLevelId).toBe(62);
     expect(restored.value?.tutorialComplete).toBe(false);
   });
 

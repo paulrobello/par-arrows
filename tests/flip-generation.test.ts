@@ -134,6 +134,13 @@ describe("generated flip cores", () => {
       };
       expect(hasStrandingState(coreLevel)).toBe(false);
       expect(flipInterest(coreLevel)).toBe(true);
+      // What makes the core-only checks above sound: each core arrow's
+      // track on the assembled level equals its track on the core board,
+      // which for arrowTrack (grid, seams and spots only) is a probe
+      // holding nothing but the flip spot.
+      for (const arrow of core) {
+        expect(arrowTrack(coreLevel, arrow)).toEqual(arrowTrack(level, arrow));
+      }
       const footprint = coreFootprint(level, core, spot);
       for (const stop of level.stops ?? []) {
         expect(footprint.has(cellKey(stop))).toBe(false);
@@ -152,6 +159,6 @@ describe("generated flip cores", () => {
       }
       expect(solveLevelTargets(level)).toBeDefined();
     }
-    expect(coreIds.length).toBeGreaterThan(0);
+    expect(coreIds.length).toBeGreaterThanOrEqual(40);
   }, 600_000);
 });
