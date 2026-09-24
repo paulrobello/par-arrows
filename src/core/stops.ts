@@ -71,9 +71,9 @@ export function settledPathOf(
   state: Pick<GameState, "offsets" | "settledPaths">,
   arrow: ArrowDefinition,
 ): readonly Cell[] {
-  if (arrow.kind === "double") {
-    return state.settledPaths?.[arrow.id] ?? arrow.path;
-  }
+  const settled = state.settledPaths?.[arrow.id];
+  if (settled) return settled;
+  if (arrow.kind === "double") return arrow.path;
   return currentPath(level, arrow, offsetOf(state.offsets, arrow.id));
 }
 

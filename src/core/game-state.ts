@@ -1,3 +1,4 @@
+import { flippedHeading, hasFlipSpots, spotHeadingAt } from "./directionals";
 import { simulateMove as simulate } from "./movement";
 import { overlappingArrowIds } from "./overlap";
 import {
@@ -6,7 +7,14 @@ import {
   offsetOf,
   settledPathOf,
 } from "./stops";
-import type { Endpoint, GameState, LevelDefinition, MoveResult } from "./types";
+import { cellKey } from "./topology";
+import type {
+  Endpoint,
+  GameState,
+  Heading,
+  LevelDefinition,
+  MoveResult,
+} from "./types";
 
 export function createGameState(level: LevelDefinition): GameState {
   return {
@@ -50,7 +58,25 @@ export function simulateMove(
     state.revision,
     state.offsets,
     state.settledPaths,
+    state.spotHeadings,
   );
+}
+
+function afterFlips(
+  level: LevelDefinition,
+  state: GameState,
+  result: MoveResult,
+): Readonly<Record<string, Heading>> {
+  const next = { ...(state.spotHeadings ?? {}) };
+  for (const member of result.members ?? [result]) {
+    for (const flip of member.spotFlips ?? []) {
+      const key = cellKey(flip.cell);
+      next[key] = flippedHeading(
+        spotHeadingAt(level, flip.cell, next) as Heading,
+      );
+    }
+  }
+  return next;
 }
 
 /** Apply an already-simulated result once, producing a complete settled snapshot. */
@@ -101,6 +127,22 @@ export function applyMove(
           ...(state.settledPaths ?? {}),
           [clicked.id]: result.settledPath,
         },
+        spotHeadings: afterFlips(level, state, result),
+        revision: state.revision + 1,
+      };
+    }
+    if (
+      hasFlipSpots(level) &&
+      groupIds.length === 1 &&
+      result.settledPath?.length === clicked.path.length
+    ) {
+      return {
+        ...state,
+        settledPaths: {
+          ...(state.settledPaths ?? {}),
+          [clicked.id]: result.settledPath,
+        },
+        spotHeadings: afterFlips(level, state, result),
         revision: state.revision + 1,
       };
     }
@@ -112,7 +154,12 @@ export function applyMove(
       if (next > maximumOffset(level, arrow)) return state;
       offsets[id] = next;
     }
-    return { ...state, offsets, revision: state.revision + 1 };
+    return {
+      ...state,
+      offsets,
+      spotHeadings: afterFlips(level, state, result),
+      revision: state.revision + 1,
+    };
   }
   if (result.kind === "exit") {
     const remainingIds = state.remainingIds.filter(
@@ -129,6 +176,7 @@ export function applyMove(
       remainingIds,
       offsets,
       settledPaths,
+      spotHeadings: afterFlips(level, state, result),
       status: remainingIds.length === 0 ? "won" : "playing",
       revision: state.revision + 1,
     };

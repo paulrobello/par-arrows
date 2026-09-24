@@ -7,8 +7,20 @@ import {
   headingForPath,
   isContinuationEdge,
 } from "./topology";
-import type { Cell, Endpoint, LevelDefinition, MoveResult } from "./types";
-import { spotHeadingAt } from "./directionals";
+import type {
+  Cell,
+  Endpoint,
+  Heading,
+  LevelDefinition,
+  MoveResult,
+  SpotFlip,
+} from "./types";
+import {
+  flippedHeading,
+  hasFlipSpots,
+  isFlipSpot,
+  spotHeadingAt,
+} from "./directionals";
 import { overlappingArrowIds } from "./overlap";
 import { offsetOf, settledPathOf, stopKeys } from "./stops";
 
@@ -17,7 +29,15 @@ export { advanceHead } from "./topology";
 type SettledState = Readonly<{
   offsets: Readonly<Record<string, number>>;
   settledPaths?: Readonly<Record<string, readonly Cell[]>>;
+  spotHeadings?: Readonly<Record<string, Heading>>;
 }>;
+
+/** Spot state as a loop-key fragment, independent of insertion order. */
+function spotStateKey(spots: Readonly<Record<string, Heading>>): string {
+  return JSON.stringify(
+    Object.entries(spots).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+  );
+}
 
 function invalid(
   arrowId: string,
@@ -112,13 +132,36 @@ function simulateSingle(
   }
 
   const route: Cell[] = [initialHead];
+  // `body` is the arrow's occupied cells, tail first; `live` is the spot
+  // state this move reads, so a spot flipped earlier in the move redirects
+  // a later entry. Levels without flip spots skip body tracking entirely.
+  const tracksFlips = hasFlipSpots(level);
+  let body: Cell[] = [...path];
+  const live: Record<string, Heading> = {
+    ...(settledState.spotHeadings ?? {}),
+  };
+  const spotFlips: SpotFlip[] = [];
+  const releaseTail = (step: number): void => {
+    const leaving = body[0];
+    body = body.slice(1);
+    if (!leaving || !isFlipSpot(level, leaving)) return;
+    const key = cellKey(leaving);
+    if (body.some((cell) => cellKey(cell) === key)) return;
+    live[key] = flippedHeading(spotHeadingAt(level, leaving, live) as Heading);
+    spotFlips.push({ cell: leaving, step });
+  };
+  const flipResult = () => (spotFlips.length > 0 ? { spotFlips } : {});
   let current: Cell = initialHead;
   let currentHeading = heading;
   let distance = 0;
   const visited = new Set<string>();
   const maximumSteps = 6 * level.gridSize * level.gridSize * 4;
   for (let step = 1; step <= maximumSteps; step += 1) {
-    const stateKey = `${cellKey(current)}:${currentHeading}`;
+    // On flip levels the future also depends on the spot state and on where
+    // the body is, because a pending flip fires when the tail leaves.
+    const stateKey = tracksFlips
+      ? `${cellKey(current)}:${currentHeading}:${spotStateKey(live)}:${body.map(cellKey).join("|")}`
+      : `${cellKey(current)}:${currentHeading}`;
     if (visited.has(stateKey)) {
       return invalid(
         arrowId,
@@ -139,6 +182,7 @@ function simulateSingle(
           offset,
           "Continuation edge does not match its cube seam transition.",
         );
+      if (tracksFlips) while (body.length > 0) releaseTail(0);
       return {
         arrowId,
         endpoint,
@@ -152,6 +196,7 @@ function simulateSingle(
           edgePoint: edgePoint(current, currentHeading, level.gridSize),
           tangent: faceHeadingVector(current.face, currentHeading),
         },
+        ...flipResult(),
       };
     }
     const next = forward.next;
@@ -196,7 +241,12 @@ function simulateSingle(
                 ],
           distance: distance - 0.5,
         },
+        ...flipResult(),
       };
+    }
+    if (tracksFlips) {
+      body.push(next);
+      releaseTail(step);
     }
     if (stops.has(cellKey(next)) || step >= stepLimit) {
       const settledPath = [...path, ...route.slice(1)].slice(-path.length);
@@ -212,11 +262,14 @@ function simulateSingle(
         stateRevision,
         offset,
         pausedSteps: step,
-        ...(arrow.kind === "double" ? { settledPath: authoredOrder } : {}),
+        ...(arrow.kind === "double" || tracksFlips
+          ? { settledPath: authoredOrder }
+          : {}),
+        ...flipResult(),
       };
     }
     current = next;
-    currentHeading = spotHeadingAt(level, next) ?? forward.heading;
+    currentHeading = spotHeadingAt(level, next, live) ?? forward.heading;
   }
   return invalid(
     arrowId,
@@ -246,8 +299,9 @@ export function simulateMove(
   stateRevision = 0,
   offsets: Readonly<Record<string, number>> = {},
   settledPaths: Readonly<Record<string, readonly Cell[]>> = {},
+  spotHeadings: Readonly<Record<string, Heading>> = {},
 ): MoveResult {
-  const settledState: SettledState = { offsets, settledPaths };
+  const settledState: SettledState = { offsets, settledPaths, spotHeadings };
   const ids = overlappingArrowIds(level, arrowId).filter((id) =>
     remainingIds.includes(id),
   );
