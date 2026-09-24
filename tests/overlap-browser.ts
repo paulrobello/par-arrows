@@ -17,6 +17,7 @@ import {
 } from "../src/core/topology";
 import type { Cell } from "../src/core/types";
 import { arrowDimensions } from "../src/render/renderer";
+import { layoutFingerprint } from "../src/storage";
 import { waitForReady } from "./runtime-fixtures";
 
 type Group = {
@@ -372,9 +373,10 @@ async function assertCampaignSave(
     currentLevelId: previousLevel.id,
     unlockedLevelId: previousLevel.id,
     tutorialComplete: true,
-    contentVersion: 11,
+    contentVersion: 12,
     generatorVersion: GENERATOR_VERSION,
     seed: seedForLevel(previousLevel.id),
+    layout: layoutFingerprint(previousLevel),
     state: {
       ...previousState,
       remainingIds: [lastArrow.id],

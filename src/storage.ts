@@ -1,24 +1,33 @@
+import { CONTENT_ELEVEN_LAYOUTS } from "./content-11-layouts";
 import {
   GENERATOR_VERSION,
   isAuthoredLevel,
   MAX_LEVEL_ID,
   seedForLevel,
 } from "./content/procedural";
+import { hasFlipSpots } from "./core/directionals";
 import { createGameState } from "./core/game-state";
 import { overlappingArrowIds } from "./core/overlap";
-import { arrowTrack, currentPath, maximumOffset } from "./core/stops";
-import { cellKey, headingForPath } from "./core/topology";
+import {
+  arrowTrack,
+  maximumOffset,
+  settledPathOf,
+  stopKeys,
+} from "./core/stops";
+import { cellKey, headingForPath, oppositeHeading } from "./core/topology";
 import type { Cell, GameState, LevelDefinition } from "./core/types";
 
 const STORAGE_KEY = "par-arrows:campaign:v1";
 const SETTINGS_KEY = "par-arrows:settings:v1";
-const CONTENT_VERSION = 11;
+const CONTENT_VERSION = 12;
 
 export interface CampaignSave {
   readonly currentLevelId: number;
   readonly unlockedLevelId: number;
   readonly state: GameState;
   readonly tutorialComplete: boolean;
+  /** `layoutFingerprint` of the current level; a current save resumes only on a match. */
+  readonly layout?: string;
 }
 
 export interface LoadedCampaign extends CampaignSave {
@@ -40,10 +49,11 @@ export interface StorageResult<T> {
   readonly contentUpdated: boolean;
 }
 
-type StoredCampaign = Partial<CampaignSave> & {
+type StoredCampaign = Omit<Partial<CampaignSave>, "layout"> & {
   readonly contentVersion?: unknown;
   readonly generatorVersion?: unknown;
   readonly seed?: unknown;
+  readonly layout?: unknown;
 };
 
 const DEFAULT_SETTINGS: PlayerSettings = {
@@ -70,17 +80,100 @@ function isLevelId(value: unknown): value is number {
   );
 }
 
+function sha1Hex(text: string): string {
+  const bytes = new TextEncoder().encode(text);
+  const words: number[] = [];
+  for (let index = 0; index < bytes.length; index += 1) {
+    words[index >> 2] =
+      (words[index >> 2] ?? 0) |
+      ((bytes[index] as number) << (24 - (index % 4) * 8));
+  }
+  const bitLength = bytes.length * 8;
+  words[bitLength >> 5] =
+    (words[bitLength >> 5] ?? 0) | (0x80 << (24 - (bitLength % 32)));
+  words[(((bitLength + 64) >> 9) << 4) + 15] = bitLength;
+  let a = 0x67452301;
+  let b = 0xefcdab89;
+  let c = 0x98badcfe;
+  let d = 0x10325476;
+  let e = 0xc3d2e1f0;
+  const w = new Int32Array(80);
+  for (let block = 0; block < words.length; block += 16) {
+    for (let t = 0; t < 80; t += 1) {
+      if (t < 16) {
+        w[t] = words[block + t] ?? 0;
+      } else {
+        const x =
+          (w[t - 3] as number) ^
+          (w[t - 8] as number) ^
+          (w[t - 14] as number) ^
+          (w[t - 16] as number);
+        w[t] = (x << 1) | (x >>> 31);
+      }
+    }
+    let aa = a;
+    let bb = b;
+    let cc = c;
+    let dd = d;
+    let ee = e;
+    for (let t = 0; t < 80; t += 1) {
+      let f: number;
+      let k: number;
+      if (t < 20) {
+        f = (bb & cc) | (~bb & dd);
+        k = 0x5a827999;
+      } else if (t < 40) {
+        f = bb ^ cc ^ dd;
+        k = 0x6ed9eba1;
+      } else if (t < 60) {
+        f = (bb & cc) | (bb & dd) | (cc & dd);
+        k = 0x8f1bbcdc;
+      } else {
+        f = bb ^ cc ^ dd;
+        k = 0xca62c1d6;
+      }
+      const temp =
+        (((aa << 5) | (aa >>> 27)) + f + ee + k + (w[t] as number)) | 0;
+      ee = dd;
+      dd = cc;
+      cc = (bb << 30) | (bb >>> 2);
+      bb = aa;
+      aa = temp;
+    }
+    a = (a + aa) | 0;
+    b = (b + bb) | 0;
+    c = (c + cc) | 0;
+    d = (d + dd) | 0;
+    e = (e + ee) | 0;
+  }
+  return [a, b, c, d, e]
+    .map((word) => (word >>> 0).toString(16).padStart(8, "0"))
+    .join("");
+}
+
+/** Level definitions are never mutated, so a level's fingerprint is fixed. */
+const FINGERPRINTS = new WeakMap<LevelDefinition, string>();
+
+/** A short identity for a resolved level's exact layout. */
+export function layoutFingerprint(level: LevelDefinition): string {
+  let fingerprint = FINGERPRINTS.get(level);
+  if (fingerprint === undefined) {
+    fingerprint = sha1Hex(JSON.stringify(level)).slice(0, 16);
+    FINGERPRINTS.set(level, fingerprint);
+  }
+  return fingerprint;
+}
+
 /**
  * Parked offsets must name remaining arrows only, stay inside each arrow's
- * track, move a shared-tail group as one, and never park two arrows onto the
- * same cell.
+ * track, and move a shared-tail group as one.
  */
 function hasValidOffsets(
   value: unknown,
   level: LevelDefinition,
   remainingIds: ReadonlySet<string>,
   overlapGroups: ReadonlyMap<string, readonly string[]>,
-): boolean {
+): value is Readonly<Record<string, number>> {
   if (value === undefined) return true;
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const offsets = value as Record<string, unknown>;
@@ -104,12 +197,25 @@ function hasValidOffsets(
   for (const group of overlapGroups.values()) {
     if (group.some((id) => at(id) !== at(group[0] as string))) return false;
   }
+  return true;
+}
+
+/**
+ * No two remaining arrows may settle onto the same cell, whether an arrow is
+ * parked by offset or by an exact settled path.
+ */
+function hasDisjointSettledArrows(
+  level: LevelDefinition,
+  remainingIds: ReadonlySet<string>,
+  offsets: Readonly<Record<string, number>>,
+  settledPaths: Readonly<Record<string, readonly Cell[]>>,
+): boolean {
   // Shared-tail group members legitimately share cells; anyone else may not.
   const occupied = new Map<string, string>();
   for (const arrow of level.arrows) {
     if (!remainingIds.has(arrow.id)) continue;
     const group = overlappingArrowIds(level, arrow.id);
-    for (const cell of currentPath(level, arrow, at(arrow.id))) {
+    for (const cell of settledPathOf(level, { offsets, settledPaths }, arrow)) {
       const key = cellKey(cell);
       const owner = occupied.get(key);
       if (owner !== undefined && !group.includes(owner)) return false;
@@ -162,11 +268,12 @@ function hasValidSettledPaths(
 ): value is Readonly<Record<string, readonly Cell[]>> {
   if (value === undefined) return true;
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const flipLevel = hasFlipSpots(level);
   for (const [id, pathValue] of Object.entries(value)) {
     const arrow = level.arrows.find((candidate) => candidate.id === id);
     if (
       !arrow ||
-      arrow.kind !== "double" ||
+      (arrow.kind !== "double" && !flipLevel) ||
       !remainingIds.has(id) ||
       !Array.isArray(pathValue) ||
       pathValue.length !== arrow.path.length ||
@@ -187,7 +294,28 @@ function hasValidSettledPaths(
         return false;
       }
     }
-    if (!reachableSettledPath(level, id, path)) return false;
+    if (arrow.kind === "double") {
+      if (!reachableSettledPath(level, id, path)) return false;
+    } else {
+      // Flip-level tracks depend on spot state, so a parked single is checked structurally and must rest on a stop.
+      const head = path[path.length - 1];
+      if (!head || !stopKeys(level).has(cellKey(head))) return false;
+    }
+  }
+  return true;
+}
+
+/** Stored spot directions may name only flip spots, on the spot's own axis. */
+function hasValidSpotHeadings(value: unknown, level: LevelDefinition): boolean {
+  if (value === undefined) return true;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  for (const [key, heading] of Object.entries(value)) {
+    const spot = (level.directionals ?? []).find(
+      (entry) => cellKey(entry.cell) === key,
+    );
+    if (spot?.kind !== "flip") return false;
+    if (heading !== spot.heading && heading !== oppositeHeading(spot.heading))
+      return false;
   }
   return true;
 }
@@ -269,13 +397,28 @@ function isState(value: unknown, level: LevelDefinition): value is GameState {
       failedIds.has(group[0] as string),
     ).length +
     (candidate.failedPositions?.length ?? 0);
-  if (!hasValidOffsets(candidate.offsets, level, remainingIds, overlapGroups)) {
+  const offsets = candidate.offsets;
+  if (!hasValidOffsets(offsets, level, remainingIds, overlapGroups)) {
     return false;
   }
-  if (!hasValidSettledPaths(candidate.settledPaths, level, remainingIds)) {
+  const settledPaths = candidate.settledPaths;
+  if (!hasValidSettledPaths(settledPaths, level, remainingIds)) {
+    return false;
+  }
+  if (
+    !hasDisjointSettledArrows(
+      level,
+      remainingIds,
+      offsets ?? {},
+      settledPaths ?? {},
+    )
+  ) {
     return false;
   }
   if (!hasValidFailedPositions(candidate.failedPositions, level)) {
+    return false;
+  }
+  if (!hasValidSpotHeadings(candidate.spotHeadings, level)) {
     return false;
   }
   const expectedStatus =
@@ -332,9 +475,9 @@ function isUnchangedLevel(levelId: number): boolean {
 }
 
 /**
- * Levels a content-9 save still describes exactly. The seam-heading fix
- * rebuilt 77 of the generated cubes from 2 through 200, and generated ids are
- * not enumerated beyond the verified-unchanged set.
+ * Levels a content-9 save still described exactly at content 11. The
+ * seam-heading fix rebuilt 77 of the generated cubes from 2 through 200, and
+ * generated ids are not enumerated beyond the verified-unchanged set.
  */
 function isUnchangedSinceContentNine(levelId: number): boolean {
   return isUnchangedLevel(levelId) || isAuthoredLevel(levelId);
@@ -343,7 +486,8 @@ function isUnchangedSinceContentNine(levelId: number): boolean {
 /**
  * Generated cubes from 2 through 200 that content 11 rebuilt when decorative
  * circles stopped accepting cells where a parked arrow could strand the level.
- * Ids above 200 were not measured, so their content-10 saves restart.
+ * Ids above 200 were not measured, so their content-10 saves restart. Changes
+ * after content 11 are caught by `CONTENT_ELEVEN_LAYOUTS` instead.
  */
 const REBUILT_IN_CONTENT_ELEVEN: ReadonlySet<number> = new Set([
   13, 18, 27, 34, 37, 43, 46, 48, 52, 58, 59, 82, 83, 88, 94, 95, 96, 98, 100,
@@ -426,26 +570,34 @@ export async function loadCampaign(
     );
   }
 
+  const layout = layoutFingerprint(level);
+  const layoutMatches = parsed.layout === layout;
+  // Older saves carry no fingerprint, so they resume only where the resolved
+  // cube still matches its content-11 layout exactly.
+  const matchesContentEleven =
+    CONTENT_ELEVEN_LAYOUTS[currentLevelId] === layout;
+  const metadataMatches = hasMatchingGeneratorMetadata(parsed, currentLevelId);
   const legacyContent = isLegacyContentVersion(parsed.contentVersion);
   const exactCurrentContent =
     parsed.contentVersion === CONTENT_VERSION &&
-    hasMatchingGeneratorMetadata(parsed, currentLevelId);
+    layoutMatches &&
+    metadataMatches;
   const currentStateIsValid = isState(parsed.state, level);
   const compatible =
     currentStateIsValid &&
     (exactCurrentContent ||
-      ((parsed.contentVersion === 6 ||
-        parsed.contentVersion === 7 ||
-        parsed.contentVersion === 8) &&
-        isUnchangedLevel(currentLevelId) &&
-        hasMatchingGeneratorMetadata(parsed, currentLevelId)) ||
-      (parsed.contentVersion === 9 &&
-        isUnchangedSinceContentNine(currentLevelId) &&
-        isUnchangedSinceContentTen(currentLevelId) &&
-        hasMatchingGeneratorMetadata(parsed, currentLevelId)) ||
-      (parsed.contentVersion === 10 &&
-        isUnchangedSinceContentTen(currentLevelId) &&
-        hasMatchingGeneratorMetadata(parsed, currentLevelId)));
+      (matchesContentEleven &&
+        metadataMatches &&
+        (parsed.contentVersion === 11 ||
+          ((parsed.contentVersion === 6 ||
+            parsed.contentVersion === 7 ||
+            parsed.contentVersion === 8) &&
+            isUnchangedLevel(currentLevelId)) ||
+          (parsed.contentVersion === 9 &&
+            isUnchangedSinceContentNine(currentLevelId) &&
+            isUnchangedSinceContentTen(currentLevelId)) ||
+          (parsed.contentVersion === 10 &&
+            isUnchangedSinceContentTen(currentLevelId)))));
   const restored = parsed.state as GameState | undefined;
   const value: LoadedCampaign = compatible
     ? {
@@ -456,8 +608,10 @@ export async function loadCampaign(
           offsets: restored?.offsets ?? {},
           settledPaths: restored?.settledPaths ?? {},
           failedPositions: restored?.failedPositions ?? [],
+          spotHeadings: restored?.spotHeadings ?? {},
         },
         tutorialComplete: parsed.tutorialComplete === true,
+        layout,
         level,
       }
     : {
@@ -465,6 +619,7 @@ export async function loadCampaign(
         unlockedLevelId,
         state: createGameState(level),
         tutorialComplete: parsed.tutorialComplete === true,
+        layout,
         level,
       };
 
@@ -475,7 +630,8 @@ export async function loadCampaign(
       !compatible &&
       (legacyContent ||
         parsed.contentVersion !== CONTENT_VERSION ||
-        !hasMatchingGeneratorMetadata(parsed, currentLevelId)),
+        !layoutMatches ||
+        !metadataMatches),
   };
 }
 
@@ -528,6 +684,7 @@ export function saveCampaign(value: CampaignSave): boolean {
         contentVersion: CONTENT_VERSION,
         generatorVersion: GENERATOR_VERSION,
         seed: seedForLevel(value.currentLevelId),
+        layout: value.layout,
       }),
     );
     return true;

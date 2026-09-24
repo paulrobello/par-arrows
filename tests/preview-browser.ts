@@ -14,6 +14,7 @@ import {
 } from "../src/core/game-state";
 import { overlappingArrowIds } from "../src/core/overlap";
 import { solveLevel } from "../src/core/validation";
+import { layoutFingerprint } from "../src/storage";
 
 const CAMPAIGN_KEY = "par-arrows:campaign:v1";
 
@@ -69,9 +70,10 @@ export async function assertLevelPreview(
     unlockedLevelId: 3,
     state: campaignState,
     tutorialComplete: true,
-    contentVersion: 11,
+    contentVersion: 12,
     generatorVersion: GENERATOR_VERSION,
     seed: seedForLevel(2),
+    layout: layoutFingerprint(campaign),
   });
   const context = await browser.newContext({
     viewport: { width: 1100, height: 760 },

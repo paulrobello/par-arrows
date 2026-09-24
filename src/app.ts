@@ -31,6 +31,7 @@ import { arrowMotionDuration, PuzzleRenderer } from "./render/renderer";
 import {
   clearCampaign,
   type LoadedCampaign,
+  layoutFingerprint,
   loadCampaign,
   loadSettings,
   type PlayerSettings,
@@ -842,6 +843,7 @@ export class ParArrowsApp {
       unlockedLevelId: this.unlockedLevelId,
       state: this.state,
       tutorialComplete: this.tutorialComplete,
+      layout: layoutFingerprint(this.level),
     });
     if (!stored) {
       this.message.textContent =

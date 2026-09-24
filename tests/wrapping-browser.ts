@@ -14,6 +14,7 @@ import {
   wrappingEdgeOpacity,
   wrappingEdgeSegments,
 } from "../src/render/renderer";
+import { layoutFingerprint } from "../src/storage";
 import { waitForReady } from "./runtime-fixtures";
 
 export interface WrappingBrowserFixtures {
@@ -253,7 +254,15 @@ export async function assertWrappingEdges(
     await page.setViewportSize({ width: 1100, height: 760 });
     await page.screenshot({ path: `${output}/wrapped-edges-initial.png` });
     await page.evaluate(
-      ({ levelId, arrowId, lives, revision, generatorVersion, seed }) => {
+      ({
+        levelId,
+        arrowId,
+        lives,
+        revision,
+        generatorVersion,
+        seed,
+        layout,
+      }) => {
         const key = "par-arrows:campaign:v1";
         const saved = JSON.parse(localStorage.getItem(key) ?? "{}");
         saved.currentLevelId = levelId;
@@ -272,9 +281,10 @@ export async function assertWrappingEdges(
         saved.tutorialComplete = true;
         // A current save, so the single-arrow state resumes instead of
         // refreshing to a full cube the crossing arrow could not leave.
-        saved.contentVersion = 11;
+        saved.contentVersion = 12;
         saved.generatorVersion = generatorVersion;
         saved.seed = seed;
+        saved.layout = layout;
         localStorage.setItem(key, JSON.stringify(saved));
       },
       {
@@ -284,6 +294,7 @@ export async function assertWrappingEdges(
         revision: movementLevel.arrows.length - 1,
         generatorVersion: GENERATOR_VERSION,
         seed: seedForLevel(movementLevel.id),
+        layout: layoutFingerprint(movementLevel),
       },
     );
     await page.reload();

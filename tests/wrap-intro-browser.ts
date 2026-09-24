@@ -9,6 +9,7 @@ import {
   seedForLevel,
 } from "../src/content/procedural";
 import { createGameState, simulateMove } from "../src/core/game-state";
+import { layoutFingerprint } from "../src/storage";
 import { waitForReady } from "./runtime-fixtures";
 
 async function state(page: Page) {
@@ -104,9 +105,10 @@ export async function assertWrapIntro(
       currentLevelId: 10,
       unlockedLevelId: 10,
       tutorialComplete: true,
-      contentVersion: 11,
+      contentVersion: 12,
       generatorVersion: GENERATOR_VERSION,
       seed: seedForLevel(10),
+      layout: layoutFingerprint(levelTen),
       state: {
         levelId: 10,
         remainingIds: [lastArrow.id],

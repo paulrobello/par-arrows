@@ -8,6 +8,7 @@ import {
 import { createGameState } from "../src/core/game-state";
 import { simulateMove } from "../src/core/movement";
 import type { ArrowDefinition, LevelDefinition } from "../src/core/types";
+import { layoutFingerprint } from "../src/storage";
 import { waitForReady } from "./runtime-fixtures";
 
 interface MotionSample {
@@ -121,9 +122,10 @@ export async function assertConsistentMotion(
         currentLevelId: fixture.level.id,
         unlockedLevelId: fixture.level.id,
         tutorialComplete: true,
-        contentVersion: 11,
+        contentVersion: 12,
         generatorVersion: GENERATOR_VERSION,
         seed: seedForLevel(fixture.level.id),
+        layout: layoutFingerprint(fixture.level),
         state: {
           ...initial,
           remainingIds,

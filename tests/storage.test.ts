@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { createHash } from "node:crypto";
+import { CONTENT_ELEVEN_LAYOUTS } from "../src/content-11-layouts";
 import { LEVELS } from "../src/content/levels";
 import { DOUBLE_INTRO_LEVEL } from "../src/content/double-intro";
 import { OVERLAP_INTRO_LEVEL } from "../src/content/overlap-intro";
@@ -12,6 +14,7 @@ import {
 import type { GameState, LevelDefinition } from "../src/core/types";
 import {
   clearCampaign,
+  layoutFingerprint,
   loadCampaign,
   loadSettings,
   saveCampaign,
@@ -64,12 +67,17 @@ async function resolveFixture(id: number): Promise<LevelDefinition> {
   return levelFor(id);
 }
 
-function save(state: GameState, unlockedLevelId = state.levelId): boolean {
+function save(
+  state: GameState,
+  unlockedLevelId = state.levelId,
+  level: LevelDefinition = levelFor(state.levelId),
+): boolean {
   return saveCampaign({
     currentLevelId: state.levelId,
     unlockedLevelId,
     tutorialComplete: true,
     state,
+    layout: layoutFingerprint(level),
   });
 }
 
@@ -158,7 +166,7 @@ function exitedState(level: LevelDefinition): GameState {
 describe("resumable campaign saves", () => {
   test("refreshes only the old cube-eleven layout and preserves its progression", async () => {
     const level = generateLevel(11);
-    expect(save(createGameState(level), 27)).toBe(true);
+    expect(save(createGameState(level), 27, level)).toBe(true);
     entries.set(
       CAMPAIGN_KEY,
       JSON.stringify({
@@ -203,7 +211,7 @@ describe("resumable campaign saves", () => {
         initial,
         simulateMove(level, initial, clearArrow.id),
       );
-      expect(save(state, 35)).toBe(true);
+      expect(save(state, 35, level)).toBe(true);
       if (id !== 11) expect(savedJson().seed).toBe(seedForLevel(id));
       const restored = await loadCampaign(async (requestedId) =>
         generateLevel(requestedId),
@@ -219,7 +227,7 @@ describe("resumable campaign saves", () => {
   test("v4 saves resume on byte-identical cubes and refresh on changed ones", async () => {
     const unchanged = generateLevel(8);
     const unchangedState = exitedState(unchanged);
-    expect(save(unchangedState, 35)).toBe(true);
+    expect(save(unchangedState, 35, unchanged)).toBe(true);
     entries.set(
       CAMPAIGN_KEY,
       JSON.stringify({
@@ -235,7 +243,7 @@ describe("resumable campaign saves", () => {
 
     const changed = generateLevel(12);
     const changedState = exitedState(changed);
-    expect(save(changedState, 35)).toBe(true);
+    expect(save(changedState, 35, changed)).toBe(true);
     entries.set(
       CAMPAIGN_KEY,
       JSON.stringify({
@@ -274,10 +282,11 @@ describe("resumable campaign saves", () => {
     const state = exitedState(level);
     expect(save(state, 88)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 11,
+      contentVersion: 12,
       generatorVersion: 7,
       currentLevelId: 42,
       unlockedLevelId: 88,
+      layout: layoutFingerprint(level),
     });
     expect(savedJson()).not.toHaveProperty("level");
 
@@ -289,11 +298,11 @@ describe("resumable campaign saves", () => {
   });
 
   test("restores an exact partial v6 generator-v1 attempt on unchanged cube two", async () => {
-    const level = levelFor(2);
+    const level = generateLevel(2);
     const state = exitedState(level);
     writeVersionOneGeneratorSave(state, 15, false);
 
-    const restored = await loadCampaign(resolveFixture);
+    const restored = await loadCampaign(async (id) => generateLevel(id));
     expect(restored.recovered).toBe(false);
     expect(restored.contentUpdated).toBe(false);
     expect(restored.value?.state).toEqual(state);
@@ -329,7 +338,7 @@ describe("resumable campaign saves", () => {
     for (const id of [2, 11]) {
       const level = generateLevel(id);
       const state = exitedState(level);
-      expect(save(state, 29)).toBe(true);
+      expect(save(state, 29, level)).toBe(true);
       entries.set(
         CAMPAIGN_KEY,
         JSON.stringify({
@@ -351,7 +360,7 @@ describe("resumable campaign saves", () => {
 
   test("refreshes changed cube fifteen while preserving campaign progress", async () => {
     const level = generateLevel(15);
-    expect(save(exitedState(level), 35)).toBe(true);
+    expect(save(exitedState(level), 35, level)).toBe(true);
     entries.set(
       CAMPAIGN_KEY,
       JSON.stringify({
@@ -381,7 +390,7 @@ describe("resumable campaign saves", () => {
       simulateMove(level, initial, "stop-intro-parker"),
     );
     expect(parked.offsets).toEqual({ "stop-intro-parker": 1 });
-    expect(save(parked, 9)).toBe(true);
+    expect(save(parked, 9, level)).toBe(true);
 
     const restored = await loadCampaign((id) =>
       Promise.resolve(id === 5 ? level : generateLevel(id)),
@@ -411,9 +420,9 @@ describe("resumable campaign saves", () => {
   });
 
   test("a v7 save without parked offsets resumes with none", async () => {
-    const level = levelFor(2);
+    const level = generateLevel(2);
     const state = exitedState(level);
-    expect(save(state, 12)).toBe(true);
+    expect(save(state, 12, level)).toBe(true);
     const { offsets: _dropped, ...withoutOffsets } = state;
     entries.set(
       CAMPAIGN_KEY,
@@ -425,7 +434,7 @@ describe("resumable campaign saves", () => {
       }),
     );
 
-    const restored = await loadCampaign(resolveFixture);
+    const restored = await loadCampaign(async (id) => generateLevel(id));
     expect(restored.recovered).toBe(false);
     expect(restored.value?.state).toEqual(state);
     expect(restored.value?.state.offsets).toEqual({});
@@ -443,7 +452,7 @@ describe("resumable campaign saves", () => {
     state = applyMove(level, state, blocked);
     expect(state.settledPaths?.double).toEqual(paused.settledPath);
     expect(state.failedPositions).toHaveLength(1);
-    expect(save(state, 40)).toBe(true);
+    expect(save(state, 40, level)).toBe(true);
 
     const restored = await loadCampaign(async () => level);
     expect(restored.recovered).toBe(false);
@@ -459,7 +468,7 @@ describe("resumable campaign saves", () => {
       initial,
       simulateMove(level, initial, "double", "head"),
     );
-    expect(save(parked, 40)).toBe(true);
+    expect(save(parked, 40, level)).toBe(true);
     const goodPath = parked.settledPaths?.double;
     if (!goodPath) throw new Error("Expected parked double path.");
     const malformed: GameState[] = [
@@ -509,7 +518,7 @@ describe("resumable campaign saves", () => {
     expect(state.remainingIds).not.toContain("double-intro-choice");
     expect(state.lives).toBe(level.lives - 1);
     expect(state.failedPositions).toHaveLength(1);
-    expect(save(state, 30)).toBe(true);
+    expect(save(state, 30, level)).toBe(true);
     const restored = await loadCampaign(async () => level);
     expect(restored.recovered).toBe(false);
     expect(restored.value?.state).toEqual(state);
@@ -536,15 +545,21 @@ describe("resumable campaign saves", () => {
       { face: "front" as const, x: 3, y: 1 },
       { face: "front" as const, x: 3, y: 0 },
     ];
+    // The wall leaves first so the double's new path is clear of every arrow.
     state = {
       ...state,
+      remainingIds: ["double"],
       settledPaths: { double: secondPath },
-      revision: state.revision + 1,
+      revision: state.revision + 2,
     };
-    expect(save(state, 30)).toBe(true);
+    expect(save(state, 30, level)).toBe(true);
     const restored = await loadCampaign(async () => level);
     expect(restored.recovered).toBe(false);
     expect(restored.value?.state.failedPositions).toEqual([failureKey]);
+    expect(
+      save({ ...state, remainingIds: ["double", "wall"] }, 30, level),
+    ).toBe(true);
+    expect((await loadCampaign(async () => level)).recovered).toBe(true);
   });
 
   test("restores a parked path reached after another arrow leaves", async () => {
@@ -580,7 +595,7 @@ describe("resumable campaign saves", () => {
       simulateMove(level, state, "double", "head"),
     );
     expect(state.settledPaths?.double).toBeDefined();
-    expect(save(state, 30)).toBe(true);
+    expect(save(state, 30, level)).toBe(true);
     const restored = await loadCampaign(async () => level);
     expect(restored.recovered).toBe(false);
     expect(restored.value?.state).toEqual(state);
@@ -590,7 +605,7 @@ describe("resumable campaign saves", () => {
     for (const id of [2, 8, 11, 20]) {
       const level = generateLevel(id);
       const state = exitedState(level);
-      expect(save(state, 30)).toBe(true);
+      expect(save(state, 30, level)).toBe(true);
       entries.set(
         CAMPAIGN_KEY,
         JSON.stringify({
@@ -615,7 +630,7 @@ describe("resumable campaign saves", () => {
     ] as const) {
       const level = generateLevel(id);
       const state = exitedState(level);
-      expect(save(state, 30)).toBe(true);
+      expect(save(state, 30, level)).toBe(true);
       entries.set(
         CAMPAIGN_KEY,
         JSON.stringify({ ...savedJson(), contentVersion: 9 }),
@@ -640,7 +655,7 @@ describe("resumable campaign saves", () => {
     ] as const) {
       const level = generateLevel(id);
       const state = exitedState(level);
-      expect(save(state, 300)).toBe(true);
+      expect(save(state, 300, level)).toBe(true);
       entries.set(
         CAMPAIGN_KEY,
         JSON.stringify({ ...savedJson(), contentVersion: 10 }),
@@ -653,6 +668,231 @@ describe("resumable campaign saves", () => {
       );
       expect(restored.value?.unlockedLevelId).toBe(300);
     }
+  }, 30_000);
+
+  test("the shipped content-11 table matches unchanged layouts only", () => {
+    expect(Object.keys(CONTENT_ELEVEN_LAYOUTS)).toHaveLength(200);
+    for (const id of [2, 8, 22, 25]) {
+      expect(CONTENT_ELEVEN_LAYOUTS[id]).toBe(
+        layoutFingerprint(generateLevel(id)),
+      );
+    }
+    expect(CONTENT_ELEVEN_LAYOUTS[60]).not.toBe(
+      layoutFingerprint(generateLevel(60)),
+    );
+  }, 30_000);
+
+  test("layout fingerprints are SHA-1 across block boundaries", () => {
+    const base = levelFor(2);
+    const titles = [
+      ...Array.from({ length: 140 }, (_, length) => "x".repeat(length)),
+      "Würfel ⏺> 立方体",
+    ];
+    for (const title of titles) {
+      const level = { ...base, title };
+      expect(layoutFingerprint(level)).toBe(
+        createHash("sha1")
+          .update(JSON.stringify(level))
+          .digest("hex")
+          .slice(0, 16),
+      );
+    }
+  });
+
+  test("a save resumes only on a level with the same layout fingerprint", async () => {
+    const level = generateLevel(22);
+    const state = exitedState(level);
+    expect(save(state, 40, level)).toBe(true);
+    expect(savedJson().layout).toBe(layoutFingerprint(level));
+    const same = await loadCampaign(async () => level);
+    expect(same.recovered).toBe(false);
+    const moved = { ...level, lives: level.lives + 1 };
+    const changed = await loadCampaign(async () => moved);
+    expect(changed.recovered).toBe(true);
+    expect(changed.contentUpdated).toBe(true);
+    expect(changed.value?.unlockedLevelId).toBe(40);
+    const renamed = { ...level, title: "Moved cube" };
+    const retitled = await loadCampaign(async () => renamed);
+    expect(retitled.recovered).toBe(true);
+    expect(retitled.contentUpdated).toBe(true);
+    expect(retitled.value?.state).toEqual(createGameState(renamed));
+    const { layout: _dropped, ...unfingerprinted } = savedJson();
+    entries.set(CAMPAIGN_KEY, JSON.stringify(unfingerprinted));
+    expect((await loadCampaign(async () => level)).recovered).toBe(true);
+  }, 30_000);
+
+  test("restores flipped spots and a pending flip from an arrow parked on a spot", async () => {
+    const cellAt = (x: number, y: number) => ({ face: "front" as const, x, y });
+    const level: LevelDefinition = {
+      id: 31,
+      title: "Stored flip",
+      gridSize: 6,
+      lives: 3,
+      arrows: [
+        { id: "mover", path: [cellAt(0, 2), cellAt(1, 2)] },
+        { id: "other", path: [cellAt(0, 4), cellAt(1, 4)] },
+      ],
+      directionals: [{ cell: cellAt(2, 2), heading: "north", kind: "flip" }],
+      stops: [cellAt(2, 1)],
+    };
+    let state = createGameState(level);
+    state = applyMove(level, state, simulateMove(level, state, "mover"));
+    expect(state.settledPaths?.mover).toBeDefined();
+    expect(save(state, 31, level)).toBe(true);
+    const restored = await loadCampaign(async () => level);
+    expect(restored.recovered).toBe(false);
+    expect(restored.value?.state).toEqual(state);
+    const resumed = restored.value?.state as GameState;
+    const onward = applyMove(
+      level,
+      resumed,
+      simulateMove(level, resumed, "mover"),
+    );
+    expect(onward.spotHeadings).toEqual({ "front:2:2": "south" });
+    expect(save(onward, 31, level)).toBe(true);
+    const flipped = await loadCampaign(async () => level);
+    expect(flipped.recovered).toBe(false);
+    expect(flipped.value?.state).toEqual(onward);
+  });
+
+  test("rejects stored spot directions off the spot's axis or on static spots", async () => {
+    const cellAt = (x: number, y: number) => ({ face: "front" as const, x, y });
+    const level: LevelDefinition = {
+      id: 31,
+      title: "Bad flip",
+      gridSize: 6,
+      lives: 3,
+      arrows: [{ id: "a", path: [cellAt(0, 0), cellAt(1, 0)] }],
+      directionals: [
+        { cell: cellAt(3, 3), heading: "north", kind: "flip" },
+        { cell: cellAt(4, 4), heading: "east" },
+      ],
+    };
+    for (const [spotHeadings, resumes] of [
+      [{ "front:3:3": "south" }, true],
+      [{ "front:3:3": "north" }, true],
+      [{ "front:3:3": "east" }, false],
+      [{ "front:4:4": "west" }, false],
+      [{ "front:0:0": "north" }, false],
+    ] as const) {
+      const state = { ...createGameState(level), spotHeadings } as GameState;
+      expect(save(state, 31, level)).toBe(true);
+      const restored = await loadCampaign(async () => level);
+      expect(restored.recovered).toBe(!resumes);
+      expect(restored.value?.state).toEqual(
+        resumes ? state : createGameState(level),
+      );
+    }
+  });
+
+  test("never restores two arrows onto one cell, however each is parked", async () => {
+    const cellAt = (x: number, y: number) => ({ face: "front" as const, x, y });
+    const flipLevel: LevelDefinition = {
+      id: 31,
+      title: "Two on one stop",
+      gridSize: 6,
+      lives: 3,
+      arrows: [
+        { id: "a", path: [cellAt(0, 1), cellAt(1, 1)] },
+        { id: "b", path: [cellAt(2, 3), cellAt(2, 2)] },
+      ],
+      directionals: [{ cell: cellAt(4, 4), heading: "north", kind: "flip" }],
+      stops: [cellAt(2, 1)],
+    };
+    const aParked = [cellAt(1, 1), cellAt(2, 1)];
+    const bParked = [cellAt(2, 2), cellAt(2, 1)];
+    const doubleLevel: LevelDefinition = {
+      id: 31,
+      title: "Double meets single",
+      gridSize: 6,
+      lives: 3,
+      arrows: [
+        { id: "double", kind: "double", path: [cellAt(1, 3), cellAt(2, 3)] },
+        { id: "single", path: [cellAt(3, 5), cellAt(3, 4)] },
+      ],
+      stops: [cellAt(3, 3)],
+    };
+    const doubleParked = [cellAt(2, 3), cellAt(3, 3)];
+    for (const [level, parked, resumes] of [
+      [flipLevel, { settledPaths: { a: aParked } }, true],
+      [flipLevel, { settledPaths: { b: bParked } }, true],
+      [flipLevel, { settledPaths: { a: aParked, b: bParked } }, false],
+      [doubleLevel, { offsets: { single: 1 } }, true],
+      [doubleLevel, { settledPaths: { double: doubleParked } }, true],
+      [
+        doubleLevel,
+        { offsets: { single: 1 }, settledPaths: { double: doubleParked } },
+        false,
+      ],
+    ] as const) {
+      const state = {
+        ...createGameState(level),
+        ...parked,
+        revision: 2,
+      } as GameState;
+      expect(save(state, 31, level)).toBe(true);
+      const restored = await loadCampaign(async () => level);
+      expect(restored.recovered).toBe(!resumes);
+      expect(restored.value?.state).toEqual(
+        resumes ? state : createGameState(level),
+      );
+    }
+  });
+
+  test("content-11 saves resume only on cubes whose layout is unchanged", async () => {
+    for (const [id, resumes] of [
+      [22, true],
+      [25, true],
+      [29, false],
+      [60, false],
+    ] as const) {
+      const level = generateLevel(id);
+      const state = exitedState(level);
+      expect(save(state, 60, level)).toBe(true);
+      const current = savedJson();
+      const { layout: _dropped, ...legacy } = current;
+      entries.set(
+        CAMPAIGN_KEY,
+        JSON.stringify({ ...legacy, contentVersion: 11 }),
+      );
+      const restored = await loadCampaign(async () => level);
+      expect(restored.recovered).toBe(!resumes);
+      expect(restored.contentUpdated).toBe(!resumes);
+      expect(restored.value?.state).toEqual(
+        resumes ? state : createGameState(level),
+      );
+      expect(restored.value?.unlockedLevelId).toBe(60);
+      entries.set(CAMPAIGN_KEY, JSON.stringify(current));
+      const fingerprinted = await loadCampaign(async () => level);
+      expect(fingerprinted.recovered).toBe(false);
+      expect(fingerprinted.value?.state).toEqual(state);
+    }
+  }, 30_000);
+
+  test("a content-11 save on a rebuilt cube refreshes and keeps progression", async () => {
+    const level = generateLevel(60);
+    expect(save(exitedState(level), 75, level)).toBe(true);
+    const { layout: _dropped, ...legacy } = savedJson();
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({ ...legacy, contentVersion: 11 }),
+    );
+    const restored = await loadCampaign(async () => level);
+    expect(restored.recovered).toBe(true);
+    expect(restored.contentUpdated).toBe(true);
+    expect(restored.value).toMatchObject({
+      currentLevelId: 60,
+      unlockedLevelId: 75,
+      tutorialComplete: true,
+      state: createGameState(level),
+    });
+    if (!restored.value) throw new Error("Expected refreshed campaign");
+    expect(saveCampaign(restored.value)).toBe(true);
+    expect(savedJson()).toMatchObject({
+      contentVersion: 12,
+      layout: layoutFingerprint(level),
+    });
+    expect((await loadCampaign(async () => level)).recovered).toBe(false);
   }, 30_000);
 
   test("saves an atomic overlap failure as one life and rejects partial groups", async () => {
@@ -668,7 +908,7 @@ describe("resumable campaign saves", () => {
       "overlap-intro-pair-b",
     ]);
     expect(failed.lives).toBe(level.lives - 1);
-    expect(save(failed)).toBe(true);
+    expect(save(failed, failed.levelId, level)).toBe(true);
 
     const restored = await loadCampaign((id) =>
       Promise.resolve(id === 15 ? level : generateLevel(id)),
@@ -685,7 +925,7 @@ describe("resumable campaign saves", () => {
         ),
       },
     ]) {
-      expect(save(partialState)).toBe(true);
+      expect(save(partialState, partialState.levelId, level)).toBe(true);
       const raw = savedJson();
       entries.set(
         CAMPAIGN_KEY,
@@ -712,7 +952,7 @@ describe("resumable campaign saves", () => {
       if (!restored.value) throw new Error("Expected restored campaign");
       expect(saveCampaign(restored.value)).toBe(true);
       expect(savedJson()).toMatchObject({
-        contentVersion: 11,
+        contentVersion: 12,
         generatorVersion: 7,
       });
     },
