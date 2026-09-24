@@ -104,16 +104,21 @@ const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
 const FLIP_TURN_WINDOW = 0.12;
 
 /**
- * How far (0..1) a flip glyph has turned at `travel` along a move of
- * `distance` cells, for a flip that fired after `step` head steps. Step 0
+ * How far (0..1) a flip glyph has turned at `travel` along a move whose
+ * world-space `distance` is measured like `motionDistance` (one cell is
+ * 2 / gridSize), for a flip that fired after `step` head cell steps. Step 0
  * fires as the body slides out after the head has left the cube.
  */
 export function flipTurnProgress(
   step: number,
+  gridSize: number,
   distance: number,
   travel: number,
 ): number {
-  const at = step === 0 || distance <= 0 ? 1 : Math.min(1, step / distance);
+  const at =
+    step === 0 || distance <= 0
+      ? 1
+      : Math.min(1, (step * 2) / gridSize / distance);
   return Math.min(1, Math.max(0, (travel - at) / FLIP_TURN_WINDOW));
 }
 
@@ -693,6 +698,7 @@ export class PuzzleRenderer {
   private readonly stopCirclesGroup = new THREE.Group();
   private readonly directionalsGroup = new THREE.Group();
   private readonly flipTurns = new Map<string, number>();
+  private flipMotion = false;
   private readonly arrowsGroup = new THREE.Group();
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
@@ -763,6 +769,7 @@ export class PuzzleRenderer {
     this.clearWrappingEdges();
     this.clearStopCircles();
     this.clearDirectionals();
+    this.flipMotion = false;
     this.level = level;
     this.state = state;
     this.createGridLines(level.gridSize);
@@ -784,7 +791,7 @@ export class PuzzleRenderer {
   updateState(state: GameState): void {
     this.state = state;
     this.refreshSettledPaths(state);
-    this.setSpotHeadings(state.spotHeadings);
+    if (!this.flipMotion) this.setSpotHeadings(state.spotHeadings);
     for (const [id, visual] of this.visuals) {
       visual.group.visible = state.remainingIds.includes(id);
     }
@@ -1179,6 +1186,7 @@ export class PuzzleRenderer {
           : slice,
       );
     }
+    this.flipMotion = progress < 1;
     this.animateFlips(result, distance, travel);
     this.render();
   }
@@ -1207,13 +1215,18 @@ export class PuzzleRenderer {
     distance: number,
     travel: number,
   ): void {
+    const gridSize = this.level?.gridSize;
+    if (gridSize === undefined) return;
     const turns = new Map<string, number>();
-    for (const flip of result.spotFlips ?? []) {
-      const key = cellKey(flip.cell);
-      turns.set(
-        key,
-        (turns.get(key) ?? 0) + flipTurnProgress(flip.step, distance, travel),
-      );
+    for (const member of result.members ?? [result]) {
+      for (const flip of member.spotFlips ?? []) {
+        const key = cellKey(flip.cell);
+        turns.set(
+          key,
+          (turns.get(key) ?? 0) +
+            flipTurnProgress(flip.step, gridSize, distance, travel),
+        );
+      }
     }
     if (turns.size === 0) return;
     for (const child of this.directionalsGroup.children) {
@@ -1235,6 +1248,8 @@ export class PuzzleRenderer {
   }
 
   settle(arrowId: string): void {
+    this.flipMotion = false;
+    this.setSpotHeadings(this.state?.spotHeadings);
     for (const id of this.level
       ? overlappingArrowIds(this.level, arrowId)
       : [arrowId]) {
