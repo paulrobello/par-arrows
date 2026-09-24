@@ -27,10 +27,12 @@ export interface EdgePolicyDefinition {
   };
 }
 
-/** A floor fixture that bends any entering head onto its heading. */
+/** A floor fixture that sends any entering head along its heading. */
 export interface DirectionalSpotDefinition {
   readonly cell: Cell;
   readonly heading: Heading;
+  /** A flip spot reverses once an arrow has fully passed through it. */
+  readonly kind?: "static" | "flip";
 }
 
 /** Cube-only level data with ordinary exits and optional continuation edges. */
@@ -66,6 +68,8 @@ export interface GameState {
   readonly revision: number;
   /** Forward steps already travelled by each arrow parked on a stop circle. */
   readonly offsets: Readonly<Record<string, number>>;
+  /** Current direction of each flip spot that has flipped, keyed by cell. */
+  readonly spotHeadings?: Readonly<Record<string, Heading>>;
 }
 
 export type Endpoint = "head" | "tail";
@@ -96,6 +100,12 @@ export interface ContactTrace {
   readonly distance: number;
 }
 
+/** A flip spot reversing during a move, after `step` forward steps. */
+export interface SpotFlip {
+  readonly cell: Cell;
+  readonly step: number;
+}
+
 /**
  * A complete deterministic move result. `route` ends at the first blocker for
  * rebounds, at the stop circle for pauses, and at the last surface cell for exits.  Flight happens only
@@ -115,6 +125,8 @@ export interface MoveResult {
   readonly pausedSteps?: number;
   /** Exact occupied path after a double arrow parks. */
   readonly settledPath?: readonly Cell[];
+  /** Flip spots the moving body cleared, in order; rewound on a collision. */
+  readonly spotFlips?: readonly SpotFlip[];
   readonly blockerId?: string;
   readonly contact?: ContactTrace;
   readonly exit?: ExitTrace;

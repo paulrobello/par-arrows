@@ -19,6 +19,7 @@ export function createGameState(level: LevelDefinition): GameState {
     status: "playing",
     revision: 0,
     offsets: {},
+    spotHeadings: {},
   };
 }
 
