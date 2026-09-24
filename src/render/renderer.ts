@@ -54,6 +54,7 @@ interface ThemePalette {
   readonly farSide: number;
   readonly stop: number;
   readonly directional: number;
+  readonly flip: number;
   readonly doubleTail: number;
   readonly doubleHead: number;
 }
@@ -78,6 +79,7 @@ const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     farSide: 0x6f9fb2,
     stop: 0x1d9a86,
     directional: 0x0f7fa8,
+    flip: 0xc0266d,
     doubleTail: 0x6d28d9,
     doubleHead: 0x4d7c0f,
   },
@@ -93,10 +95,27 @@ const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     farSide: 0x516a7a,
     stop: 0x3fe0c0,
     directional: 0x3ac8f0,
+    flip: 0xff6fb5,
     doubleTail: 0xc084fc,
     doubleHead: 0xa3e635,
   },
 };
+
+const FLIP_TURN_WINDOW = 0.12;
+
+/**
+ * How far (0..1) a flip glyph has turned at `travel` along a move of
+ * `distance` cells, for a flip that fired after `step` head steps. Step 0
+ * fires as the body slides out after the head has left the cube.
+ */
+export function flipTurnProgress(
+  step: number,
+  distance: number,
+  travel: number,
+): number {
+  const at = step === 0 || distance <= 0 ? 1 : Math.min(1, step / distance);
+  return Math.min(1, Math.max(0, (travel - at) / FLIP_TURN_WINDOW));
+}
 
 export function arrowDimensions(
   gridSize: number,
@@ -673,6 +692,7 @@ export class PuzzleRenderer {
   private readonly wrappingEdgesGroup = new THREE.Group();
   private readonly stopCirclesGroup = new THREE.Group();
   private readonly directionalsGroup = new THREE.Group();
+  private readonly flipTurns = new Map<string, number>();
   private readonly arrowsGroup = new THREE.Group();
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
@@ -764,6 +784,7 @@ export class PuzzleRenderer {
   updateState(state: GameState): void {
     this.state = state;
     this.refreshSettledPaths(state);
+    this.setSpotHeadings(state.spotHeadings);
     for (const [id, visual] of this.visuals) {
       visual.group.visible = state.remainingIds.includes(id);
     }
@@ -800,7 +821,9 @@ export class PuzzleRenderer {
     this.directionalsGroup.traverse((child) => {
       const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
       if (mesh.material instanceof THREE.MeshBasicMaterial) {
-        mesh.material.color.set(palette.directional);
+        mesh.material.color.set(
+          mesh.userData.flip ? palette.flip : palette.directional,
+        );
       }
     });
     this.render();
@@ -1156,7 +1179,59 @@ export class PuzzleRenderer {
           : slice,
       );
     }
+    this.animateFlips(result, distance, travel);
     this.render();
+  }
+
+  /** Snap every flip glyph to the settled spot state. */
+  setSpotHeadings(
+    headings: Readonly<Record<string, Heading>> | undefined,
+  ): void {
+    for (const child of this.directionalsGroup.children) {
+      const key = child.userData.flip as string | undefined;
+      if (!key) continue;
+      const spot = this.level?.directionals?.find(
+        (entry) => cellKey(entry.cell) === key,
+      );
+      const turned =
+        spot !== undefined &&
+        headings?.[key] !== undefined &&
+        headings[key] !== spot.heading;
+      this.flipTurns.set(key, turned ? 1 : 0);
+      this.orientFlip(child, turned ? 1 : 0);
+    }
+  }
+
+  private animateFlips(
+    result: MoveResult,
+    distance: number,
+    travel: number,
+  ): void {
+    const turns = new Map<string, number>();
+    for (const flip of result.spotFlips ?? []) {
+      const key = cellKey(flip.cell);
+      turns.set(
+        key,
+        (turns.get(key) ?? 0) + flipTurnProgress(flip.step, distance, travel),
+      );
+    }
+    if (turns.size === 0) return;
+    for (const child of this.directionalsGroup.children) {
+      const key = child.userData.flip as string | undefined;
+      const turn = key === undefined ? undefined : turns.get(key);
+      if (key === undefined || turn === undefined) continue;
+      this.orientFlip(child, ((this.flipTurns.get(key) ?? 0) + turn) % 2);
+    }
+  }
+
+  private orientFlip(mesh: THREE.Object3D, turn: number): void {
+    const base = mesh.userData.baseQuaternion as THREE.Quaternion;
+    const normal = mesh.userData.normal as THREE.Vector3;
+    mesh.quaternion
+      .copy(base)
+      .premultiply(
+        new THREE.Quaternion().setFromAxisAngle(normal, Math.PI * turn),
+      );
   }
 
   settle(arrowId: string): void {
@@ -1620,13 +1695,27 @@ export class PuzzleRenderer {
           [0, offset - band],
           [-span, offset - depth - band],
         ].map(([x, y]) => new THREE.Vector2(x as number, y as number));
-      const shapes = [apex, apex - band - pitch * 0.14].map(
-        (offset) => new THREE.Shape(chevron(offset)),
-      );
+      const shapes =
+        spot.kind === "flip"
+          ? [
+              new THREE.Shape(chevron(apex)),
+              new THREE.Shape().absarc(
+                0,
+                apex - band - pitch * 0.2,
+                pitch * 0.11,
+                0,
+                Math.PI * 2,
+                false,
+              ),
+            ]
+          : [apex, apex - band - pitch * 0.14].map(
+              (offset) => new THREE.Shape(chevron(offset)),
+            );
       const mesh = new THREE.Mesh(
         new THREE.ShapeGeometry(shapes),
         new THREE.MeshBasicMaterial({
-          color: this.palette.directional,
+          color:
+            spot.kind === "flip" ? this.palette.flip : this.palette.directional,
           side: THREE.DoubleSide,
           toneMapped: false,
           transparent: true,
@@ -1653,6 +1742,10 @@ export class PuzzleRenderer {
       mesh.renderOrder = -1;
       mesh.userData.directional = cellKey(spot.cell);
       mesh.userData.normal = normal;
+      if (spot.kind === "flip") {
+        mesh.userData.flip = cellKey(spot.cell);
+        mesh.userData.baseQuaternion = mesh.quaternion.clone();
+      }
       this.directionalsGroup.add(mesh);
     }
   }

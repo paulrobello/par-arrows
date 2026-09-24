@@ -14,7 +14,9 @@ import {
   MAX_LEVEL_ID,
   seedForLevel,
 } from "./content/procedural";
+import { spotHeadingAt } from "./core/directionals";
 import { applyMove, createGameState, simulateMove } from "./core/game-state";
+import { settledPathOf } from "./core/stops";
 import { resolvePick } from "./pick";
 import { overlappingArrowIds } from "./core/overlap";
 import { cellKey } from "./core/topology";
@@ -357,7 +359,25 @@ export class ParArrowsApp {
       directionals: (this.level.directionals ?? []).map((spot) => ({
         cell: cellKey(spot.cell),
         heading: spot.heading,
+        kind: spot.kind ?? "static",
+        current: spotHeadingAt(
+          this.level,
+          spot.cell,
+          this.displayedState.spotHeadings,
+        ),
       })),
+      pendingFlips: (this.level.directionals ?? [])
+        .filter((spot) => spot.kind === "flip")
+        .map((spot) => cellKey(spot.cell))
+        .filter((key) =>
+          this.level.arrows.some(
+            (arrow) =>
+              this.displayedState.remainingIds.includes(arrow.id) &&
+              settledPathOf(this.level, this.displayedState, arrow).some(
+                (cell) => cellKey(cell) === key,
+              ),
+          ),
+        ),
       parkedOffsets: Object.fromEntries(
         Object.entries(this.displayedState.offsets).filter(
           ([, offset]) => offset > 0,
