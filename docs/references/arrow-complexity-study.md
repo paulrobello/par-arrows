@@ -38,3 +38,9 @@ These are observations of the supplied images, not claims about the source game'
 - A5 — Retain the existing rules: simple level 1, flat ribbons, varied straight lengths, static body wraps, no overlaps or self-contact, and complete solutions with meaningful removal dependencies. Yellow-edge head continuation remains a separate future mechanic.
 
 The corrective direction is to replace the repeated band templates with irregular paths composed around one another. Adding more copies or making a repeating staircase longer does not address the observed mismatch.
+
+## Follow-up: capped shapes (2026-09-25)
+
+The irregular route composition from commit `0bc08c6` removed the bands, but a normalized count over generated levels 2-200 still found short zigzags stamped across the late cubes: level 39 carried one 5-cell zigzag 25 times, and 74 levels exceeded the cap of `max(6, ceil(3% of arrows))` copies per shape. The earlier test signature used absolute headings, so rotated copies of one shape counted as different shapes and the cap never saw them.
+
+`canonicalShape` in `src/content/procedural.ts` now keys a single-face path of four or more cells by run lengths and relative turns, canonical under rotation, mirroring and reversal. From level 12 the fill and blocker passes skip a candidate whose shape already sits at `shapeCap`, and `tests/shape-variety.test.ts` enforces the cap over ids 12-200. The worst count fell from 25 to 8. Levels 2-10 keep their legacy layouts, and levels 3 and 6 still carry seven copies of one shape.

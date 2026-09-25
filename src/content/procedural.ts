@@ -360,6 +360,62 @@ function exitRay(
   return [];
 }
 
+/** First generated id whose fill caps repeated shapes; ids 2-10 keep legacy layouts. */
+const FIRST_SHAPE_CAPPED_LEVEL = 12;
+
+/** Most copies of one canonical shape a level of `arrowCount` arrows may carry. */
+export function shapeCap(arrowCount: number): number {
+  return Math.max(6, Math.ceil(arrowCount * 0.03));
+}
+
+/**
+ * A single-face path's shape as run lengths and relative turns, canonical
+ * under rotation, mirroring and reversal. Paths shorter than four cells or
+ * crossing a seam have no key: short paths have too few shapes to vary, and
+ * seam crossings already break up the silhouette.
+ */
+export function canonicalShape(
+  path: readonly Cell[],
+  gridSize: number,
+): string | undefined {
+  if (path.length < 4) return undefined;
+  const face = path[0]?.face;
+  if (path.some((cell) => cell.face !== face)) return undefined;
+  const headings: Heading[] = [];
+  for (let index = 1; index < path.length; index += 1) {
+    const heading = headingForPath(
+      [path[index - 1] as Cell, path[index] as Cell],
+      gridSize,
+    );
+    if (!heading) return undefined;
+    headings.push(heading);
+  }
+  const encode = (steps: readonly Heading[]): string => {
+    const parts: string[] = [];
+    let run = 1;
+    for (let index = 1; index < steps.length; index += 1) {
+      const turn =
+        (HEADING_CYCLE.indexOf(steps[index] as Heading) -
+          HEADING_CYCLE.indexOf(steps[index - 1] as Heading) +
+          4) %
+        4;
+      if (turn === 0) {
+        run += 1;
+        continue;
+      }
+      parts.push(String(run), turn === 1 ? "R" : "L");
+      run = 1;
+    }
+    parts.push(String(run));
+    return parts.join("");
+  };
+  const mirror = (shape: string): string =>
+    shape.replace(/[LR]/g, (turn) => (turn === "L" ? "R" : "L"));
+  const forward = encode(headings);
+  const backward = encode([...headings].reverse().map(oppositeHeading));
+  return [forward, mirror(forward), backward, mirror(backward)].sort()[0];
+}
+
 function targetLength(rng: Rng, id: number, config: LevelConfig): number {
   const floor = id <= 3 ? 6 : 8;
   const ceiling = Math.min(
@@ -2899,6 +2955,25 @@ export function generateLevel(id: number): LevelDefinition {
             continue construction;
           }
         }
+        // Fill and blocker arrows may not push any canonical shape past the
+        // level's cap, so no short zigzag gets stamped across the cube.
+        const shapeCounts = new Map<string, number>();
+        const capShapes = id >= FIRST_SHAPE_CAPPED_LEVEL;
+        const cap = shapeCap(config.arrowCount);
+        const shapeOf = (path: readonly Cell[]) =>
+          capShapes ? canonicalShape(path, config.gridSize) : undefined;
+        for (const arrow of arrows) {
+          const shape = shapeOf(arrow.path);
+          if (shape) shapeCounts.set(shape, (shapeCounts.get(shape) ?? 0) + 1);
+        }
+        const shapeFull = (path: readonly Cell[]): boolean => {
+          const shape = shapeOf(path);
+          return shape !== undefined && (shapeCounts.get(shape) ?? 0) >= cap;
+        };
+        const countShape = (path: readonly Cell[]): void => {
+          const shape = shapeOf(path);
+          if (shape) shapeCounts.set(shape, (shapeCounts.get(shape) ?? 0) + 1);
+        };
         for (
           let attempt = 0;
           arrows.length < config.arrowCount &&
@@ -2918,7 +2993,7 @@ export function generateLevel(id: number): LevelDefinition {
             ),
             directional ? dirCells : undefined,
           );
-          if (!path) continue;
+          if (!path || shapeFull(path)) continue;
           const arrow: ArrowDefinition = {
             id: `r${id}-${arrows.length}`,
             path,
@@ -2926,6 +3001,7 @@ export function generateLevel(id: number): LevelDefinition {
           if (!validateLevel({ ...candidateLevel, arrows: [arrow] }).valid)
             continue;
           for (const cell of path) occupied.add(cellKey(cell));
+          countShape(path);
           arrows.push(arrow);
         }
         // Shared-tail members may never have another arrow on their travel
@@ -3002,7 +3078,7 @@ export function generateLevel(id: number): LevelDefinition {
               ),
               directional ? dirCells : undefined,
             );
-            if (!path) continue;
+            if (!path || shapeFull(path)) continue;
             if (path.some((cell) => groupRouteCells.has(cellKey(cell))))
               continue;
             const blocker: ArrowDefinition = {
@@ -3030,6 +3106,7 @@ export function generateLevel(id: number): LevelDefinition {
             const after = blockedAmong([...arrows, blocker]);
             if (after <= before) continue;
             for (const cell of path) occupied.add(cellKey(cell));
+            countShape(path);
             arrows.push(blocker);
             aheadKeys.push(
               arrowTrack(candidateLevel, blocker)
