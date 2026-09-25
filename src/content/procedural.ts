@@ -2256,53 +2256,62 @@ function extraDirectionalSpots(
       ]) {
         const key = cellKey(cell);
         if (occupied.has(key)) continue;
-        const turn = PERPENDICULAR[heading][rng.int(2)] as Heading;
-        const trial: LevelDefinition = {
-          ...spotLevel,
-          directionals: [
-            ...(spotLevel.directionals ?? []),
-            { cell, heading: turn },
-          ],
-        };
-        // The pre-trial depth tag only counts bends before this cell on the
-        // OLD route; the new spot can redirect a traverser onto a path that
-        // crosses spots the tag never saw (an earlier-placed spot further
-        // along, or a spot on another face reached via the new turn). Recheck
-        // each traverser's TOTAL bend count against the actual post-trial
-        // track rather than trusting the tag.
-        const trialSpots = new Set(
-          (trial.directionals ?? []).map((spot) => cellKey(spot.cell)),
-        );
-        let fits = true;
-        for (const traverser of traversers) {
-          const alone = simulateMove(
-            trial,
-            [arrows[traverser]!!.id],
-            arrows[traverser]!!.id,
+        // Try the seeded turn first, then the other perpendicular turn.
+        const first = rng.int(2);
+        let turn: Heading | undefined;
+        for (const side of [first, 1 - first]) {
+          const option = PERPENDICULAR[heading][side] as Heading;
+          const trial: LevelDefinition = {
+            ...spotLevel,
+            directionals: [
+              ...(spotLevel.directionals ?? []),
+              { cell, heading: option },
+            ],
+          };
+          // The pre-trial depth tag only counts bends before this cell on the
+          // OLD route; the new spot can redirect a traverser onto a path that
+          // crosses spots the tag never saw (an earlier-placed spot further
+          // along, or a spot on another face reached via the new turn). Recheck
+          // each traverser's TOTAL bend count against the actual post-trial
+          // track rather than trusting the tag.
+          const trialSpots = new Set(
+            (trial.directionals ?? []).map((spot) => cellKey(spot.cell)),
           );
-          if (alone.kind !== "exit") {
-            fits = false;
-            break;
+          let fits = true;
+          for (const traverser of traversers) {
+            const alone = simulateMove(
+              trial,
+              [arrows[traverser]!!.id],
+              arrows[traverser]!!.id,
+            );
+            if (alone.kind !== "exit") {
+              fits = false;
+              break;
+            }
+            const blocked = alone.route.some(
+              (routeCell) =>
+                parkTrackKeys.has(cellKey(routeCell)) ||
+                trackForbidden.has(cellKey(routeCell)) ||
+                cellsBefore[traverser]!!.has(cellKey(routeCell)),
+            );
+            if (blocked) {
+              fits = false;
+              break;
+            }
+            const totalBends = arrowTrack(trial, arrows[traverser]!!).filter(
+              (routeCell) => trialSpots.has(cellKey(routeCell)),
+            ).length;
+            if (totalBends > limit) {
+              fits = false;
+              break;
+            }
           }
-          const blocked = alone.route.some(
-            (routeCell) =>
-              parkTrackKeys.has(cellKey(routeCell)) ||
-              trackForbidden.has(cellKey(routeCell)) ||
-              cellsBefore[traverser]!!.has(cellKey(routeCell)),
-          );
-          if (blocked) {
-            fits = false;
-            break;
-          }
-          const totalBends = arrowTrack(trial, arrows[traverser]!!).filter(
-            (routeCell) => trialSpots.has(cellKey(routeCell)),
-          ).length;
-          if (totalBends > limit) {
-            fits = false;
+          if (fits) {
+            turn = option;
             break;
           }
         }
-        if (!fits) continue;
+        if (!turn) continue;
         occupied.add(key);
         spots.push({ cell, heading: turn });
         accepted = true;

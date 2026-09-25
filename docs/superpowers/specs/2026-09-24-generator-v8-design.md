@@ -39,6 +39,10 @@ record. Deviations:
     arrow in the certificate replay and wasted the restart. Heads may no
     longer sit on any reserved cell; static spots over 2-200 read 767, the
     2-200 sweep runs faster, and 53 ids changed layout.
+11. Both turns (2026-09-25): an extra spot candidate whose seeded
+    perpendicular turn fails vetting now tries the other turn before the
+    next candidate. Static spots over 2-200 read 778; 96 ids changed layout,
+    none losing a spot or an arrow.
 7. Park-with-pending-flip puzzles shipped in a follow-up (2026-09-25). As
    first implemented, a region circle was kept only when parking moved no body
    onto another arrow's track, which ruled out any park covering a flip spot.
