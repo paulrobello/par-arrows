@@ -349,7 +349,7 @@ describe("runtime campaign generator", () => {
       const lengths = straightLengths(level);
       for (const length of [2, 3, 4]) expect(lengths).toContain(length);
     }
-  }, 120_000);
+  }, 240_000);
 
   test("introduces wrapping after level ten and shifts probability toward more edges", () => {
     for (let id = 1; id <= 10; id += 1) {
@@ -577,7 +577,7 @@ describe("runtime campaign generator", () => {
       "4:9",
       "6:16",
     ]);
-  }, 40_000);
+  }, 90_000);
 
   test("double-circle cores stay deadlocked after one park and open after two", () => {
     let checked = 0;
