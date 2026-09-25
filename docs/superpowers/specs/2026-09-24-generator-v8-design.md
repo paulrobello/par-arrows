@@ -1,7 +1,29 @@
 # Generator V8: Interaction Regions and Unleashed Reversal
 
 Date: 2026-09-24
-Status: Design approved in conversation (sections 1-4), awaiting spec review
+Status: Implemented (2026-09-24). The body is unchanged as the approved design
+record. Deviations:
+
+1. Ids 2-10 keep their legacy seeds and layouts; only generated ids from 12 up
+   re-roll.
+2. Every generated region equals its flip core: no outside arrow's track
+   reaches a core in practice, so closure adds no arrows.
+3. One flip core per level carries one or two flip spots (relay2 has two),
+   not one to three.
+4. Groups on spot cubes: the group is placed first and its tracks are reserved
+   against every later spot placer, rather than `overlapStarter` seeing the
+   spots. `flipRegionLead` rejects a region holding a group member.
+5. Resume compares layout fingerprint and seed on content 12 and ignores the
+   stored generator version.
+6. Accepted spot-density drop: when extra or reversal spots break the
+   assembled level, it falls back to its core-only spot set, so some cubes
+   carry fewer static spots than planned.
+7. Park-with-pending-flip puzzles do not occur. A region circle is kept only
+   when parking moves no body onto another arrow's track, and a flip spot
+   always lies on another region arrow's track, so no park leaves a body on a
+   flip spot (enumerated over every region state for ids 31-200). The headed
+   check parks on an in-region circle instead (level 76) and shows the park
+   resuming after reload before the region's flip plays out.
 
 ## Problem
 

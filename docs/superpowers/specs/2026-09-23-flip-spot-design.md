@@ -17,6 +17,21 @@ Status: Approved design (D1–D8, 2026-09-23), awaiting spec review
 >    `validateLevel`, which has no notion of a core.
 > The rulings ledger in the branch history records the reasoning for each.
 
+> **Superseded in part by generator v8 (2026-09-24,
+> `2026-09-24-generator-v8-design.md`).** The player rules, core model,
+> validation and rendering below still hold. Generation and storage changed:
+> - Footprint isolation of one flip core is replaced by an enumerated
+>   interaction region (the core closed under reachability, outside arrows as
+>   static blockers), proven at placement and again on the assembled level.
+> - Stop circles may sit inside a flip region; a fourth pattern, relay2, uses
+>   two flip spots; `flipCoreFrequency` rises to 0.65 by level 90, not 0.50 by
+>   70; flip placement runs in every generation tier, not tier one only.
+> - Cubes with spots may carry overlap groups whose routes avoid every spot.
+> - `GENERATOR_VERSION` is 8, not 7, and every generated id from 12 up
+>   re-rolled once.
+> - The content-11 resume path and its fingerprint table are deleted: a save
+>   resumes only on content 12 with a matching layout fingerprint and seed.
+
 ## Problem
 
 Directional spots are static and only ever bend a head that arrives from the
