@@ -34,6 +34,9 @@ interface State {
   failedIds: string[];
   directionals: DirectionalSpotText[];
   pendingFlips: string[];
+  stops: string[];
+  settledPaths: Record<string, Cell[]>;
+  parkedOffsets: Record<string, number>;
   hint: { arrowId: string } | null;
   moving: { kind: string; duration: number; elapsed: number } | null;
   camera: {
@@ -239,6 +242,7 @@ export async function assertFlipIntro(
   await assertScriptedWalkthrough(browser, url, output);
   await assertSeenPlayAndReload(browser, url, output);
   await assertGeneratedReversal(browser, url, output);
+  await assertRegionPark(browser, url, output);
 }
 
 /**
@@ -577,8 +581,9 @@ async function assertSeenPlayAndReload(
 }
 
 /**
- * A generated cube's 180-degree reversal on a static spot animates visibly:
- * two frames around the turn differ near the arrow.
+ * A generated cube's 180-degree reversal animates visibly: two frames around
+ * the turn differ near the arrow. Under v8, level 75's reverser is its bounce
+ * flip core's, turning on the flip spot back:8:15.
  */
 async function assertGeneratedReversal(
   browser: Browser,
@@ -692,6 +697,139 @@ async function assertGeneratedReversal(
     await finishMotion(page);
     assert.ok(!(await state(page)).remainingIds.includes(reverser.id));
     assert.deepEqual(errors, [], "No page errors during the level 75 reversal");
+  } finally {
+    await context.close();
+  }
+}
+
+/**
+ * A stop circle inside a generated flip region parks, survives a reload, and
+ * the spot then plays as the region was proven. Level 76 is the first v8 cube
+ * whose relay region holds a circle (back:20:10) whose park opens the region:
+ * the west arrow is blocked by the north cap until it parks, then passes the
+ * flip spot back:6:12 and flips it, after which the east arrow turns into the
+ * south cap.
+ *
+ * No v8 cube (31-200, every region state enumerated) parks an arrow with its
+ * body on a flip spot, so `pendingFlips` stays empty here. That is structural:
+ * a region circle is kept only when parking moves no body onto another
+ * arrow's track (`parkCrossesTrack`), and every flip spot lies on another
+ * region arrow's track, or the region would not be flip-interesting.
+ */
+async function assertRegionPark(
+  browser: Browser,
+  url: string,
+  output: string,
+): Promise<void> {
+  const levelId = 76;
+  const circle = "back:20:10";
+  const spotKey = "back:6:12";
+  const west = "r76-flip-relay-west";
+  const east = "r76-flip-relay-east";
+  const northCap = "r76-flip-relay-northcap";
+  const southCap = "r76-flip-relay-southcap";
+  const level = generateLevel(levelId);
+  assert.ok(level.stops?.some((stop) => cellKey(stop) === circle));
+  const initial = createGameState(level);
+  assert.equal(simulateMove(level, initial, west).blockerId, northCap);
+  const park = simulateMove(level, initial, northCap);
+  assert.equal(park.kind, "paused");
+  const parked = applyMove(level, initial, park);
+  assert.equal(parked.settledPaths?.[northCap]?.map(cellKey).at(-1), circle);
+  const westMove = simulateMove(level, parked, west);
+  assert.equal(westMove.kind, "exit");
+  assert.deepEqual(
+    westMove.spotFlips?.map((flip) => cellKey(flip.cell)),
+    [spotKey],
+  );
+  const eastMove = simulateMove(
+    level,
+    applyMove(level, parked, westMove),
+    east,
+  );
+  assert.equal(eastMove.kind, "blocked");
+  assert.equal(eastMove.blockerId, southCap);
+
+  const context = await browser.newContext({
+    viewport: { width: 1100, height: 760 },
+    colorScheme: "light",
+  });
+  const page = await context.newPage();
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  const spotOf = (current: State) =>
+    current.directionals.find((spot) => spot.cell === spotKey);
+  try {
+    await page.goto(url);
+    await waitForReady(page);
+    await openCampaignLevel(page, levelId);
+    let current = await state(page);
+    assert.equal(current.mode, "campaign");
+    assert.ok(current.stops.includes(circle));
+    assert.equal(spotOf(current)?.kind, "flip");
+    assert.equal(spotOf(current)?.current, "north");
+
+    await activate(page, northCap);
+    current = await state(page);
+    assert.equal(
+      current.settledPaths[northCap]?.map(cellKey).at(-1),
+      circle,
+      "The north cap parks on the region circle",
+    );
+    assert.deepEqual(current.parkedOffsets, {});
+    assert.deepEqual(current.pendingFlips, []);
+    assert.equal(current.lives, level.lives);
+
+    await page.reload();
+    await waitForReady(page);
+    current = await state(page);
+    assert.equal(current.mode, "campaign");
+    assert.equal(current.level.id, levelId);
+    assert.equal(
+      current.settledPaths[northCap]?.map(cellKey).at(-1),
+      circle,
+      "The park survives a reload",
+    );
+    assert.equal(spotOf(current)?.current, "north");
+    assert.deepEqual(current.pendingFlips, []);
+
+    const [nx, ny, nz] = faceNormal("back");
+    const facing = async (): Promise<number> => {
+      const [x, y, z] = (await state(page)).camera.position;
+      return (x * nx + y * ny + z * nz) / Math.hypot(x, y, z);
+    };
+    let direction = 1;
+    let score = await facing();
+    for (let attempt = 0; attempt < 80 && score < 0.8; attempt += 1) {
+      await page.evaluate(
+        (delta) => window.__PAR_ARROWS_TEST__?.orbit(delta, 0),
+        10 * direction,
+      );
+      const next = await facing();
+      if (next < score) direction = -direction;
+      score = next;
+    }
+    assert.ok(score >= 0.8, "The back face must face the camera");
+    await page.screenshot({ path: `${output}/flip/10-level76-parked.png` });
+
+    await activate(page, west);
+    current = await state(page);
+    assert.ok(!current.remainingIds.includes(west));
+    assert.equal(spotOf(current)?.current, "south", "West flips the spot");
+    await activate(page, east);
+    current = await state(page);
+    assert.ok(current.failedIds.includes(east));
+    assert.equal(current.lives, level.lives - 1);
+    await page.screenshot({
+      path: `${output}/flip/11-level76-east-blocked.png`,
+    });
+    console.log(
+      `flip: level ${levelId} parks ${northCap} on ${circle}, resumes after reload, then ${west} flips ${spotKey} south and ${east} collides`,
+    );
+    assert.deepEqual(errors, [], "No page errors during the level 76 park");
   } finally {
     await context.close();
   }

@@ -108,12 +108,14 @@ const DIRECTIONAL_ONLY_COMPLETE = Symbol("directional-only-complete");
 const DOUBLE_ONLY_COMPLETE = Symbol("double-only-complete");
 const FLIP_ONLY_COMPLETE = Symbol("flip-only-complete");
 const RESIZE_ONLY_COMPLETE = Symbol("resize-only-complete");
+// The full v8 sweep measured 176 s on 2026-09-24, too close to the former
+// 180 s limit for a headed run to pass reliably.
 const deadline = setTimeout(() => {
-  console.error("Browser verification exceeded its 180-second deadline.");
+  console.error("Browser verification exceeded its 240-second deadline.");
   server.kill();
   void browser?.close();
   process.exitCode = 1;
-}, 180_000);
+}, 240_000);
 
 async function closeWithinDeadline(promise: Promise<void>): Promise<void> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -1513,10 +1515,11 @@ try {
   await assertContextRecovery(browser, url, output);
   await assertLevelPreview(browser, url, output);
   await assertWrappingEdges(browser, url, output, {
-    // Level 28 is the nearest v7 cube carrying one front-east physical seam,
-    // with crossing arrows suitable for movement and rebound evidence.
-    movementLevelId: 28,
-    reboundLevelId: 28,
+    // Level 90 is the only v8 cube in 2-200 whose sole wrapping pair is the
+    // front-east/right-west seam, which the single-edge visibility fixture
+    // needs, with crossing arrows suitable for movement and rebound evidence.
+    movementLevelId: 90,
+    reboundLevelId: 90,
   });
   await assertVersionReload(page);
   await assertThemeBootstrap(browser);

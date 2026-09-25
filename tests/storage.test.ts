@@ -107,30 +107,6 @@ function writeLegacyVersion(
   entries.set(CAMPAIGN_KEY, JSON.stringify({ ...savedJson(), contentVersion }));
 }
 
-function writeVersionOneGeneratorSave(
-  state: GameState,
-  unlockedLevelId = state.levelId,
-  tutorialComplete = true,
-): void {
-  expect(
-    saveCampaign({
-      currentLevelId: state.levelId,
-      unlockedLevelId,
-      tutorialComplete,
-      state,
-    }),
-  ).toBe(true);
-  entries.set(
-    CAMPAIGN_KEY,
-    JSON.stringify({
-      ...savedJson(),
-      contentVersion: 6,
-      generatorVersion: 1,
-      seed: `par-arrows:runtime:1:level:${state.levelId}`,
-    }),
-  );
-}
-
 function parkedDoubleLevel(): LevelDefinition {
   return {
     id: 25,
