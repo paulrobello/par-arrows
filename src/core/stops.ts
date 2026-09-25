@@ -43,6 +43,23 @@ export function arrowTrack(
   return track;
 }
 
+/**
+ * Cell keys of an arrow's track, traced from both ends of a double, so a
+ * double's tail-direction cells count alongside its head-direction cells.
+ */
+export function trackKeys(
+  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
+  arrow: ArrowDefinition,
+): string[] {
+  const paths =
+    arrow.kind === "double"
+      ? [arrow.path, [...arrow.path].reverse()]
+      : [arrow.path];
+  return paths.flatMap((path) =>
+    arrowTrack(level, { ...arrow, path }).map(cellKey),
+  );
+}
+
 /** The largest forward offset an arrow can hold without leaving the cube. */
 export function maximumOffset(
   level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,

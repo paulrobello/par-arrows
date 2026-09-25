@@ -6,7 +6,7 @@ import {
 } from "./game-state";
 import { advanceHead, simulateMove } from "./movement";
 import { overlappingArrowIds, sharedDirectedSegment } from "./overlap";
-import { arrowTrack, maximumOffset, settledPathOf } from "./stops";
+import { arrowTrack, maximumOffset, settledPathOf, trackKeys } from "./stops";
 import { cellKey, headingForPath, linkKey, seamTransition } from "./topology";
 import type {
   ArrowDefinition,
@@ -477,11 +477,14 @@ export function probeMove(
     if (!step || !blockedCells.has(cellKey(step))) continue;
     const route = result.route.slice(0, index + 1);
     return {
-      ...result,
+      arrowId: result.arrowId,
+      endpoint: result.endpoint,
       kind: "blocked",
       distance: index - 0.5,
       route,
       waypoints: route.map((cell) => ({ cell, phase: "surface" as const })),
+      stateRevision: result.stateRevision,
+      offset: result.offset,
     };
   }
   return result;
@@ -838,25 +841,23 @@ export interface InteractionRegion {
   /** Flip-spot and stop cell keys inside the region. */
   readonly spotKeys: readonly string[];
   readonly stopKeys: readonly string[];
-  /** Every cell any region arrow can occupy under any spot state (tracks + bodies). */
+  /** Every `occupancyKeys` cell of every region arrow. */
   readonly cells: ReadonlySet<string>;
 }
 
 /**
  * Cell keys an arrow occupies now or can ever occupy (its authored body plus
- * its track) under any flip-spot state, so a closure derived from these keys
- * stays valid whatever a spot's current direction is.
+ * its track, traced from both ends of a double) under every flip-spot
+ * direction, so a closure derived from these keys stays valid whatever a
+ * spot's current direction is.
  */
-function occupancyKeys(
-  level: LevelDefinition,
+export function occupancyKeys(
+  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
   arrow: ArrowDefinition,
 ): ReadonlySet<string> {
   const keys = new Set<string>();
-  const probes = flipHeadingProbes(level);
-  for (const probe of probes) {
-    for (const cell of arrowTrack(probe, arrow)) {
-      keys.add(cellKey(cell));
-    }
+  for (const probe of flipHeadingProbes(level)) {
+    for (const key of trackKeys(probe, arrow)) keys.add(key);
   }
   return keys;
 }
@@ -892,8 +893,10 @@ export function flipHeadingProbes<
 }
 
 /**
- * Close seed arrows under reachability: any arrow whose track touches a cell
- * a region arrow can occupy joins the region. Undefined past `maxArrows`.
+ * Close seed arrows under reachability: an arrow joins the region when any
+ * cell of its `occupancyKeys` is also in a region member's `occupancyKeys`,
+ * stop circles and spot cells included, so both ends of a double and every
+ * flip direction count. Undefined past `maxArrows`.
  */
 export function interactionRegion(
   level: LevelDefinition,
@@ -926,7 +929,6 @@ export function interactionRegion(
     members.add(id);
     for (const key of occupancyOf(arrow)) cells.add(key);
     for (const key of occupancyOf(arrow)) {
-      if (stopSet.has(key) || spotSet.has(key)) continue;
       for (const other of level.arrows) {
         if (members.has(other.id) || frontier.includes(other.id)) continue;
         if (occupancyOf(other).has(key)) frontier.push(other.id);

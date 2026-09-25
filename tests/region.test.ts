@@ -80,6 +80,33 @@ describe("interaction regions", () => {
     expect(interactionRegion(wide, ["a"], 2)).toBeUndefined();
   });
 
+  test("covers a region double's tail-direction cells", () => {
+    // The double's head runs east to (5,2); its tail end runs west to (0,2).
+    const withDouble = level(
+      [{ id: "twin", kind: "double", path: [cell(1, 2), cell(2, 2)] }],
+      [],
+    );
+    const region = interactionRegion(withDouble, ["twin"]);
+    expect(region?.cells.has(cellKey(cell(5, 2)))).toBe(true);
+    expect(region?.cells.has(cellKey(cell(0, 2)))).toBe(true);
+  });
+
+  test("recruits an arrow whose only shared cell is a stop", () => {
+    // `seed` runs east along row 3 and `crosser` north along column 3; their
+    // tracks meet only at the stop circle on (3,3).
+    const crossing = level(
+      [
+        { id: "seed", path: [cell(0, 3), cell(1, 3)] },
+        { id: "crosser", path: [cell(3, 5), cell(3, 4)] },
+      ],
+      [],
+      [cell(3, 3)],
+    );
+    const region = interactionRegion(crossing, ["seed"]);
+    expect([...(region?.arrowIds ?? [])].sort()).toEqual(["crosser", "seed"]);
+    expect(region?.stopKeys).toEqual([cellKey(cell(3, 3))]);
+  });
+
   test("proveRegion accepts the level-30 shape with a stop inside", () => {
     // The stop may not sit on the spot cell or any authored arrow cell, so it
     // goes on the reverser's bounce lane past the spot.
@@ -216,6 +243,45 @@ describe("probeMove blocker occupancy", () => {
     expect(verdict.route.at(-1) && cellKey(verdict.route.at(-1) as Cell)).toBe(
       cellKey(cell(3, 3)),
     );
+  });
+
+  test("a truncated pause carries no paused-shaped fields", () => {
+    // The engine parks at (4,3); the blocker at (3,3) truncates it first.
+    const withStop = lane([cell(4, 3)]);
+    const engine = probeMove(
+      withStop,
+      createGameState(withStop),
+      "loner",
+      "head",
+    );
+    expect(engine.kind).toBe("paused");
+    expect(engine.pausedSteps).toBeDefined();
+    const verdict = probeMove(
+      withStop,
+      createGameState(withStop),
+      "loner",
+      "head",
+      new Set([cellKey(cell(3, 3))]),
+    );
+    expect(verdict.kind).toBe("blocked");
+    expect(verdict.pausedSteps).toBeUndefined();
+    expect(verdict.settledPath).toBeUndefined();
+    expect(verdict.spotFlips).toBeUndefined();
+    expect(verdict.members).toBeUndefined();
+  });
+
+  test("a truncated exit carries no exit trace", () => {
+    const engine = probeMove(lane(), createGameState(lane()), "loner", "head");
+    expect(engine.exit).toBeDefined();
+    const verdict = probeMove(
+      lane(),
+      createGameState(lane()),
+      "loner",
+      "head",
+      new Set([cellKey(cell(4, 3))]),
+    );
+    expect(verdict.kind).toBe("blocked");
+    expect(verdict.exit).toBeUndefined();
   });
 
   test("an empty blocker set returns the engine result unchanged", () => {

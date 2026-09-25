@@ -194,7 +194,7 @@ describe("generated flip cores", () => {
         (spot) => spot.kind === "flip",
       );
       expect(flips.length).toBeGreaterThanOrEqual(1);
-      expect(flips.length).toBeLessThanOrEqual(3);
+      expect(flips.length).toBeLessThanOrEqual(2);
       const coreLevel: LevelDefinition = {
         ...level,
         arrows: core,

@@ -10,7 +10,12 @@ import {
 } from "../core/game-state";
 import { advanceHead, simulateMove } from "../core/movement";
 import { overlappingArrowIds } from "../core/overlap";
-import { arrowTrack, currentPath, maximumOffset } from "../core/stops";
+import {
+  arrowTrack,
+  currentPath,
+  maximumOffset,
+  trackKeys,
+} from "../core/stops";
 import {
   cellKey,
   forwardInfo,
@@ -34,6 +39,7 @@ import {
   flipHeadingProbes,
   hasStrandingState,
   interactionRegion,
+  occupancyKeys,
   proveRegion,
   solveLevel,
   solveLevelTargets,
@@ -1392,19 +1398,6 @@ interface FlipCore {
 }
 
 /** Every cell of every track an arrow can drive, both ends for a double. */
-function trackKeys(
-  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
-  arrow: ArrowDefinition,
-): string[] {
-  const paths =
-    arrow.kind === "double"
-      ? [arrow.path, [...arrow.path].reverse()]
-      : [arrow.path];
-  return paths.flatMap((path) =>
-    arrowTrack(level, { ...arrow, path }).map(cellKey),
-  );
-}
-
 /**
  * Place a flip core on its own seeded streams and prove its interaction
  * region. The pattern rotates about its first spot, which keeps a two-cell
@@ -1581,21 +1574,6 @@ export function acceptFlipRegion(
 }
 
 /**
- * Every cell an arrow's track reaches under any flip-spot state, from both
- * ends of a double.
- */
-function reachKeys(
-  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
-  arrow: ArrowDefinition,
-): Set<string> {
-  const keys = new Set<string>();
-  for (const probe of flipHeadingProbes(level)) {
-    for (const key of trackKeys(probe, arrow)) keys.add(key);
-  }
-  return keys;
-}
-
-/**
  * Parks onto a circle that move a unit's body onto another arrow's track.
  * Region circles are proven by enumeration, but they still keep the campaign
  * rule every decorative circle keeps: parking only ever frees cells.
@@ -1653,7 +1631,7 @@ function flipRegionLead(
   const inside = new Set(region.arrowIds);
   for (const arrow of level.arrows) {
     if (inside.has(arrow.id)) continue;
-    for (const key of reachKeys(level, arrow)) {
+    for (const key of occupancyKeys(level, arrow)) {
       if (region.cells.has(key)) return undefined;
     }
   }
