@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { generateLevel } from "../src/content/procedural";
+import { overlappingArrowIds } from "../src/core/overlap";
 import {
   applyMove,
   createGameState,
@@ -22,6 +23,8 @@ import {
 
 const FIRST_ID = 31;
 const LAST_ID = 120;
+// Directional spots first appear on generated cubes at level 21.
+const FIRST_SPOT_ID = 21;
 
 interface FlipSample {
   readonly id: number;
@@ -30,21 +33,33 @@ interface FlipSample {
   readonly region: InteractionRegion | undefined;
 }
 
-// Generating ids 31-120 takes about 35 seconds, so every test shares one
-// sweep. It fills lazily inside the first test (not a hook, whose default
-// timeout is too short for it).
+// Generating ids 21-120 takes about 40 seconds, so every test shares one
+// sweep. It fills lazily inside the first test that needs it (not a hook,
+// whose default timeout is too short for it).
+let levels: readonly LevelDefinition[] | undefined;
+const generatedLevels = (): readonly LevelDefinition[] => {
+  if (!levels) {
+    const all: LevelDefinition[] = [];
+    for (let id = FIRST_SPOT_ID; id <= LAST_ID; id += 1) {
+      all.push(generateLevel(id));
+    }
+    levels = all;
+  }
+  return levels;
+};
+
 let sweep: readonly FlipSample[] | undefined;
 const flipSamples = (): readonly FlipSample[] => {
   if (!sweep) {
     const samples: FlipSample[] = [];
-    for (let id = FIRST_ID; id <= LAST_ID; id += 1) {
-      const level = generateLevel(id);
+    for (const level of generatedLevels()) {
+      if (level.id < FIRST_ID) continue;
       const seeds = level.arrows
         .filter((arrow) => arrow.id.includes("-flip-"))
         .map((arrow) => arrow.id);
       if (seeds.length === 0) continue;
       samples.push({
-        id,
+        id: level.id,
         level,
         seeds,
         region: interactionRegion(level, seeds),
@@ -120,6 +135,14 @@ describe("generated interaction regions", () => {
         members.filter((arrow) => arrow.kind === "double").map((a) => a.id),
         `level ${id}`,
       ).toEqual([]);
+      // A group moves on one shared offset, so no member may sit in a flip
+      // region, whose tracks depend on spot state.
+      expect(
+        members
+          .filter((arrow) => overlappingArrowIds(level, arrow.id).length > 1)
+          .map((a) => a.id),
+        `level ${id}`,
+      ).toEqual([]);
       const memberReach = new Set<string>();
       for (const arrow of members) {
         for (const key of reach(level, arrow)) {
@@ -141,6 +164,36 @@ describe("generated interaction regions", () => {
     expect(regionsToNinety).toBeGreaterThanOrEqual(20);
     console.log(
       `regions: ${regions} in ${FIRST_ID}-${LAST_ID}, ${regionsToNinety} in ${FIRST_ID}-90, ${equalToSeeds} equal to their flip core`,
+    );
+  }, 240_000);
+
+  // A group moves on one shared offset along each member's static track, so
+  // no member's track (body included) may enter a spot cell, static or flip,
+  // under any flip state.
+  test("no shared-tail group member's route touches a spot cell", () => {
+    const grouped: number[] = [];
+    for (const level of generatedLevels()) {
+      const spotKeys = new Set(
+        (level.directionals ?? []).map((spot) => cellKey(spot.cell)),
+      );
+      if (spotKeys.size === 0) continue;
+      const members = level.arrows.filter(
+        (arrow) => overlappingArrowIds(level, arrow.id).length > 1,
+      );
+      if (members.length === 0) continue;
+      grouped.push(level.id);
+      for (const arrow of members) {
+        for (const key of reach(level, arrow)) {
+          expect(
+            spotKeys.has(key),
+            `level ${level.id} ${arrow.id} ${key}`,
+          ).toBe(false);
+        }
+      }
+    }
+    expect(grouped.length).toBeGreaterThan(0);
+    console.log(
+      `grouped spot cubes in ${FIRST_SPOT_ID}-${LAST_ID}: ${grouped.join(",")}`,
     );
   }, 240_000);
 

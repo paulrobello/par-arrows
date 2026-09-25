@@ -1645,6 +1645,10 @@ function flipRegionLead(
   if (seeds.length === 0) return [];
   const region = interactionRegion(level, seeds);
   if (!region) return undefined;
+  // A shared-tail group moves on one offset along static tracks, so it may
+  // never sit inside a region whose tracks depend on flip state.
+  if (region.arrowIds.some((id) => overlappingArrowIds(level, id).length > 1))
+    return undefined;
   if (!proveRegion(level, createGameState(level), region).ok) return undefined;
   const inside = new Set(region.arrowIds);
   for (const arrow of level.arrows) {
@@ -1731,6 +1735,7 @@ function parkingCore(
   stopCount: number,
   restart: number,
   spotFaces: readonly FaceId[] = [],
+  spotForbidden: ReadonlySet<string> = new Set(),
 ): ParkingCore | undefined {
   const size = level.gridSize;
   const rng = coreStream(id, "park-core", restart);
@@ -1812,7 +1817,8 @@ function parkingCore(
           cell.x >= size ||
           cell.y >= size ||
           occupied.has(cellKey(cell)),
-      )
+      ) ||
+      spots.some((spot) => spotForbidden.has(cellKey(spot.cell)))
     )
       continue;
     const rayClear = (path: readonly Cell[]): boolean => {
@@ -1924,8 +1930,7 @@ export function chainDepthLimit(id: number): 1 | 2 | 3 {
  * How many faces of a generated cube carry directional spots: the authored
  * intro carries exactly one spot-bearing face; from the level after it, every
  * cube draws zero through four on its own seeded stream (uniform), so the
- * split is stable across sessions. Levels with any spots never carry overlap
- * groups — the two mechanics never share a cube.
+ * split is stable across sessions.
  */
 export function directionalFaceCount(id: number): number {
   if (id === DIRECTIONAL_INTRO_LEVEL.id) return 1;
@@ -1972,6 +1977,7 @@ function directionalCore(
   preferredFace?: FaceId,
   parkTracks?: ReadonlySet<string>,
   restart = 0,
+  spotForbidden: ReadonlySet<string> = new Set(),
 ): DirectionalCore | undefined {
   const size = level.gridSize;
   const rng = coreStream(id, "dir-core", restart);
@@ -2006,6 +2012,7 @@ function directionalCore(
       { face, x: spotCell.x + vector.dx, y: spotCell.y + vector.dy },
     ];
     const cells = [...approachingPath, ...opposingPath, spotCell];
+    if (spotForbidden.has(cellKey(spotCell))) continue;
     const patternKeys = new Set(cells.map(cellKey));
     const taken = (cell: Cell): boolean =>
       occupied.has(cellKey(cell)) || (parkTracks?.has(cellKey(cell)) ?? false);
@@ -2073,6 +2080,7 @@ function extraDirectionalSpots(
   occupied: Set<string>,
   plan: readonly ExtraSpotPlanEntry[],
   coreFace: FaceId | undefined,
+  spotForbidden: ReadonlySet<string> = new Set(),
 ): readonly DirectionalSpotDefinition[] {
   const limit = chainDepthLimit(id);
   const parkTrackKeys = new Set<string>();
@@ -2123,7 +2131,12 @@ function extraDirectionalSpots(
           if (spotCells.has(cellKey(cell))) bends += 1;
           if (cell.face !== face) continue;
           const key = cellKey(cell);
-          if (occupied.has(key) || parkTrackKeys.has(key)) continue;
+          if (
+            occupied.has(key) ||
+            parkTrackKeys.has(key) ||
+            spotForbidden.has(key)
+          )
+            continue;
           const heading = headingForPath(
             [track[step - 1] as Cell, cell],
             level.gridSize,
@@ -2641,7 +2654,11 @@ export function generateLevel(id: number): LevelDefinition {
               ).slice(0, spotPlan.length)
             : [];
         const directional = spotPlan.length > 0;
-        if (!directional && !flipPass && id >= 16) {
+        // Every cell a shared-tail member's track reaches. A group moves on
+        // one shared offset along those static tracks, so no spot, static or
+        // flip, may ever land on one of them.
+        const groupTracks = new Set<string>();
+        if (id >= 16) {
           const group = overlapStarter(
             id,
             config.gridSize,
@@ -2658,6 +2675,9 @@ export function generateLevel(id: number): LevelDefinition {
           }
           for (const arrow of group) {
             for (const cell of arrow.path) occupied.add(cellKey(cell));
+            for (const cell of arrowTrack(candidateLevel, arrow)) {
+              groupTracks.add(cellKey(cell));
+            }
             arrows.push(arrow);
           }
         }
@@ -2670,6 +2690,7 @@ export function generateLevel(id: number): LevelDefinition {
                 getStopCount(id),
                 restart,
                 planFaceIds,
+                groupTracks,
               )
             : undefined;
         // Spots that ship with the parking core; they bend only the core's
@@ -2711,6 +2732,7 @@ export function generateLevel(id: number): LevelDefinition {
               planFaceIds[0],
               parkTrackKeys,
               restart,
+              groupTracks,
             )
           : undefined;
         // A parking core's own spot is part of the static-spot plan, which
@@ -2770,7 +2792,7 @@ export function generateLevel(id: number): LevelDefinition {
                 ...(core ? { stops: core.stops } : {}),
               },
               occupied,
-              parkTrackKeys,
+              new Set([...parkTrackKeys, ...groupTracks]),
               getStopCount(id) - (core ? core.stops.length : 0),
               restart,
             )
@@ -3045,6 +3067,7 @@ export function generateLevel(id: number): LevelDefinition {
                         .length,
                   })),
                 coreFace,
+                groupTracks,
               )
             : [];
         // Reversal blockers spend whatever room the plan's faces have left.

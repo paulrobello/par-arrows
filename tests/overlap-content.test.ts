@@ -3,6 +3,7 @@ import { OVERLAP_INTRO_LEVEL } from "../src/content/overlap-intro";
 import {
   generateLevel,
   getLevelConfig,
+  isAuthoredLevel,
   seedForLevel,
 } from "../src/content/procedural";
 import {
@@ -147,7 +148,8 @@ describe("overlapping-tail level content", () => {
     ]) {
       const level = generateLevel(id);
       expect(validateLevel(level)).toEqual({ valid: true, errors: [] });
-      if ((level.directionals ?? []).length > 0) continue;
+      // Authored cube 25 teaches double arrows and carries no group.
+      if (isAuthoredLevel(id)) continue;
       expect(level).toEqual(generateLevel(id));
       const group = overlappingArrowIds(level, level.arrows[0]?.id ?? "");
       expect(group.length).toBeGreaterThan(1);
@@ -208,7 +210,12 @@ describe("overlapping-tail level content", () => {
       if (staggeredMember) staggeredCubes += 1;
 
       let state = createGameState(level);
-      if ((level.stops ?? []).length > 0) {
+      // Circles and spots both break the plain reverse order: the park legs
+      // and the directional core lead the certificate.
+      if (
+        (level.stops ?? []).length > 0 ||
+        (level.directionals ?? []).length > 0
+      ) {
         state = replayGenerated(level);
       } else {
         for (const arrow of [...level.arrows].reverse()) {
