@@ -489,8 +489,11 @@ function candidate(
   };
   const heading = rng.pick(HEADINGS);
   const ray = exitRay(level, head, heading);
+  // The ray may cross an exempt corridor, but the head is the arrow's own
+  // cell and may never sit on one.
   if (
     ray.length === 0 ||
+    occupied.has(cellKey(head)) ||
     ray.some(
       (cell) => occupied.has(cellKey(cell)) && !rayExempt?.has(cellKey(cell)),
     )

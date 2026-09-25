@@ -33,6 +33,12 @@ record. Deviations:
    rest is accepted: 138 planned slots on otherwise accepted levels find no
    candidate that survives vetting, which is a candidate-pool limit rather
    than a replay failure.
+10. Fill heads off reserved cells (2026-09-25): `candidate` let a fill or
+    blocker arrow's head sit on the directional core's reserved exit corridor,
+    because the corridor is exempt for the ray. That dooms the core's first
+    arrow in the certificate replay and wasted the restart. Heads may no
+    longer sit on any reserved cell; static spots over 2-200 read 767, the
+    2-200 sweep runs faster, and 53 ids changed layout.
 7. Park-with-pending-flip puzzles shipped in a follow-up (2026-09-25). As
    first implemented, a region circle was kept only when parking moved no body
    onto another arrow's track, which ruled out any park covering a flip spot.
