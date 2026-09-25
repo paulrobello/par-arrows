@@ -12,6 +12,8 @@ import { cellKey } from "../src/core/topology";
 import type { LevelDefinition } from "../src/core/types";
 import {
   hasStrandingState,
+  interactionRegion,
+  proveRegion,
   solveLevel,
   solveLevelTargets,
   validateLevel,
@@ -19,8 +21,9 @@ import {
 
 /**
  * Pairs where parking a non-core unit on a circle moves one of its bodies
- * onto a cell another arrow's track uses. Parking-core arrows are excluded
- * because their own interplay is checked by enumeration.
+ * onto a cell another arrow's track uses. Parking-core and flip-core arrows
+ * are excluded because their own interplay is checked by enumeration (the
+ * flip core's by its proven interaction region).
  */
 function crossingParks(level: LevelDefinition): readonly string[] {
   const stops = new Set((level.stops ?? []).map(cellKey));
@@ -39,7 +42,12 @@ function crossingParks(level: LevelDefinition): readonly string[] {
   }
   const found: string[] = [];
   for (const arrow of level.arrows) {
-    if (arrow.kind === "double" || arrow.id.includes("-park-")) continue;
+    if (
+      arrow.kind === "double" ||
+      arrow.id.includes("-park-") ||
+      arrow.id.includes("-flip-")
+    )
+      continue;
     const unit = overlappingArrowIds(level, arrow.id);
     const track = arrowTrack(level, arrow).map(cellKey);
     for (let index = arrow.path.length; index < track.length; index += 1) {
@@ -178,6 +186,18 @@ describe("stop-circle level content", () => {
       const core = level.arrows.filter((arrow) => arrow.id.includes("-park-"));
       if (core.length > 0) {
         expect(hasStrandingState({ ...level, arrows: core })).toBe(false);
+      }
+      const flipSeeds = level.arrows
+        .filter((arrow) => arrow.id.includes("-flip-"))
+        .map((arrow) => arrow.id);
+      if (flipSeeds.length > 0) {
+        const region = interactionRegion(level, flipSeeds);
+        expect(region).toBeDefined();
+        if (region) {
+          expect(proveRegion(level, createGameState(level), region).ok).toBe(
+            true,
+          );
+        }
       }
     }
   }, 60_000);

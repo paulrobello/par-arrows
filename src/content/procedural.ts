@@ -1397,7 +1397,6 @@ interface FlipCore {
   readonly cells: ReadonlySet<string>;
 }
 
-/** Every cell of every track an arrow can drive, both ends for a double. */
 /**
  * Place a flip core on its own seeded streams and prove its interaction
  * region. The pattern rotates about its first spot, which keeps a two-cell
@@ -1406,8 +1405,9 @@ interface FlipCore {
  * parking core's tracks, so the cores placed before it play exactly as they
  * were proven; the caller reserves the region's cells so nothing placed later
  * touches it. When the level has a circle to spare, a circle is planned on a
- * core arrow's lane first — parking there must keep every body off every other
- * track — and moved once to the next candidate if the region fails to prove,
+ * core arrow's lane first: up to two lanes whose park leaves a body on a flip
+ * spot (a pending flip, proven strand-free by the region's enumeration), then
+ * up to two lanes whose park keeps every core body off every other core track,
  * before the core is tried with no circle at all. A head that could re-enter a
  * flip spot through a wrapping edge is rejected, because the static probes
  * only bound a single pass.
@@ -1492,6 +1492,7 @@ function flipCore(
     if (!validateLevel(coreLevel).valid) continue;
     const bodies = new Set(arrows.flatMap((arrow) => arrow.path.map(cellKey)));
     const lanes: Cell[] = [];
+    const pendingLanes: Cell[] = [];
     if (stopBudget > 0) {
       const seen = new Set<string>();
       for (const arrow of arrows) {
@@ -1503,18 +1504,25 @@ function flipCore(
           if (!inBounds(cell) || cell.face !== face) continue;
           const withStop: LevelDefinition = { ...coreLevel, stops: [cell] };
           if (!validateLevel(withStop).valid) continue;
+          if (parksOnFlipSpot(withStop, cell)) {
+            pendingLanes.push(cell);
+            continue;
+          }
           if (parkCrossesTrack(withStop, cell)) continue;
           lanes.push(cell);
         }
       }
-      for (let index = lanes.length - 1; index > 0; index -= 1) {
-        const replacement = rng.int(index + 1);
-        const current = lanes[index] as Cell;
-        lanes[index] = lanes[replacement] as Cell;
-        lanes[replacement] = current;
+      for (const list of [lanes, pendingLanes]) {
+        for (let index = list.length - 1; index > 0; index -= 1) {
+          const replacement = rng.int(index + 1);
+          const current = list[index] as Cell;
+          list[index] = list[replacement] as Cell;
+          list[replacement] = current;
+        }
       }
     }
     const planned: (readonly Cell[])[] = [
+      ...pendingLanes.slice(0, 2).map((cell) => [cell]),
       ...lanes.slice(0, 2).map((cell) => [cell]),
       [],
     ];
@@ -1574,9 +1582,8 @@ export function acceptFlipRegion(
 }
 
 /**
- * Parks onto a circle that move a unit's body onto another arrow's track.
- * Region circles are proven by enumeration, but they still keep the campaign
- * rule every decorative circle keeps: parking only ever frees cells.
+ * True when parking onto `stop` moves some arrow's body onto another arrow's
+ * track, among the arrows of `level` (the flip core's own, where it is used).
  */
 function parkCrossesTrack(level: LevelDefinition, stop: Cell): boolean {
   const stopKey = cellKey(stop);
@@ -1603,6 +1610,30 @@ function parkCrossesTrack(level: LevelDefinition, stop: Cell): boolean {
     }
   }
   return false;
+}
+
+/**
+ * True when some arrow whose track reaches `stop` parks there with part of its
+ * body still on a flip spot, leaving that spot's flip pending until it moves.
+ */
+function parksOnFlipSpot(level: LevelDefinition, stop: Cell): boolean {
+  const stopKey = cellKey(stop);
+  const flipKeys = new Set(
+    (level.directionals ?? [])
+      .filter((spot) => spot.kind === "flip")
+      .map((spot) => cellKey(spot.cell)),
+  );
+  return level.arrows.some((arrow) => {
+    const index = arrowTrack(level, arrow)
+      .map(cellKey)
+      .indexOf(stopKey, arrow.path.length);
+    return (
+      index >= 0 &&
+      currentPath(level, arrow, index - arrow.path.length + 1).some((cell) =>
+        flipKeys.has(cellKey(cell)),
+      )
+    );
+  });
 }
 
 /**

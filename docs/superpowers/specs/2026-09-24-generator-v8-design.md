@@ -18,12 +18,13 @@ record. Deviations:
 6. Accepted spot-density drop: when extra or reversal spots break the
    assembled level, it falls back to its core-only spot set, so some cubes
    carry fewer static spots than planned.
-7. Park-with-pending-flip puzzles do not occur. A region circle is kept only
-   when parking moves no body onto another arrow's track, and a flip spot
-   always lies on another region arrow's track, so no park leaves a body on a
-   flip spot (enumerated over every region state for ids 31-200). The headed
-   check parks on an in-region circle instead (level 76) and shows the park
-   resuming after reload before the region's flip plays out.
+7. Park-with-pending-flip puzzles shipped in a follow-up (2026-09-25). As
+   first implemented, a region circle was kept only when parking moved no body
+   onto another arrow's track, which ruled out any park covering a flip spot.
+   `flipCore` now tries circles whose park leaves a flip pending first, relying
+   on the region's enumeration for safety; 24 of 92 flip levels in 31-200
+   reach such a park. The headed check parks level 76's west arrow over its
+   spot, reloads with the flip pending, and fires it on resume.
 
 ## Problem
 

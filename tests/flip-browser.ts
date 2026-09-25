@@ -703,18 +703,11 @@ async function assertGeneratedReversal(
 }
 
 /**
- * A stop circle inside a generated flip region parks, survives a reload, and
- * the spot then plays as the region was proven. Level 76 is the first v8 cube
- * whose relay region holds a circle (back:20:10) whose park opens the region:
- * the west arrow is blocked by the north cap until it parks, then passes the
- * flip spot back:6:12 and flips it, after which the east arrow turns into the
- * south cap.
- *
- * No v8 cube (31-200, every region state enumerated) parks an arrow with its
- * body on a flip spot, so `pendingFlips` stays empty here. That is structural:
- * a region circle is kept only when parking moves no body onto another
- * arrow's track (`parkCrossesTrack`), and every flip spot lies on another
- * region arrow's track, or the region would not be flip-interesting.
+ * A generated region park that leaves a flip pending. On level 76 the relay's
+ * west arrow parks on the region circle back:6:11 with its tail still on the
+ * flip spot back:6:12, so the spot's flip waits. The park and the pending flip
+ * survive a reload; once the north cap clears, west resumes, moves off the
+ * spot and flips it south, after which the east arrow turns into the south cap.
  */
 async function assertRegionPark(
   browser: Browser,
@@ -722,7 +715,7 @@ async function assertRegionPark(
   output: string,
 ): Promise<void> {
   const levelId = 76;
-  const circle = "back:20:10";
+  const circle = "back:6:11";
   const spotKey = "back:6:12";
   const west = "r76-flip-relay-west";
   const east = "r76-flip-relay-east";
@@ -731,22 +724,27 @@ async function assertRegionPark(
   const level = generateLevel(levelId);
   assert.ok(level.stops?.some((stop) => cellKey(stop) === circle));
   const initial = createGameState(level);
-  assert.equal(simulateMove(level, initial, west).blockerId, northCap);
-  const park = simulateMove(level, initial, northCap);
+  const park = simulateMove(level, initial, west);
   assert.equal(park.kind, "paused");
+  assert.deepEqual(park.spotFlips ?? [], []);
   const parked = applyMove(level, initial, park);
-  assert.equal(parked.settledPaths?.[northCap]?.map(cellKey).at(-1), circle);
-  const westMove = simulateMove(level, parked, west);
-  assert.equal(westMove.kind, "exit");
+  assert.deepEqual(parked.settledPaths?.[west]?.map(cellKey), [
+    spotKey,
+    circle,
+  ]);
+  assert.equal(simulateMove(level, parked, west).blockerId, northCap);
+  const cleared = applyMove(
+    level,
+    parked,
+    simulateMove(level, parked, northCap),
+  );
+  const resume = simulateMove(level, cleared, west);
+  assert.equal(resume.kind, "exit");
   assert.deepEqual(
-    westMove.spotFlips?.map((flip) => cellKey(flip.cell)),
+    resume.spotFlips?.map((flip) => cellKey(flip.cell)),
     [spotKey],
   );
-  const eastMove = simulateMove(
-    level,
-    applyMove(level, parked, westMove),
-    east,
-  );
+  const eastMove = simulateMove(level, applyMove(level, cleared, resume), east);
   assert.equal(eastMove.kind, "blocked");
   assert.equal(eastMove.blockerId, southCap);
 
@@ -771,16 +769,17 @@ async function assertRegionPark(
     assert.ok(current.stops.includes(circle));
     assert.equal(spotOf(current)?.kind, "flip");
     assert.equal(spotOf(current)?.current, "north");
+    assert.deepEqual(current.pendingFlips, []);
 
-    await activate(page, northCap);
+    await activate(page, west);
     current = await state(page);
     assert.equal(
-      current.settledPaths[northCap]?.map(cellKey).at(-1),
+      current.settledPaths[west]?.map(cellKey).at(-1),
       circle,
-      "The north cap parks on the region circle",
+      "West parks on the region circle",
     );
-    assert.deepEqual(current.parkedOffsets, {});
-    assert.deepEqual(current.pendingFlips, []);
+    assert.deepEqual(current.pendingFlips, [spotKey], "The flip is pending");
+    assert.equal(spotOf(current)?.current, "north");
     assert.equal(current.lives, level.lives);
 
     await page.reload();
@@ -789,12 +788,16 @@ async function assertRegionPark(
     assert.equal(current.mode, "campaign");
     assert.equal(current.level.id, levelId);
     assert.equal(
-      current.settledPaths[northCap]?.map(cellKey).at(-1),
+      current.settledPaths[west]?.map(cellKey).at(-1),
       circle,
       "The park survives a reload",
     );
+    assert.deepEqual(
+      current.pendingFlips,
+      [spotKey],
+      "The pending flip survives a reload",
+    );
     assert.equal(spotOf(current)?.current, "north");
-    assert.deepEqual(current.pendingFlips, []);
 
     const [nx, ny, nz] = faceNormal("back");
     const facing = async (): Promise<number> => {
@@ -815,10 +818,19 @@ async function assertRegionPark(
     assert.ok(score >= 0.8, "The back face must face the camera");
     await page.screenshot({ path: `${output}/flip/10-level76-parked.png` });
 
+    await activate(page, northCap);
+    current = await state(page);
+    assert.ok(!current.remainingIds.includes(northCap));
+    assert.equal(spotOf(current)?.current, "north");
     await activate(page, west);
     current = await state(page);
     assert.ok(!current.remainingIds.includes(west));
-    assert.equal(spotOf(current)?.current, "south", "West flips the spot");
+    assert.deepEqual(current.pendingFlips, []);
+    assert.equal(
+      spotOf(current)?.current,
+      "south",
+      "West moves off the spot and flips it",
+    );
     await activate(page, east);
     current = await state(page);
     assert.ok(current.failedIds.includes(east));
@@ -827,7 +839,7 @@ async function assertRegionPark(
       path: `${output}/flip/11-level76-east-blocked.png`,
     });
     console.log(
-      `flip: level ${levelId} parks ${northCap} on ${circle}, resumes after reload, then ${west} flips ${spotKey} south and ${east} collides`,
+      `flip: level ${levelId} parks ${west} on ${circle} over ${spotKey}, keeps the flip pending across a reload, then flips it south on resume and ${east} collides`,
     );
     assert.deepEqual(errors, [], "No page errors during the level 76 park");
   } finally {

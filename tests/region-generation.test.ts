@@ -6,7 +6,7 @@ import {
   createGameState,
   simulateMove,
 } from "../src/core/game-state";
-import { arrowTrack } from "../src/core/stops";
+import { arrowTrack, settledPathOf } from "../src/core/stops";
 import { cellKey } from "../src/core/topology";
 import type {
   ArrowDefinition,
@@ -15,6 +15,7 @@ import type {
 } from "../src/core/types";
 import {
   flipHeadingProbes,
+  hasStrandingState,
   type InteractionRegion,
   interactionRegion,
   proveRegion,
@@ -207,6 +208,61 @@ describe("generated interaction regions", () => {
         .map(({ id, region }) => `${id} ${region?.stopKeys.join(",")}`)
         .join("; ")}`,
     );
+  }, 240_000);
+
+  // A region circle may park an arrow with its body still on a flip spot,
+  // leaving that flip pending; the region's enumeration is what keeps such a
+  // park strand-free. Level 76's relay parks west over its spot.
+  test("some region parks leave a flip pending", () => {
+    const pendingOf = (level: LevelDefinition, state: GameState): string[] => {
+      const flips = (level.directionals ?? [])
+        .filter((spot) => spot.kind === "flip")
+        .map((spot) => cellKey(spot.cell));
+      return flips.filter((key) =>
+        level.arrows.some(
+          (arrow) =>
+            state.remainingIds.includes(arrow.id) &&
+            settledPathOf(level, state, arrow).some(
+              (cell) => cellKey(cell) === key,
+            ),
+        ),
+      );
+    };
+    const pending: number[] = [];
+    for (const { id, level, region } of flipSamples()) {
+      if (!region) continue;
+      const seen = new Set<string>();
+      const queue = [createGameState(level)];
+      let found = false;
+      while (queue.length > 0 && !found) {
+        const state = queue.pop() as GameState;
+        const key = JSON.stringify([
+          state.remainingIds,
+          state.settledPaths,
+          state.spotHeadings,
+        ]);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        if (pendingOf(level, state).length > 0) {
+          found = true;
+          break;
+        }
+        for (const arrowId of region.arrowIds) {
+          if (!state.remainingIds.includes(arrowId)) continue;
+          const result = simulateMove(level, state, arrowId);
+          if (result.kind === "exit" || result.kind === "paused")
+            queue.push(applyMove(level, state, result));
+        }
+      }
+      if (!found) continue;
+      pending.push(id);
+      expect(proveRegion(level, createGameState(level), region)).toEqual({
+        ok: true,
+      });
+      expect(hasStrandingState(regionBoard(level, region))).toBe(false);
+    }
+    expect(pending).toContain(76);
+    console.log(`pending-flip parks: ${pending.join(",")}`);
   }, 240_000);
 
   // The prover treats outside arrows as static blockers. Its region-first
