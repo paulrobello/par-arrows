@@ -25,6 +25,14 @@ record. Deviations:
    candidate whose canonical shape already has `shapeCap(arrowCount)` copies.
    The 72 ids from 12 to 200 that exceeded the cap changed layout, and every
    other id is unchanged. Static spots over 2-200 read 716 afterwards.
+9. Spot plan gap (2026-09-25): extra spots now keep every traverser's bent
+   route off the flip region's cells, as reversal spots already did. Before,
+   a flip pass whose extras bent a traverser into the region failed
+   `flipRegionLead` and trimmed its extras, often to none. Static spots over
+   2-200 rose from 716 to 760 of 914 planned; 19 ids changed layout. The
+   rest is accepted: 138 planned slots on otherwise accepted levels find no
+   candidate that survives vetting, which is a candidate-pool limit rather
+   than a replay failure.
 7. Park-with-pending-flip puzzles shipped in a follow-up (2026-09-25). As
    first implemented, a region circle was kept only when parking moved no body
    onto another arrow's track, which ruled out any park covering a flip spot.

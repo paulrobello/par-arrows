@@ -2152,6 +2152,7 @@ function extraDirectionalSpots(
   plan: readonly ExtraSpotPlanEntry[],
   coreFace: FaceId | undefined,
   spotForbidden: ReadonlySet<string> = new Set(),
+  trackForbidden: ReadonlySet<string> = new Set(),
 ): readonly DirectionalSpotDefinition[] {
   const limit = chainDepthLimit(id);
   const parkTrackKeys = new Set<string>();
@@ -2283,6 +2284,7 @@ function extraDirectionalSpots(
           const blocked = alone.route.some(
             (routeCell) =>
               parkTrackKeys.has(cellKey(routeCell)) ||
+              trackForbidden.has(cellKey(routeCell)) ||
               cellsBefore[traverser]!!.has(cellKey(routeCell)),
           );
           if (blocked) {
@@ -3160,6 +3162,7 @@ export function generateLevel(id: number): LevelDefinition {
                   })),
                 coreFace,
                 groupTracks,
+                flip ? flip.cells : undefined,
               )
             : [];
         // Reversal blockers spend whatever room the plan's faces have left.
