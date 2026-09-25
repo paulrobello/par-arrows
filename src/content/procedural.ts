@@ -1388,6 +1388,16 @@ export const FLIP_PATTERNS: readonly {
   },
 ];
 
+/** Every generated flip-core arrow id carries this marker; seeds are found by it. */
+const FLIP_CORE_MARKER = "-flip-";
+
+/** Ids of a level's generated flip-core arrows, the seeds of its region. */
+export function flipCoreIds(arrows: readonly ArrowDefinition[]): string[] {
+  return arrows
+    .filter((arrow) => arrow.id.includes(FLIP_CORE_MARKER))
+    .map((arrow) => arrow.id);
+}
+
 interface FlipCore {
   readonly arrows: readonly ArrowDefinition[];
   readonly spots: readonly DirectionalSpotDefinition[];
@@ -1451,7 +1461,7 @@ function flipCore(
       })),
     ];
     const arrows: ArrowDefinition[] = pattern.arrows.map((entry) => ({
-      id: `r${id}-flip-${pattern.name}-${entry.name}`,
+      id: `r${id}${FLIP_CORE_MARKER}${pattern.name}-${entry.name}`,
       path: entry.cells.map(at),
     }));
     const cells = [
@@ -1566,9 +1576,7 @@ export function acceptFlipRegion(
     directionals: [...spots],
     ...(stops.length > 0 ? { stops } : {}),
   };
-  const seeds = arrows
-    .filter((arrow) => arrow.id.includes("-flip-"))
-    .map((arrow) => arrow.id);
+  const seeds = flipCoreIds(arrows);
   const region = interactionRegion(level, seeds);
   if (!region) return { ok: false, cells: new Set(), reason: "overflow" };
   const verdict = proveRegion(level, createGameState(level), region);
@@ -1648,9 +1656,7 @@ function parksOnFlipSpot(level: LevelDefinition, stop: Cell): boolean {
 function flipRegionLead(
   level: LevelDefinition,
 ): readonly CertificateEntry[] | undefined {
-  const seeds = level.arrows
-    .filter((arrow) => arrow.id.includes("-flip-"))
-    .map((arrow) => arrow.id);
+  const seeds = flipCoreIds(level.arrows);
   if (seeds.length === 0) return [];
   const region = interactionRegion(level, seeds);
   if (!region) return undefined;

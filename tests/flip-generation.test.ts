@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import {
   FLIP_PATTERNS,
   flipCoreFrequency,
-  generateLevel,
+  flipCoreIds,
 } from "../src/content/procedural";
 import { createGameState, simulateMove } from "../src/core/game-state";
 import { arrowTrack } from "../src/core/stops";
@@ -22,9 +22,7 @@ import {
   solveLevelTargets,
 } from "../src/core/validation";
 import { layoutFingerprint } from "../src/storage";
-
-const isFlipArrow = (arrow: ArrowDefinition): boolean =>
-  arrow.id.includes("-flip-");
+import { cachedLevel } from "./generated-levels";
 
 describe("generated flip cores", () => {
   test("frequency ramps from level 31 to 90", () => {
@@ -171,7 +169,7 @@ describe("generated flip cores", () => {
     });
   });
 
-  // One pass over ids 2-120: every level matches the committed v8 baseline;
+  // One pass over ids 2-200: every level matches the committed v8 baseline;
   // a level with a flip core carries a proven interaction region that no
   // outside track ever enters, whose flip matters, and whose core is itself
   // strand-free and flip-interesting.
@@ -183,10 +181,11 @@ describe("generated flip cores", () => {
       ),
     ) as Record<string, string>;
     const coreIds: number[] = [];
-    for (let id = 2; id <= 120; id += 1) {
-      const level = generateLevel(id);
+    for (let id = 2; id <= 200; id += 1) {
+      const level = cachedLevel(id);
       expect(layoutFingerprint(level)).toBe(baseline[id] as string);
-      const core = level.arrows.filter(isFlipArrow);
+      const seeds = new Set(flipCoreIds(level.arrows));
+      const core = level.arrows.filter((arrow) => seeds.has(arrow.id));
       if (core.length === 0 || id === 30) continue;
       coreIds.push(id);
       expect(id).toBeGreaterThanOrEqual(31);

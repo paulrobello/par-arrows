@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { generateLevel } from "../src/content/procedural";
+import { flipCoreIds } from "../src/content/procedural";
 import { overlappingArrowIds } from "../src/core/overlap";
 import {
   applyMove,
@@ -21,9 +21,10 @@ import {
   proveRegion,
   solveLevelTargets,
 } from "../src/core/validation";
+import { cachedLevel } from "./generated-levels";
 
 const FIRST_ID = 31;
-const LAST_ID = 120;
+const LAST_ID = 200;
 // Directional spots first appear on generated cubes at level 21.
 const FIRST_SPOT_ID = 21;
 
@@ -34,15 +35,15 @@ interface FlipSample {
   readonly region: InteractionRegion | undefined;
 }
 
-// Generating ids 21-120 takes about 40 seconds, so every test shares one
-// sweep. It fills lazily inside the first test that needs it (not a hook,
-// whose default timeout is too short for it).
+// Levels come from the process-wide cache, which flip-generation.test.ts has
+// usually filled already; the sweep fills lazily inside the first test that
+// needs it (not a hook, whose default timeout is too short to generate it).
 let levels: readonly LevelDefinition[] | undefined;
 const generatedLevels = (): readonly LevelDefinition[] => {
   if (!levels) {
     const all: LevelDefinition[] = [];
     for (let id = FIRST_SPOT_ID; id <= LAST_ID; id += 1) {
-      all.push(generateLevel(id));
+      all.push(cachedLevel(id));
     }
     levels = all;
   }
@@ -55,9 +56,7 @@ const flipSamples = (): readonly FlipSample[] => {
     const samples: FlipSample[] = [];
     for (const level of generatedLevels()) {
       if (level.id < FIRST_ID) continue;
-      const seeds = level.arrows
-        .filter((arrow) => arrow.id.includes("-flip-"))
-        .map((arrow) => arrow.id);
+      const seeds = flipCoreIds(level.arrows);
       if (seeds.length === 0) continue;
       samples.push({
         id: level.id,
@@ -72,8 +71,9 @@ const flipSamples = (): readonly FlipSample[] => {
 };
 
 // Every cell an arrow's track reaches under every flip-spot state, from both
-// ends of a double. Built from exported pieces only, so it checks
-// interactionRegion rather than repeating it.
+// ends of a double. Deliberately rebuilt from `arrowTrack` rather than taken
+// from `occupancyKeys`, which builds `region.cells`: an alias would make the
+// closure checks below compare that function with itself.
 const reach = (level: LevelDefinition, arrow: ArrowDefinition): Set<string> => {
   const paths =
     arrow.kind === "double"
@@ -128,10 +128,8 @@ describe("generated interaction regions", () => {
       const members = level.arrows.filter((arrow) =>
         region.arrowIds.includes(arrow.id),
       );
-      // interactionRegion tracks a double from its head end only, so a
-      // double member's tail-direction cells would be missing from
-      // region.cells. No generated region holds one; this pins that fact,
-      // and the subset check below would expose the gap if one appeared.
+      // No generated region holds a double; this pins that fact, since the
+      // prover's region tests have only exercised single arrows.
       expect(
         members.filter((arrow) => arrow.kind === "double").map((a) => a.id),
         `level ${id}`,
