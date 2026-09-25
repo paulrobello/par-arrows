@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
-import { CONTENT_ELEVEN_LAYOUTS } from "../src/content-11-layouts";
 import { LEVELS } from "../src/content/levels";
 import { DOUBLE_INTRO_LEVEL } from "../src/content/double-intro";
 import { OVERLAP_INTRO_LEVEL } from "../src/content/overlap-intro";
-import { generateLevel, seedForLevel } from "../src/content/procedural";
+import {
+  GENERATOR_VERSION,
+  generateLevel,
+  seedForLevel,
+} from "../src/content/procedural";
 import { STOP_INTRO_LEVEL } from "../src/content/stop-intro";
 import {
   applyMove,
@@ -224,7 +227,7 @@ describe("resumable campaign saves", () => {
     }
   });
 
-  test("v4 saves resume on byte-identical cubes and refresh on changed ones", async () => {
+  test("a fingerprinted save ignores its generator stamp and refreshes on a seed mismatch", async () => {
     const unchanged = generateLevel(8);
     const unchangedState = exitedState(unchanged);
     expect(save(unchangedState, 35, unchanged)).toBe(true);
@@ -297,93 +300,108 @@ describe("resumable campaign saves", () => {
     expect(restored.value?.level).toEqual(level);
   });
 
-  test("restores an exact partial v6 generator-v1 attempt on unchanged cube two", async () => {
-    const level = generateLevel(2);
-    const state = exitedState(level);
-    writeVersionOneGeneratorSave(state, 15, false);
+  test("every pre-content-12 save refreshes once, even on an unchanged cube", async () => {
+    // Each cube's current layout still equals its content-11 layout, so a
+    // refresh here proves the version ladder is gone, not that the cube moved.
+    for (const id of [2, 8, 9, 11, 15, 25]) {
+      const level = generateLevel(id);
+      for (const contentVersion of [6, 7, 8, 9, 10, 11]) {
+        for (const withLayout of [false, true]) {
+          expect(save(exitedState(level), 60, level)).toBe(true);
+          const { layout, ...rest } = savedJson();
+          entries.set(
+            CAMPAIGN_KEY,
+            JSON.stringify({
+              ...rest,
+              ...(withLayout ? { layout } : {}),
+              tutorialComplete: false,
+              contentVersion,
+              generatorVersion: GENERATOR_VERSION,
+              seed: seedForLevel(id),
+            }),
+          );
+          const restored = await loadCampaign(async () => level);
+          expect(restored.recovered).toBe(true);
+          expect(restored.contentUpdated).toBe(true);
+          expect(restored.value).toMatchObject({
+            currentLevelId: id,
+            unlockedLevelId: 60,
+            tutorialComplete: false,
+            state: createGameState(level),
+          });
+        }
+      }
+    }
+  }, 30_000);
 
-    const restored = await loadCampaign(async (id) => generateLevel(id));
+  test("a content-11 save on unchanged cube nine refreshes and keeps progression", async () => {
+    const level = generateLevel(9);
+    const state = exitedState(level);
+    expect(save(state, 44, level)).toBe(true);
+    const current = savedJson();
+    const { layout: _dropped, ...legacy } = current;
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({ ...legacy, contentVersion: 11 }),
+    );
+    const restored = await loadCampaign(async () => level);
+    expect(restored.recovered).toBe(true);
+    expect(restored.contentUpdated).toBe(true);
+    expect(restored.value).toMatchObject({
+      currentLevelId: 9,
+      unlockedLevelId: 44,
+      tutorialComplete: true,
+      state: createGameState(level),
+    });
+    entries.set(CAMPAIGN_KEY, JSON.stringify(current));
+    const fingerprinted = await loadCampaign(async () => level);
+    expect(fingerprinted.recovered).toBe(false);
+    expect(fingerprinted.value?.state).toEqual(state);
+  });
+
+  test("a content-12 save resumes on its fingerprint and seed whatever its generator stamp", async () => {
+    const level = generateLevel(8);
+    const state = exitedState(level);
+    expect(save(state, 33, level)).toBe(true);
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({ ...savedJson(), generatorVersion: 7 }),
+    );
+    const restored = await loadCampaign(async () => level);
     expect(restored.recovered).toBe(false);
     expect(restored.contentUpdated).toBe(false);
     expect(restored.value?.state).toEqual(state);
-    expect(restored.value?.unlockedLevelId).toBe(15);
-    expect(restored.value?.tutorialComplete).toBe(false);
+    expect(restored.value?.unlockedLevelId).toBe(33);
   });
 
-  test("refreshes a v6 generator-v1 attempt on a rebuilt cube", async () => {
-    // Level 29 was rebuilt when self-contact rejection was removed, so its
-    // current layout differs from the frozen content-11 table and the
-    // refresh fires for that reason, not because the fixture is synthetic.
-    const level = generateLevel(29);
-    expect(CONTENT_ELEVEN_LAYOUTS[29]).not.toBe(layoutFingerprint(level));
-    writeVersionOneGeneratorSave(exitedState(level), 31, false);
-
-    const restored = await loadCampaign(async (id) => generateLevel(id));
-    expect(restored.recovered).toBe(true);
-    expect(restored.contentUpdated).toBe(true);
-    expect(restored.value?.state).toEqual(createGameState(level));
-    expect(restored.value?.unlockedLevelId).toBe(31);
-  });
-
-  test("refreshes a v6 generator-v1 attempt above level four", async () => {
-    const level = generateLevel(60);
-    expect(CONTENT_ELEVEN_LAYOUTS[60]).not.toBe(layoutFingerprint(level));
-    writeVersionOneGeneratorSave(exitedState(level), 62, false);
-
-    const restored = await loadCampaign(async (id) => generateLevel(id));
-    expect(restored.recovered).toBe(true);
-    expect(restored.contentUpdated).toBe(true);
-    expect(restored.value?.state).toEqual(createGameState(level));
-    expect(restored.value?.currentLevelId).toBe(60);
-    expect(restored.value?.unlockedLevelId).toBe(62);
-    expect(restored.value?.tutorialComplete).toBe(false);
-  });
-
-  test("preserves unchanged v6 generator content on cubes two and eleven", async () => {
-    for (const id of [2, 11]) {
-      const level = generateLevel(id);
-      const state = exitedState(level);
-      expect(save(state, 29, level)).toBe(true);
+  test("a content-12 save with a mismatched stored fingerprint refreshes", async () => {
+    const level = generateLevel(8);
+    expect(save(exitedState(level), 33, level)).toBe(true);
+    for (const layout of ["0000000000000000", 42, null]) {
       entries.set(
         CAMPAIGN_KEY,
-        JSON.stringify({
-          ...savedJson(),
-          contentVersion: 6,
-          generatorVersion: 2,
-          seed: seedForLevel(id),
-        }),
+        JSON.stringify({ ...savedJson(), layout, tutorialComplete: false }),
       );
-
-      const restored = await loadCampaign((requestedId) =>
-        Promise.resolve(generateLevel(requestedId)),
-      );
-      expect(restored.recovered).toBe(false);
-      expect(restored.value?.state).toEqual(state);
-      expect(restored.value?.unlockedLevelId).toBe(29);
+      const restored = await loadCampaign(async () => level);
+      expect(restored.recovered).toBe(true);
+      expect(restored.contentUpdated).toBe(true);
+      expect(restored.value).toMatchObject({
+        unlockedLevelId: 33,
+        tutorialComplete: false,
+        state: createGameState(level),
+      });
     }
   });
 
-  test("refreshes changed cube fifteen while preserving campaign progress", async () => {
-    const level = generateLevel(15);
-    expect(save(exitedState(level), 35, level)).toBe(true);
-    entries.set(
-      CAMPAIGN_KEY,
-      JSON.stringify({
-        ...savedJson(),
-        contentVersion: 6,
-        generatorVersion: 2,
-        seed: "par-arrows:runtime:2:level:15",
-      }),
+  test("a current save with invalid state recovers without reporting a content update", async () => {
+    const level = generateLevel(8);
+    expect(save({ ...createGameState(level), lives: 99 }, 33, level)).toBe(
+      true,
     );
-
-    const restored = await loadCampaign((id) =>
-      Promise.resolve(generateLevel(id)),
-    );
+    const restored = await loadCampaign(async () => level);
     expect(restored.recovered).toBe(true);
-    expect(restored.contentUpdated).toBe(true);
+    expect(restored.contentUpdated).toBe(false);
     expect(restored.value?.state).toEqual(createGameState(level));
-    expect(restored.value?.unlockedLevelId).toBe(35);
-    expect(restored.value?.tutorialComplete).toBe(true);
   });
 
   test("restores a parked attempt and rejects impossible parked offsets", async () => {
@@ -424,19 +442,14 @@ describe("resumable campaign saves", () => {
     }
   });
 
-  test("a v7 save without parked offsets resumes with none", async () => {
+  test("a current save without parked offsets resumes with none", async () => {
     const level = generateLevel(2);
     const state = exitedState(level);
     expect(save(state, 12, level)).toBe(true);
     const { offsets: _dropped, ...withoutOffsets } = state;
     entries.set(
       CAMPAIGN_KEY,
-      JSON.stringify({
-        ...savedJson(),
-        contentVersion: 7,
-        generatorVersion: 3,
-        state: withoutOffsets,
-      }),
+      JSON.stringify({ ...savedJson(), state: withoutOffsets }),
     );
 
     const restored = await loadCampaign(async (id) => generateLevel(id));
@@ -605,90 +618,6 @@ describe("resumable campaign saves", () => {
     expect(restored.recovered).toBe(false);
     expect(restored.value?.state).toEqual(state);
   });
-
-  test("resumes v8 generator-v6 saves on unchanged seeded levels", async () => {
-    for (const id of [2, 8, 11, 20]) {
-      const level = generateLevel(id);
-      const state = exitedState(level);
-      expect(save(state, 30, level)).toBe(true);
-      entries.set(
-        CAMPAIGN_KEY,
-        JSON.stringify({
-          ...savedJson(),
-          contentVersion: 8,
-          generatorVersion: 6,
-          seed: seedForLevel(id),
-        }),
-      );
-      const restored = await loadCampaign(async () => level);
-      expect(restored.recovered).toBe(false);
-      expect(restored.value?.state).toEqual(state);
-    }
-  });
-
-  test("content-9 saves resume on unchanged cubes and refresh on seam-fix rebuilds", async () => {
-    for (const [id, resumes] of [
-      [8, true],
-      [25, true],
-      [10, false],
-      [22, false],
-    ] as const) {
-      const level = generateLevel(id);
-      const state = exitedState(level);
-      expect(save(state, 30, level)).toBe(true);
-      entries.set(
-        CAMPAIGN_KEY,
-        JSON.stringify({ ...savedJson(), contentVersion: 9 }),
-      );
-      const restored = await loadCampaign(async () => level);
-      expect(restored.recovered).toBe(!resumes);
-      expect(restored.contentUpdated).toBe(!resumes);
-      expect(restored.value?.state).toEqual(
-        resumes ? state : createGameState(level),
-      );
-      expect(restored.value?.unlockedLevelId).toBe(30);
-    }
-  });
-
-  test("content-10 saves resume unless the circle gate rebuilt the cube", async () => {
-    // Generator v8 re-rolled every generated id from 12 up, so cube 9 stands
-    // in for the unchanged generated cube that cube 22 used to be.
-    for (const [id, resumes] of [
-      [9, true],
-      [25, true],
-      [52, false],
-      [13, false],
-      [201, false],
-    ] as const) {
-      const level = generateLevel(id);
-      const state = exitedState(level);
-      expect(save(state, 300, level)).toBe(true);
-      entries.set(
-        CAMPAIGN_KEY,
-        JSON.stringify({ ...savedJson(), contentVersion: 10 }),
-      );
-      const restored = await loadCampaign(async () => level);
-      expect(restored.recovered).toBe(!resumes);
-      expect(restored.contentUpdated).toBe(!resumes);
-      expect(restored.value?.state).toEqual(
-        resumes ? state : createGameState(level),
-      );
-      expect(restored.value?.unlockedLevelId).toBe(300);
-    }
-  }, 30_000);
-
-  test("the shipped content-11 table matches unchanged layouts only", () => {
-    expect(Object.keys(CONTENT_ELEVEN_LAYOUTS)).toHaveLength(200);
-    // Generator v8 re-rolled cube 22; cube 9 is still unchanged.
-    for (const id of [2, 8, 9, 25]) {
-      expect(CONTENT_ELEVEN_LAYOUTS[id]).toBe(
-        layoutFingerprint(generateLevel(id)),
-      );
-    }
-    expect(CONTENT_ELEVEN_LAYOUTS[60]).not.toBe(
-      layoutFingerprint(generateLevel(60)),
-    );
-  }, 30_000);
 
   test("layout fingerprints are SHA-1 across block boundaries", () => {
     const base = levelFor(2);
@@ -886,37 +815,6 @@ describe("resumable campaign saves", () => {
     }
   });
 
-  test("content-11 saves resume only on cubes whose layout is unchanged", async () => {
-    // Generator v8 re-rolled cube 22; cube 9 is still unchanged.
-    for (const [id, resumes] of [
-      [9, true],
-      [25, true],
-      [29, false],
-      [60, false],
-    ] as const) {
-      const level = generateLevel(id);
-      const state = exitedState(level);
-      expect(save(state, 60, level)).toBe(true);
-      const current = savedJson();
-      const { layout: _dropped, ...legacy } = current;
-      entries.set(
-        CAMPAIGN_KEY,
-        JSON.stringify({ ...legacy, contentVersion: 11 }),
-      );
-      const restored = await loadCampaign(async () => level);
-      expect(restored.recovered).toBe(!resumes);
-      expect(restored.contentUpdated).toBe(!resumes);
-      expect(restored.value?.state).toEqual(
-        resumes ? state : createGameState(level),
-      );
-      expect(restored.value?.unlockedLevelId).toBe(60);
-      entries.set(CAMPAIGN_KEY, JSON.stringify(current));
-      const fingerprinted = await loadCampaign(async () => level);
-      expect(fingerprinted.recovered).toBe(false);
-      expect(fingerprinted.value?.state).toEqual(state);
-    }
-  }, 30_000);
-
   test("a content-11 save on a rebuilt cube refreshes and keeps progression", async () => {
     const level = generateLevel(60);
     expect(save(exitedState(level), 75, level)).toBe(true);
@@ -945,7 +843,6 @@ describe("resumable campaign saves", () => {
 
   test("a content-11 save on level 30 refreshes onto the authored flip cube", async () => {
     const level = generateLevel(30);
-    expect(CONTENT_ELEVEN_LAYOUTS[30]).not.toBe(layoutFingerprint(level));
     for (const seed of [seedForLevel(30), "par-arrows:runtime:7:level:30"]) {
       expect(save(exitedState(level), 34, level)).toBe(true);
       const { layout: _dropped, ...legacy } = savedJson();

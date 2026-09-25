@@ -185,9 +185,8 @@ export async function assertRuntimeCampaign(
   assert.deepEqual(errors, []);
   await context.close();
 
-  // Cube 2 keeps its version-1 seed and layout, so a legacy save for it still
-  // resumes exactly; cubes 3 and 4 were rebuilt by the content-10 seam fix and
-  // refresh, as do generated cubes from 5 (covered by the level-twelve case).
+  // Cube 2 keeps its version-1 seed and layout, yet a pre-content-12 save for
+  // it still refreshes: only a content-12 save with a matching layout resumes.
   const migrationLevel = generateLevel(2);
   const initialMigrationState = createGameState(migrationLevel);
   const migrationBlocker = migrationLevel.arrows.find(
@@ -221,12 +220,17 @@ export async function assertRuntimeCampaign(
   assert.equal((await state(migrationPage)).level.id, 2);
   assert.deepEqual(
     (await state(migrationPage)).remainingIds,
-    partialMigrationState.remainingIds,
+    initialMigrationState.remainingIds,
   );
-  assert.deepEqual((await state(migrationPage)).failedIds, [
-    migrationBlocker.id,
-  ]);
-  assert.equal((await state(migrationPage)).lives, migrationLevel.lives - 1);
+  assert.deepEqual((await state(migrationPage)).failedIds, []);
+  assert.equal((await state(migrationPage)).lives, migrationLevel.lives);
+  assert.equal(
+    await migrationPage.evaluate(
+      (key) => JSON.parse(localStorage.getItem(key) ?? "{}").unlockedLevelId,
+      KEY,
+    ),
+    14,
+  );
   await migration.close();
 
   const levelTwelve = generateLevel(12);

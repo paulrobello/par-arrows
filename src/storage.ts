@@ -1,7 +1,5 @@
-import { CONTENT_ELEVEN_LAYOUTS } from "./content-11-layouts";
 import {
   GENERATOR_VERSION,
-  isAuthoredLevel,
   MAX_LEVEL_ID,
   seedForLevel,
 } from "./content/procedural";
@@ -51,7 +49,6 @@ export interface StorageResult<T> {
 
 type StoredCampaign = Omit<Partial<CampaignSave>, "layout"> & {
   readonly contentVersion?: unknown;
-  readonly generatorVersion?: unknown;
   readonly seed?: unknown;
   readonly layout?: unknown;
 };
@@ -451,82 +448,6 @@ function removeStoredCampaign(store: Storage): void {
   }
 }
 
-function isLegacyContentVersion(value: unknown): boolean {
-  return (
-    value === 1 ||
-    value === 2 ||
-    value === 3 ||
-    value === 4 ||
-    value === 5 ||
-    value === 6
-  );
-}
-
-/**
- * Levels whose seed and geometry have not moved since the v4 generator. The
- * content-10 seam-heading fix rebuilt cubes 3, 4, 6, 7 and 10.
- */
-function isUnchangedLevel(levelId: number): boolean {
-  return (
-    levelId === 2 ||
-    levelId === 8 ||
-    levelId === 9 ||
-    levelId === 11 ||
-    levelId === 15 ||
-    levelId === 20
-  );
-}
-
-/**
- * Levels a content-9 save still described exactly at content 11. The
- * seam-heading fix rebuilt 77 of the generated cubes from 2 through 200, and
- * generated ids are not enumerated beyond the verified-unchanged set.
- */
-function isUnchangedSinceContentNine(levelId: number): boolean {
-  return isUnchangedLevel(levelId) || isAuthoredLevel(levelId);
-}
-
-/**
- * Generated cubes from 2 through 200 that content 11 rebuilt when decorative
- * circles stopped accepting cells where a parked arrow could strand the level.
- * Ids above 200 were not measured, so their content-10 saves restart. Changes
- * after content 11 are caught by `CONTENT_ELEVEN_LAYOUTS` instead.
- */
-const REBUILT_IN_CONTENT_ELEVEN: ReadonlySet<number> = new Set([
-  13, 18, 27, 34, 37, 43, 46, 48, 52, 58, 59, 82, 83, 88, 94, 95, 96, 98, 100,
-  101, 107, 111, 114, 116, 118, 122, 124, 128, 131, 133, 134, 135, 139, 140,
-  142, 146, 151, 157, 158, 164, 165, 168, 170, 172, 178, 179, 182, 183, 189,
-  190, 194,
-]);
-
-function isUnchangedSinceContentTen(levelId: number): boolean {
-  return (
-    isAuthoredLevel(levelId) ||
-    (levelId <= 200 && !REBUILT_IN_CONTENT_ELEVEN.has(levelId))
-  );
-}
-
-function hasMatchingGeneratorMetadata(
-  value: StoredCampaign,
-  levelId: number,
-): boolean {
-  if (value.seed !== seedForLevel(levelId)) return false;
-  const stored = value.generatorVersion;
-  if (stored === GENERATOR_VERSION) return true;
-  // A matching seed on an unchanged level still describes the same cube, so an
-  // older generator stamp is not by itself a reason to restart the attempt.
-  if (
-    (stored === 4 || stored === 5 || stored === 6) &&
-    isUnchangedLevel(levelId)
-  )
-    return true;
-  return (
-    (levelId === 2 && (stored === 1 || stored === 2 || stored === 3)) ||
-    (levelId === 11 && (stored === 2 || stored === 3)) ||
-    (levelId === 15 && stored === 3)
-  );
-}
-
 /**
  * Restores persisted metadata then resolves the level. This does not write after
  * awaiting the resolver, so callers can discard stale results before persisting.
@@ -574,33 +495,13 @@ export async function loadCampaign(
   }
 
   const layout = layoutFingerprint(level);
-  const layoutMatches = parsed.layout === layout;
-  // Older saves carry no fingerprint, so they resume only where the resolved
-  // cube still matches its content-11 layout exactly.
-  const matchesContentEleven =
-    CONTENT_ELEVEN_LAYOUTS[currentLevelId] === layout;
-  const metadataMatches = hasMatchingGeneratorMetadata(parsed, currentLevelId);
-  const legacyContent = isLegacyContentVersion(parsed.contentVersion);
-  const exactCurrentContent =
+  const storedLayout = parsed.layout;
+  const sameContent =
     parsed.contentVersion === CONTENT_VERSION &&
-    layoutMatches &&
-    metadataMatches;
-  const currentStateIsValid = isState(parsed.state, level);
-  const compatible =
-    currentStateIsValid &&
-    (exactCurrentContent ||
-      (matchesContentEleven &&
-        metadataMatches &&
-        (parsed.contentVersion === 11 ||
-          ((parsed.contentVersion === 6 ||
-            parsed.contentVersion === 7 ||
-            parsed.contentVersion === 8) &&
-            isUnchangedLevel(currentLevelId)) ||
-          (parsed.contentVersion === 9 &&
-            isUnchangedSinceContentNine(currentLevelId) &&
-            isUnchangedSinceContentTen(currentLevelId)) ||
-          (parsed.contentVersion === 10 &&
-            isUnchangedSinceContentTen(currentLevelId)))));
+    typeof storedLayout === "string" &&
+    storedLayout === layout &&
+    parsed.seed === seedForLevel(currentLevelId);
+  const compatible = sameContent && isState(parsed.state, level);
   const restored = parsed.state as GameState | undefined;
   const value: LoadedCampaign = compatible
     ? {
@@ -629,12 +530,7 @@ export async function loadCampaign(
   return {
     value,
     recovered: !compatible,
-    contentUpdated:
-      !compatible &&
-      (legacyContent ||
-        parsed.contentVersion !== CONTENT_VERSION ||
-        !layoutMatches ||
-        !metadataMatches),
+    contentUpdated: !sameContent,
   };
 }
 
