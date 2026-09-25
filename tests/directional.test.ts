@@ -345,24 +345,24 @@ describe("directional spots", () => {
     expect(outsideCheck.errors.join("\n")).toContain("out of bounds");
   });
 
-  test("a level with spots cannot also contain a shared-tail group", () => {
-    const level = spotLevel({
-      arrows: [
-        {
-          id: "north",
-          path: [cell("front", 0, 2), cell("front", 1, 2), cell("front", 1, 1)],
-        },
-        {
-          id: "east",
-          path: [cell("front", 0, 2), cell("front", 1, 2), cell("front", 2, 2)],
-        },
-      ],
-      spots: [spot(4, 4, "north")],
-    });
-    const check = validateLevel(level);
+  test("a shared-tail group shares a spot cube only while its routes avoid every spot", () => {
+    const arrows: readonly ArrowDefinition[] = [
+      {
+        id: "north",
+        path: [cell("front", 0, 2), cell("front", 1, 2), cell("front", 1, 1)],
+      },
+      {
+        id: "east",
+        path: [cell("front", 0, 2), cell("front", 1, 2), cell("front", 2, 2)],
+      },
+    ];
+    const clear = spotLevel({ arrows, spots: [spot(4, 4, "north")] });
+    expect(validateLevel(clear)).toEqual({ valid: true, errors: [] });
+    const crossed = spotLevel({ arrows, spots: [spot(4, 2, "north")] });
+    const check = validateLevel(crossed);
     expect(check.valid).toBe(false);
-    expect(check.errors.join("\n")).toContain(
-      "cannot contain shared-tail groups",
+    expect(check.errors).toContain(
+      "Shared-tail group east|north has a member route through a directional spot.",
     );
   });
 

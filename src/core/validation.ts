@@ -341,17 +341,6 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
       errors.push(`Directional spot ${key} sits on an arrow's starting cell.`);
     }
   }
-  if (spotCells.size > 0) {
-    const grouped = level.arrows.some(
-      (arrow) => overlappingArrowIds(level, arrow.id).length > 1,
-    );
-    if (grouped) {
-      errors.push(
-        "A level with directional spots cannot contain shared-tail groups.",
-      );
-    }
-  }
-
   // A fold can only park on a stop circle, so levels without one skip the search.
   if (stopCells.size > 0) {
     const combos: Record<string, Heading>[] = [{}];
@@ -385,6 +374,21 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
     if (members.some((member) => member.kind === "double")) {
       errors.push(
         `Shared-tail group ${groupKey} cannot contain double-ended arrows.`,
+      );
+    }
+    // A group moves on one shared offset along each member's static track,
+    // which is only sound while no track depends on spot state. A track that
+    // never enters a spot cell reads no spot heading, so it is the same under
+    // every flip state; it starts with the body, and every parked window is
+    // a slice of it.
+    if (
+      spotCells.size > 0 &&
+      members.some((member) =>
+        arrowTrack(level, member).some((cell) => spotCells.has(cellKey(cell))),
+      )
+    ) {
+      errors.push(
+        `Shared-tail group ${groupKey} has a member route through a directional spot.`,
       );
     }
     // Members share one offset and the group stops advancing as soon as any

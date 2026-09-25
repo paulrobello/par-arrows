@@ -763,6 +763,45 @@ describe("resumable campaign saves", () => {
     expect(flipped.value?.state).toEqual(onward);
   });
 
+  test("a group parked on a flip cube round-trips by shared offset, never by settled path", async () => {
+    const cellAt = (x: number, y: number) => ({ face: "front" as const, x, y });
+    const level: LevelDefinition = {
+      id: 31,
+      title: "Stored group on a flip cube",
+      gridSize: 5,
+      lives: 2,
+      arrows: [
+        { id: "north", path: [cellAt(0, 2), cellAt(1, 2), cellAt(1, 1)] },
+        { id: "east", path: [cellAt(0, 2), cellAt(1, 2), cellAt(2, 2)] },
+      ],
+      directionals: [{ cell: cellAt(4, 4), heading: "north", kind: "flip" }],
+      stops: [cellAt(3, 2)],
+    };
+    let state = createGameState(level);
+    state = applyMove(level, state, simulateMove(level, state, "north"));
+    expect(state.offsets).toEqual({ north: 1, east: 1 });
+    expect(state.settledPaths).toEqual({});
+    expect(save(state, 31, level)).toBe(true);
+    const restored = await loadCampaign(async () => level);
+    expect(restored.recovered).toBe(false);
+    expect(restored.value?.state).toEqual(state);
+    // A settled path on one member would split the group from its siblings'
+    // shared offset, so a save carrying one is refused.
+    for (const settledPaths of [
+      { east: [cellAt(1, 2), cellAt(2, 2), cellAt(3, 2)] },
+      {
+        north: [cellAt(1, 2), cellAt(1, 1), cellAt(1, 0)],
+        east: [cellAt(1, 2), cellAt(2, 2), cellAt(3, 2)],
+      },
+    ]) {
+      const forged = { ...state, settledPaths } as GameState;
+      expect(save(forged, 31, level)).toBe(true);
+      const refused = await loadCampaign(async () => level);
+      expect(refused.recovered).toBe(true);
+      expect(refused.value?.state).toEqual(createGameState(level));
+    }
+  });
+
   test("rejects stored spot directions off the spot's axis or on static spots", async () => {
     const cellAt = (x: number, y: number) => ({ face: "front" as const, x, y });
     const level: LevelDefinition = {

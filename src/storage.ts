@@ -265,14 +265,17 @@ function hasValidSettledPaths(
   value: unknown,
   level: LevelDefinition,
   remainingIds: ReadonlySet<string>,
+  groupedIds: ReadonlySet<string>,
 ): value is Readonly<Record<string, readonly Cell[]>> {
   if (value === undefined) return true;
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const flipLevel = hasFlipSpots(level);
   for (const [id, pathValue] of Object.entries(value)) {
     const arrow = level.arrows.find((candidate) => candidate.id === id);
+    // A shared-tail group parks by one offset shared across its members.
     if (
       !arrow ||
+      groupedIds.has(id) ||
       (arrow.kind !== "double" && !flipLevel) ||
       !remainingIds.has(id) ||
       !Array.isArray(pathValue) ||
@@ -402,7 +405,7 @@ function isState(value: unknown, level: LevelDefinition): value is GameState {
     return false;
   }
   const settledPaths = candidate.settledPaths;
-  if (!hasValidSettledPaths(settledPaths, level, remainingIds)) {
+  if (!hasValidSettledPaths(settledPaths, level, remainingIds, groupedIds)) {
     return false;
   }
   if (

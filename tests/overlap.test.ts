@@ -350,6 +350,61 @@ describe("overlapping arrow groups", () => {
   });
 });
 
+describe("shared-tail groups on spot cubes", () => {
+  // `north` runs (1,1) -> (1,0) -> exit; `east` runs (3,2) -> (4,2) -> exit.
+  test("a group whose members' routes avoid every spot validates", () => {
+    const fixture: LevelDefinition = {
+      ...level(pair),
+      directionals: [
+        { cell: faceCell(4, 4), heading: "north" },
+        { cell: faceCell(3, 4), heading: "west", kind: "flip" },
+      ],
+    };
+    expect(validateLevel(fixture)).toEqual({ valid: true, errors: [] });
+    expect(solveLevel(fixture)).toBeDefined();
+  });
+
+  test("rejects a group whose member route crosses a static spot", () => {
+    const fixture: LevelDefinition = {
+      ...level(pair),
+      directionals: [{ cell: faceCell(3, 2), heading: "south" }],
+    };
+    expect(validateLevel(fixture).errors).toContain(
+      "Shared-tail group east|north has a member route through a directional spot.",
+    );
+  });
+
+  test("rejects a group whose member route crosses a flip spot", () => {
+    const fixture: LevelDefinition = {
+      ...level(pair),
+      directionals: [{ cell: faceCell(1, 0), heading: "west", kind: "flip" }],
+    };
+    expect(validateLevel(fixture).errors).toContain(
+      "Shared-tail group east|north has a member route through a directional spot.",
+    );
+  });
+
+  test("a group parks by shared offset on a flip cube and then exits together", () => {
+    const fixture: LevelDefinition = {
+      ...level(pair),
+      directionals: [{ cell: faceCell(4, 4), heading: "north", kind: "flip" }],
+      stops: [faceCell(3, 2)],
+    };
+    expect(validateLevel(fixture)).toEqual({ valid: true, errors: [] });
+    let state = createGameState(fixture);
+    const parked = simulateMove(fixture, state, "north");
+    expect(parked.kind).toBe("paused");
+    state = applyMove(fixture, state, parked);
+    expect(state.offsets).toEqual({ north: 1, east: 1 });
+    expect(state.settledPaths).toEqual({});
+    const exit = simulateMove(fixture, state, "east");
+    expect(exit.kind).toBe("exit");
+    state = applyMove(fixture, state, exit);
+    expect(state.status).toBe("won");
+    expect(state.lives).toBe(fixture.lives);
+  });
+});
+
 describe("wrapped shared-tail groups", () => {
   test("a wrapped member exits cleanly with its sibling through the shared tail", () => {
     const north: ArrowDefinition = {
