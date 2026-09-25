@@ -124,8 +124,8 @@ function normalizedShapeSignature(
 }
 
 describe("generated double arrows", () => {
-  test("uses v7 seeds and the planned frequency curve", () => {
-    expect(GENERATOR_VERSION).toBe(7);
+  test("uses v8 generation, keeps the authored v7 seed, and the planned frequency curve", () => {
+    expect(GENERATOR_VERSION).toBe(8);
     expect(AUTHORED_LEVEL_IDS).toEqual([1, 5, 11, 15, 20, 25, 30]);
     expect(seedForLevel(25)).toBe(
       "par-arrows:runtime:7:level:25:double-intro:1",
@@ -168,7 +168,7 @@ describe("generated double arrows", () => {
 
 describe("runtime campaign generator", () => {
   test("has a versioned stable seed and rejects unsafe ids", () => {
-    expect(GENERATOR_VERSION).toBe(7);
+    expect(GENERATOR_VERSION).toBe(8);
     expect(seedForLevel(1_000_000)).toBe(seedForLevel(1_000_000));
     expect(seedForLevel(1_000_000)).not.toBe(seedForLevel(1_000_001));
     for (const id of [0, -1, 1.5, Number.MAX_SAFE_INTEGER, MAX_LEVEL_ID + 1])
@@ -189,14 +189,17 @@ describe("runtime campaign generator", () => {
     expect(geometryHash(generateLevel(10))).toBe(
       "48bf3896852038155c179facccc7174e71e86e0d24d6e5ccac99f770b41a9512",
     );
+    // Re-rolled for generator v8.
     expect(geometryHash(generateLevel(12))).toBe(
-      "7eceadbf7a784a2dc049d543d586451d388b75a292a3152da9307e5e28177014",
+      "d13be7f00c46e04e1d30ccf11dc0a75f983d24c67b265eccb6e5198d5cf25752",
     );
+    // Re-rolled for generator v8.
     expect(geometryHash(generateLevel(13))).toBe(
-      "115803f829284b338527f53fba71fab9f0b4f42bdfb8e72bf76105d503db4b71",
+      "b8f2e766000bb224404e0829e94b5009b8ae91d09f9fc0b5eb3e1a8ab039df74",
     );
+    // Re-rolled for generator v8.
     expect(geometryHash(generateLevel(14))).toBe(
-      "add0737d3e4429c25a35bdc6bc0432fd2e9eb2fdf6464516f8f07150b7906615",
+      "40afe8dfadcdbc9b3517e5cfe38456c9d8de2d5e9d0fa74c159672ca3917c8f8",
     );
     // Cubes 3 and 4 were rebuilt when content 10 fixed seam-crossing heads.
     expect(geometryHash(generateLevel(3))).toBe(
@@ -309,7 +312,7 @@ describe("runtime campaign generator", () => {
     for (const id of diverseLevelIds()) {
       const level = generateLevel(id);
       expect(seedForLevel(id)).toBe(
-        `par-arrows:runtime:${id <= 4 ? 1 : id <= 10 ? 4 : 7}:level:${id}`,
+        `par-arrows:runtime:${id <= 4 ? 1 : id <= 10 ? 4 : 8}:level:${id}`,
       );
       expect(validateLevel(level).valid).toBe(true);
       // The face plan governs static spots; a flip core's spot is separate.

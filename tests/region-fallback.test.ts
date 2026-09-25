@@ -30,9 +30,12 @@ describe("flip region acceptance", () => {
       heading: "south" as const,
       kind: "flip" as const,
     };
-    const verdict = acceptFlipRegion(board as never, board.arrows, spot, [
-      cell(1, 4),
-    ]);
+    const verdict = acceptFlipRegion(
+      board as never,
+      board.arrows,
+      [spot],
+      [cell(1, 4)],
+    );
     expect(verdict.ok).toBe(true);
     expect(verdict.cells.has("front:1:1")).toBe(true);
     expect(verdict.cells.has("front:1:4")).toBe(true);
@@ -61,7 +64,7 @@ describe("flip region acceptance", () => {
       heading: "south" as const,
       kind: "flip" as const,
     };
-    const verdict = acceptFlipRegion(board as never, blocked, spot, []);
+    const verdict = acceptFlipRegion(board as never, blocked, [spot], []);
     expect(verdict.ok).toBe(false);
   });
 
@@ -89,7 +92,7 @@ describe("flip region acceptance", () => {
       heading: "south" as const,
       kind: "flip" as const,
     };
-    const verdict = acceptFlipRegion(board as never, many, spot, []);
+    const verdict = acceptFlipRegion(board as never, many, [spot], []);
     expect(verdict.ok).toBe(false);
     expect(verdict.cells.size).toBe(0);
   });

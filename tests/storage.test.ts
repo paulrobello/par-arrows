@@ -283,7 +283,7 @@ describe("resumable campaign saves", () => {
     expect(save(state, 88)).toBe(true);
     expect(savedJson()).toMatchObject({
       contentVersion: 12,
-      generatorVersion: 7,
+      generatorVersion: 8,
       currentLevelId: 42,
       unlockedLevelId: 88,
       layout: layoutFingerprint(level),
@@ -651,8 +651,10 @@ describe("resumable campaign saves", () => {
   });
 
   test("content-10 saves resume unless the circle gate rebuilt the cube", async () => {
+    // Generator v8 re-rolled every generated id from 12 up, so cube 9 stands
+    // in for the unchanged generated cube that cube 22 used to be.
     for (const [id, resumes] of [
-      [22, true],
+      [9, true],
       [25, true],
       [52, false],
       [13, false],
@@ -677,7 +679,8 @@ describe("resumable campaign saves", () => {
 
   test("the shipped content-11 table matches unchanged layouts only", () => {
     expect(Object.keys(CONTENT_ELEVEN_LAYOUTS)).toHaveLength(200);
-    for (const id of [2, 8, 22, 25]) {
+    // Generator v8 re-rolled cube 22; cube 9 is still unchanged.
+    for (const id of [2, 8, 9, 25]) {
       expect(CONTENT_ELEVEN_LAYOUTS[id]).toBe(
         layoutFingerprint(generateLevel(id)),
       );
@@ -845,8 +848,9 @@ describe("resumable campaign saves", () => {
   });
 
   test("content-11 saves resume only on cubes whose layout is unchanged", async () => {
+    // Generator v8 re-rolled cube 22; cube 9 is still unchanged.
     for (const [id, resumes] of [
-      [22, true],
+      [9, true],
       [25, true],
       [29, false],
       [60, false],
@@ -980,7 +984,7 @@ describe("resumable campaign saves", () => {
       expect(saveCampaign(restored.value)).toBe(true);
       expect(savedJson()).toMatchObject({
         contentVersion: 12,
-        generatorVersion: 7,
+        generatorVersion: 8,
       });
     },
   );

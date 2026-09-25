@@ -10,7 +10,11 @@ import {
 import { arrowTrack } from "../src/core/stops";
 import { cellKey } from "../src/core/topology";
 import type { ArrowDefinition, Cell, LevelDefinition } from "../src/core/types";
-import { solveLevel, validateLevel } from "../src/core/validation";
+import {
+  hasStrandingState,
+  solveLevel,
+  validateLevel,
+} from "../src/core/validation";
 
 function frontArrow(
   id: string,
@@ -144,12 +148,25 @@ function patternLevel(
   const stops = [...pattern.stops, ...(pattern.second?.stops ?? [])].map(
     ({ dx, dy }): Cell => ({ face: "front", x: 2 + dx, y: 2 + dy }),
   );
-  return { id: 100, title: "pattern", gridSize: 14, lives: 3, arrows, stops };
+  const spots = (pattern.spots ?? []).map(({ dx, dy, heading }) => ({
+    cell: { face: "front" as const, x: 2 + dx, y: 2 + dy },
+    heading,
+  }));
+  return {
+    id: 100,
+    title: "pattern",
+    gridSize: 14,
+    lives: 3,
+    arrows,
+    stops,
+    ...(spots.length > 0 ? { directionals: spots } : {}),
+  };
 }
 
 describe("park pattern catalog", () => {
-  test("carries the four legacy shapes plus twist, crossfire, and twin", () => {
+  test("carries the four legacy shapes plus twist, crossfire, twin, and bounce", () => {
     expect(PARK_PATTERNS.map((pattern) => pattern.name).sort()).toEqual([
+      "bounce",
       "cascade",
       "classic",
       "crossfire",
@@ -171,7 +188,25 @@ describe("park pattern catalog", () => {
       expect(validateLevel(level).valid, pattern.name).toBe(true);
       expect(solveLevel(level), pattern.name).toBeDefined();
       expect(solveLevel({ ...level, stops: [] }), pattern.name).toBeUndefined();
+      expect(hasStrandingState(level), pattern.name).toBe(false);
     }
+  });
+
+  test("the bounce parker reaches its circle only by reversing over its body", () => {
+    const pattern = PARK_PATTERNS.find((entry) => entry.name === "bounce");
+    expect(pattern).toBeDefined();
+    if (!pattern) return;
+    const level = patternLevel(pattern);
+    const parker = level.arrows[0] as ArrowDefinition;
+    const track = arrowTrack(level, parker).map(cellKey);
+    const own = parker.path.map(cellKey);
+    // Head-on into the spot, then back across its own tail cells.
+    expect(track.slice(parker.path.length, parker.path.length + 3)).toEqual([
+      "front:2:2",
+      own[1] as string,
+      own[0] as string,
+    ]);
+    expect(track).toContain(cellKey((level.stops ?? [])[0] as Cell));
   });
 });
 

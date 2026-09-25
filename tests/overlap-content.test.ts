@@ -109,7 +109,7 @@ describe("overlapping-tail level content", () => {
       expect(group).toHaveLength(expectedSize);
       expect(level.arrows).toHaveLength(getLevelConfig(id).arrowCount);
       expect(level).toEqual(generateLevel(id));
-      expect(seedForLevel(id)).toBe(`par-arrows:runtime:7:level:${id}`);
+      expect(seedForLevel(id)).toBe(`par-arrows:runtime:8:level:${id}`);
       expect(validateLevel(level)).toEqual({ valid: true, errors: [] });
 
       let state = createGameState(level);

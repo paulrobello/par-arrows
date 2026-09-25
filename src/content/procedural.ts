@@ -3,7 +3,11 @@ import {
   hasFlipSpots,
   spotHeadingAt,
 } from "../core/directionals";
-import { createGameState } from "../core/game-state";
+import {
+  applyMove,
+  createGameState,
+  simulateMove as simulateGameMove,
+} from "../core/game-state";
 import { advanceHead, simulateMove } from "../core/movement";
 import { overlappingArrowIds } from "../core/overlap";
 import { arrowTrack, currentPath, maximumOffset } from "../core/stops";
@@ -27,7 +31,6 @@ import type {
   MoveTarget,
 } from "../core/types";
 import {
-  flipInterest,
   hasStrandingState,
   interactionRegion,
   proveRegion,
@@ -42,7 +45,7 @@ import { FLIP_INTRO_LEVEL } from "./flip-intro";
 import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
 import { STOP_INTRO_LEVEL } from "./stop-intro";
 
-export const GENERATOR_VERSION = 7;
+export const GENERATOR_VERSION = 8;
 export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
 
 /** Authored teaching cubes; every other id is generated at runtime. */
@@ -274,9 +277,9 @@ export function flipCoreFrequency(id: number): number {
   if (id < FIRST_FLIP_LEVEL || isAuthoredLevel(id)) return 0;
   const progress = Math.min(
     1,
-    (id - FIRST_FLIP_LEVEL) / (70 - FIRST_FLIP_LEVEL),
+    (id - FIRST_FLIP_LEVEL) / (90 - FIRST_FLIP_LEVEL),
   );
-  return 0.25 + 0.25 * progress;
+  return 0.25 + 0.4 * progress;
 }
 
 /** Extra arrows the blocker pass may spend toward the blocked target. */
@@ -902,8 +905,11 @@ interface ParkDelta {
  * "crossfire" interleaves a four-arrow unwind around one circle. "twin"
  * stacks two independent one-circle deadlocks with two different parkers;
  * its optional `second` unit repeats the shape, and the certificate parks
- * both parkers before either unit unwinds. A pattern is eligible only when
- * the level's stop budget covers its circles. `others` lists the non-parker
+ * both parkers before either unit unwinds. "bounce" starts the parker head-on
+ * into a static spot, so it reaches its circle only by reversing back over
+ * its own body; its spot counts against the cube's static-spot plan, so the
+ * pattern is eligible only on a spot-plan pass. A pattern is eligible only
+ * when the level's stop budget covers its circles. `others` lists the non-parker
  * arrows in reverse unwinding order: the certificate tail drives arrows
  * last-placed-first, so the last listed arrow must be the one that moves
  * immediately after the park.
@@ -913,6 +919,8 @@ export const PARK_PATTERNS: readonly {
   readonly parker: readonly ParkDelta[];
   readonly stops: readonly ParkDelta[];
   readonly others: readonly (readonly ParkDelta[])[];
+  /** Static spots the core's routes bend through, in the pattern frame. */
+  readonly spots?: readonly (ParkDelta & { readonly heading: Heading })[];
   /** Optional second independent deadlock: another parker with its own circle and followers. */
   readonly second?: {
     readonly parker: readonly ParkDelta[];
@@ -1097,6 +1105,27 @@ export const PARK_PATTERNS: readonly {
       ],
     },
   },
+  {
+    name: "bounce",
+    parker: [
+      { dx: 2, dy: 0 },
+      { dx: 1, dy: 0 },
+    ],
+    spots: [{ dx: 0, dy: 0, heading: "east" }],
+    stops: [{ dx: 3, dy: 0 }],
+    others: [
+      [
+        { dx: 4, dy: 0 },
+        { dx: 4, dy: 1 },
+        { dx: 3, dy: 1 },
+        { dx: 2, dy: 1 },
+      ],
+      [
+        { dx: 1, dy: 2 },
+        { dx: 1, dy: 1 },
+      ],
+    ],
+  },
 ];
 
 /** Ids for the non-parker core arrows, in pattern order. */
@@ -1110,6 +1139,8 @@ const PARK_CERTIFICATE_PREFIX = "park:";
 interface ParkingCore {
   readonly arrows: readonly ArrowDefinition[];
   readonly stops: readonly Cell[];
+  /** Static spots the core's routes bend through. */
+  readonly spots: readonly DirectionalSpotDefinition[];
   /** Certificate park entries, one per circle, naming each circle's parker. */
   readonly parkLegs: readonly string[];
 }
@@ -1203,15 +1234,23 @@ function doubleCore(
 /**
  * Flip-core layouts relative to the spot cell at (2, 2). Every arrow's head
  * aims at the spot or passes it, so all of the core's routes run through or
- * beside it; the whole reachable footprint is reserved before other arrows
+ * beside it; the proven interaction region is reserved before other arrows
  * are placed. "gate": the opener turns north and flips the spot south, which
  * frees the waiter. "bounce": the reverser U-turns out of the spot, after
  * which the runner turns into the cap until it is cleared. "relay": two
  * passes in a row, so the east arrow's safety depends on the pass count.
+ * "relay2": the traverser bends through two flip spots in sequence; the lid's
+ * safety depends on both spots' states and the two lane arrows' on the
+ * second's.
  */
 export const FLIP_PATTERNS: readonly {
-  readonly name: "gate" | "bounce" | "relay";
+  readonly name: "gate" | "bounce" | "relay" | "relay2";
   readonly heading: Heading;
+  /** Further flip spots beyond the one at (2, 2), in the same pattern frame. */
+  readonly extraSpots?: readonly {
+    readonly cell: readonly [number, number];
+    readonly heading: Heading;
+  }[];
   readonly arrows: readonly {
     readonly name: string;
     readonly cells: readonly (readonly [number, number])[];
@@ -1305,15 +1344,50 @@ export const FLIP_PATTERNS: readonly {
       },
     ],
   },
+  {
+    name: "relay2",
+    heading: "south",
+    extraSpots: [{ cell: [2, 4], heading: "east" }],
+    arrows: [
+      {
+        name: "traverser",
+        cells: [
+          [0, 2],
+          [1, 2],
+        ],
+      },
+      {
+        name: "lid",
+        cells: [
+          [2, 0],
+          [2, 1],
+        ],
+      },
+      {
+        name: "west",
+        cells: [
+          [0, 4],
+          [1, 4],
+        ],
+      },
+      {
+        name: "east",
+        cells: [
+          [4, 4],
+          [3, 4],
+        ],
+      },
+    ],
+  },
 ];
 
 interface FlipCore {
   readonly arrows: readonly ArrowDefinition[];
-  readonly spot: DirectionalSpotDefinition;
-  /** Every cell any core arrow can reach under either spot direction. */
-  readonly footprint: ReadonlySet<string>;
-  /** The isolated core's own clearing order. */
-  readonly certificate: readonly MoveTarget[];
+  readonly spots: readonly DirectionalSpotDefinition[];
+  /** Circles planned inside the region, taken from the decorative budget. */
+  readonly stops: readonly Cell[];
+  /** The proven interaction region's cells, reserved from later placement. */
+  readonly cells: ReadonlySet<string>;
 }
 
 /** Every cell of every track an arrow can drive, both ends for a double. */
@@ -1331,20 +1405,25 @@ function trackKeys(
 }
 
 /**
- * Place a flip core on its own seeded streams. The pattern rotates about its
- * spot, which keeps a two-cell margin from every face edge so each rotation
- * fits. The footprint — every cell a core arrow can reach with the spot held
- * either way — must avoid every reserved cell and every track already placed;
- * the caller reserves it so nothing placed later can touch the core. With the
- * rest of the cube kept off the footprint, the core plays exactly as it does
- * alone, which is where it is proven never to strand and to make its flip
- * matter. A head that could re-enter the spot through a wrapping edge is
- * rejected, because the two static probes only bound a single pass.
+ * Place a flip core on its own seeded streams and prove its interaction
+ * region. The pattern rotates about its first spot, which keeps a two-cell
+ * margin from every face edge so each rotation fits. Every cell a core arrow
+ * can reach under any flip state must avoid every reserved cell and the
+ * parking core's tracks, so the cores placed before it play exactly as they
+ * were proven; the caller reserves the region's cells so nothing placed later
+ * touches it. When the level has a circle to spare, a circle is planned on a
+ * core arrow's lane first — parking there must keep every body off every other
+ * track — and moved once to the next candidate if the region fails to prove,
+ * before the core is tried with no circle at all. A head that could re-enter a
+ * flip spot through a wrapping edge is rejected, because the static probes
+ * only bound a single pass.
  */
 function flipCore(
   id: number,
   level: LevelDefinition,
   occupied: ReadonlySet<string>,
+  parkTracks: ReadonlySet<string>,
+  stopBudget: number,
   restart: number,
 ): FlipCore | undefined {
   const size = level.gridSize;
@@ -1353,9 +1432,8 @@ function flipCore(
     rng.int(FLIP_PATTERNS.length)
   ] as (typeof FLIP_PATTERNS)[number];
   const faces = shuffledFaces(rng);
-  const placedTracks = new Set(
-    level.arrows.flatMap((arrow) => trackKeys(level, arrow)),
-  );
+  const inBounds = (cell: Cell): boolean =>
+    cell.x >= 0 && cell.y >= 0 && cell.x < size && cell.y < size;
   for (let attempt = 0; attempt < 64; attempt += 1) {
     const face = faces[attempt % faces.length] as FaceId;
     const rotation = rng.int(4);
@@ -1366,65 +1444,106 @@ function flipCore(
     };
     const at = ([dx, dy]: readonly [number, number]): Cell =>
       patternCell(spotCell, dx - 2, dy - 2, rotation);
-    const spot: DirectionalSpotDefinition = {
-      cell: spotCell,
-      heading: rotateHeading(pattern.heading, rotation),
-      kind: "flip",
-    };
+    const spots: DirectionalSpotDefinition[] = [
+      {
+        cell: spotCell,
+        heading: rotateHeading(pattern.heading, rotation),
+        kind: "flip",
+      },
+      ...(pattern.extraSpots ?? []).map((extra) => ({
+        cell: at(extra.cell),
+        heading: rotateHeading(extra.heading, rotation),
+        kind: "flip" as const,
+      })),
+    ];
     const arrows: ArrowDefinition[] = pattern.arrows.map((entry) => ({
       id: `r${id}-flip-${pattern.name}-${entry.name}`,
       path: entry.cells.map(at),
     }));
-    const cells = [...arrows.flatMap((arrow) => arrow.path), spot.cell];
-    if (
-      cells.some(
-        (cell) =>
-          cell.x < 0 ||
-          cell.y < 0 ||
-          cell.x >= size ||
-          cell.y >= size ||
-          occupied.has(cellKey(cell)),
-      )
-    )
+    const cells = [
+      ...arrows.flatMap((arrow) => arrow.path),
+      ...spots.map((spot) => spot.cell),
+    ];
+    if (cells.some((cell) => !inBounds(cell) || occupied.has(cellKey(cell))))
       continue;
-    const spotKey = cellKey(spot.cell);
-    const footprint = new Set<string>([spotKey]);
+    const board = {
+      ...level,
+      directionals: [...(level.directionals ?? []), ...spots],
+    };
+    const spotKeys = spots.map((spot) => cellKey(spot.cell));
+    const reach = new Set<string>(spotKeys);
     let singlePass = true;
-    for (const heading of [spot.heading, oppositeHeading(spot.heading)]) {
-      const probe = { ...level, directionals: [{ cell: spot.cell, heading }] };
+    for (const probe of flipProbes(board)) {
       for (const arrow of arrows) {
         const keys = arrowTrack(probe, arrow).map(cellKey);
-        if (keys.filter((key) => key === spotKey).length > 1)
+        if (
+          spotKeys.some(
+            (spotKey) => keys.filter((key) => key === spotKey).length > 1,
+          )
+        )
           singlePass = false;
-        for (const key of keys) footprint.add(key);
+        for (const key of keys) reach.add(key);
       }
     }
     if (
       !singlePass ||
-      [...footprint].some((key) => occupied.has(key) || placedTracks.has(key))
+      [...reach].some((key) => occupied.has(key) || parkTracks.has(key))
     )
       continue;
     const coreLevel: LevelDefinition = {
-      ...level,
+      ...board,
       arrows,
-      directionals: [spot],
       stops: [],
     };
     if (!validateLevel(coreLevel).valid) continue;
-    if (hasStrandingState(coreLevel) !== false) continue;
-    if (flipInterest(coreLevel) !== true) continue;
-    const certificate = solveLevelTargets(coreLevel);
-    if (!certificate || !replayCertificate(coreLevel, certificate)) continue;
-    return { arrows, spot, footprint, certificate };
+    const bodies = new Set(arrows.flatMap((arrow) => arrow.path.map(cellKey)));
+    const lanes: Cell[] = [];
+    if (stopBudget > 0) {
+      const seen = new Set<string>();
+      for (const arrow of arrows) {
+        for (const cell of arrowTrack(board, arrow).slice(arrow.path.length)) {
+          const key = cellKey(cell);
+          if (seen.has(key) || bodies.has(key) || spotKeys.includes(key))
+            continue;
+          seen.add(key);
+          if (!inBounds(cell) || cell.face !== face) continue;
+          const withStop: LevelDefinition = { ...coreLevel, stops: [cell] };
+          if (!validateLevel(withStop).valid) continue;
+          if (parkCrossesTrack(withStop, cell)) continue;
+          lanes.push(cell);
+        }
+      }
+      for (let index = lanes.length - 1; index > 0; index -= 1) {
+        const replacement = rng.int(index + 1);
+        const current = lanes[index] as Cell;
+        lanes[index] = lanes[replacement] as Cell;
+        lanes[replacement] = current;
+      }
+    }
+    const planned: (readonly Cell[])[] = [
+      ...lanes.slice(0, 2).map((cell) => [cell]),
+      [],
+    ];
+    const placed = [...level.arrows, ...arrows];
+    for (const stops of planned) {
+      const verdict = acceptFlipRegion(level, placed, board.directionals, [
+        ...(level.stops ?? []),
+        ...stops,
+      ]);
+      if (!verdict.ok) continue;
+      return { arrows, spots, stops, cells: verdict.cells };
+    }
   }
   return undefined;
 }
 
 /**
  * Accept a flip placement by proving its interaction region: seed arrows are
- * the flip core's, outside placed arrows block but are never tapped. Returns
- * the region cells for occupancy; ok:false means fall back to an isolated
- * core placement.
+ * the flip core's, outside placed arrows block but are never tapped. `spots`
+ * is every spot on the board, flip and static, so region tracks bend as they
+ * will in play. Returns the region cells for occupancy; ok:false means the
+ * caller must not reserve them and tries its next fallback. `reason` is the
+ * prover's rejection, or "overflow" when the region closed past its cap.
  */
 export function acceptFlipRegion(
   board: Pick<
@@ -1432,22 +1551,165 @@ export function acceptFlipRegion(
     "id" | "title" | "gridSize" | "lives" | "edgePolicies"
   >,
   arrows: readonly ArrowDefinition[],
-  spot: DirectionalSpotDefinition,
+  spots: readonly DirectionalSpotDefinition[],
   stops: readonly Cell[],
-): { ok: boolean; cells: ReadonlySet<string> } {
+): {
+  ok: boolean;
+  cells: ReadonlySet<string>;
+  reason?: "stranded" | "uninteresting" | "unsolvable" | "overflow";
+} {
   const level: LevelDefinition = {
     ...board,
     arrows: [...arrows],
-    directionals: [spot],
+    directionals: [...spots],
     ...(stops.length > 0 ? { stops } : {}),
   };
   const seeds = arrows
     .filter((arrow) => arrow.id.includes("-flip-"))
     .map((arrow) => arrow.id);
   const region = interactionRegion(level, seeds);
-  if (!region) return { ok: false, cells: new Set() };
+  if (!region) return { ok: false, cells: new Set(), reason: "overflow" };
   const verdict = proveRegion(level, createGameState(level), region);
-  return { ok: verdict.ok, cells: region.cells };
+  return verdict.ok
+    ? { ok: true, cells: region.cells }
+    : {
+        ok: false,
+        cells: region.cells,
+        ...(verdict.reason ? { reason: verdict.reason } : {}),
+      };
+}
+
+/** Level variants covering every direction each flip spot can hold. */
+function flipProbes(
+  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
+): readonly Pick<
+  LevelDefinition,
+  "gridSize" | "edgePolicies" | "directionals"
+>[] {
+  let probes = [level];
+  for (const spot of level.directionals ?? []) {
+    if (spot.kind !== "flip") continue;
+    const key = cellKey(spot.cell);
+    probes = probes.flatMap((probe) => [
+      probe,
+      {
+        ...probe,
+        directionals: (probe.directionals ?? []).map((entry) =>
+          cellKey(entry.cell) === key
+            ? { ...entry, heading: flippedHeading(entry.heading) }
+            : entry,
+        ),
+      },
+    ]);
+  }
+  return probes;
+}
+
+/**
+ * Every cell an arrow's track reaches under any flip-spot state, from both
+ * ends of a double.
+ */
+function reachKeys(
+  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
+  arrow: ArrowDefinition,
+): Set<string> {
+  const keys = new Set<string>();
+  for (const probe of flipProbes(level)) {
+    for (const key of trackKeys(probe, arrow)) keys.add(key);
+  }
+  return keys;
+}
+
+/**
+ * Parks onto a circle that move a unit's body onto another arrow's track.
+ * Region circles are proven by enumeration, but they still keep the campaign
+ * rule every decorative circle keeps: parking only ever frees cells.
+ */
+function parkCrossesTrack(level: LevelDefinition, stop: Cell): boolean {
+  const stopKey = cellKey(stop);
+  const owners = new Map<string, Set<string>>();
+  for (const arrow of level.arrows) {
+    for (const key of trackKeys(level, arrow)) {
+      owners.set(key, (owners.get(key) ?? new Set()).add(arrow.id));
+    }
+  }
+  for (const arrow of level.arrows) {
+    const track = arrowTrack(level, arrow).map(cellKey);
+    const index = track.indexOf(stopKey, arrow.path.length);
+    if (index < 0) continue;
+    const own = new Set(arrow.path.map(cellKey));
+    for (const cell of currentPath(
+      level,
+      arrow,
+      index - arrow.path.length + 1,
+    )) {
+      const key = cellKey(cell);
+      if (own.has(key)) continue;
+      if ([...(owners.get(key) ?? [])].some((other) => other !== arrow.id))
+        return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Prove a finished level's flip region and build its certificate lead. The
+ * region is re-derived on the assembled board — later spots, circles and
+ * blockers can bend tracks into it — and every arrow outside it must keep
+ * every track, under every flip state, off the region's cells. The region's
+ * own solution, found on a board holding only its arrows and circles, then
+ * replays first: by closure no outside body sits on a region track. A park
+ * becomes a park leg; undefined means the region does not prove.
+ */
+function flipRegionLead(
+  level: LevelDefinition,
+): readonly CertificateEntry[] | undefined {
+  const seeds = level.arrows
+    .filter((arrow) => arrow.id.includes("-flip-"))
+    .map((arrow) => arrow.id);
+  if (seeds.length === 0) return [];
+  const region = interactionRegion(level, seeds);
+  if (!region) return undefined;
+  if (!proveRegion(level, createGameState(level), region).ok) return undefined;
+  const inside = new Set(region.arrowIds);
+  for (const arrow of level.arrows) {
+    if (inside.has(arrow.id)) continue;
+    for (const key of reachKeys(level, arrow)) {
+      if (region.cells.has(key)) return undefined;
+    }
+  }
+  const regionStops = new Set(region.stopKeys);
+  const stops = (level.stops ?? []).filter((stop) =>
+    regionStops.has(cellKey(stop)),
+  );
+  const { stops: _allStops, ...bare } = level;
+  const sub: LevelDefinition = {
+    ...bare,
+    arrows: level.arrows.filter((arrow) => inside.has(arrow.id)),
+    ...(stops.length > 0 ? { stops } : {}),
+  };
+  const targets = solveLevelTargets(sub);
+  if (!targets) return undefined;
+  const lead: CertificateEntry[] = [];
+  let state = createGameState(sub);
+  for (const target of targets) {
+    const result = simulateGameMove(
+      sub,
+      state,
+      target.arrowId,
+      target.endpoint,
+    );
+    if (result.kind === "paused") {
+      if (target.endpoint !== "head") return undefined;
+      lead.push(`${PARK_CERTIFICATE_PREFIX}${target.arrowId}`);
+    } else if (result.kind === "exit") {
+      lead.push(target);
+    } else {
+      return undefined;
+    }
+    state = applyMove(sub, state, result);
+  }
+  return lead;
 }
 
 function patternCell(
@@ -1493,13 +1755,15 @@ function parkingCore(
   occupied: ReadonlySet<string>,
   stopCount: number,
   restart: number,
+  spotFaces: readonly FaceId[] = [],
 ): ParkingCore | undefined {
   const size = level.gridSize;
   const rng = coreStream(id, "park-core", restart);
-  const catalog =
-    id <= 10
-      ? PARK_PATTERNS.slice(0, LEGACY_PARK_PATTERN_COUNT)
-      : PARK_PATTERNS;
+  // A pattern with its own spots spends the cube's static-spot plan, so it
+  // is only drawn on a pass that plans spots, and only onto a planned face.
+  const catalog = (
+    id <= 10 ? PARK_PATTERNS.slice(0, LEGACY_PARK_PATTERN_COUNT) : PARK_PATTERNS
+  ).filter((pattern) => !pattern.spots || spotFaces.length > 0);
   const patternCost = (pattern: (typeof PARK_PATTERNS)[number]): number =>
     pattern.stops.length + (pattern.second?.stops.length ?? 0);
   const eligible = catalog.filter(
@@ -1508,7 +1772,9 @@ function parkingCore(
   const pattern = eligible[
     rng.int(eligible.length)
   ] as (typeof PARK_PATTERNS)[number];
-  const faces = shuffledFaces(rng);
+  const faces = pattern.spots
+    ? shuffledFaces(rng).filter((face) => spotFaces.includes(face))
+    : shuffledFaces(rng);
   const units = [
     { parker: pattern.parker, stops: pattern.stops, others: pattern.others },
     ...(pattern.second
@@ -1549,7 +1815,18 @@ function parkingCore(
     const stops = units.flatMap((unit) =>
       unit.stops.map(({ dx, dy }) => patternCell(base, dx, dy, rotation)),
     );
-    const cells = [...parkerPaths.flat(), ...followerPaths.flat(), ...stops];
+    const spots: DirectionalSpotDefinition[] = (pattern.spots ?? []).map(
+      ({ dx, dy, heading }) => ({
+        cell: patternCell(base, dx, dy, rotation),
+        heading: rotateHeading(heading, rotation),
+      }),
+    );
+    const cells = [
+      ...parkerPaths.flat(),
+      ...followerPaths.flat(),
+      ...stops,
+      ...spots.map((spot) => spot.cell),
+    ];
     const patternKeys = new Set(cells.map(cellKey));
     if (
       patternKeys.size !== cells.length ||
@@ -1564,6 +1841,25 @@ function parkingCore(
     )
       continue;
     const rayClear = (path: readonly Cell[]): boolean => {
+      if (spots.length > 0) {
+        // A spot bends the route, so the arrow's whole solo drive is checked
+        // instead of the straight ray from its head.
+        const probe: LevelDefinition = {
+          ...level,
+          arrows: [{ id: "probe", path }],
+          directionals: spots,
+        };
+        const alone = simulateMove(probe, ["probe"], "probe");
+        return (
+          alone.kind === "exit" &&
+          alone.route
+            .slice(1)
+            .every(
+              (cell) =>
+                patternKeys.has(cellKey(cell)) || !occupied.has(cellKey(cell)),
+            )
+        );
+      }
       const head = path[path.length - 1];
       const heading = head ? headingForPath(path, size) : undefined;
       if (!head || !heading) return false;
@@ -1592,7 +1888,12 @@ function parkingCore(
     // The core drives last in the level's certificate, against an otherwise
     // empty cube with the park legs already applied; prove that tail here so
     // a hostile wrap config rejects this placement instead of the level.
-    const coreLevel: LevelDefinition = { ...level, arrows, stops };
+    const coreLevel: LevelDefinition = {
+      ...level,
+      arrows,
+      stops,
+      ...(spots.length > 0 ? { directionals: spots } : {}),
+    };
     const parkLegs = units.flatMap((unit, index) =>
       Array.from(
         { length: unit.stops.length },
@@ -1607,7 +1908,7 @@ function parkingCore(
     // Core arrows may park into each other's lanes; every collision-free
     // order through the isolated core must still clear it.
     if (hasStrandingState(coreLevel) !== false) continue;
-    return { arrows, stops, parkLegs };
+    return { arrows, stops, spots, parkLegs };
   }
   return undefined;
 }
@@ -1950,6 +2251,129 @@ function extraDirectionalSpots(
 }
 
 /**
+ * Head-on static spots that bounce a plain arrow back over its own body into
+ * a lane another arrow's track uses, best-effort and after every core. Each
+ * spot comes out of a planned face's remaining room. A candidate cell sits
+ * on the bounced arrow's own route with its heading reversed, and is kept
+ * only when the bounced lane — the new route past the arrow's own body —
+ * meets exactly one other arrow's track, and every arrow that now crosses
+ * the cell (the bounced one included) still exits alone, bends no more than
+ * `chainDepthLimit` times, and keeps its route off every arrow that replays
+ * before it and off `forbidden` (the parking core's tracks and the flip
+ * region). The certificate replay remains the final arbiter.
+ */
+function reversalBlockers(
+  id: number,
+  level: LevelDefinition,
+  arrows: readonly ArrowDefinition[],
+  occupied: Set<string>,
+  room: ReadonlyMap<FaceId, number>,
+  forbidden: ReadonlySet<string>,
+): readonly DirectionalSpotDefinition[] {
+  const limit = chainDepthLimit(id);
+  const rng = new Rng(hashSeed(`${seedForLevel(id)}:reversal`));
+  const wanted = 1 + rng.int(2);
+  const remaining = new Map(room);
+  const cellsBefore: Set<string>[] = [];
+  let running = new Set<string>();
+  for (const arrow of arrows) {
+    cellsBefore.push(running);
+    running = new Set([...running, ...arrow.path.map(cellKey)]);
+  }
+  const plain = arrows.filter(
+    (arrow) =>
+      arrow.kind !== "double" &&
+      /^r\d+-(\d+|block-\d+|straight-\d+|wrap-\d+)$/.test(arrow.id),
+  );
+  for (let index = plain.length - 1; index > 0; index -= 1) {
+    const replacement = rng.int(index + 1);
+    const current = plain[index] as ArrowDefinition;
+    plain[index] = plain[replacement] as ArrowDefinition;
+    plain[replacement] = current;
+  }
+  const spots: DirectionalSpotDefinition[] = [];
+  for (const arrow of plain) {
+    if (spots.length >= wanted) break;
+    const board: LevelDefinition = {
+      ...level,
+      directionals: [...(level.directionals ?? []), ...spots],
+    };
+    const track = arrowTrack(board, arrow);
+    for (let step = arrow.path.length; step < track.length; step += 1) {
+      const cell = track[step] as Cell;
+      const key = cellKey(cell);
+      if ((remaining.get(cell.face) ?? 0) <= 0) continue;
+      if (occupied.has(key) || forbidden.has(key)) continue;
+      const arriving = headingForPath(
+        [track[step - 1] as Cell, cell],
+        level.gridSize,
+      );
+      if (!arriving) continue;
+      const spot: DirectionalSpotDefinition = {
+        cell,
+        heading: oppositeHeading(arriving),
+      };
+      const trial: LevelDefinition = {
+        ...board,
+        directionals: [...(board.directionals ?? []), spot],
+      };
+      const trialSpots = new Set(
+        (trial.directionals ?? []).map((entry) => cellKey(entry.cell)),
+      );
+      const traversers = arrows
+        .map((candidate, position) => ({ candidate, position }))
+        .filter(({ candidate }) => trackKeys(board, candidate).includes(key));
+      if (traversers.some(({ candidate }) => candidate.kind === "double"))
+        continue;
+      const fits = traversers.every(({ candidate, position }) => {
+        const alone = simulateMove(trial, [candidate.id], candidate.id);
+        if (alone.kind !== "exit") return false;
+        const own = new Set(candidate.path.map(cellKey));
+        if (
+          alone.route.some((routeCell) => {
+            const routeKey = cellKey(routeCell);
+            return (
+              forbidden.has(routeKey) ||
+              (!own.has(routeKey) &&
+                (cellsBefore[position] as Set<string>).has(routeKey))
+            );
+          })
+        )
+          return false;
+        return (
+          arrowTrack(trial, candidate).filter((routeCell) =>
+            trialSpots.has(cellKey(routeCell)),
+          ).length <= limit
+        );
+      });
+      if (!fits) continue;
+      const own = new Set(arrow.path.map(cellKey));
+      const bounced = arrowTrack(trial, arrow).slice(arrow.path.length);
+      const turn = bounced.findIndex((routeCell) => cellKey(routeCell) === key);
+      const lane = new Set(
+        bounced
+          .slice(turn + 1)
+          .map(cellKey)
+          .filter((laneKey) => !own.has(laneKey)),
+      );
+      if (lane.size === 0) continue;
+      const crossed = arrows.filter(
+        (other) =>
+          other.id !== arrow.id &&
+          trackKeys(trial, other).some((otherKey) => lane.has(otherKey)),
+      );
+      if (crossed.length !== 1) continue;
+      if (!validateLevel({ ...trial, arrows: [...arrows] }).valid) continue;
+      occupied.add(key);
+      remaining.set(cell.face, (remaining.get(cell.face) ?? 0) - 1);
+      spots.push(spot);
+      break;
+    }
+  }
+  return spots;
+}
+
+/**
  * A test for circles that can never strand a level. Parking moves an arrow
  * onto new cells, and a new cell on another arrow's track can block that
  * arrow while its body blocks the parked one. A circle passes only when every
@@ -2171,8 +2595,8 @@ function validateGenerated(
  * real no-mistake solution certificate. Levels carrying stop circles also embed
  * the parking core, whose circles are reserved from every later arrow so the
  * replayed certificate — the park legs, then the reverse drive — can never
- * fail because of parking. A flip core's whole footprint is reserved the same
- * way, and its own clearing order leads the certificate.
+ * fail because of parking. A flip core's proven interaction region is
+ * reserved the same way, and the region's own solution leads the certificate.
  */
 export function generateLevel(id: number): LevelDefinition {
   assertLevelId(id);
@@ -2193,8 +2617,8 @@ export function generateLevel(id: number): LevelDefinition {
   // generation must never give up on an id.
   const plannedSpotPlan = directionalFacePlan(id);
   // Acceptance tiers, tried strictly in order. Tier one's ordinary passes are
-  // the historical exact-count, certificate-replayed construction, so every
-  // level without a flip core stays byte-identical. A later tier only sees an
+  // the historical exact-count, certificate-replayed construction. A later
+  // tier only sees an
   // id that every earlier tier rejected across both spot plans and all eight
   // restarts: it trades exact density and, in the last tier, the
   // reverse-construction certificate for a solver-proven level instead of
@@ -2205,19 +2629,16 @@ export function generateLevel(id: number): LevelDefinition {
     { minArrows: config.arrowCount - 12, certificate: true },
     { minArrows: config.arrowCount - 12, certificate: false },
   ];
-  // A planned flip core gets its own pass ahead of the first tier's ordinary
-  // passes; later tiers never retry it, which bounds the extra restarts. A
-  // level that ends without a flip core must come out of the ordinary passes
-  // exactly as it did before flip cores existed, so the flip pass shares no
-  // stream with them and they run unchanged after it.
+  // A planned flip core gets its own pass ahead of every tier's ordinary
+  // passes. The flip pass shares no stream with them, so a level that ends
+  // without a flip core comes out of the ordinary passes exactly as it would
+  // with no flip plan at all.
   const flipPlanned =
     flipCoreFrequency(id) > 0 &&
     coreStream(id, "flip-plan", 0).next() < flipCoreFrequency(id);
   for (const tier of tiers) {
     const passes = [
-      ...(flipPlanned && tier === tiers[0]
-        ? [{ spotPlan: plannedSpotPlan, flipPass: true }]
-        : []),
+      ...(flipPlanned ? [{ spotPlan: plannedSpotPlan, flipPass: true }] : []),
       { spotPlan: plannedSpotPlan, flipPass: false },
       { spotPlan: [] as readonly number[], flipPass: false },
     ];
@@ -2274,16 +2695,26 @@ export function generateLevel(id: number): LevelDefinition {
                 occupied,
                 getStopCount(id),
                 restart,
+                planFaceIds,
               )
             : undefined;
+        // Spots that ship with the parking core; they bend only the core's
+        // own routes, because every later arrow keeps its straight ray off
+        // their reserved cells.
+        const parkSpots = core?.spots ?? [];
+        const parkBoard = {
+          ...candidateLevel,
+          ...(parkSpots.length > 0 ? { directionals: parkSpots } : {}),
+        };
         if (core) {
           for (const arrow of core.arrows) {
-            if (!validateLevel({ ...candidateLevel, arrows: [arrow] }).valid)
+            if (!validateLevel({ ...parkBoard, arrows: [arrow] }).valid)
               throw new Error("Seeded parking-core arrow was invalid.");
             for (const cell of arrow.path) occupied.add(cellKey(cell));
             arrows.push(arrow);
           }
           for (const stop of core.stops) occupied.add(cellKey(stop));
+          for (const spot of parkSpots) occupied.add(cellKey(spot.cell));
         }
         // The park legs lead the certificate replay, so the parked windows along
         // the park core's routes block everything that drives after them. The
@@ -2293,7 +2724,7 @@ export function generateLevel(id: number): LevelDefinition {
         const parkTrackKeys = new Set<string>();
         if (core) {
           for (const arrow of core.arrows) {
-            for (const cell of arrowTrack(candidateLevel, arrow)) {
+            for (const cell of arrowTrack(parkBoard, arrow)) {
               parkTrackKeys.add(cellKey(cell));
             }
           }
@@ -2308,6 +2739,12 @@ export function generateLevel(id: number): LevelDefinition {
               restart,
             )
           : undefined;
+        // A parking core's own spot is part of the static-spot plan, which
+        // always carries the required head-on core as well.
+        if (parkSpots.length > 0 && !directionalSpot) {
+          skip = "park-spot";
+          continue construction;
+        }
         const dirCells = new Set<string>();
         if (directionalSpot) {
           for (const arrow of directionalSpot.arrows) {
@@ -2343,7 +2780,26 @@ export function generateLevel(id: number): LevelDefinition {
           }
         }
         const flip = flipPass
-          ? flipCore(id, { ...candidateLevel, arrows }, occupied, restart)
+          ? flipCore(
+              id,
+              {
+                ...candidateLevel,
+                arrows,
+                ...(directionalSpot || parkSpots.length > 0
+                  ? {
+                      directionals: [
+                        ...(directionalSpot ? [directionalSpot.spot] : []),
+                        ...parkSpots,
+                      ],
+                    }
+                  : {}),
+                ...(core ? { stops: core.stops } : {}),
+              },
+              occupied,
+              parkTrackKeys,
+              getStopCount(id) - (core ? core.stops.length : 0),
+              restart,
+            )
           : undefined;
         if (flipPass && !flip) {
           skip = "flip-core";
@@ -2351,7 +2807,7 @@ export function generateLevel(id: number): LevelDefinition {
         }
         if (flip) {
           for (const arrow of flip.arrows) arrows.push(arrow);
-          for (const key of flip.footprint) occupied.add(key);
+          for (const key of flip.cells) occupied.add(key);
         }
         for (const [index, length] of [2, 3, 4].entries()) {
           const face = faces[index];
@@ -2601,7 +3057,7 @@ export function generateLevel(id: number): LevelDefinition {
                 {
                   ...candidateLevel,
                   arrows,
-                  directionals: [directionalSpot.spot],
+                  directionals: [directionalSpot.spot, ...parkSpots],
                 },
                 arrows,
                 occupied,
@@ -2609,30 +3065,67 @@ export function generateLevel(id: number): LevelDefinition {
                   .filter((face) => face !== coreFace)
                   .map((face) => ({
                     face,
-                    count: spotPlan[planFaceIds.indexOf(face)] as number,
+                    count:
+                      (spotPlan[planFaceIds.indexOf(face)] as number) -
+                      parkSpots.filter((spot) => spot.cell.face === face)
+                        .length,
                   })),
                 coreFace,
               )
             : [];
-        const spots = [
+        // Reversal blockers spend whatever room the plan's faces have left.
+        const planned = [
           ...(directionalSpot ? [directionalSpot.spot, ...extraSpots] : []),
-          ...(flip ? [flip.spot] : []),
+          ...parkSpots,
+        ];
+        const reversalRoom = new Map<FaceId, number>(
+          bearingFaces.map((face) => [
+            face,
+            (spotPlan[planFaceIds.indexOf(face)] ?? 1) -
+              planned.filter((spot) => spot.cell.face === face).length,
+          ]),
+        );
+        const reversalSpots = directionalSpot
+          ? reversalBlockers(
+              id,
+              {
+                ...candidateLevel,
+                arrows,
+                directionals: [...planned, ...(flip ? flip.spots : [])],
+              },
+              arrows,
+              occupied,
+              reversalRoom,
+              new Set([...parkTrackKeys, ...(flip ? flip.cells : [])]),
+            )
+          : [];
+        const spots = [
+          ...(directionalSpot
+            ? [directionalSpot.spot, ...extraSpots, ...reversalSpots]
+            : []),
+          ...parkSpots,
+          ...(flip ? flip.spots : []),
         ];
         const coreIds = new Set(core?.arrows.map((arrow) => arrow.id) ?? []);
         const stopBoard = {
           ...candidateLevel,
           ...(spots.length > 0 ? { directionals: spots } : {}),
         };
+        // Circles the flip region was proven with come out of the decorative
+        // budget, so the level still carries exactly `getStopCount(id)`.
+        const regionStops = flip ? flip.stops : [];
         const placeStops = (): readonly Cell[] => {
           const decorative = chooseStops(
             id,
             stopBoard,
             arrows,
             occupied,
-            getStopCount(id) - (core ? core.stops.length : 0),
+            getStopCount(id) -
+              (core ? core.stops.length : 0) -
+              regionStops.length,
             coreIds,
           );
-          return core ? [...core.stops, ...decorative] : decorative;
+          return [...(core ? core.stops : []), ...regionStops, ...decorative];
         };
         const assemble = (stops: readonly Cell[]): LevelDefinition => ({
           ...candidateLevel,
@@ -2686,24 +3179,6 @@ export function generateLevel(id: number): LevelDefinition {
           skip = "strand";
           continue;
         }
-        // Nothing outside the flip core may reach its footprint, or the core
-        // would no longer play as the isolated core it was proven as.
-        const flipIsolated = (
-          board: Pick<
-            LevelDefinition,
-            "gridSize" | "edgePolicies" | "directionals"
-          >,
-        ): boolean =>
-          !flip ||
-          arrows.every(
-            (arrow) =>
-              arrow.id.includes("-flip-") ||
-              !trackKeys(board, arrow).some((key) => flip.footprint.has(key)),
-          );
-        if (!flipIsolated(level)) {
-          skip = "flip";
-          continue;
-        }
         if (
           tier.certificate &&
           assembledStats.total > 0 &&
@@ -2719,8 +3194,11 @@ export function generateLevel(id: number): LevelDefinition {
         const doubleIds = new Set(
           double?.arrows.map((arrow) => arrow.id) ?? [],
         );
+        // The flip region is proven again on the assembled level: later
+        // spots, circles and blockers can bend tracks toward it, and nothing
+        // outside it may ever reach its cells. Its own solution leads.
+        const flipLead = flip ? flipRegionLead(level) : [];
         const certificate: CertificateEntry[] = [
-          ...(flip ? flip.certificate : []),
           ...(double ? double.certificate : []),
           ...(core ? core.parkLegs : []),
           ...(directionalSpot
@@ -2731,29 +3209,38 @@ export function generateLevel(id: number): LevelDefinition {
             .filter((arrow) => !doubleIds.has(arrow.id))
             .map((arrow) => arrow.id),
         ];
-        const accepted = tier.certificate
-          ? validateGenerated(level, certificate)
-          : validateLevel(level).valid &&
-            solveLevelTargets(level) !== undefined;
+        const accepted =
+          flipLead !== undefined &&
+          (tier.certificate
+            ? validateGenerated(level, [...flipLead, ...certificate])
+            : validateLevel(level).valid &&
+              solveLevelTargets(level) !== undefined);
         if (accepted) return level;
-        skip = "replay";
-        if (extraSpots.length > 0 && directionalSpot) {
+        skip = flipLead ? "replay" : "flip";
+        if (extraSpots.length + reversalSpots.length > 0 && directionalSpot) {
           // Extra spots bend real routes and can break the replay; the required
           // core alone replays against the same certificate, so fall back to it
           // rather than dropping directionals entirely.
           // Fewer spots change the tracks, so circles are chosen again.
           const coreBoard = {
             ...candidateLevel,
-            directionals: [directionalSpot.spot, ...(flip ? [flip.spot] : [])],
+            directionals: [
+              directionalSpot.spot,
+              ...parkSpots,
+              ...(flip ? flip.spots : []),
+            ],
           };
           const coreStops = [
             ...(core ? core.stops : []),
+            ...regionStops,
             ...chooseStops(
               id,
               coreBoard,
               arrows,
               occupied,
-              getStopCount(id) - (core ? core.stops.length : 0),
+              getStopCount(id) -
+                (core ? core.stops.length : 0) -
+                regionStops.length,
               coreIds,
             ),
           ];
@@ -2762,8 +3249,9 @@ export function generateLevel(id: number): LevelDefinition {
             arrows,
             ...(coreStops.length > 0 ? { stops: coreStops } : {}),
           };
+          const coreLead = flip ? flipRegionLead(coreOnly) : [];
           const coreSafe =
-            flipIsolated(coreBoard) &&
+            coreLead !== undefined &&
             (!core ||
               core.stops.every(
                 strandSafeCircle(coreBoard, arrows, coreIds, "core"),
@@ -2771,7 +3259,10 @@ export function generateLevel(id: number): LevelDefinition {
           const coreAccepted =
             coreSafe &&
             (tier.certificate
-              ? validateGenerated(coreOnly, certificate)
+              ? validateGenerated(coreOnly, [
+                  ...(coreLead ?? []),
+                  ...certificate,
+                ])
               : validateLevel(coreOnly).valid &&
                 solveLevelTargets(coreOnly) !== undefined);
           if (coreAccepted) return coreOnly;
