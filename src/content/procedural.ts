@@ -31,6 +31,7 @@ import type {
   MoveTarget,
 } from "../core/types";
 import {
+  flipHeadingProbes,
   hasStrandingState,
   interactionRegion,
   proveRegion,
@@ -1473,7 +1474,7 @@ function flipCore(
     const spotKeys = spots.map((spot) => cellKey(spot.cell));
     const reach = new Set<string>(spotKeys);
     let singlePass = true;
-    for (const probe of flipProbes(board)) {
+    for (const probe of flipHeadingProbes(board)) {
       for (const arrow of arrows) {
         const keys = arrowTrack(probe, arrow).map(cellKey);
         if (
@@ -1579,32 +1580,6 @@ export function acceptFlipRegion(
       };
 }
 
-/** Level variants covering every direction each flip spot can hold. */
-function flipProbes(
-  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
-): readonly Pick<
-  LevelDefinition,
-  "gridSize" | "edgePolicies" | "directionals"
->[] {
-  let probes = [level];
-  for (const spot of level.directionals ?? []) {
-    if (spot.kind !== "flip") continue;
-    const key = cellKey(spot.cell);
-    probes = probes.flatMap((probe) => [
-      probe,
-      {
-        ...probe,
-        directionals: (probe.directionals ?? []).map((entry) =>
-          cellKey(entry.cell) === key
-            ? { ...entry, heading: flippedHeading(entry.heading) }
-            : entry,
-        ),
-      },
-    ]);
-  }
-  return probes;
-}
-
 /**
  * Every cell an arrow's track reaches under any flip-spot state, from both
  * ends of a double.
@@ -1614,7 +1589,7 @@ function reachKeys(
   arrow: ArrowDefinition,
 ): Set<string> {
   const keys = new Set<string>();
-  for (const probe of flipProbes(level)) {
+  for (const probe of flipHeadingProbes(level)) {
     for (const key of trackKeys(probe, arrow)) keys.add(key);
   }
   return keys;
@@ -2618,11 +2593,10 @@ export function generateLevel(id: number): LevelDefinition {
   const plannedSpotPlan = directionalFacePlan(id);
   // Acceptance tiers, tried strictly in order. Tier one's ordinary passes are
   // the historical exact-count, certificate-replayed construction. A later
-  // tier only sees an
-  // id that every earlier tier rejected across both spot plans and all eight
-  // restarts: it trades exact density and, in the last tier, the
-  // reverse-construction certificate for a solver-proven level instead of
-  // throwing.
+  // tier only sees an id that every earlier tier rejected across both spot
+  // plans and all eight restarts: it trades exact density and, in the last
+  // tier, the reverse-construction certificate for a solver-proven level
+  // instead of throwing.
   const reserve = blockerReserve(id);
   const tiers = [
     { minArrows: config.arrowCount, certificate: true },

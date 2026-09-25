@@ -5,7 +5,7 @@ import {
   flipCoreFrequency,
   generateLevel,
 } from "../src/content/procedural";
-import { createGameState } from "../src/core/game-state";
+import { createGameState, simulateMove } from "../src/core/game-state";
 import { arrowTrack } from "../src/core/stops";
 import { cellKey } from "../src/core/topology";
 import type {
@@ -14,6 +14,7 @@ import type {
   LevelDefinition,
 } from "../src/core/types";
 import {
+  flipHeadingProbes,
   flipInterest,
   hasStrandingState,
   interactionRegion,
@@ -24,33 +25,6 @@ import { layoutFingerprint } from "../src/storage";
 
 const isFlipArrow = (arrow: ArrowDefinition): boolean =>
   arrow.id.includes("-flip-");
-
-/** Level variants covering every direction each flip spot can hold. */
-function flipProbes(level: LevelDefinition): readonly LevelDefinition[] {
-  let probes = [level];
-  for (const spot of level.directionals ?? []) {
-    if (spot.kind !== "flip") continue;
-    probes = probes.flatMap((probe) => [
-      probe,
-      {
-        ...probe,
-        directionals: (probe.directionals ?? []).map((entry) =>
-          entry.cell === spot.cell
-            ? { ...entry, heading: flipped[entry.heading] }
-            : entry,
-        ),
-      },
-    ]);
-  }
-  return probes;
-}
-
-const flipped = {
-  east: "west",
-  west: "east",
-  north: "south",
-  south: "north",
-} as const;
 
 describe("generated flip cores", () => {
   test("frequency ramps from level 31 to 90", () => {
@@ -109,6 +83,94 @@ describe("generated flip cores", () => {
     }
   });
 
+  // The relay2 chain's point: the lid's safety depends on each of the two
+  // spots on its own. For each spot there is a state pair differing only in
+  // that spot's heading where the lid's tap flips between exit and blocked.
+  test("relay2's lid depends on each spot independently", () => {
+    const pattern = FLIP_PATTERNS.find((entry) => entry.name === "relay2");
+    expect(pattern).toBeDefined();
+    if (!pattern) return;
+    const at = ([x, y]: readonly [number, number]) => ({
+      face: "front" as const,
+      x: x + 2,
+      y: y + 2,
+    });
+    const spots: DirectionalSpotDefinition[] = [
+      { cell: [2, 2] as const, heading: pattern.heading },
+      ...(pattern.extraSpots ?? []),
+    ].map((spot) => ({
+      cell: at(spot.cell),
+      heading: spot.heading,
+      kind: "flip" as const,
+    }));
+    expect(spots).toHaveLength(2);
+    const level: LevelDefinition = {
+      id: 903,
+      title: "relay2",
+      gridSize: 9,
+      lives: 3,
+      arrows: pattern.arrows.map((entry) => ({
+        id: entry.name,
+        path: entry.cells.map(at),
+      })),
+      directionals: spots,
+    };
+    const flipped = {
+      east: "west",
+      west: "east",
+      north: "south",
+      south: "north",
+    } as const;
+    const combos = [
+      [false, false],
+      [true, false],
+      [false, true],
+      [true, true],
+    ] as const;
+    const lidKind = (
+      remainingIds: readonly string[],
+      reversed: readonly boolean[],
+    ): string => {
+      const spotHeadings = Object.fromEntries(
+        spots.map((spot, index) => [
+          cellKey(spot.cell),
+          reversed[index] ? flipped[spot.heading] : spot.heading,
+        ]),
+      );
+      return simulateMove(
+        level,
+        { ...createGameState(level), remainingIds, spotHeadings },
+        "lid",
+      ).kind;
+    };
+    const safe = (kind: string) => kind === "exit" || kind === "paused";
+    // Every subset of the other arrows, so the witness can come from any
+    // board the lid might face.
+    const others = level.arrows
+      .map((arrow) => arrow.id)
+      .filter((id) => id !== "lid");
+    const boards = Array.from({ length: 1 << others.length }, (_, mask) => [
+      "lid",
+      ...others.filter((_, bit) => mask & (1 << bit)),
+    ]);
+    spots.forEach((_, spotIndex) => {
+      const witnessed = boards.some((board) =>
+        combos.some((combo) => {
+          const other = combo.map((value, index) =>
+            index === spotIndex ? !value : value,
+          );
+          const first = lidKind(board, combo);
+          const second = lidKind(board, other);
+          return (
+            safe(first) !== safe(second) &&
+            (first === "blocked" || second === "blocked")
+          );
+        }),
+      );
+      expect(witnessed, `spot ${spotIndex}`).toBe(true);
+    });
+  });
+
   // One pass over ids 2-120: every level matches the committed v8 baseline;
   // a level with a flip core carries a proven interaction region that no
   // outside track ever enters, whose flip matters, and whose core is itself
@@ -163,7 +225,7 @@ describe("generated flip cores", () => {
           arrow.kind === "double"
             ? [arrow.path, [...arrow.path].reverse()]
             : [arrow.path];
-        for (const probe of flipProbes(level)) {
+        for (const probe of flipHeadingProbes(level)) {
           for (const path of paths) {
             for (const cell of arrowTrack(probe, { ...arrow, path })) {
               expect(region.cells.has(cellKey(cell))).toBe(false);

@@ -857,13 +857,19 @@ function occupancyKeys(
   return keys;
 }
 
-/** Level variants covering every direction each flip spot can hold. */
-function flipHeadingProbes(level: LevelDefinition): readonly LevelDefinition[] {
+/**
+ * Level variants covering every direction each flip spot can hold. The
+ * generator bounds reach and region closure with this same state set, so
+ * both sides of a proof agree on which flip states exist.
+ */
+export function flipHeadingProbes<
+  T extends Pick<LevelDefinition, "directionals">,
+>(level: T): readonly T[] {
   const flips = (level.directionals ?? []).filter(
     (spot) => spot.kind === "flip",
   );
   if (flips.length === 0) return [level];
-  let probes: LevelDefinition[] = [level];
+  let probes: T[] = [level];
   for (const spot of flips) {
     const reversed = flippedHeading(spot.heading);
     probes = probes.flatMap((probe) => [

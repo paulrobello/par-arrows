@@ -182,25 +182,45 @@ describe("stop-circle level content", () => {
     }
   }, 60_000);
 
-  test("cube 52 can no longer park an arrow into a permanent deadlock", () => {
-    const level = generateLevel(52);
-    const kept = new Set(["r52-44"]);
-    let state = createGameState(level);
-    for (let pass = 0; pass < level.arrows.length; pass += 1) {
-      const before = state.remainingIds.length;
-      for (const arrowId of [...state.remainingIds]) {
-        if (kept.has(arrowId) || arrowId.includes("-park-")) continue;
-        const result = simulateMove(level, state, arrowId);
-        if (result.kind === "exit") state = applyMove(level, state, result);
+  // Re-rolled for generator v8. The v7 regression was cube 52; under v8 the
+  // same shape lives on cube 14: a circle at front:12:14 on r14-17's lane
+  // would park it onto r14-37's track while r14-37's body pins it, a
+  // collision-free strand. The generator must not place that circle, and the
+  // shipped cube's endgame around those arrows must stay winnable.
+  test("cube 14 can never park an arrow into a permanent deadlock", () => {
+    const endgameOf = (level: LevelDefinition): LevelDefinition => {
+      let state = createGameState(level);
+      for (let pass = 0; pass < level.arrows.length; pass += 1) {
+        const before = state.remainingIds.length;
+        for (const arrowId of [...state.remainingIds]) {
+          if (arrowId === "r14-17" || arrowId.includes("-park-")) continue;
+          const result = simulateMove(level, state, arrowId);
+          if (result.kind === "exit") state = applyMove(level, state, result);
+        }
+        if (state.remainingIds.length === before) break;
       }
-      if (state.remainingIds.length === before) break;
-    }
-    const endgame: LevelDefinition = {
-      ...level,
-      arrows: level.arrows.filter((arrow) =>
-        state.remainingIds.includes(arrow.id),
-      ),
+      return {
+        ...level,
+        arrows: level.arrows.filter((arrow) =>
+          state.remainingIds.includes(arrow.id),
+        ),
+      };
     };
+    const level = generateLevel(14);
+    const trap = { face: "front" as const, x: 12, y: 14 };
+    expect((level.stops ?? []).map(cellKey)).not.toContain(cellKey(trap));
+    // The rule bites: with that circle added, the park crosses a track and
+    // the endgame strands.
+    const trapped: LevelDefinition = {
+      ...level,
+      stops: [...(level.stops ?? []), trap],
+    };
+    expect(validateLevel(trapped).valid).toBe(true);
+    expect(crossingParks(trapped)).toContain("r14-17->r14-37");
+    expect(hasStrandingState(endgameOf(trapped))).toBe(true);
+    // The shipped cube keeps no crossing park and a winnable endgame.
+    expect(crossingParks(level)).toEqual([]);
+    const endgame = endgameOf(level);
     expect(endgame.arrows.length).toBeGreaterThan(1);
     expect(hasStrandingState(endgame)).toBe(false);
   }, 30_000);
