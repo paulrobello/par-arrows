@@ -17,7 +17,10 @@ record. Deviations:
    stored generator version.
 6. Accepted spot-density drop: when extra or reversal spots break the
    assembled level, it falls back to its core-only spot set, so some cubes
-   carry fewer static spots than planned.
+   carry fewer static spots than planned. A follow-up (2026-09-25) keeps the
+   longest prefix of the optional spots that still replays instead, raising
+   static spots over ids 2-200 from 684 to 724 (914 planned); only ids 22, 67,
+   80, 84, 105, 122, 153, 164, 195 and 198 changed layout.
 7. Park-with-pending-flip puzzles shipped in a follow-up (2026-09-25). As
    first implemented, a region circle was kept only when parking moved no body
    onto another arrow's track, which ruled out any park covering a flip spot.

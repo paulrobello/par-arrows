@@ -3231,53 +3231,59 @@ export function generateLevel(id: number): LevelDefinition {
         skip = flipLead ? "replay" : "flip";
         if (extraSpots.length + reversalSpots.length > 0 && directionalSpot) {
           // Extra spots bend real routes and can break the replay; the required
-          // core alone replays against the same certificate, so fall back to it
-          // rather than dropping directionals entirely.
+          // core alone replays against the same certificate. Drop optional
+          // spots from the end until the rest replays, down to the core alone.
+          // Only prefixes are tried: each spot was vetted against the spots
+          // placed before it, so a prefix keeps every kept spot's checks true.
           // Fewer spots change the tracks, so circles are chosen again.
-          const coreBoard = {
-            ...candidateLevel,
-            directionals: [
-              directionalSpot.spot,
-              ...parkSpots,
-              ...(flip ? flip.spots : []),
-            ],
-          };
-          const coreStops = [
-            ...(core ? core.stops : []),
-            ...regionStops,
-            ...chooseStops(
-              id,
-              coreBoard,
+          const optional = [...extraSpots, ...reversalSpots];
+          for (let keep = optional.length - 1; keep >= 0; keep -= 1) {
+            const trimmedBoard = {
+              ...candidateLevel,
+              directionals: [
+                directionalSpot.spot,
+                ...optional.slice(0, keep),
+                ...parkSpots,
+                ...(flip ? flip.spots : []),
+              ],
+            };
+            const trimmedStops = [
+              ...(core ? core.stops : []),
+              ...regionStops,
+              ...chooseStops(
+                id,
+                trimmedBoard,
+                arrows,
+                occupied,
+                getStopCount(id) -
+                  (core ? core.stops.length : 0) -
+                  regionStops.length,
+                coreIds,
+              ),
+            ];
+            const trimmed: LevelDefinition = {
+              ...trimmedBoard,
               arrows,
-              occupied,
-              getStopCount(id) -
-                (core ? core.stops.length : 0) -
-                regionStops.length,
-              coreIds,
-            ),
-          ];
-          const coreOnly: LevelDefinition = {
-            ...coreBoard,
-            arrows,
-            ...(coreStops.length > 0 ? { stops: coreStops } : {}),
-          };
-          const coreLead = flip ? flipRegionLead(coreOnly) : [];
-          const coreSafe =
-            coreLead !== undefined &&
-            (!core ||
-              core.stops.every(
-                strandSafeCircle(coreBoard, arrows, coreIds, "core"),
-              ));
-          const coreAccepted =
-            coreSafe &&
-            (tier.certificate
-              ? validateGenerated(coreOnly, [
-                  ...(coreLead ?? []),
-                  ...certificate,
-                ])
-              : validateLevel(coreOnly).valid &&
-                solveLevelTargets(coreOnly) !== undefined);
-          if (coreAccepted) return coreOnly;
+              ...(trimmedStops.length > 0 ? { stops: trimmedStops } : {}),
+            };
+            const trimmedLead = flip ? flipRegionLead(trimmed) : [];
+            const trimmedSafe =
+              trimmedLead !== undefined &&
+              (!core ||
+                core.stops.every(
+                  strandSafeCircle(trimmedBoard, arrows, coreIds, "core"),
+                ));
+            const trimmedAccepted =
+              trimmedSafe &&
+              (tier.certificate
+                ? validateGenerated(trimmed, [
+                    ...(trimmedLead ?? []),
+                    ...certificate,
+                  ])
+                : validateLevel(trimmed).valid &&
+                  solveLevelTargets(trimmed) !== undefined);
+            if (trimmedAccepted) return trimmed;
+          }
         }
       }
     }
