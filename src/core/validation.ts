@@ -4,10 +4,16 @@ import {
   createGameState,
   simulateMove as simulateState,
 } from "./game-state";
-import { advanceHead, simulateMove } from "./movement";
+import { simulateMove } from "./movement";
 import { overlappingArrowIds, sharedDirectedSegment } from "./overlap";
 import { arrowTrack, maximumOffset, settledPathOf, trackKeys } from "./stops";
-import { cellKey, headingForPath, linkKey, seamTransition } from "./topology";
+import { cellKey, linkKey, seamTransition } from "./topology";
+import {
+  MAX_WORMHOLES,
+  advanceWithPortals,
+  linkHeading,
+  pathHeading,
+} from "./wormholes";
 import type {
   ArrowDefinition,
   Cell,
@@ -39,13 +45,14 @@ function loopError(
   arrow: ArrowDefinition,
   level: LevelDefinition,
   endpoint: Endpoint,
+  spotHeadings: Readonly<Record<string, Heading>>,
 ): string | undefined {
   const path = orientedPath(arrow, endpoint);
   const initialHead = path[path.length - 1];
   if (!initialHead) {
     return `Arrow ${arrow.id} has no head cell.`;
   }
-  const heading = headingForPath(path, level.gridSize);
+  const heading = pathHeading(level, path);
   if (!heading) {
     return undefined;
   }
@@ -59,7 +66,7 @@ function loopError(
       return `Arrow ${arrow.id} has a nonterminating continuation loop from its ${endpoint} endpoint.`;
     }
     visited.add(stateKey);
-    const forward = advanceHead(level, head, currentHeading);
+    const forward = advanceWithPortals(level, head, currentHeading);
     if (forward.exits) {
       return undefined;
     }
@@ -68,9 +75,28 @@ function loopError(
       return `Arrow ${arrow.id} has an incomplete topology step.`;
     }
     head = next;
-    currentHeading = spotHeadingAt(level, head) ?? forward.heading;
+    currentHeading =
+      spotHeadingAt(level, head, spotHeadings) ?? forward.heading;
   }
   return `Arrow ${arrow.id} has a nonterminating continuation loop from its ${endpoint} endpoint.`;
+}
+
+/**
+ * Every spot-heading state the flip spots can hold, keyed by cell: a spot
+ * stored at its authored direction is left out. Shared by the loop checks
+ * (for wormhole levels) and the fold check.
+ */
+function flipCombos(level: LevelDefinition): Record<string, Heading>[] {
+  const combos: Record<string, Heading>[] = [{}];
+  for (const spot of (level.directionals ?? []).filter(
+    (candidate) => candidate.kind === "flip",
+  )) {
+    const key = cellKey(spot.cell);
+    for (const combo of [...combos]) {
+      combos.push({ ...combo, [key]: flippedHeading(spot.heading) });
+    }
+  }
+  return combos;
 }
 
 /** Spot state as a key fragment; a spot stored at its authored heading is left out. */
@@ -213,6 +239,13 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
     }
   }
 
+  // A portal can redirect a head into a spot-dependent route, so wormhole
+  // levels trace every loop once per flip-spot state; without wormholes one
+  // authored-state trace keeps the historical behavior unchanged.
+  const loopCombos =
+    (level.wormholes?.length ?? 0) > 0
+      ? flipCombos(level)
+      : [{} as Record<string, Heading>];
   const ids = new Set<string>();
   const cells = new Map<string, string[]>();
   const links = new Map<string, string[]>();
@@ -261,11 +294,7 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
     for (let index = 1; index < arrow.path.length; index += 1) {
       const previous = arrow.path[index - 1];
       const current = arrow.path[index];
-      if (
-        !previous ||
-        !current ||
-        !headingForPath([previous, current], level.gridSize)
-      ) {
+      if (!previous || !current || !linkHeading(level, previous, current)) {
         errors.push(
           `Arrow ${arrow.id} has non-adjacent path cells at link ${index}.`,
         );
@@ -295,9 +324,11 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
     for (const endpoint of arrow.kind === "double"
       ? (["head", "tail"] as const)
       : (["head"] as const)) {
-      const loopProblem = loopError(arrow, level, endpoint);
-      if (loopProblem) {
-        errors.push(loopProblem);
+      for (const combo of loopCombos) {
+        const loopProblem = loopError(arrow, level, endpoint, combo);
+        if (loopProblem && !errors.includes(loopProblem)) {
+          errors.push(loopProblem);
+        }
       }
     }
   }
@@ -341,17 +372,41 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
       errors.push(`Directional spot ${key} sits on an arrow's starting cell.`);
     }
   }
+
+  const wormholes = level.wormholes ?? [];
+  if (wormholes.length > MAX_WORMHOLES) {
+    errors.push(`A level may carry at most ${MAX_WORMHOLES} wormholes.`);
+  }
+  const holeIds = new Set<string>();
+  const holeCells = new Set<string>();
+  for (const hole of wormholes) {
+    if (!hole.id || holeIds.has(hole.id))
+      errors.push(
+        `Wormhole ids must be nonempty and unique: ${hole.id || "<empty>"}.`,
+      );
+    holeIds.add(hole.id);
+    if (cellKey(hole.a) === cellKey(hole.b))
+      errors.push(`Wormhole ${hole.id} has both ends on one cell.`);
+    for (const end of [hole.a, hole.b]) {
+      const key = cellKey(end);
+      if (!inBounds(end, level.gridSize))
+        errors.push(`Wormhole ${hole.id} end ${key} is out of bounds.`);
+      if (holeCells.has(key) && cellKey(hole.a) !== cellKey(hole.b))
+        errors.push(`Wormhole end ${key} is declared more than once.`);
+      holeCells.add(key);
+      if (arrowCells.has(key))
+        errors.push(`Wormhole end ${key} sits on an arrow's starting cell.`);
+      if (stopCells.has(key))
+        errors.push(`Wormhole end ${key} shares its cell with a stop circle.`);
+      if (spotCells.has(key))
+        errors.push(
+          `Wormhole end ${key} shares its cell with a directional spot.`,
+        );
+    }
+  }
   // A fold can only park on a stop circle, so levels without one skip the search.
   if (stopCells.size > 0) {
-    const combos: Record<string, Heading>[] = [{}];
-    for (const spot of (level.directionals ?? []).filter(
-      (candidate) => candidate.kind === "flip",
-    )) {
-      const key = cellKey(spot.cell);
-      for (const combo of [...combos]) {
-        combos.push({ ...combo, [key]: flippedHeading(spot.heading) });
-      }
-    }
+    const combos = flipCombos(level);
     for (const arrow of level.arrows) {
       const problem = foldedStopError(level, arrow, combos);
       if (problem && !errors.includes(problem)) errors.push(problem);
@@ -852,7 +907,10 @@ export interface InteractionRegion {
  * spot's current direction is.
  */
 export function occupancyKeys(
-  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
+  level: Pick<
+    LevelDefinition,
+    "gridSize" | "edgePolicies" | "directionals" | "wormholes"
+  >,
   arrow: ArrowDefinition,
 ): ReadonlySet<string> {
   const keys = new Set<string>();

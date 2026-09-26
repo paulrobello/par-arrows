@@ -31,6 +31,7 @@ import { assertStopIntro } from "./stop-browser";
 import { assertDirectionalIntro } from "./directional-browser";
 import { assertDoubleIntro } from "./double-browser";
 import { assertFlipIntro } from "./flip-browser";
+import { assertWormholeIntro } from "./wormhole-browser";
 import { assertReliableTaps } from "./tap-browser";
 import {
   assertFirstRunWalkthrough,
@@ -107,15 +108,17 @@ const STOP_ONLY_COMPLETE = Symbol("stop-only-complete");
 const DIRECTIONAL_ONLY_COMPLETE = Symbol("directional-only-complete");
 const DOUBLE_ONLY_COMPLETE = Symbol("double-only-complete");
 const FLIP_ONLY_COMPLETE = Symbol("flip-only-complete");
+const WORMHOLE_ONLY_COMPLETE = Symbol("wormhole-only-complete");
 const RESIZE_ONLY_COMPLETE = Symbol("resize-only-complete");
 // The full v8 sweep measured 176 s on 2026-09-24, too close to the former
-// 180 s limit for a headed run to pass reliably.
+// 180 s limit for a headed run to pass reliably. Adding the wormhole suite
+// pushed a full sweep past 240 s on 2026-09-25.
 const deadline = setTimeout(() => {
-  console.error("Browser verification exceeded its 240-second deadline.");
+  console.error("Browser verification exceeded its 360-second deadline.");
   server.kill();
   void browser?.close();
   process.exitCode = 1;
-}, 240_000);
+}, 360_000);
 
 async function closeWithinDeadline(promise: Promise<void>): Promise<void> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -1020,6 +1023,20 @@ try {
     throw DOUBLE_ONLY_COMPLETE;
   }
 
+  if (process.env.WORMHOLE_ONLY === "1") {
+    await assertWormholeIntro(browser, url, output);
+    assert.deepEqual(failures, [], "Browser must not report uncaught errors");
+    await Bun.write(
+      `${output}/wormhole-summary.json`,
+      JSON.stringify(
+        { passed: true, browser: engine.name(), physicalDevice: false },
+        null,
+        2,
+      ),
+    );
+    throw WORMHOLE_ONLY_COMPLETE;
+  }
+
   if (process.env.FLIP_ONLY === "1") {
     await assertFlipIntro(browser, url, output);
     assert.deepEqual(failures, [], "Browser must not report uncaught errors");
@@ -1506,6 +1523,7 @@ try {
   await assertDirectionalIntro(browser, url, output);
   await assertDoubleIntro(browser, url, output);
   await assertFlipIntro(browser, url, output);
+  await assertWormholeIntro(browser, url, output);
   await assertTutorialFlow(browser, url, output);
   await assertConsistentMotion(browser, url, output);
   await assertReliableTaps(browser, url, output);
@@ -1540,6 +1558,7 @@ try {
     error !== DIRECTIONAL_ONLY_COMPLETE &&
     error !== DOUBLE_ONLY_COMPLETE &&
     error !== FLIP_ONLY_COMPLETE &&
+    error !== WORMHOLE_ONLY_COMPLETE &&
     error !== RESIZE_ONLY_COMPLETE &&
     error !== CONTEXT_ONLY_COMPLETE &&
     error !== TUTORIAL_ONLY_COMPLETE

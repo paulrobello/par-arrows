@@ -21,7 +21,9 @@ export interface TutorialScript {
   readonly steps: readonly TutorialStep[];
 }
 
-export const SCRIPTED_LEVEL_IDS: readonly number[] = [1, 5, 11, 15, 20, 25, 30];
+export const SCRIPTED_LEVEL_IDS: readonly number[] = [
+  1, 5, 11, 15, 20, 25, 30, 35,
+];
 
 const LEVEL_ONE_SCRIPT: TutorialScript = {
   levelId: 1,
@@ -260,6 +262,35 @@ const FLIP_INTRO_SCRIPT: TutorialScript = {
   ],
 };
 
+const WORMHOLE_INTRO_SCRIPT: TutorialScript = {
+  levelId: 35,
+  title: "Use the rings.",
+  steps: [
+    {
+      copy: "Paired rings join two faces: a head entering one comes out of the matching ring, still heading the same way. Tap this arrow to ride it.",
+      highlightId: "wormhole-intro-portal",
+      advance: {
+        kind: "move",
+        arrowIds: ["wormhole-intro-portal"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "This arrow faced the portal down one row and would never have moved. Through the rings its lane is clear. Tap it.",
+      highlightId: "wormhole-intro-gate",
+      advance: {
+        kind: "move",
+        arrowIds: ["wormhole-intro-gate"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "Every ring pair works the same way. Clear the remaining arrows.",
+      advance: { kind: "won" },
+    },
+  ],
+};
+
 const SCRIPTS: readonly TutorialScript[] = [
   LEVEL_ONE_SCRIPT,
   STOP_INTRO_SCRIPT,
@@ -268,6 +299,7 @@ const SCRIPTS: readonly TutorialScript[] = [
   DIRECTIONAL_INTRO_SCRIPT,
   DOUBLE_INTRO_SCRIPT,
   FLIP_INTRO_SCRIPT,
+  WORMHOLE_INTRO_SCRIPT,
 ];
 
 export function scriptForLevel(levelId: number): TutorialScript | undefined {

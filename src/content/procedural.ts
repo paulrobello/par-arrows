@@ -34,6 +34,7 @@ import type {
   LevelDefinition,
   MoveResult,
   MoveTarget,
+  WormholeDefinition,
 } from "../core/types";
 import {
   flipHeadingProbes,
@@ -51,12 +52,15 @@ import { DOUBLE_INTRO_LEVEL } from "./double-intro";
 import { FLIP_INTRO_LEVEL } from "./flip-intro";
 import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
 import { STOP_INTRO_LEVEL } from "./stop-intro";
+import { WORMHOLE_INTRO_LEVEL } from "./wormhole-intro";
 
 export const GENERATOR_VERSION = 8;
 export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
 
 /** Authored teaching cubes; every other id is generated at runtime. */
-export const AUTHORED_LEVEL_IDS: readonly number[] = [1, 5, 11, 15, 20, 25, 30];
+export const AUTHORED_LEVEL_IDS: readonly number[] = [
+  1, 5, 11, 15, 20, 25, 30, 35,
+];
 
 const AUTHORED = new Set(AUTHORED_LEVEL_IDS);
 
@@ -95,6 +99,7 @@ export function seedForLevel(id: number): string {
   if (id === 20) return "par-arrows:runtime:4:level:20:directional-intro:1";
   if (id === 25) return "par-arrows:runtime:7:level:25:double-intro:1";
   if (id === 30) return "par-arrows:runtime:7:level:30:flip-intro:1";
+  if (id === 35) return "par-arrows:runtime:7:level:35:wormhole-intro:1";
   if (id <= 10) return `par-arrows:runtime:4:level:${id}`;
   return `par-arrows:runtime:${GENERATOR_VERSION}:level:${id}`;
 }
@@ -287,6 +292,31 @@ export function flipCoreFrequency(id: number): number {
     (id - FIRST_FLIP_LEVEL) / (90 - FIRST_FLIP_LEVEL),
   );
   return 0.25 + 0.4 * progress;
+}
+
+/** First generated level that can embed a wormhole core. */
+const FIRST_WORMHOLE_LEVEL = 36;
+
+/** Probability that a generated level attempts a wormhole core. */
+export function wormholeFrequency(id: number): number {
+  assertLevelId(id);
+  if (id < FIRST_WORMHOLE_LEVEL || isAuthoredLevel(id)) return 0;
+  return 0.25 + 0.35 * Math.min(1, (id - 36) / 54);
+}
+
+/**
+ * How many wormholes the level tries for: the first draw beats the
+ * frequency curve, and from level 50 a second draw on the same stream
+ * upgrades a hit to two with probability 0.3. Plan zero draws nothing
+ * else, so every zero-wormhole level constructs exactly as before.
+ */
+export function wormholePlan(id: number): 0 | 1 | 2 {
+  assertLevelId(id);
+  if (id < FIRST_WORMHOLE_LEVEL) return 0;
+  const rng = coreStream(id, "wormhole-plan", 0);
+  if (rng.next() >= wormholeFrequency(id)) return 0;
+  if (id >= 50 && rng.next() < 0.3) return 2;
+  return 1;
 }
 
 /** Extra arrows the blocker pass may spend toward the blocked target. */
@@ -1211,6 +1241,16 @@ interface ParkingCore {
   readonly parkLegs: readonly string[];
 }
 
+/**
+ * A required-use wormhole core: portal and gate plus the wormhole that
+ * frees them, with the core-only certificate that leads the replay.
+ */
+interface WormholeCore {
+  readonly arrows: readonly ArrowDefinition[];
+  readonly wormhole: WormholeDefinition;
+  readonly certificate: readonly MoveTarget[];
+}
+
 interface DoubleCore {
   readonly arrows: readonly ArrowDefinition[];
   readonly certificate: readonly MoveTarget[];
@@ -1293,6 +1333,216 @@ function doubleCore(
       arrows,
       certificate: certificate.filter((target) => coreIds.has(target.arrowId)),
     };
+  }
+  return undefined;
+}
+
+/**
+ * Level-35's two-arrow geometry relative to end A. The portal's lane runs
+ * into A, so with the rings it jumps to B and exits along its entry heading
+ * while its body vacates; without them the lane ends on the gate's body. The
+ * gate's lane ends on the portal's head, so both deadlock until the portal
+ * leaves. One quarter turn about A per placement attempt.
+ */
+const WORMHOLE_PATTERN = {
+  portal: [
+    [-2, 0],
+    [-1, 0],
+  ],
+  gate: [
+    [1, 0],
+    [1, -1],
+    [1, -2],
+    [0, -2],
+    [-1, -2],
+    [-1, -1],
+  ],
+} as const;
+
+/**
+ * Place a required-use wormhole core on its own seeded stream, modeled on
+ * `doubleCore`. The level-35 pattern rotates about end A on a candidate
+ * face; end B lands on a random other face, and the corridor ahead of B
+ * must run straight off that face through a non-wrapping edge, clear of
+ * every reserved cell. The core proves required use on the core board alone
+ * (solvable with the wormhole, deadlocked without it), every arrow already
+ * on board keeps its route off both ends so only the portal ever jumps, and
+ * no earlier body may sit on a core track, so the core's certificate
+ * replays against the assembled cube. Undefined drops the core; the level
+ * never restarts for a wormhole placement that fails.
+ */
+function wormholeCore(
+  id: number,
+  level: LevelDefinition,
+  occupied: ReadonlySet<string>,
+  restart: number,
+): WormholeCore | undefined {
+  const size = level.gridSize;
+  const rng = coreStream(id, "wormhole-core", restart);
+  const inBounds = (cell: Cell): boolean =>
+    cell.x >= 0 && cell.y >= 0 && cell.x < size && cell.y < size;
+  const suffix = level.arrows.some((arrow) => arrow.id.includes("-wormhole-"))
+    ? "-2"
+    : "";
+  for (let attempt = 0; attempt < 48; attempt += 1) {
+    const face = rng.pick(FACES);
+    const rotation = rng.int(4);
+    const a: Cell = {
+      face,
+      x: 2 + rng.int(size - 3),
+      y: 2 + rng.int(size - 3),
+    };
+    const bFace = rng.pick(FACES.filter((entry) => entry !== face));
+    const b: Cell = { face: bFace, x: rng.int(size), y: rng.int(size) };
+    const arrows: ArrowDefinition[] = [
+      {
+        id: `r${id}-wormhole-portal${suffix}`,
+        path: WORMHOLE_PATTERN.portal.map(([dx, dy]) =>
+          patternCell(a, dx, dy, rotation),
+        ),
+      },
+      {
+        id: `r${id}-wormhole-gate${suffix}`,
+        path: WORMHOLE_PATTERN.gate.map(([dx, dy]) =>
+          patternCell(a, dx, dy, rotation),
+        ),
+      },
+    ];
+    const cells = arrows.flatMap((arrow) => arrow.path);
+    if (
+      cells.some((cell) => !inBounds(cell) || occupied.has(cellKey(cell))) ||
+      occupied.has(cellKey(a)) ||
+      occupied.has(cellKey(b))
+    )
+      continue;
+    // The portal leaves B along its entry heading, so the corridor ahead of
+    // B must run straight off the face through a non-wrapping edge and
+    // dodge every reserved cell.
+    const corridor: Cell[] = [];
+    let corridorExits = false;
+    let cursor = b;
+    for (let step = 0; step <= size; step += 1) {
+      const forward = advanceHead(
+        level,
+        cursor,
+        rotateHeading("east", rotation),
+      );
+      if (forward.exits) {
+        corridorExits = true;
+        break;
+      }
+      const next = forward.next;
+      if (!next || next.face !== b.face || occupied.has(cellKey(next))) break;
+      corridor.push(next);
+      cursor = next;
+    }
+    if (!corridorExits) continue;
+    const wormhole: WormholeDefinition = {
+      id: suffix ? "w2" : "w1",
+      a,
+      b,
+    };
+    const board: LevelDefinition = { ...level, arrows, wormholes: [wormhole] };
+    if (!validateLevel(board).valid) continue;
+    const certificate = solveLevelTargets(board);
+    if (
+      !certificate ||
+      solveLevelTargets({ ...board, wormholes: [] }) !== undefined
+    )
+      continue;
+    // Only the portal may ever jump: every arrow already on board keeps its
+    // full route (both ends of a double) off both wormhole ends.
+    const endKeys = new Set([cellKey(a), cellKey(b)]);
+    const routesClear = level.arrows.every((arrow) => {
+      const paths =
+        arrow.kind === "double"
+          ? [arrow.path, [...arrow.path].reverse()]
+          : [arrow.path];
+      return paths.every((path) =>
+        arrowTrack(level, { ...arrow, path }).every(
+          (cell) => !endKeys.has(cellKey(cell)),
+        ),
+      );
+    });
+    // No earlier body may sit on a core track, so the core's certificate
+    // replays with every earlier arrow as a static blocker.
+    const bodyKeys = new Set(
+      level.arrows.flatMap((arrow) => arrow.path.map(cellKey)),
+    );
+    if (
+      !routesClear ||
+      arrows.some((arrow) =>
+        arrowTrack(board, arrow).some((cell) => bodyKeys.has(cellKey(cell))),
+      )
+    )
+      continue;
+    const coreIds = new Set(arrows.map((arrow) => arrow.id));
+    return {
+      arrows,
+      wormhole,
+      certificate: certificate.filter((target) => coreIds.has(target.arrowId)),
+    };
+  }
+  return undefined;
+}
+
+/**
+ * Fallback for a planned wormhole whose core did not fit: a decorative pair
+ * on the assembled board, drawn from cells existing arrows sweep through.
+ * Both ends dodge every reserved, group-track, flip-region, stop and spot
+ * cell, and the pair survives only when the assembled level still validates,
+ * replays its construction certificate, and — on a flip cube — keeps a
+ * proven flip region that no outside track enters. Twenty-four candidates,
+ * then give up; a failure drops the wormhole without restarting the level.
+ */
+function decorativeWormhole(
+  id: number,
+  level: LevelDefinition,
+  occupied: ReadonlySet<string>,
+  rng: Rng,
+  certificate: readonly CertificateEntry[],
+  flipCells: ReadonlySet<string> | undefined,
+  groupTracks: ReadonlySet<string>,
+): WormholeDefinition | undefined {
+  const spotKeys = new Set(
+    (level.directionals ?? []).map((spot) => cellKey(spot.cell)),
+  );
+  const stopKeys = new Set((level.stops ?? []).map(cellKey));
+  const trackCells: Cell[] = [];
+  const seen = new Set<string>();
+  for (const arrow of level.arrows) {
+    for (const cell of arrowTrack(level, arrow)) {
+      const key = cellKey(cell);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      trackCells.push(cell);
+    }
+  }
+  if (trackCells.length < 2) return undefined;
+  for (let attempt = 0; attempt < 24; attempt += 1) {
+    const a = rng.pick(trackCells);
+    const b = rng.pick(trackCells);
+    const keys = [cellKey(a), cellKey(b)];
+    if (keys[0] === keys[1]) continue;
+    if (
+      keys.some(
+        (key) =>
+          occupied.has(key) ||
+          flipCells?.has(key) ||
+          groupTracks.has(key) ||
+          stopKeys.has(key) ||
+          spotKeys.has(key),
+      )
+    )
+      continue;
+    const candidate: LevelDefinition = {
+      ...level,
+      wormholes: [{ id: "w1", a, b }],
+    };
+    if (!validateLevel(candidate).valid) continue;
+    if (!replayCertificate(candidate, certificate)) continue;
+    if (flipCells && !flipRegionLead(candidate)) continue;
+    return { id: "w1", a, b };
   }
   return undefined;
 }
@@ -2680,6 +2930,7 @@ export function generateLevel(id: number): LevelDefinition {
   if (id === 20) return DIRECTIONAL_INTRO_LEVEL;
   if (id === 25) return DOUBLE_INTRO_LEVEL;
   if (id === 30) return FLIP_INTRO_LEVEL;
+  if (id === 35) return WORMHOLE_INTRO_LEVEL;
   const config = getLevelConfig(id);
   const baseSeed = hashSeed(seedForLevel(id));
   const edgePolicies = getWrappingEdgePolicies(id);
@@ -2708,6 +2959,7 @@ export function generateLevel(id: number): LevelDefinition {
   const flipPlanned =
     flipCoreFrequency(id) > 0 &&
     coreStream(id, "flip-plan", 0).next() < flipCoreFrequency(id);
+  const wormholeSlots = wormholePlan(id);
   for (const tier of tiers) {
     const passes = [
       ...(flipPlanned ? [{ spotPlan: plannedSpotPlan, flipPass: true }] : []),
@@ -2715,6 +2967,10 @@ export function generateLevel(id: number): LevelDefinition {
       { spotPlan: [] as readonly number[], flipPass: false },
     ];
     for (const { spotPlan, flipPass } of passes) {
+      // Wormhole slots, like the double core, exist only on certificate
+      // tiers; a give-up below withdraws them so the pass rebuilds as the
+      // exact plan-zero construction.
+      let slots = tier.certificate ? wormholeSlots : 0;
       construction: for (let restart = 0; restart < 8; restart += 1) {
         const rng = new Rng(
           (baseSeed + Math.imul(restart + 1, 0x9e3779b9)) >>> 0,
@@ -2860,6 +3116,60 @@ export function generateLevel(id: number): LevelDefinition {
             }
           }
         }
+        // A planned wormhole core gets its slots right after the double
+        // core, on its own stream. A placement that fails is dropped: the
+        // level falls back to a decorative pair and never restarts for a
+        // wormhole.
+        const wormholes: WormholeCore[] = [];
+        const wormholeExempt = new Set<string>();
+        for (let slot = 0; slot < slots; slot += 1) {
+          const spotsSoFar = [
+            ...(directionalSpot ? [directionalSpot.spot] : []),
+            ...parkSpots,
+          ];
+          const coreBoard = {
+            ...candidateLevel,
+            arrows,
+            ...(spotsSoFar.length > 0 ? { directionals: spotsSoFar } : {}),
+          };
+          const wormhole = wormholeCore(id, coreBoard, occupied, restart);
+          if (!wormhole) break;
+          const holeBoard = { ...coreBoard, wormholes: [wormhole.wormhole] };
+          const reserved = new Set<string>([
+            cellKey(wormhole.wormhole.a),
+            cellKey(wormhole.wormhole.b),
+          ]);
+          for (const arrow of wormhole.arrows) {
+            for (const cell of arrowTrack(holeBoard, arrow)) {
+              reserved.add(cellKey(cell));
+            }
+          }
+          // The reservation must stay off the shared-tail groups' tracks.
+          if ([...reserved].some((key) => groupTracks.has(key))) break;
+          wormholes.push(wormhole);
+          for (const key of reserved) occupied.add(key);
+          // Every core track cell is vacated before any plain arrow flies
+          // (the core's certificate leads the replay), so later exit rays
+          // may cross them the way they cross the directional corridor.
+          for (const key of reserved) wormholeExempt.add(key);
+          for (const arrow of wormhole.arrows) arrows.push(arrow);
+        }
+        // The ends themselves must never be crossed by a route — entering
+        // one teleports — so they stay ray-forbidden and are the ends the
+        // route-vetting passes below keep off every later arrow's route.
+        const portalKeys = new Set(
+          wormholes.flatMap((entry) => [
+            cellKey(entry.wormhole.a),
+            cellKey(entry.wormhole.b),
+          ]),
+        );
+        for (const key of portalKeys) wormholeExempt.delete(key);
+        const rayExemptCells: ReadonlySet<string> | undefined =
+          wormholes.length > 0
+            ? new Set([...dirCells, ...wormholeExempt])
+            : directional
+              ? dirCells
+              : undefined;
         const flip = flipPass
           ? flipCore(
               id,
@@ -2905,7 +3215,7 @@ export function generateLevel(id: number): LevelDefinition {
             throw new Error(
               "Could not choose a seeded straight-arrow starter.",
             );
-          const path = straightCandidate(
+          let path = straightCandidate(
             rng,
             config.gridSize,
             face,
@@ -2913,6 +3223,40 @@ export function generateLevel(id: number): LevelDefinition {
             length,
             occupied,
           );
+          // A wormhole end reserved ahead of the starters must stay off
+          // every later route: a starter whose straight lane runs over an
+          // end draws another lane, and only sixteen straight misses give
+          // up the restart.
+          for (
+            let redraw = 0;
+            portalKeys.size > 0 &&
+            path &&
+            exitRay(
+              candidateLevel,
+              path[path.length - 1] as Cell,
+              heading,
+            ).some((cell) => portalKeys.has(cellKey(cell)));
+            redraw += 1
+          ) {
+            if (redraw >= 16) {
+              // Withdraw the plan instead of restarting on shifted streams:
+              // the pass rebuilds from restart 0 with zero slots, which is
+              // byte-identical to the plan-zero construction, so a planned
+              // hole can never change a zero-hole layout.
+              skip = "wormhole";
+              slots = 0;
+              restart = -1;
+              continue construction;
+            }
+            path = straightCandidate(
+              rng,
+              config.gridSize,
+              face,
+              heading,
+              length,
+              occupied,
+            );
+          }
           if (!path) {
             skip = "starter";
             continue construction;
@@ -2949,7 +3293,8 @@ export function generateLevel(id: number): LevelDefinition {
               ray.length === 0 ||
               ray.some(
                 (cell) =>
-                  occupied.has(cellKey(cell)) && !dirCells.has(cellKey(cell)),
+                  occupied.has(cellKey(cell)) &&
+                  !rayExemptCells?.has(cellKey(cell)),
               )
             )
               continue;
@@ -2988,10 +3333,13 @@ export function generateLevel(id: number): LevelDefinition {
           const shape = shapeOf(path);
           if (shape) shapeCounts.set(shape, (shapeCounts.get(shape) ?? 0) + 1);
         };
+        // A wormhole board reserves both ends and every core track cell, so
+        // its fill works a little harder for the same arrow count; the
+        // bound is unchanged (and the layout historical) when none placed.
         for (
           let attempt = 0;
           arrows.length < config.arrowCount &&
-          attempt < config.arrowCount * 900;
+          attempt < config.arrowCount * (900 + 400 * wormholes.length);
           attempt += 1
         ) {
           const path = candidate(
@@ -3005,7 +3353,7 @@ export function generateLevel(id: number): LevelDefinition {
                   (1 - edgePolicies.length * 0.05),
               ),
             ),
-            directional ? dirCells : undefined,
+            rayExemptCells,
           );
           if (!path || shapeFull(path)) continue;
           const arrow: ArrowDefinition = {
@@ -3090,7 +3438,7 @@ export function generateLevel(id: number): LevelDefinition {
                     (1 - edgePolicies.length * 0.05),
                 ),
               ),
-              directional ? dirCells : undefined,
+              rayExemptCells,
             );
             if (!path || shapeFull(path)) continue;
             if (path.some((cell) => groupRouteCells.has(cellKey(cell))))
@@ -3174,7 +3522,7 @@ export function generateLevel(id: number): LevelDefinition {
                   })),
                 coreFace,
                 groupTracks,
-                flip ? flip.cells : undefined,
+                new Set([...(flip ? flip.cells : []), ...portalKeys]),
               )
             : [];
         // Reversal blockers spend whatever room the plan's faces have left.
@@ -3200,7 +3548,11 @@ export function generateLevel(id: number): LevelDefinition {
               arrows,
               occupied,
               reversalRoom,
-              new Set([...parkTrackKeys, ...(flip ? flip.cells : [])]),
+              new Set([
+                ...parkTrackKeys,
+                ...(flip ? flip.cells : []),
+                ...portalKeys,
+              ]),
             )
           : [];
         const spots = [
@@ -3236,6 +3588,9 @@ export function generateLevel(id: number): LevelDefinition {
           arrows,
           ...(stops.length > 0 ? { stops } : {}),
           ...(spots.length > 0 ? { directionals: spots } : {}),
+          ...(wormholes.length > 0
+            ? { wormholes: wormholes.map((entry) => entry.wormhole) }
+            : {}),
         });
         // `level.arrows` is the SAME array as `arrows`: a later push (the
         // assembled-board top-up below) is visible through `level` without
@@ -3250,7 +3605,14 @@ export function generateLevel(id: number): LevelDefinition {
           skip = "faces";
           continue;
         }
-        let assembledStats = blockedStats(level);
+        // The blocked-share gate and the top-up scoring measure the board
+        // the construction passes planned around: stripping the wormholes
+        // keeps the portal's ring-created exit from shifting the share by
+        // one unit and rejecting boards the historical plan accepted. The
+        // final replay still validates the real board.
+        let statsBoard =
+          wormholes.length > 0 ? { ...level, wormholes: [] } : level;
+        let assembledStats = blockedStats(statsBoard);
         if (
           reserve > 0 &&
           placed < reserve &&
@@ -3268,11 +3630,15 @@ export function generateLevel(id: number): LevelDefinition {
           blockedUnits = assembledStats.blocked;
           totalUnits = assembledStats.total;
           const placedBefore = placed;
-          runBlockerPass(level);
+          runBlockerPass(statsBoard);
           // A new blocker's track can cross a circle's parked window, so the
           // circles are chosen again against the final arrows.
-          if (placed > placedBefore) level = assemble(placeStops());
-          assembledStats = blockedStats(level);
+          if (placed > placedBefore) {
+            level = assemble(placeStops());
+            statsBoard =
+              wormholes.length > 0 ? { ...level, wormholes: [] } : level;
+          }
+          assembledStats = blockedStats(statsBoard);
         }
         if (
           core &&
@@ -3303,6 +3669,7 @@ export function generateLevel(id: number): LevelDefinition {
         // outside it may ever reach its cells. Its own solution leads.
         const flipLead = flip ? flipRegionLead(level) : [];
         const certificate: CertificateEntry[] = [
+          ...wormholes.flatMap((entry) => entry.certificate),
           ...(double ? double.certificate : []),
           ...(core ? core.parkLegs : []),
           ...(directionalSpot
@@ -3310,9 +3677,35 @@ export function generateLevel(id: number): LevelDefinition {
             : []),
           ...[...arrows]
             .reverse()
-            .filter((arrow) => !doubleIds.has(arrow.id))
+            .filter(
+              (arrow) =>
+                !doubleIds.has(arrow.id) &&
+                !wormholes.some((entry) =>
+                  entry.arrows.some((core) => core.id === arrow.id),
+                ),
+            )
             .map((arrow) => arrow.id),
         ];
+        // A planned wormhole whose core did not fit falls back to a
+        // decorative pair on the assembled board. Plan zero never reaches
+        // this, so zero-wormhole levels keep their exact historical layout.
+        if (wormholes.length === 0 && slots > 0) {
+          const deco = decorativeWormhole(
+            id,
+            level,
+            occupied,
+            coreStream(id, "wormhole-deco", restart),
+            certificate,
+            flip ? flip.cells : undefined,
+            groupTracks,
+          );
+          if (deco) {
+            wormholes.push({ arrows: [], wormhole: deco, certificate: [] });
+            occupied.add(cellKey(deco.a));
+            occupied.add(cellKey(deco.b));
+            level = { ...level, wormholes: [deco] };
+          }
+        }
         const accepted =
           flipLead !== undefined &&
           (tier.certificate
@@ -3338,6 +3731,9 @@ export function generateLevel(id: number): LevelDefinition {
                 ...parkSpots,
                 ...(flip ? flip.spots : []),
               ],
+              ...(wormholes.length > 0
+                ? { wormholes: wormholes.map((entry) => entry.wormhole) }
+                : {}),
             };
             const trimmedStops = [
               ...(core ? core.stops : []),

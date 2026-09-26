@@ -1,6 +1,11 @@
 import * as THREE from "three";
 
 import { overlappingArrowIds } from "../core/overlap";
+import {
+  advanceWithPortals,
+  isPortalLink,
+  type PortalSource,
+} from "../core/wormholes";
 import type { PickCandidate } from "../pick";
 import { splitExpandedPath } from "./ribbon-geometry";
 import { failurePositionKey, settledPathOf } from "../core/stops";
@@ -55,6 +60,9 @@ interface ThemePalette {
   readonly stop: number;
   readonly directional: number;
   readonly flip: number;
+  readonly wormhole: readonly [number, number];
+  /** Side-marker colors, indexed by `wormholeDotColorIndex`. */
+  readonly wormholeDots: readonly [number, number, number, number];
   readonly doubleTail: number;
   readonly doubleHead: number;
 }
@@ -66,7 +74,7 @@ interface HintFocus {
   readonly fromDistance: number;
 }
 
-const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
+export const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
   light: {
     background: 0xe9f4f7,
     cube: 0xfffcf4,
@@ -80,6 +88,8 @@ const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     stop: 0x1d9a86,
     directional: 0x0f7fa8,
     flip: 0xc0266d,
+    wormhole: [0xe07a10, 0x1f3fbf],
+    wormholeDots: [0xe11d48, 0xeab308, 0x0d9488, 0x7c3aed],
     doubleTail: 0x6d28d9,
     doubleHead: 0x4d7c0f,
   },
@@ -96,10 +106,24 @@ const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     stop: 0x3fe0c0,
     directional: 0x3ac8f0,
     flip: 0xff6fb5,
+    wormhole: [0xffa040, 0x4f6bff],
+    wormholeDots: [0xfb7185, 0xfde047, 0x2dd4bf, 0xa78bfa],
     doubleTail: 0xc084fc,
     doubleHead: 0xa3e635,
   },
 };
+
+const DOT_SIDES: readonly Heading[] = ["north", "east", "south", "west"];
+
+/**
+ * Palette index of the direction dot on one side of a wormhole end. End b's
+ * pattern is end a's turned half a revolution, so a head crossing a dot on
+ * either end leaves the partner across the dot of the same color.
+ */
+export function wormholeDotColorIndex(side: Heading, end: "a" | "b"): number {
+  const index = DOT_SIDES.indexOf(side);
+  return end === "a" ? index : (index + 2) % 4;
+}
 
 const FLIP_TURN_WINDOW = 0.12;
 
@@ -240,6 +264,7 @@ function seamPoint(
 export interface ExpandedPath {
   readonly points: readonly THREE.Vector3[];
   readonly segmentFaces: readonly Cell["face"][];
+  readonly gaps?: readonly boolean[];
 }
 
 export interface WrappingEdgeSegment {
@@ -517,13 +542,14 @@ export function ribbonSections(
   segmentFaces: readonly Cell["face"][],
   width: number,
   risesTowardStart = false,
+  gaps: readonly boolean[] = [],
 ): readonly SegmentCrossSections[] {
   const sections: SegmentCrossSections[] = [];
   for (let index = 0; index < segmentFaces.length; index += 1) {
     const start = points[index];
     const end = points[index + 1];
     const face = segmentFaces[index];
-    if (!start || !end || !face) continue;
+    if (!start || !end || !face || gaps[index]) continue;
     const [nx, ny, nz] = faceNormal(face);
     const normal = new THREE.Vector3(nx, ny, nz);
     const tangent = end.clone().sub(start);
@@ -541,10 +567,10 @@ export function ribbonSections(
     } else {
       tangent.normalize();
     }
-    sections.push({
+    sections[index] = {
       start: crossSection(start, normal, tangent, width),
       end: crossSection(end, normal, tangent, width),
-    });
+    };
   }
   for (let index = 1; index < sections.length; index += 1) {
     const previousFace = segmentFaces[index - 1];
@@ -552,7 +578,15 @@ export function ribbonSections(
     const joint = points[index];
     const previousStart = points[index - 1];
     const nextEnd = points[index + 1];
-    if (!previousFace || !nextFace || !joint || !previousStart || !nextEnd)
+    if (
+      gaps[index - 1] ||
+      gaps[index] ||
+      !previousFace ||
+      !nextFace ||
+      !joint ||
+      !previousStart ||
+      !nextEnd
+    )
       continue;
     if (previousFace !== nextFace) {
       const previous = sections[index - 1];
@@ -605,6 +639,25 @@ export function ribbonSections(
       next.start = shared;
     }
   }
+  if (gaps.some(Boolean)) {
+    // Overlap lifting is local to each contiguous ribbon, never across a jump.
+    for (let start = 0; start < segmentFaces.length; ) {
+      while (gaps[start] && start < segmentFaces.length) start += 1;
+      let end = start;
+      while (end < segmentFaces.length && !gaps[end]) end += 1;
+      if (end > start) {
+        const run = ribbonSections(
+          points.slice(start, end + 1),
+          segmentFaces.slice(start, end),
+          width,
+          risesTowardStart,
+        );
+        sections.splice(start, run.length, ...run);
+      }
+      start = end + 1;
+    }
+    return sections;
+  }
   const layers = risesTowardStart
     ? [
         ...selfOverlapLayers(
@@ -646,9 +699,10 @@ export function ribbonVertices(
   );
 }
 
-function pathLength(path: ExpandedPath): number {
+export function pathLength(path: ExpandedPath): number {
   let length = 0;
   for (let index = 1; index < path.points.length; index += 1) {
+    if (path.gaps?.[index - 1]) continue;
     length +=
       path.points[index - 1]?.distanceTo(
         path.points[index] ?? new THREE.Vector3(),
@@ -664,6 +718,7 @@ export function slicePath(
 ): RibbonSlice {
   const points: THREE.Vector3[] = [];
   const segmentFaces: Cell["face"][] = [];
+  const gaps: boolean[] = [];
   let walked = 0;
   const endOffset = offset + length;
   for (let index = 0; index < path.segmentFaces.length; index += 1) {
@@ -671,12 +726,19 @@ export function slicePath(
     const end = path.points[index + 1];
     const face = path.segmentFaces[index];
     if (!start || !end || !face) continue;
-    const segmentLength = start.distanceTo(end);
+    const gap = path.gaps?.[index] ?? false;
+    const segmentLength = gap ? 0 : start.distanceTo(end);
     const segmentStart = walked;
     const segmentEnd = walked + segmentLength;
     const from = Math.max(offset, segmentStart);
     const to = Math.min(endOffset, segmentEnd);
-    if (to > from || (segmentLength === 0 && from === to)) {
+    if (
+      to > from ||
+      (segmentLength === 0 &&
+        from === to &&
+        from >= offset &&
+        from <= endOffset)
+    ) {
       const at = (distance: number): THREE.Vector3 =>
         start
           .clone()
@@ -684,11 +746,12 @@ export function slicePath(
             end,
             segmentLength === 0 ? 0 : (distance - segmentStart) / segmentLength,
           );
-      const fromPoint = at(from);
-      const toPoint = at(to);
+      const fromPoint = gap ? start.clone() : at(from);
+      const toPoint = gap ? end.clone() : at(to);
       if (points.length === 0) points.push(fromPoint);
       points.push(toPoint);
       segmentFaces.push(face);
+      gaps.push(gap);
     }
     walked = segmentEnd;
   }
@@ -697,13 +760,14 @@ export function slicePath(
       "Ribbon path slices must have exactly one more point than segment face.",
     );
   }
-  return { points, segmentFaces, headFace: segmentFaces.at(-1) };
+  return { points, segmentFaces, gaps, headFace: segmentFaces.at(-1) };
 }
 
 function reversePath(path: ExpandedPath): ExpandedPath {
   return {
     points: [...path.points].reverse(),
     segmentFaces: [...path.segmentFaces].reverse(),
+    ...(path.gaps ? { gaps: [...path.gaps].reverse() } : {}),
   };
 }
 
@@ -711,6 +775,10 @@ function concatPaths(first: ExpandedPath, second: ExpandedPath): ExpandedPath {
   return {
     points: [...first.points, ...second.points.slice(1)],
     segmentFaces: [...first.segmentFaces, ...second.segmentFaces],
+    gaps: [
+      ...(first.gaps ?? first.segmentFaces.map(() => false)),
+      ...(second.gaps ?? second.segmentFaces.map(() => false)),
+    ],
   };
 }
 
@@ -726,8 +794,9 @@ export function arrowMotionTrack(
   result: MoveResult,
   gridSize: number,
   minimumDistance = 0,
+  level?: PortalSource,
 ): ArrowMotionTrack {
-  const route = expandedPoints(result.route, gridSize);
+  const route = expandedPoints(result.route, gridSize, level);
   const orientedPath = result.endpoint === "tail" ? reversePath(path) : path;
   const bodyLength = pathLength(orientedPath);
   let track = concatPaths(orientedPath, route);
@@ -795,6 +864,7 @@ function arrowFace(arrow: ArrowDefinition): Cell["face"] {
 export function expandedPoints(
   cells: readonly Cell[],
   gridSize: number,
+  level?: PortalSource,
 ): ExpandedPath {
   const first = cells[0];
   if (!first) {
@@ -802,6 +872,7 @@ export function expandedPoints(
   }
   const points: THREE.Vector3[] = [cellPoint(first, gridSize)];
   const segmentFaces: Cell["face"][] = [];
+  const gaps: boolean[] = [];
   for (let index = 1; index < cells.length; index += 1) {
     const previous = cells[index - 1];
     const current = cells[index];
@@ -810,20 +881,41 @@ export function expandedPoints(
     }
     const previousPoint = cellPoint(previous, gridSize);
     const currentPoint = cellPoint(current, gridSize);
+    if (level && isPortalLink(level, previous, current)) {
+      const heading = ["north", "south", "east", "west"] as const;
+      const entry = heading
+        .map((direction) => advanceWithPortals(level, previous, direction))
+        .find(
+          (step) =>
+            step.portal &&
+            step.next &&
+            step.next.face === current.face &&
+            step.next.x === current.x &&
+            step.next.y === current.y,
+        )?.portal;
+      if (!entry) throw new Error("Portal link has no entry cell");
+      points.push(cellPoint(entry, gridSize), currentPoint);
+      segmentFaces.push(previous.face, current.face);
+      gaps.push(false, true);
+      continue;
+    }
     if (previous.face !== current.face) {
       points.push(
         seamPoint(previousPoint, currentPoint, previous.face, current.face),
       );
       segmentFaces.push(previous.face);
+      gaps.push(false);
     } else {
       segmentFaces.push(previous.face);
+      gaps.push(false);
     }
     points.push(currentPoint);
     if (previous.face !== current.face) {
       segmentFaces.push(current.face);
+      gaps.push(false);
     }
   }
-  return { points, segmentFaces };
+  return { points, segmentFaces, gaps };
 }
 
 function disposeTree(object: THREE.Object3D): void {
@@ -853,6 +945,7 @@ export class PuzzleRenderer {
   private readonly wrappingEdgesGroup = new THREE.Group();
   private readonly stopCirclesGroup = new THREE.Group();
   private readonly directionalsGroup = new THREE.Group();
+  private readonly wormholesGroup = new THREE.Group();
   private readonly flipTurns = new Map<string, number>();
   private flipMotion = false;
   private readonly arrowsGroup = new THREE.Group();
@@ -897,6 +990,7 @@ export class PuzzleRenderer {
       this.wrappingEdgesGroup,
       this.stopCirclesGroup,
       this.directionalsGroup,
+      this.wormholesGroup,
     );
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0xb7d5df, 2.4));
     const key = new THREE.DirectionalLight(0xffffff, 2.1);
@@ -925,6 +1019,7 @@ export class PuzzleRenderer {
     this.clearWrappingEdges();
     this.clearStopCircles();
     this.clearDirectionals();
+    this.clearWormholes();
     this.flipMotion = false;
     this.level = level;
     this.state = state;
@@ -932,6 +1027,7 @@ export class PuzzleRenderer {
     this.createWrappingEdges(level);
     this.createStopCircles(level);
     this.createDirectionals(level);
+    this.createWormholes(level);
     for (const arrow of level.arrows) {
       const visual = this.createArrow(arrow, level.gridSize, level.arrowScale);
       this.visuals.set(arrow.id, visual);
@@ -980,6 +1076,19 @@ export class PuzzleRenderer {
       if (mesh.material instanceof THREE.MeshBasicMaterial) {
         mesh.material.color.set(palette.stop);
       }
+    });
+    this.wormholesGroup.traverse((child) => {
+      const mesh = child as THREE.Mesh<
+        THREE.BufferGeometry,
+        THREE.MeshBasicMaterial
+      >;
+      if (!(mesh.material instanceof THREE.MeshBasicMaterial)) return;
+      const dot = mesh.userData.dotIndex as number | undefined;
+      mesh.material.color.set(
+        dot === undefined
+          ? palette.wormhole[mesh.userData.wormholeIndex as 0 | 1]
+          : (palette.wormholeDots[dot] as number),
+      );
     });
     this.directionalsGroup.traverse((child) => {
       const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
@@ -1330,6 +1439,7 @@ export class PuzzleRenderer {
         member,
         this.level.gridSize,
         distance,
+        this.level,
       );
       const slice = slicePath(track, travel * distance, bodyLength);
       this.updatePathVisual(
@@ -1547,7 +1657,13 @@ export class PuzzleRenderer {
     }
     const visual = this.visuals.get(arrowId);
     if (!visual || !this.level) return 0;
-    return arrowMotionTrack(visual.path, result, this.level.gridSize).distance;
+    return arrowMotionTrack(
+      visual.path,
+      result,
+      this.level.gridSize,
+      0,
+      this.level,
+    ).distance;
   }
 
   render(): void {
@@ -1922,6 +2038,85 @@ export class PuzzleRenderer {
     }
   }
 
+  private createWormholes(level: LevelDefinition): void {
+    const pitch = 2 / level.gridSize;
+    for (const [index, hole] of (level.wormholes ?? []).entries()) {
+      for (const [end, cell] of [
+        ["a", hole.a],
+        ["b", hole.b],
+      ] as const) {
+        const normal = new THREE.Vector3(...faceNormal(cell.face));
+        const group = new THREE.Group();
+        group.position
+          .copy(cellPoint(cell, level.gridSize))
+          .addScaledVector(normal, 0.008);
+        group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+        const material = () =>
+          new THREE.MeshBasicMaterial({
+            color: this.palette.wormhole[index as 0 | 1],
+            side: THREE.DoubleSide,
+            toneMapped: false,
+            transparent: true,
+            depthWrite: false,
+          });
+        const ring = new THREE.Mesh(
+          new THREE.RingGeometry(pitch * 0.28, pitch * 0.36, 32),
+          material(),
+        );
+        const swirl = new THREE.Mesh(
+          new THREE.TorusGeometry(
+            pitch * 0.17,
+            pitch * 0.023,
+            6,
+            32,
+            Math.PI * 1.65,
+          ),
+          material(),
+        );
+        swirl.position.z = 0.001;
+        swirl.rotation.z = (index * Math.PI) / 2;
+        ring.renderOrder = -1;
+        swirl.renderOrder = -1;
+        ring.userData.wormholeIndex = index;
+        swirl.userData.wormholeIndex = index;
+        group.add(ring, swirl);
+        this.wormholesGroup.add(group);
+        const center = cellPoint(cell, level.gridSize).addScaledVector(
+          normal,
+          0.009,
+        );
+        for (const side of DOT_SIDES) {
+          const dotIndex = wormholeDotColorIndex(side, end);
+          const dot = new THREE.Mesh(
+            new THREE.CircleGeometry(pitch * 0.055, 16),
+            new THREE.MeshBasicMaterial({
+              color: this.palette.wormholeDots[dotIndex] as number,
+              side: THREE.DoubleSide,
+              toneMapped: false,
+              transparent: true,
+              depthWrite: false,
+            }),
+          );
+          dot.position
+            .copy(center)
+            .addScaledVector(
+              new THREE.Vector3(...faceHeadingVector(cell.face, side)),
+              pitch * 0.43,
+            );
+          dot.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+          dot.renderOrder = -1;
+          dot.userData.dotIndex = dotIndex;
+          this.wormholesGroup.add(dot);
+        }
+      }
+    }
+  }
+
+  private clearWormholes(): void {
+    disposeTree(this.wormholesGroup);
+    this.wormholesGroup.clear();
+  }
+
   private clearDirectionals(): void {
     disposeTree(this.directionalsGroup);
     this.directionalsGroup.clear();
@@ -1940,7 +2135,7 @@ export class PuzzleRenderer {
       const key = cells.map(cellKey).join("|");
       if (visual.settledKey === key) continue;
       visual.settledKey = key;
-      visual.path = expandedPoints(cells, this.level.gridSize);
+      visual.path = expandedPoints(cells, this.level.gridSize, this.level);
       this.updatePathVisual(visual, {
         ...visual.path,
         headFace: visual.path.segmentFaces.at(-1),
@@ -1975,7 +2170,7 @@ export class PuzzleRenderer {
       transparent: true,
       opacity: 0.95,
     });
-    const expanded = expandedPoints(arrow.path, gridSize);
+    const expanded = expandedPoints(arrow.path, gridSize, this.level);
     const segments: SegmentVisual[] = [];
     const pickers: THREE.Object3D[] = [];
     const segmentCount = Math.max(1, arrow.path.length * 3 + 8);
@@ -2080,7 +2275,7 @@ export class PuzzleRenderer {
   ): void {
     const up = new THREE.Vector3(0, 1, 0);
     const split =
-      visual.arrow.kind === "double"
+      visual.arrow.kind === "double" && !path.gaps?.some(Boolean)
         ? splitExpandedPath(path.points, path.segmentFaces, 0.5)
         : undefined;
     const layoutPath: RibbonSlice = split
@@ -2091,6 +2286,7 @@ export class PuzzleRenderer {
             ...split.head.segmentFaces,
           ],
           headFace: path.headFace,
+          ...(path.gaps ? { gaps: path.gaps } : {}),
         }
       : path;
     const sections = ribbonSections(
@@ -2098,6 +2294,7 @@ export class PuzzleRenderer {
       layoutPath.segmentFaces,
       visual.ribbonWidth,
       movingTail,
+      layoutPath.gaps,
     );
     let travelled = 0;
     for (let index = 0; index < visual.segments.length; index += 1) {
@@ -2108,7 +2305,7 @@ export class PuzzleRenderer {
       const start = layoutPath.points[index];
       const end = layoutPath.points[index + 1];
       const face = layoutPath.segmentFaces[index];
-      if (!start || !end || !face) {
+      if (!start || !end || !face || layoutPath.gaps?.[index]) {
         segment.ribbon.visible = false;
         segment.picker.visible = false;
         segment.failure.visible = false;
@@ -2118,11 +2315,15 @@ export class PuzzleRenderer {
       }
       const direction = end.clone().sub(start);
       const length = Math.max(direction.length(), 0.001);
-      const midpointDistance = travelled + length / 2;
+      const midpointDistance =
+        travelled + (layoutPath.gaps?.[index] ? 0 : length / 2);
       segment.endpoint =
-        split && midpointDistance < split.totalDistance / 2 ? "tail" : "head";
+        visual.arrow.kind === "double" &&
+        midpointDistance < pathLength(path) / 2
+          ? "tail"
+          : "head";
       segment.picker.userData.endpoint = segment.endpoint;
-      travelled += length;
+      travelled += layoutPath.gaps?.[index] ? 0 : length;
       const midpoint = start.clone().add(end).multiplyScalar(0.5);
       const [nx, ny, nz] = faceNormal(face);
       const vertices = ribbonVertices(

@@ -14,7 +14,8 @@ export interface LevelPreview {
     | "stop"
     | "directional"
     | "double"
-    | "flip";
+    | "flip"
+    | "wormhole";
   readonly wraps?: number;
   readonly resolvedLevelId?: number;
   readonly error?: string;
@@ -63,6 +64,7 @@ export function parseLevelPreview(search: string): LevelPreview {
     | "directional"
     | "double"
     | "flip"
+    | "wormhole"
     | undefined;
   if (rawFeature !== null) {
     const normalized = rawFeature.toLowerCase();
@@ -78,6 +80,8 @@ export function parseLevelPreview(search: string): LevelPreview {
       feature = "double";
     } else if (["flip", "flips", "flipspot"].includes(normalized)) {
       feature = "flip";
+    } else if (["wormhole", "portal", "wormholes"].includes(normalized)) {
+      feature = "wormhole";
     } else {
       return { active: true, error: `Unknown test feature: ${rawFeature}.` };
     }
@@ -139,6 +143,9 @@ export function resolveLevelPreview(
   }
   if (preview.feature === "flip") {
     return { ...preview, resolvedLevelId: 30 };
+  }
+  if (preview.feature === "wormhole") {
+    return { ...preview, resolvedLevelId: 35 };
   }
   const startLevelId =
     preview.feature === "overlap"

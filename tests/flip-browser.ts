@@ -582,23 +582,38 @@ async function assertSeenPlayAndReload(
 
 /**
  * A generated cube's 180-degree reversal animates visibly: two frames around
- * the turn differ near the arrow. Under v8, level 75's reverser is its bounce
- * flip core's, turning on the flip spot back:8:15.
+ * the turn differ near the arrow. Generation re-rolls layouts (the wormhole
+ * release re-rolled every generated id from 36 up), so the suite scans for the
+ * first cube that still carries a bounce-style U-turn reverser.
  */
 async function assertGeneratedReversal(
   browser: Browser,
   url: string,
   output: string,
 ): Promise<void> {
-  const levelId = 75;
-  const level = generateLevel(levelId);
-  const initial = createGameState(level);
-  const reverser = level.arrows.find((arrow) => {
-    const result = simulateMove(level, initial, arrow.id);
-    const keys = result.route.map(cellKey);
-    return result.kind === "exit" && new Set(keys).size < keys.length;
-  });
-  assert.ok(reverser, `Level ${levelId} must hold a reversing arrow`);
+  let found:
+    | {
+        levelId: number;
+        level: ReturnType<typeof generateLevel>;
+        initial: ReturnType<typeof createGameState>;
+        reverser: ReturnType<typeof generateLevel>["arrows"][number];
+      }
+    | undefined;
+  for (let candidate = 31; candidate <= 200 && !found; candidate += 1) {
+    const level = generateLevel(candidate);
+    const initial = createGameState(level);
+    const reverser = level.arrows.find((arrow) => {
+      const result = simulateMove(level, initial, arrow.id);
+      const keys = result.route.map(cellKey);
+      return result.kind === "exit" && new Set(keys).size < keys.length;
+    });
+    if (reverser) found = { levelId: candidate, level, initial, reverser };
+  }
+  assert.ok(
+    found,
+    "A generated level from 31 through 200 must hold a reversing arrow",
+  );
+  const { levelId, level, initial, reverser } = found;
 
   const context = await browser.newContext({
     viewport: { width: 1100, height: 760 },
@@ -641,16 +656,38 @@ async function assertGeneratedReversal(
       const [x, y, z] = (await state(page)).camera.position;
       return (x * nx + y * ny + z * nz) / Math.hypot(x, y, z);
     };
-    let direction = 1;
+    // Horizontal orbit alone cannot face the top or bottom face, so probe
+    // both axes each step and keep the direction that improves the facing.
     let score = await facing();
     for (let attempt = 0; attempt < 80 && score < 0.8; attempt += 1) {
+      let best: [number, number] | undefined;
+      let bestScore = score;
+      for (const [dx, dy] of [
+        [10, 0],
+        [-10, 0],
+        [0, 10],
+        [0, -10],
+      ] as const) {
+        await page.evaluate(
+          ([x, y]) => window.__PAR_ARROWS_TEST__?.orbit(x, y),
+          [dx, dy] as const,
+        );
+        const candidate = await facing();
+        await page.evaluate(
+          ([x, y]) => window.__PAR_ARROWS_TEST__?.orbit(x, y),
+          [-dx, -dy] as const,
+        );
+        if (candidate > bestScore) {
+          bestScore = candidate;
+          best = [dx, dy];
+        }
+      }
+      if (!best) break;
       await page.evaluate(
-        (delta) => window.__PAR_ARROWS_TEST__?.orbit(delta, 0),
-        10 * direction,
+        ([x, y]) => window.__PAR_ARROWS_TEST__?.orbit(x, y),
+        best,
       );
-      const next = await facing();
-      if (next < score) direction = -direction;
-      score = next;
+      score = bestScore;
     }
     assert.ok(score >= 0.8, `The ${turnCell.face} face must face the camera`);
     assert.ok(
@@ -696,7 +733,11 @@ async function assertGeneratedReversal(
     );
     await finishMotion(page);
     assert.ok(!(await state(page)).remainingIds.includes(reverser.id));
-    assert.deepEqual(errors, [], "No page errors during the level 75 reversal");
+    assert.deepEqual(
+      errors,
+      [],
+      `No page errors during the level ${levelId} reversal`,
+    );
   } finally {
     await context.close();
   }

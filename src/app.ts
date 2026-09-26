@@ -356,6 +356,12 @@ export class ParArrowsApp {
       wrappingEdges: this.renderer.wrappingEdgeCount(),
       wrappingEdgeOpacities: this.renderer.wrappingEdgeOpacities(),
       stops: (this.level.stops ?? []).map((cell) => cellKey(cell)),
+      wormholes: this.level.wormholes?.map((hole, color) => ({
+        id: hole.id,
+        a: hole.a,
+        b: hole.b,
+        color,
+      })),
       directionals: (this.level.directionals ?? []).map((spot) => ({
         cell: cellKey(spot.cell),
         heading: spot.heading,

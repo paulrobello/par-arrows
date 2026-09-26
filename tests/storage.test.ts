@@ -142,6 +142,46 @@ function exitedState(level: LevelDefinition): GameState {
   return applyMove(level, initial, simulateMove(level, initial, arrow));
 }
 
+function portalParkLevel(): LevelDefinition {
+  const cellAt = (face: "front" | "right", x: number, y: number) => ({
+    face,
+    x,
+    y,
+  });
+  return {
+    id: 32,
+    title: "Stored portal park",
+    gridSize: 5,
+    lives: 3,
+    arrows: [
+      {
+        id: "p",
+        path: [
+          cellAt("front", 1, 2),
+          cellAt("front", 2, 2),
+          cellAt("front", 3, 2),
+        ],
+      },
+    ],
+    wormholes: [
+      {
+        id: "p-portal",
+        a: cellAt("front", 4, 2),
+        b: cellAt("right", 1, 2),
+      },
+    ],
+    stops: [cellAt("right", 2, 2)],
+    directionals: [
+      { cell: cellAt("front", 0, 4), heading: "north", kind: "flip" },
+    ],
+  };
+}
+
+function parkedPortalState(level: LevelDefinition): GameState {
+  const initial = createGameState(level);
+  return applyMove(level, initial, simulateMove(level, initial, "p"));
+}
+
 describe("resumable campaign saves", () => {
   test("refreshes only the old cube-eleven layout and preserves its progression", async () => {
     const level = generateLevel(11);
@@ -261,7 +301,7 @@ describe("resumable campaign saves", () => {
     const state = exitedState(level);
     expect(save(state, 88)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 12,
+      contentVersion: 13,
       generatorVersion: 8,
       currentLevelId: 42,
       unlockedLevelId: 88,
@@ -335,7 +375,34 @@ describe("resumable campaign saves", () => {
     expect(fingerprinted.value?.state).toEqual(state);
   });
 
-  test("a content-12 save resumes on its fingerprint and seed whatever its generator stamp", async () => {
+  test("a content-12 save refreshes once onto the portal-aware validator", async () => {
+    const level = levelFor(9);
+    const state = exitedState(level);
+    expect(save(state, 44, level)).toBe(true);
+    const { layout: _dropped, ...legacy } = savedJson();
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({ ...legacy, contentVersion: 12 }),
+    );
+    const restored = await loadCampaign(async () => level);
+    expect(restored.recovered).toBe(true);
+    expect(restored.contentUpdated).toBe(true);
+    expect(restored.value).toMatchObject({
+      currentLevelId: 9,
+      unlockedLevelId: 44,
+      tutorialComplete: true,
+      state: createGameState(level),
+    });
+    if (!restored.value) throw new Error("Expected refreshed campaign");
+    expect(saveCampaign(restored.value)).toBe(true);
+    expect(savedJson()).toMatchObject({
+      contentVersion: 13,
+      layout: layoutFingerprint(level),
+    });
+    expect((await loadCampaign(async () => level)).recovered).toBe(false);
+  });
+
+  test("a current save resumes on its fingerprint and seed whatever its generator stamp", async () => {
     const level = generateLevel(8);
     const state = exitedState(level);
     expect(save(state, 33, level)).toBe(true);
@@ -350,7 +417,7 @@ describe("resumable campaign saves", () => {
     expect(restored.value?.unlockedLevelId).toBe(33);
   });
 
-  test("a content-12 save with a mismatched stored fingerprint refreshes", async () => {
+  test("a save with a mismatched stored fingerprint refreshes", async () => {
     const level = generateLevel(8);
     expect(save(exitedState(level), 33, level)).toBe(true);
     for (const layout of ["0000000000000000", 42, null]) {
@@ -668,6 +735,46 @@ describe("resumable campaign saves", () => {
     expect(flipped.value?.state).toEqual(onward);
   });
 
+  test("restores a parked path that straddles a wormhole portal", async () => {
+    const level = portalParkLevel();
+    const parked = parkedPortalState(level);
+    expect(parked.settledPaths?.p).toEqual([
+      { face: "front", x: 3, y: 2 },
+      { face: "right", x: 1, y: 2 },
+      { face: "right", x: 2, y: 2 },
+    ]);
+    expect(save(parked, 32, level)).toBe(true);
+    const restored = await loadCampaign(async () => level);
+    expect(restored.recovered).toBe(false);
+    expect(restored.value?.state).toEqual(parked);
+    const resumed = restored.value?.state as GameState;
+    expect(resumed.offsets).toEqual({});
+    expect(simulateMove(level, resumed, "p").kind).toBe("exit");
+  });
+
+  test("rejects forged settled paths whose links are neither adjacent nor portal links", async () => {
+    const level = portalParkLevel();
+    const parked = parkedPortalState(level);
+    for (const forged of [
+      [
+        { face: "front" as const, x: 3, y: 2 },
+        { face: "right" as const, x: 2, y: 2 },
+      ],
+      [
+        { face: "front" as const, x: 3, y: 2 },
+        { face: "right" as const, x: 1, y: 2 },
+        { face: "right" as const, x: 3, y: 2 },
+      ],
+    ]) {
+      expect(save({ ...parked, settledPaths: { p: forged } }, 32, level)).toBe(
+        true,
+      );
+      const refused = await loadCampaign(async () => level);
+      expect(refused.recovered).toBe(true);
+      expect(refused.value?.state).toEqual(createGameState(level));
+    }
+  });
+
   test("a group parked on a flip cube round-trips by shared offset, never by settled path", async () => {
     const cellAt = (x: number, y: number) => ({ face: "front" as const, x, y });
     const level: LevelDefinition = {
@@ -811,7 +918,7 @@ describe("resumable campaign saves", () => {
     if (!restored.value) throw new Error("Expected refreshed campaign");
     expect(saveCampaign(restored.value)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 12,
+      contentVersion: 13,
       layout: layoutFingerprint(level),
     });
     expect((await loadCampaign(async () => level)).recovered).toBe(false);
@@ -895,7 +1002,7 @@ describe("resumable campaign saves", () => {
       if (!restored.value) throw new Error("Expected restored campaign");
       expect(saveCampaign(restored.value)).toBe(true);
       expect(savedJson()).toMatchObject({
-        contentVersion: 12,
+        contentVersion: 13,
         generatorVersion: 8,
       });
     },

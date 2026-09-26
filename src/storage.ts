@@ -12,12 +12,13 @@ import {
   settledPathOf,
   stopKeys,
 } from "./core/stops";
-import { cellKey, headingForPath, oppositeHeading } from "./core/topology";
+import { cellKey, oppositeHeading } from "./core/topology";
+import { linkHeading } from "./core/wormholes";
 import type { Cell, GameState, LevelDefinition } from "./core/types";
 
 const STORAGE_KEY = "par-arrows:campaign:v1";
 const SETTINGS_KEY = "par-arrows:settings:v1";
-const CONTENT_VERSION = 12;
+const CONTENT_VERSION = 13;
 
 export interface CampaignSave {
   readonly currentLevelId: number;
@@ -289,7 +290,9 @@ function hasValidSettledPaths(
       if (
         !previous ||
         !current ||
-        !headingForPath([previous, current], level.gridSize)
+        // A parked path may straddle a wormhole, so consecutive cells may
+        // be a portal jump rather than an adjacency.
+        !linkHeading(level, previous, current)
       ) {
         return false;
       }

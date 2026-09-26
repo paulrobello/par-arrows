@@ -3,6 +3,7 @@ import {
   directionalFaceCount,
   generateLevel,
   hasDirectionalCore,
+  isAuthoredLevel,
 } from "../src/content/procedural";
 import { DIRECTIONAL_INTRO_LEVEL } from "../src/content/directional-intro";
 import {
@@ -144,12 +145,15 @@ describe("directional spot level content", () => {
   test("most generated cubes carry the mechanic and the split is stable", () => {
     let carriers = 0;
     for (let id = 21; id <= 60; id += 1) {
+      // Authored teaching cubes carry no spot plan of their own; their seed
+      // streams are irrelevant.
+      if (isAuthoredLevel(id)) continue;
       if (hasDirectionalCore(id)) carriers += 1;
     }
     // Uniform draw over 0-4 faces puts a spot plan on ~80% of cubes; the
     // seeded streams make the exact split deterministic per generator.
     // Re-rolled for generator v8.
-    expect(carriers).toBe(34);
+    expect(carriers).toBe(33);
   });
 
   test("levels through nineteen are untouched by the directional plan", () => {

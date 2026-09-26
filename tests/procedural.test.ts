@@ -126,7 +126,7 @@ function normalizedShapeSignature(
 describe("generated double arrows", () => {
   test("uses v8 generation, keeps the authored v7 seed, and the planned frequency curve", () => {
     expect(GENERATOR_VERSION).toBe(8);
-    expect(AUTHORED_LEVEL_IDS).toEqual([1, 5, 11, 15, 20, 25, 30]);
+    expect(AUTHORED_LEVEL_IDS).toEqual([1, 5, 11, 15, 20, 25, 30, 35]);
     expect(seedForLevel(25)).toBe(
       "par-arrows:runtime:7:level:25:double-intro:1",
     );
@@ -368,7 +368,7 @@ describe("runtime campaign generator", () => {
     expect(getWrappingEdgeWeights(MAX_LEVEL_ID)).toEqual(final);
     for (let id = 12; id <= 100; id += 1) {
       const current = getWrappingEdgeWeights(id);
-      if (id === 15 || id === 20 || id === 25 || id === 30) {
+      if (id === 15 || id === 20 || id === 25 || id === 30 || id === 35) {
         expect(current).toEqual([1, 0, 0, 0]);
         continue;
       }
@@ -381,7 +381,9 @@ describe("runtime campaign generator", () => {
               ? 24
               : id === 31
                 ? 29
-                : id - 1,
+                : id === 36
+                  ? 34
+                  : id - 1,
       );
       expect(current[0]).toBe(0.25);
       expect(

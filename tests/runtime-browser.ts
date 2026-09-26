@@ -185,8 +185,8 @@ export async function assertRuntimeCampaign(
   assert.deepEqual(errors, []);
   await context.close();
 
-  // Cube 2 keeps its version-1 seed and layout, yet a pre-content-12 save for
-  // it still refreshes: only a content-12 save with a matching layout resumes.
+  // Cube 2 keeps its version-1 seed and layout, yet a pre-content-13 save for
+  // it still refreshes: only a content-13 save with a matching layout resumes.
   const migrationLevel = generateLevel(2);
   const initialMigrationState = createGameState(migrationLevel);
   const migrationBlocker = migrationLevel.arrows.find(

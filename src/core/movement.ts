@@ -1,10 +1,8 @@
 import {
-  advanceHead,
   cellKey,
   cellToWorld,
   edgePoint,
   faceHeadingVector,
-  headingForPath,
   isContinuationEdge,
 } from "./topology";
 import type {
@@ -23,6 +21,7 @@ import {
 } from "./directionals";
 import { overlappingArrowIds } from "./overlap";
 import { offsetOf, settledPathOf, stopKeys } from "./stops";
+import { advanceWithPortals, pathHeading } from "./wormholes";
 
 export { advanceHead } from "./topology";
 
@@ -106,7 +105,7 @@ function simulateSingle(
       "Arrow has no head cell.",
     );
   }
-  const heading = headingForPath(path, level.gridSize);
+  const heading = pathHeading(level, path);
   if (!heading) {
     return invalid(
       arrowId,
@@ -141,6 +140,7 @@ function simulateSingle(
     ...(settledState.spotHeadings ?? {}),
   };
   const spotFlips: SpotFlip[] = [];
+  const portals: { from: Cell; to: Cell; step: number }[] = [];
   const releaseTail = (step: number): void => {
     const leaving = body[0];
     body = body.slice(1);
@@ -172,7 +172,7 @@ function simulateSingle(
       );
     }
     visited.add(stateKey);
-    const forward = advanceHead(level, current, currentHeading);
+    const forward = advanceWithPortals(level, current, currentHeading);
     if (forward.exits) {
       if (isContinuationEdge(level, current, currentHeading))
         return invalid(
@@ -197,6 +197,7 @@ function simulateSingle(
           tangent: faceHeadingVector(current.face, currentHeading),
         },
         ...flipResult(),
+        ...(portals.length > 0 ? { portals } : {}),
       };
     }
     const next = forward.next;
@@ -211,6 +212,9 @@ function simulateSingle(
     }
     distance += 1;
     route.push(next);
+    if (forward.portal) {
+      portals.push({ from: forward.portal, to: next, step });
+    }
     const blockerId = occupied.get(cellKey(next));
     if (blockerId) {
       return {
@@ -225,8 +229,9 @@ function simulateSingle(
         blockerId,
         contact: {
           cell: next,
-          point:
-            current.face !== next.face
+          point: forward.portal
+            ? cellToWorld(next, level.gridSize)
+            : current.face !== next.face
               ? edgePoint(current, currentHeading, level.gridSize)
               : [
                   (cellToWorld(current, level.gridSize)[0] +
@@ -242,6 +247,7 @@ function simulateSingle(
           distance: distance - 0.5,
         },
         ...flipResult(),
+        ...(portals.length > 0 ? { portals } : {}),
       };
     }
     if (tracksFlips) {
@@ -266,6 +272,7 @@ function simulateSingle(
           ? { settledPath: authoredOrder }
           : {}),
         ...flipResult(),
+        ...(portals.length > 0 ? { portals } : {}),
       };
     }
     current = next;

@@ -12,8 +12,8 @@ function runnerFor(levelId: number): TutorialRunner {
 }
 
 describe("tutorial scripts", () => {
-  test("exposes exactly the six intro levels", () => {
-    expect(SCRIPTED_LEVEL_IDS).toEqual([1, 5, 11, 15, 20, 25, 30]);
+  test("exposes the authored intro levels", () => {
+    expect(SCRIPTED_LEVEL_IDS).toEqual([1, 5, 11, 15, 20, 25, 30, 35]);
     expect(scriptForLevel(2)).toBeUndefined();
     for (const levelId of SCRIPTED_LEVEL_IDS)
       expect(scriptForLevel(levelId)?.levelId).toBe(levelId);

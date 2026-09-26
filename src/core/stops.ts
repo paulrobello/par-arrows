@@ -1,11 +1,21 @@
 import { spotHeadingAt } from "./directionals";
-import { advanceHead, cellKey, headingForPath } from "./topology";
+import { cellKey } from "./topology";
+import { advanceWithPortals, pathHeading } from "./wormholes";
 import type {
   ArrowDefinition,
   Cell,
   GameState,
   LevelDefinition,
 } from "./types";
+
+/**
+ * Level fields the track helpers read. Wormholes only matter when a level
+ * declares them; every generated and authored level without them is unchanged.
+ */
+type TrackSource = Pick<
+  LevelDefinition,
+  "gridSize" | "edgePolicies" | "directionals" | "wormholes"
+>;
 
 /** Cell keys of every stop circle declared by a level. */
 export function stopKeys(
@@ -20,11 +30,11 @@ export function stopKeys(
  * track never depends on other arrows and stays constant for the whole level.
  */
 export function arrowTrack(
-  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
+  level: TrackSource,
   arrow: ArrowDefinition,
 ): readonly Cell[] {
   const track: Cell[] = [...arrow.path];
-  const heading = headingForPath(arrow.path, level.gridSize);
+  const heading = pathHeading(level, arrow.path);
   let current = arrow.path[arrow.path.length - 1];
   if (!heading || !current) return track;
   let currentHeading = heading;
@@ -34,7 +44,7 @@ export function arrowTrack(
     const stateKey = `${cellKey(current)}:${currentHeading}`;
     if (visited.has(stateKey)) return track;
     visited.add(stateKey);
-    const forward = advanceHead(level, current, currentHeading);
+    const forward = advanceWithPortals(level, current, currentHeading);
     if (forward.exits || !forward.next) return track;
     track.push(forward.next);
     current = forward.next;
@@ -48,7 +58,7 @@ export function arrowTrack(
  * double's tail-direction cells count alongside its head-direction cells.
  */
 export function trackKeys(
-  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
+  level: TrackSource,
   arrow: ArrowDefinition,
 ): string[] {
   const paths =
@@ -62,7 +72,7 @@ export function trackKeys(
 
 /** The largest forward offset an arrow can hold without leaving the cube. */
 export function maximumOffset(
-  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
+  level: TrackSource,
   arrow: ArrowDefinition,
 ): number {
   return Math.max(0, arrowTrack(level, arrow).length - arrow.path.length);
@@ -70,7 +80,7 @@ export function maximumOffset(
 
 /** The cells an arrow occupies after travelling `offset` forward steps. */
 export function currentPath(
-  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
+  level: TrackSource,
   arrow: ArrowDefinition,
   offset: number,
 ): readonly Cell[] {

@@ -35,6 +35,13 @@ export interface DirectionalSpotDefinition {
   readonly kind?: "static" | "flip";
 }
 
+/** Two paired portal cells; a head entering either end leaves the other. */
+export interface WormholeDefinition {
+  readonly id: string;
+  readonly a: Cell;
+  readonly b: Cell;
+}
+
 /** Cube-only level data with ordinary exits and optional continuation edges. */
 export interface LevelDefinition {
   readonly id: number;
@@ -49,6 +56,8 @@ export interface LevelDefinition {
   readonly stops?: readonly Cell[];
   /** Spots that bend a passing head onto their heading from its next step. */
   readonly directionals?: readonly DirectionalSpotDefinition[];
+  /** At most two portal pairs; see src/core/wormholes.ts. */
+  readonly wormholes?: readonly WormholeDefinition[];
 }
 
 export type GameStatus = "playing" | "won" | "lost";
@@ -130,6 +139,15 @@ export interface MoveResult {
   readonly settledPath?: readonly Cell[];
   /** Flip spots the moving body cleared, in order; rewound on a collision. */
   readonly spotFlips?: readonly SpotFlip[];
+  /**
+   * Portal jumps the head made, in order; `step` is the forward step that
+   * landed on `to`. Renderer-only data.
+   */
+  readonly portals?: readonly {
+    readonly from: Cell;
+    readonly to: Cell;
+    readonly step: number;
+  }[];
   readonly blockerId?: string;
   readonly contact?: ContactTrace;
   readonly exit?: ExitTrace;
