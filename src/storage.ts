@@ -40,6 +40,8 @@ export interface PlayerSettings {
   readonly theme: "system" | "light" | "dark";
   /** Intro levels whose interactive walkthrough has already been shown. */
   readonly tutorialSeenLevels: readonly number[];
+  /** Set once the player closes the mobile install dialog. */
+  readonly installPromptDismissed?: true;
 }
 
 export interface StorageResult<T> {
@@ -617,6 +619,9 @@ export function loadSettings(): PlayerSettings {
           ? theme
           : "system",
       tutorialSeenLevels,
+      ...(parsed?.installPromptDismissed === true
+        ? { installPromptDismissed: true as const }
+        : {}),
     };
   } catch {
     return DEFAULT_SETTINGS;

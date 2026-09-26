@@ -32,6 +32,7 @@ import { assertDirectionalIntro } from "./directional-browser";
 import { assertDoubleIntro } from "./double-browser";
 import { assertFlipIntro } from "./flip-browser";
 import { assertWormholeIntro } from "./wormhole-browser";
+import { assertPwaPrompt } from "./pwa-browser";
 import { assertReliableTaps } from "./tap-browser";
 import {
   assertFirstRunWalkthrough,
@@ -109,6 +110,7 @@ const DIRECTIONAL_ONLY_COMPLETE = Symbol("directional-only-complete");
 const DOUBLE_ONLY_COMPLETE = Symbol("double-only-complete");
 const FLIP_ONLY_COMPLETE = Symbol("flip-only-complete");
 const WORMHOLE_ONLY_COMPLETE = Symbol("wormhole-only-complete");
+const PWA_ONLY_COMPLETE = Symbol("pwa-only-complete");
 const RESIZE_ONLY_COMPLETE = Symbol("resize-only-complete");
 // The full v8 sweep measured 176 s on 2026-09-24, too close to the former
 // 180 s limit for a headed run to pass reliably. Adding the wormhole suite
@@ -1037,6 +1039,12 @@ try {
     throw WORMHOLE_ONLY_COMPLETE;
   }
 
+  if (process.env.PWA_ONLY === "1") {
+    await assertPwaPrompt(browser, url, output);
+    assert.deepEqual(failures, [], "Browser must not report uncaught errors");
+    throw PWA_ONLY_COMPLETE;
+  }
+
   if (process.env.FLIP_ONLY === "1") {
     await assertFlipIntro(browser, url, output);
     assert.deepEqual(failures, [], "Browser must not report uncaught errors");
@@ -1524,6 +1532,7 @@ try {
   await assertDoubleIntro(browser, url, output);
   await assertFlipIntro(browser, url, output);
   await assertWormholeIntro(browser, url, output);
+  await assertPwaPrompt(browser, url, output);
   await assertTutorialFlow(browser, url, output);
   await assertConsistentMotion(browser, url, output);
   await assertReliableTaps(browser, url, output);
@@ -1559,6 +1568,7 @@ try {
     error !== DOUBLE_ONLY_COMPLETE &&
     error !== FLIP_ONLY_COMPLETE &&
     error !== WORMHOLE_ONLY_COMPLETE &&
+    error !== PWA_ONLY_COMPLETE &&
     error !== RESIZE_ONLY_COMPLETE &&
     error !== CONTEXT_ONLY_COMPLETE &&
     error !== TUTORIAL_ONLY_COMPLETE

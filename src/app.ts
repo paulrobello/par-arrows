@@ -28,7 +28,12 @@ import type {
   MoveTarget,
 } from "./core/types";
 import { PointerInput } from "./input";
-import { PwaInstallPrompt } from "./pwa";
+import {
+  detectInstallContext,
+  installSteps,
+  PwaInstallPrompt,
+  runningStandalone,
+} from "./pwa";
 import { arrowMotionDuration, PuzzleRenderer } from "./render/renderer";
 import {
   clearCampaign,
@@ -91,8 +96,13 @@ export class ParArrowsApp {
   private readonly tutorial: HTMLElement;
   private readonly tutorialTitle: HTMLElement;
   private readonly tutorialCopy: HTMLElement;
-  private readonly installButton: HTMLButtonElement;
-  private readonly installHint: HTMLElement;
+  private readonly installDialog: HTMLDialogElement;
+  private readonly installNow: HTMLButtonElement;
+  private readonly installContext = detectInstallContext({
+    userAgent: navigator.userAgent,
+    maxTouchPoints: navigator.maxTouchPoints ?? 0,
+    standalone: runningStandalone(),
+  });
   private readonly settingsButton: HTMLButtonElement;
   private readonly hintButton: HTMLButtonElement;
   private readonly hintStatus: HTMLElement;
@@ -191,9 +201,17 @@ export class ParArrowsApp {
           <label><input id="grid-lines" type="checkbox" /> Show grid lines</label>
           <label><input id="reduced-motion" type="checkbox" /> Reduce movement</label>
           <label>Theme<select id="theme-select"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
-          <button id="install-button" type="button" hidden>Install app</button>
-          <p id="install-hint" hidden></p>
+          <button id="install-help-button" type="button">How to install</button>
         </aside>
+        <dialog class="install-dialog" id="install-dialog" aria-labelledby="install-title">
+          <h2 id="install-title">Play full screen</h2>
+          <p>Par Arrows looks best installed as an app: it runs full screen, without browser bars, and opens straight from your home screen.</p>
+          <ol id="install-steps"></ol>
+          <div class="install-actions">
+            <button class="primary-button" id="install-now" type="button" hidden>Install now</button>
+            <button id="install-close" type="button">Not now</button>
+          </div>
+        </dialog>
         <p class="gesture-help">Drag to orbit · <span class="zoom-help-mouse">Mouse wheel to zoom</span><span class="zoom-help-touch">Pinch to zoom</span> · press an exposed arrow to move it</p>
         <p class="screenreader-status" id="hint-status" aria-live="polite"></p>
         <div class="storage-note" id="storage-note" role="status"></div>
@@ -213,10 +231,10 @@ export class ParArrowsApp {
     this.tutorial = this.requireElement("tutorial");
     this.tutorialTitle = this.requireElement("tutorial-title");
     this.tutorialCopy = this.requireElement("tutorial-copy");
-    this.installButton = this.requireElement(
-      "install-button",
-    ) as HTMLButtonElement;
-    this.installHint = this.requireElement("install-hint");
+    this.installDialog = this.requireElement(
+      "install-dialog",
+    ) as HTMLDialogElement;
+    this.installNow = this.requireElement("install-now") as HTMLButtonElement;
     this.settingsButton = this.requireElement(
       "settings-button",
     ) as HTMLButtonElement;
@@ -292,9 +310,10 @@ export class ParArrowsApp {
     } else {
       void this.restore();
     }
-    this.installPrompt = new PwaInstallPrompt((available, ios) =>
-      this.updateInstallPrompt(available, ios),
+    this.installPrompt = new PwaInstallPrompt((available) =>
+      this.updateInstallPrompt(available),
     );
+    this.maybePromptInstall();
     this.installDebugApi();
     this.versionWatcher.start();
     this.renderUi();
@@ -333,6 +352,11 @@ export class ParArrowsApp {
     return JSON.stringify({
       mode: this.preview.active ? "preview" : "campaign",
       level: { id: this.level.id, title: this.level.title },
+      pwaPrompt: {
+        open: this.installDialog.open,
+        browser: this.installContext.browser,
+        mobile: this.installContext.mobile,
+      },
       selectedArrowId: this.renderer.selectedArrowId(),
       selectedEndpoint: this.renderer.selectedEndpoint(),
       preview: {
@@ -1059,9 +1083,19 @@ export class ParArrowsApp {
       saveSettings(this.settings);
       this.applyTheme();
     });
-    this.installButton.addEventListener(
-      "click",
-      () => void this.installPrompt?.prompt(),
+    this.requireElement("install-help-button").addEventListener("click", () =>
+      this.openInstallDialog(),
+    );
+    this.installNow.addEventListener("click", () => {
+      void this.installPrompt?.prompt();
+      this.closeInstallDialog();
+    });
+    this.requireElement("install-close").addEventListener("click", () =>
+      this.closeInstallDialog(),
+    );
+    // Escape closes the dialog natively; the close event arrives a task later.
+    this.installDialog.addEventListener("close", () =>
+      this.dismissInstallPrompt(),
     );
     window.addEventListener("keydown", (event) => {
       if (event.key.toLowerCase() === "f") {
@@ -1262,13 +1296,49 @@ export class ParArrowsApp {
 
   private installPrompt: PwaInstallPrompt | undefined;
 
-  private updateInstallPrompt(available: boolean, ios: boolean): void {
-    this.installButton.hidden = !available;
-    this.installHint.hidden = !(ios && !available);
-    this.installHint.textContent =
-      ios && !available
-        ? "On iPhone or iPad, use Share, then Add to Home Screen."
-        : "";
+  private installAvailable = false;
+
+  private updateInstallPrompt(available: boolean): void {
+    this.installAvailable = available;
+    this.installNow.hidden = !available;
+  }
+
+  private openInstallDialog(): void {
+    const list = this.requireElement("install-steps");
+    list.replaceChildren(
+      ...installSteps(this.installContext.browser).map((step) => {
+        const item = document.createElement("li");
+        item.textContent = step;
+        return item;
+      }),
+    );
+    this.installNow.hidden = !this.installAvailable;
+    if (!this.installDialog.open) this.installDialog.showModal();
+  }
+
+  private closeInstallDialog(): void {
+    this.dismissInstallPrompt();
+    this.installDialog.close();
+  }
+
+  private dismissInstallPrompt(): void {
+    if (this.settings.installPromptDismissed || this.preview.active) return;
+    this.settings = { ...this.settings, installPromptDismissed: true };
+    saveSettings(this.settings);
+  }
+
+  /**
+   * First-launch prompt: a mobile browser tab, in campaign mode, not yet
+   * dismissed. `?test=1` sessions stay quiet unless `pwaPrompt=1` forces it,
+   * because a modal dialog makes the page inert for every other suite.
+   */
+  private maybePromptInstall(): void {
+    const params = new URLSearchParams(window.location.search);
+    const forced = params.get("pwaPrompt") === "1";
+    if (!forced && (params.has("test") || this.preview.active)) return;
+    if (this.settings.installPromptDismissed) return;
+    if (!this.installContext.shouldPrompt) return;
+    this.openInstallDialog();
   }
 
   private installDebugApi(): void {

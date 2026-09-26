@@ -670,6 +670,51 @@ input:focus-visible {
   line-height: 1.45;
 }
 
+.install-dialog {
+  width: min(22rem, calc(100vw - 2.4rem));
+  padding: 1.2rem 1.25rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 1rem;
+  background: var(--panel-background-solid);
+  color: var(--page-text);
+  box-shadow: 0 1.2rem 3rem var(--panel-shadow);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+.install-dialog::backdrop {
+  background: rgb(8 16 22 / 45%);
+}
+.install-dialog h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+.install-dialog p {
+  margin: 0 0 0.6rem;
+  color: var(--muted-text);
+}
+.install-dialog ol {
+  margin: 0 0 1rem;
+  padding-left: 1.2rem;
+}
+.install-dialog li + li {
+  margin-top: 0.3rem;
+}
+.install-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+.install-actions button {
+  border: 0;
+  border-radius: 0.55rem;
+  padding: 0.55rem 0.9rem;
+  font-weight: 800;
+}
+.install-actions button:not(.primary-button) {
+  background: var(--accent-soft);
+  color: var(--page-text);
+}
+
 :where(.settings-panel:not([hidden])) ~ .gesture-help {
   visibility: hidden;
 }

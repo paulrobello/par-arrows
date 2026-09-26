@@ -1288,6 +1288,24 @@ describe("player settings", () => {
     });
   });
 
+  test("round-trips the install dialog dismissal and ignores non-true values", () => {
+    expect(
+      saveSettings({
+        gridLines: true,
+        reducedMotion: false,
+        theme: "system",
+        tutorialSeenLevels: [],
+        installPromptDismissed: true,
+      }),
+    ).toBe(true);
+    expect(loadSettings().installPromptDismissed).toBe(true);
+    entries.set(
+      "par-arrows:settings:v1",
+      JSON.stringify({ installPromptDismissed: "yes" }),
+    );
+    expect(loadSettings().installPromptDismissed).toBeUndefined();
+  });
+
   test("round-trips seen tutorial levels and drops invalid entries", () => {
     expect(
       saveSettings({
