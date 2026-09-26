@@ -325,7 +325,7 @@ export function blockerReserve(id: number): number {
   return Math.ceil(blockedTarget(id) * getLevelConfig(id).arrowCount);
 }
 
-class Rng {
+export class Rng {
   constructor(private state: number) {}
 
   next(): number {
@@ -1495,8 +1495,7 @@ function wormholeCore(
  * proven flip region that no outside track enters. Twenty-four candidates,
  * then give up; a failure drops the wormhole without restarting the level.
  */
-function decorativeWormhole(
-  id: number,
+export function decorativeWormhole(
   level: LevelDefinition,
   occupied: ReadonlySet<string>,
   rng: Rng,
@@ -3691,7 +3690,6 @@ export function generateLevel(id: number): LevelDefinition {
         // this, so zero-wormhole levels keep their exact historical layout.
         if (wormholes.length === 0 && slots > 0) {
           const deco = decorativeWormhole(
-            id,
             level,
             occupied,
             coreStream(id, "wormhole-deco", restart),

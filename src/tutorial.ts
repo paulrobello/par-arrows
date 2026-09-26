@@ -276,7 +276,7 @@ const WORMHOLE_INTRO_SCRIPT: TutorialScript = {
       },
     },
     {
-      copy: "This arrow faced the portal down one row and would never have moved. Through the rings its lane is clear. Tap it.",
+      copy: "This arrow was aimed at the one that just left, so neither could move first. With it gone through the rings, this lane is clear. Tap it.",
       highlightId: "wormhole-intro-gate",
       advance: {
         kind: "move",

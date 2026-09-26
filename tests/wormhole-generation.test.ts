@@ -1,11 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import {
+  decorativeWormhole,
   flipCoreIds,
   generateLevel,
+  Rng,
   wormholeFrequency,
   wormholePlan,
 } from "../src/content/procedural";
+import type { Cell, FaceId, LevelDefinition } from "../src/core/types";
 import { createGameState } from "../src/core/game-state";
 import {
   flipHeadingProbes,
@@ -18,6 +21,59 @@ import { arrowTrack } from "../src/core/stops";
 import { cellKey } from "../src/core/topology";
 import { layoutFingerprint } from "../src/storage";
 import { cachedLevel } from "./generated-levels";
+
+describe("decorative wormhole fallback", () => {
+  const c = (face: FaceId, x: number, y: number): Cell => ({ face, x, y });
+  const board: LevelDefinition = {
+    id: 99,
+    title: "t",
+    gridSize: 6,
+    lives: 3,
+    arrows: [
+      { id: "east", path: [c("front", 0, 1), c("front", 1, 1)] },
+      { id: "south", path: [c("front", 4, 0), c("front", 4, 1)] },
+    ],
+  };
+  const certificate = ["east", "south"];
+
+  test("places a pair that validates, replays and dodges reserved cells", () => {
+    const occupied = new Set([cellKey(c("front", 3, 1))]);
+    const groupTracks = new Set([cellKey(c("front", 4, 3))]);
+    const hole = decorativeWormhole(
+      board,
+      occupied,
+      new Rng(7),
+      certificate,
+      undefined,
+      groupTracks,
+    );
+    expect(hole).toBeDefined();
+    if (!hole) return;
+    const withHole = { ...board, wormholes: [hole] };
+    expect(validateLevel(withHole).errors).toEqual([]);
+    expect(solveLevelTargets(withHole)).toBeDefined();
+    for (const end of [hole.a, hole.b]) {
+      expect(occupied.has(cellKey(end))).toBe(false);
+      expect(groupTracks.has(cellKey(end))).toBe(false);
+    }
+  });
+
+  test("gives up when every candidate cell is reserved", () => {
+    const every = new Set(
+      board.arrows.flatMap((arrow) => arrowTrack(board, arrow).map(cellKey)),
+    );
+    expect(
+      decorativeWormhole(
+        board,
+        every,
+        new Rng(7),
+        certificate,
+        undefined,
+        new Set(),
+      ),
+    ).toBeUndefined();
+  });
+});
 
 describe("wormhole generation", () => {
   test("frequency curve", () => {

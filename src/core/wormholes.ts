@@ -1,4 +1,4 @@
-import { advanceHead, cellKey, cellsEqual, headingForPath } from "./topology";
+import { advanceHead, cellsEqual, headingForPath } from "./topology";
 import type { Cell, ForwardInfo, Heading, LevelDefinition } from "./types";
 
 export type PortalSource = Pick<
@@ -17,17 +17,6 @@ export function wormholePartner(
     if (cellsEqual(hole.b, cell)) return hole.a;
   }
   return undefined;
-}
-
-export function wormholeKeys(
-  level: Pick<LevelDefinition, "wormholes">,
-): ReadonlySet<string> {
-  return new Set(
-    (level.wormholes ?? []).flatMap((hole) => [
-      cellKey(hole.a),
-      cellKey(hole.b),
-    ]),
-  );
 }
 
 /** One head step; entering an end lands on its partner with the heading unchanged. */

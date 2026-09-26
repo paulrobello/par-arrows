@@ -894,8 +894,16 @@ export function expandedPoints(
             step.next.y === current.y,
         )?.portal;
       if (!entry) throw new Error("Portal link has no entry cell");
-      points.push(cellPoint(entry, gridSize), currentPoint);
-      segmentFaces.push(previous.face, current.face);
+      const entryPoint = cellPoint(entry, gridSize);
+      if (entry.face !== previous.face) {
+        points.push(
+          seamPoint(previousPoint, entryPoint, previous.face, entry.face),
+        );
+        segmentFaces.push(previous.face);
+        gaps.push(false);
+      }
+      points.push(entryPoint, currentPoint);
+      segmentFaces.push(entry.face, current.face);
       gaps.push(false, true);
       continue;
     }

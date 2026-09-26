@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { Vector3 } from "three";
-import { oppositeHeading } from "../src/core/topology";
+import { faceNormal, oppositeHeading } from "../src/core/topology";
 import type { Cell, FaceId, LevelDefinition } from "../src/core/types";
 import {
   expandedPoints,
@@ -23,6 +23,36 @@ const level: LevelDefinition = {
 };
 
 describe("portal ribbons", () => {
+  test("an approach that wraps a seam onto an end stays on the cube surface", () => {
+    const seamLevel: LevelDefinition = {
+      ...level,
+      edgePolicies: [
+        {
+          face: "front",
+          edge: "east",
+          policy: "continue",
+          neighbor: { face: "right", entering: "east" },
+        },
+      ],
+      wormholes: [{ id: "w1", a: c("right", 0, 1), b: c("top", 2, 2) }],
+    };
+    const path = expandedPoints(
+      [c("front", 2, 1), c("front", 3, 1), c("top", 2, 2)],
+      4,
+      seamLevel,
+    );
+    // Every drawn (non-gap) segment must stay on one face: both ends lie on
+    // that face's plane, so no segment cuts through the cube.
+    path.segmentFaces.forEach((face, index) => {
+      if (path.gaps?.[index]) return;
+      const start = path.points[index] as Vector3;
+      const end = path.points[index + 1] as Vector3;
+      const normal = new Vector3(...faceNormal(face));
+      expect(start.dot(normal)).toBeCloseTo(1, 5);
+      expect(end.dot(normal)).toBeCloseTo(1, 5);
+    });
+  });
+
   test("a portal link becomes a zero-length gap with no bridge quad", () => {
     const path = expandedPoints(
       [c("front", 1, 1), c("right", 1, 2), c("right", 2, 2)],
