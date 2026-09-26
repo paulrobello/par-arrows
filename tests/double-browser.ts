@@ -105,6 +105,55 @@ async function colorCounts(
   return { violet, lime, failed };
 }
 
+/**
+ * Violet pixels in a window just past the tail cell center, away from the
+ * body. Only the tail arrowhead reaches there, so a culled head reads zero.
+ */
+async function violetBeyondTail(page: Page): Promise<number> {
+  const current = await state(page);
+  const bounds = await page.locator("canvas").boundingBox();
+  assert.ok(bounds);
+  const camera = new PerspectiveCamera(
+    32,
+    bounds.width / bounds.height,
+    0.1,
+    40,
+  );
+  camera.position.fromArray(current.camera.position);
+  camera.quaternion.fromArray(current.camera.orientation);
+  camera.updateMatrixWorld();
+  const project = (x: number): { x: number; y: number } => {
+    const [wx, wy, wz] = cellToWorld({ face: "front", x, y: 1 }, 4);
+    const point = new Vector3(wx, wy, wz).project(camera);
+    return {
+      x: ((point.x + 1) * bounds.width) / 2,
+      y: ((1 - point.y) * bounds.height) / 2,
+    };
+  };
+  const tail = project(1);
+  const beyond = project(0.7);
+  const image = await page.screenshot({
+    clip: {
+      x: bounds.x + Math.min(tail.x, beyond.x) - 4,
+      y: bounds.y + Math.min(tail.y, beyond.y) - 14,
+      width: Math.abs(beyond.x - tail.x) + 4,
+      height: Math.abs(beyond.y - tail.y) + 28,
+    },
+  });
+  const { data } = await sharp(image)
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  let violet = 0;
+  for (let index = 0; index < data.length; index += 3) {
+    const red = data[index] ?? 0;
+    const green = data[index + 1] ?? 0;
+    const blue = data[index + 2] ?? 0;
+    if (blue > red * 1.15 && blue > green * 1.25) violet += 1;
+  }
+  return violet;
+}
+
 export async function assertDoubleIntro(
   browser: Browser,
   url: string,
@@ -136,6 +185,9 @@ export async function assertDoubleIntro(
     const colors = await colorCounts(page);
     assert.ok(colors.violet > 10, "The violet half must render");
     assert.ok(colors.lime > 10, "The lime half must render");
+    const tailTip = await violetBeyondTail(page);
+    console.log(`double: ${tailTip} violet px beyond the tail cell`);
+    assert.ok(tailTip > 20, "The violet tail must draw its arrowhead");
     await page.evaluate(() => {
       const select = document.querySelector<HTMLSelectElement>("#theme-select");
       if (!select) throw new Error("Theme selector missing");

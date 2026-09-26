@@ -2020,6 +2020,7 @@ export class PuzzleRenderer {
       pickers.push(picker);
     }
     material.side = THREE.DoubleSide;
+    if (tailMaterial) tailMaterial.side = THREE.DoubleSide;
     const head = new THREE.Mesh(makeHeadGeometry(), material);
     head.frustumCulled = false;
     head.layers.enable(PICK_LAYER);
