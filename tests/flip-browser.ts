@@ -744,50 +744,48 @@ async function assertGeneratedReversal(
 }
 
 /**
- * A generated region park that leaves a flip pending. On level 77 the relay's
- * west arrow parks on the region circle top:13:11 with its tail still on the
- * flip spot top:13:10, so the spot's flip waits. The park and the pending flip
- * survive a reload; once the north cap clears, west resumes, moves off the
- * spot and flips it north, after which the east arrow turns into the south cap.
+ * A generated region park that leaves a flip pending. On level 44 the relay2
+ * traverser parks on the region circle back:9:10 with its tail still on the
+ * flip spot back:10:10, so the spot's flip waits. The park and the pending
+ * flip survive a reload; once both relay2 caps clear, the traverser resumes,
+ * moves off the spot and flips it from west to east; its exit path flips the
+ * relay2's second spot too.
  */
 async function assertRegionPark(
   browser: Browser,
   url: string,
   output: string,
 ): Promise<void> {
-  const levelId = 77;
-  const circle = "top:13:11";
-  const spotKey = "top:13:10";
-  const west = "r77-flip-relay-west";
-  const east = "r77-flip-relay-east";
-  const northCap = "r77-flip-relay-northcap";
-  const southCap = "r77-flip-relay-southcap";
-  const level = generateLevel(levelId);
+  const levelId = 44;
+  const circle = "back:9:10";
+  const spotKey = "back:10:10";
+  const traverser = "r44-flip-relay2-traverser";
+  const east = "r44-flip-relay2-east";
+  const west = "r44-flip-relay2-west";
+  const secondSpot = "back:8:10";
+  const level = generateLevel(44);
   assert.ok(level.stops?.some((stop) => cellKey(stop) === circle));
   const initial = createGameState(level);
-  const park = simulateMove(level, initial, west);
+  const park = simulateMove(level, initial, traverser);
   assert.equal(park.kind, "paused");
   assert.deepEqual(park.spotFlips ?? [], []);
   const parked = applyMove(level, initial, park);
-  assert.deepEqual(parked.settledPaths?.[west]?.map(cellKey), [
+  assert.deepEqual(parked.settledPaths?.[traverser]?.map(cellKey), [
     spotKey,
     circle,
   ]);
-  assert.equal(simulateMove(level, parked, west).blockerId, northCap);
-  const cleared = applyMove(
+  const cleared = applyMove(level, parked, simulateMove(level, parked, east));
+  const cleared2 = applyMove(
     level,
-    parked,
-    simulateMove(level, parked, northCap),
+    cleared,
+    simulateMove(level, cleared, west),
   );
-  const resume = simulateMove(level, cleared, west);
+  const resume = simulateMove(level, cleared2, traverser);
   assert.equal(resume.kind, "exit");
   assert.deepEqual(
     resume.spotFlips?.map((flip) => cellKey(flip.cell)),
-    [spotKey],
+    [spotKey, secondSpot],
   );
-  const eastMove = simulateMove(level, applyMove(level, cleared, resume), east);
-  assert.equal(eastMove.kind, "blocked");
-  assert.equal(eastMove.blockerId, southCap);
 
   const context = await browser.newContext({
     viewport: { width: 1100, height: 760 },
@@ -809,18 +807,18 @@ async function assertRegionPark(
     assert.equal(current.mode, "campaign");
     assert.ok(current.stops.includes(circle));
     assert.equal(spotOf(current)?.kind, "flip");
-    assert.equal(spotOf(current)?.current, "south");
+    assert.equal(spotOf(current)?.current, "west");
     assert.deepEqual(current.pendingFlips, []);
 
-    await activate(page, west);
+    await activate(page, traverser);
     current = await state(page);
     assert.equal(
-      current.settledPaths[west]?.map(cellKey).at(-1),
+      current.settledPaths[traverser]?.map(cellKey).at(-1),
       circle,
-      "West parks on the region circle",
+      "The traverser parks on the region circle",
     );
     assert.deepEqual(current.pendingFlips, [spotKey], "The flip is pending");
-    assert.equal(spotOf(current)?.current, "south");
+    assert.equal(spotOf(current)?.current, "west");
     assert.equal(current.lives, level.lives);
 
     await page.reload();
@@ -829,7 +827,7 @@ async function assertRegionPark(
     assert.equal(current.mode, "campaign");
     assert.equal(current.level.id, levelId);
     assert.equal(
-      current.settledPaths[west]?.map(cellKey).at(-1),
+      current.settledPaths[traverser]?.map(cellKey).at(-1),
       circle,
       "The park survives a reload",
     );
@@ -838,51 +836,50 @@ async function assertRegionPark(
       [spotKey],
       "The pending flip survives a reload",
     );
-    assert.equal(spotOf(current)?.current, "south");
+    assert.equal(spotOf(current)?.current, "west");
 
-    const [nx, ny, nz] = faceNormal("top");
+    const [nx, ny, nz] = faceNormal("back");
     const facing = async (): Promise<number> => {
       const [x, y, z] = (await state(page)).camera.position;
       return (x * nx + y * ny + z * nz) / Math.hypot(x, y, z);
     };
     let direction = 1;
     let score = await facing();
-    for (let attempt = 0; attempt < 80 && score < 0.8; attempt += 1) {
+    for (let attempt = 0; attempt < 120 && score < 0.8; attempt += 1) {
       await page.evaluate(
-        (delta) => window.__PAR_ARROWS_TEST__?.orbit(0, delta),
+        (delta) => window.__PAR_ARROWS_TEST__?.orbit(delta, 0),
         10 * direction,
       );
       const next = await facing();
       if (next < score) direction = -direction;
       score = next;
     }
-    assert.ok(score >= 0.8, "The top face must face the camera");
-    await page.screenshot({ path: `${output}/flip/10-level77-parked.png` });
+    assert.ok(score >= 0.8, "The back face must face the camera");
+    await page.screenshot({ path: `${output}/flip/10-level44-parked.png` });
 
-    await activate(page, northCap);
+    await activate(page, east);
     current = await state(page);
-    assert.ok(!current.remainingIds.includes(northCap));
-    assert.equal(spotOf(current)?.current, "south");
+    assert.ok(!current.remainingIds.includes(east));
+    assert.equal(spotOf(current)?.current, "west");
     await activate(page, west);
     current = await state(page);
     assert.ok(!current.remainingIds.includes(west));
+    await activate(page, traverser);
+    current = await state(page);
+    assert.ok(!current.remainingIds.includes(traverser));
     assert.deepEqual(current.pendingFlips, []);
     assert.equal(
       spotOf(current)?.current,
-      "north",
-      "West moves off the spot and flips it",
+      "east",
+      "The traverser moves off the spot and flips it",
     );
-    await activate(page, east);
-    current = await state(page);
-    assert.ok(current.failedIds.includes(east));
-    assert.equal(current.lives, level.lives - 1);
     await page.screenshot({
-      path: `${output}/flip/11-level77-east-blocked.png`,
+      path: `${output}/flip/11-level44-resumed.png`,
     });
     console.log(
-      `flip: level ${levelId} parks ${west} on ${circle} over ${spotKey}, keeps the flip pending across a reload, then flips it north on resume and ${east} collides`,
+      `flip: level ${levelId} parks ${traverser} on ${circle} over ${spotKey}, keeps the flip pending across a reload, then flips it east on resume after both relay caps clear`,
     );
-    assert.deepEqual(errors, [], "No page errors during the level 77 park");
+    assert.deepEqual(errors, [], "No page errors during the level 44 park");
   } finally {
     await context.close();
   }

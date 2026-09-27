@@ -53,7 +53,7 @@ describe("generator variety helpers", () => {
     expect(blockerReserve(10)).toBe(0);
     for (const id of [11, 15, 20]) expect(blockerReserve(id)).toBe(0);
     expect(blockerReserve(12)).toBe(18); // ceil(0.30 * 60)
-    expect(blockerReserve(60)).toBe(66); // ceil(0.55 * 120)
+    expect(blockerReserve(60)).toBe(94); // ceil(0.55 * 170)
   });
 
   test("blockedStats disagrees between the bare board and the stop-assembled board", () => {

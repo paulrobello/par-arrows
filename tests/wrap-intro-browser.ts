@@ -81,7 +81,7 @@ export async function assertWrapIntro(
     colorScheme: "light",
   });
   const levelTen = generateLevel(10);
-  assert.equal(levelTen.arrows.length, 180);
+  assert.equal(levelTen.arrows.length, 56);
   const lastArrow = levelTen.arrows.find(
     (arrow) =>
       simulateMove(

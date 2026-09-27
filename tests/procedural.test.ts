@@ -307,7 +307,7 @@ describe("runtime campaign generator", () => {
     expect(getLevelConfig(12).arrowCount).toBe(60);
     expect(getLevelConfig(31).arrowCount).toBe(98);
     expect(getLevelConfig(1_000_000).gridSize).toBe(18);
-    expect(getLevelConfig(1_000_000).arrowCount).toBe(120);
+    expect(getLevelConfig(1_000_000).arrowCount).toBe(170);
   });
 
   test("v9 config curves", () => {
@@ -329,7 +329,8 @@ describe("runtime campaign generator", () => {
       lives: 3,
       arrowScale: 18 / 14,
     });
-    expect(getLevelConfig(52).arrowCount).toBe(120);
+    expect(getLevelConfig(43).arrowCount).toBe(150);
+    expect(getLevelConfig(52).arrowCount).toBe(168);
     expect(getLevelConfig(32).gridSize).toBe(18);
   });
 

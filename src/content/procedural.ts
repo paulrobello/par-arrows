@@ -64,7 +64,7 @@ import { WORMHOLE_INTRO_LEVEL } from "./wormhole-intro";
 export const GENERATOR_VERSION = 9;
 
 /** Absolute arrow ceiling: a level's fill target plus its blocker reserve. */
-export const MAX_GENERATED_ARROWS = 186;
+export const MAX_GENERATED_ARROWS = 264;
 export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
 
 /** Authored teaching cubes; every other id is generated at runtime. */
@@ -228,7 +228,7 @@ export function getLevelConfig(id: number): LevelConfig {
   const gridSize = Math.min(18, 10 + Math.floor(id / 4));
   return {
     gridSize,
-    arrowCount: Math.min(120, 36 + 2 * id),
+    arrowCount: Math.min(170, id <= 42 ? 36 + 2 * id : 150 + 2 * (id - 43)),
     lives: id <= 3 ? 5 : id <= 6 ? 4 : 3,
     arrowScale: gridSize / (id <= 3 ? 8 : id <= 6 ? 10 : 14),
   };

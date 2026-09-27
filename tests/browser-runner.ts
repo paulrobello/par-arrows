@@ -1542,11 +1542,11 @@ try {
   await assertContextRecovery(browser, url, output);
   await assertLevelPreview(browser, url, output);
   await assertWrappingEdges(browser, url, output, {
-    // Level 90 is the only v8 cube in 2-200 whose sole wrapping pair is the
-    // front-east/right-west seam, which the single-edge visibility fixture
-    // needs, with crossing arrows suitable for movement and rebound evidence.
-    movementLevelId: 90,
-    reboundLevelId: 90,
+    // Level 54 pairs exactly one wrapping seam with no spots and no wormholes,
+    // which the single-edge visibility fixture needs, with crossing arrows
+    // suitable for movement and rebound evidence.
+    movementLevelId: 54,
+    reboundLevelId: 54,
   });
   await assertVersionReload(page);
   await assertThemeBootstrap(browser);

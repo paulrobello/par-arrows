@@ -6,7 +6,7 @@ import type { LevelDefinition } from "../src/core/types";
 import { waitForReady } from "./runtime-fixtures";
 
 /** Levels the sweep runs over: the second is the densest generated grid. */
-const LEVEL_IDS = [2, 10] as const;
+const LEVEL_IDS = [2, 44] as const;
 /** How far off an arrow a finger may land and still mean that arrow. */
 const OFFSET_PX = 7;
 /** Directions probed around each arrow. */
@@ -22,8 +22,8 @@ const RING = [
 ] as const;
 /**
  * Fraction of near-miss presses that must reach an arrow. Measured against the
- * same sweep with the margin disabled, which scores 0.49 (level 2) and 0.54
- * (level 10), so this cannot pass without the widened zone.
+ * same sweep with the margin disabled, which scores 0.49 (level 2), so this
+ * cannot pass without the widened zone.
  */
 const MINIMUM_COVERAGE = 0.75;
 
