@@ -47,6 +47,13 @@ import {
   validateLevel,
 } from "../core/validation";
 import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "./intro";
+import {
+  chainStats,
+  deepestUnit,
+  depthTarget,
+  CHAIN_TOLERANCE,
+  SHARE_TOLERANCE,
+} from "./difficulty";
 import { DIRECTIONAL_INTRO_LEVEL } from "./directional-intro";
 import { DOUBLE_INTRO_LEVEL } from "./double-intro";
 import { FLIP_INTRO_LEVEL } from "./flip-intro";
@@ -54,7 +61,10 @@ import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
 import { STOP_INTRO_LEVEL } from "./stop-intro";
 import { WORMHOLE_INTRO_LEVEL } from "./wormhole-intro";
 
-export const GENERATOR_VERSION = 8;
+export const GENERATOR_VERSION = 9;
+
+/** Absolute arrow ceiling: a level's fill target plus its blocker reserve. */
+export const MAX_GENERATED_ARROWS = 186;
 export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
 
 /** Authored teaching cubes; every other id is generated at runtime. */
@@ -215,20 +225,10 @@ export function getLevelConfig(id: number): LevelConfig {
   if (isAuthoredLevel(id)) {
     return { gridSize: 4, arrowCount: 6, lives: 5, arrowScale: 1 };
   }
-  const early = [0, 60, 84, 108, 132, 156, 168, 180, 180, 180];
-  const earlyGrid = [0, 12, 13, 15, 16, 18, 18, 20, 21, 22];
-  const index = id - 1;
-  const arrowCount =
-    id <= 10
-      ? (early[index] ?? 180)
-      : Math.min(264, 180 + Math.floor((id - 10) / 2) * 6);
-  const gridSize =
-    id <= 10
-      ? (earlyGrid[index] ?? 22)
-      : Math.min(26, 22 + Math.floor((id - 10) / 4));
+  const gridSize = Math.min(18, 10 + Math.floor(id / 4));
   return {
     gridSize,
-    arrowCount,
+    arrowCount: Math.min(120, 36 + 2 * id),
     lives: id <= 3 ? 5 : id <= 6 ? 4 : 3,
     arrowScale: gridSize / (id <= 3 ? 8 : id <= 6 ? 10 : 14),
   };
@@ -591,6 +591,59 @@ interface OverlapPattern {
 }
 
 const HEADING_CYCLE: readonly Heading[] = ["east", "south", "west", "north"];
+
+const AIM_VECTORS: readonly (readonly [number, number])[] = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+];
+
+/**
+ * A straight path whose exit ray runs into one of the target body cells: the
+ * head sits one step back along the aimed heading, so the arrow's tap blocks
+ * on the target's owner and extends the dependency chain. Same-face lanes
+ * only; returns undefined when no lane fits.
+ */
+function aimedCandidate(
+  rng: Rng,
+  size: number,
+  occupied: ReadonlySet<string>,
+  targets: readonly Cell[],
+  laneForbidden: ReadonlySet<string>,
+): readonly Cell[] | undefined {
+  for (let attempt = 0; attempt < 24; attempt += 1) {
+    const target = targets[rng.int(targets.length)] as Cell;
+    const [dx, dy] = AIM_VECTORS[rng.int(AIM_VECTORS.length)] as readonly [
+      number,
+      number,
+    ];
+    const cells: Cell[] = [];
+    let fits = true;
+    for (let step = 1; step <= 5; step += 1) {
+      const cell: Cell = {
+        face: target.face,
+        x: target.x - dx * step,
+        y: target.y - dy * step,
+      };
+      if (cell.x < 0 || cell.y < 0 || cell.x >= size || cell.y >= size) {
+        if (step === 1) fits = false;
+        break;
+      }
+      cells.push(cell);
+    }
+    if (!fits || cells.length < 2) continue;
+    if (
+      cells.some(
+        (cell) =>
+          occupied.has(cellKey(cell)) || laneForbidden.has(cellKey(cell)),
+      )
+    )
+      continue;
+    return cells.reverse();
+  }
+  return undefined;
+}
 
 function rotateHeading(heading: Heading, quarterTurns: number): Heading {
   const index = HEADING_CYCLE.indexOf(heading);
@@ -3418,7 +3471,9 @@ export function generateLevel(id: number): LevelDefinition {
           const { groupRouteCells, aheadKeys } = ensureBlockerScaffold();
           for (
             let attempt = 0;
-            placed < reserve && arrows.length < 264 && attempt < reserve * 60;
+            placed < reserve &&
+            arrows.length < MAX_GENERATED_ARROWS &&
+            attempt < reserve * 60;
             attempt += 1
           ) {
             if (
@@ -3639,6 +3694,145 @@ export function generateLevel(id: number): LevelDefinition {
           }
           assembledStats = blockedStats(statsBoard);
         }
+        // Depth pass: deepen the blocking DAG toward depthTarget(id), the
+        // way the blocker pass reaches its share target. A chain arrow is
+        // accepted only when it lengthens the longest dependency path; it
+        // lands after the circles were chosen, so the circles are re-chosen
+        // and every score recomputed on the final arrow set, exactly like
+        // the blocker top-up above.
+        const depthGate = depthTarget(id);
+        let chainPlaced = 0;
+        const chainIds: string[] = [];
+        const chainIdSet = new Set<string>();
+        // Accepted chain arrows reserve their actual route against later
+        // chain placements: a later body on an earlier relay arrow's route
+        // would break its certificate tap (the predecessor ordering).
+        const chainLaneKeys = new Set<string>();
+        let depth = chainStats(statsBoard);
+        if (
+          depth.chain < depthGate.minChain ||
+          depth.forcedShare < depthGate.minForced
+        ) {
+          const { groupRouteCells } = ensureBlockerScaffold();
+          let aim = deepestUnit(statsBoard);
+          let relayChain = depth.chain;
+          for (
+            let attempt = 0;
+            attempt < 400 && arrows.length < MAX_GENERATED_ARROWS;
+            attempt += 1
+          ) {
+            if (relayChain >= depthGate.minChain) break;
+            // Aimed candidate: a straight lane whose exit ray runs into a
+            // deepest unit's body, so the tap blocks there and extends the
+            // longest dependency path. The aim refreshes after each
+            // acceptance because the new chain arrow becomes the next
+            // deepest unit; an ordinary candidate falls back when nothing
+            // aims.
+            let path: readonly Cell[] | undefined;
+            if (aim.bodies.length > 0) {
+              path = aimedCandidate(
+                rng,
+                config.gridSize,
+                occupied,
+                aim.bodies,
+                chainLaneKeys,
+              );
+            }
+            if (!path) {
+              path = candidate(
+                rng,
+                candidateLevel,
+                occupied,
+                Math.max(
+                  2,
+                  Math.floor(
+                    targetLength(rng, id, config) *
+                      (1 - edgePolicies.length * 0.05),
+                  ),
+                ),
+                rayExemptCells,
+              );
+            }
+            if (!path || shapeFull(path)) continue;
+            if (path.some((cell) => groupRouteCells.has(cellKey(cell))))
+              continue;
+            if (path.some((cell) => chainLaneKeys.has(cellKey(cell)))) continue;
+            const chainArrow: ArrowDefinition = {
+              id: `r${id}-chain-${chainPlaced}`,
+              path,
+            };
+            if (
+              !validateLevel({ ...candidateLevel, arrows: [chainArrow] }).valid
+            )
+              continue;
+            // A chain arrow whose route enters a portal end teleports and
+            // could unlock the wormhole core's required-use deadlock; every
+            // chain route keeps off the ends themselves.
+            if (portalKeys.size > 0) {
+              const head = path[path.length - 1] as Cell;
+              const before = path[path.length - 2] as Cell;
+              const heading: Heading =
+                before.y === head.y
+                  ? head.x > before.x
+                    ? "east"
+                    : "west"
+                  : head.y > before.y
+                    ? "south"
+                    : "north";
+              if (
+                exitRay(candidateLevel, head, heading).some((cell) =>
+                  portalKeys.has(cellKey(cell)),
+                )
+              )
+                continue;
+            }
+            // Cheap acceptance: the candidate must block on the deepest
+            // unit — one simulateMove instead of a full DAG probe, which
+            // only runs once after the pass. The relay's chain length
+            // advances by exactly one per acceptance because the blocker
+            // sits at the current maximum depth.
+            const probeBoard = {
+              ...statsBoard,
+              arrows: [...arrows, chainArrow],
+            };
+            const probe = simulateMove(
+              probeBoard,
+              probeBoard.arrows.map((arrow) => arrow.id),
+              chainArrow.id,
+              "head",
+            );
+            if (
+              probe.kind !== "blocked" ||
+              !probe.blockerId ||
+              !aim.memberIds.includes(probe.blockerId)
+            )
+              continue;
+            // The lane is the arrow's actual route on the assembled board
+            // (spots bend straight lanes). It stays out of the flip region:
+            // replay-time flip evolution must never bend a chain leg
+            // somewhere the lane reservation cannot see.
+            const lane = arrowTrack(statsBoard, chainArrow);
+            if (flip && lane.some((cell) => flip.cells.has(cellKey(cell)))) {
+              continue;
+            }
+            for (const cell of path) occupied.add(cellKey(cell));
+            countShape(path);
+            arrows.push(chainArrow);
+            chainIds.push(chainArrow.id);
+            chainIdSet.add(chainArrow.id);
+            for (const cell of lane) chainLaneKeys.add(cellKey(cell));
+            relayChain += 1;
+            chainPlaced += 1;
+            aim = deepestUnit(statsBoard);
+          }
+          if (chainPlaced > 0) {
+            level = assemble(placeStops());
+            statsBoard =
+              wormholes.length > 0 ? { ...level, wormholes: [] } : level;
+            depth = chainStats(statsBoard);
+            assembledStats = blockedStats(statsBoard);
+          }
+        }
         if (
           core &&
           !core.stops.every(
@@ -3655,6 +3849,18 @@ export function generateLevel(id: number): LevelDefinition {
             blockedTarget(id) - 0.06
         ) {
           skip = "blockers";
+          continue;
+        }
+        // Certificate tiers only, like the share gate above: the last-resort
+        // tier accepts a short board rather than throwing, and the
+        // depth-generation sweep is the net that catches any id shipping
+        // under target.
+        if (
+          tier.certificate &&
+          (depth.chain < depthGate.minChain - CHAIN_TOLERANCE ||
+            depth.forcedShare < depthGate.minForced - SHARE_TOLERANCE)
+        ) {
+          skip = "depth";
           continue;
         }
         // Built after any assembled-board top-up so newly placed blockers —
@@ -3679,11 +3885,20 @@ export function generateLevel(id: number): LevelDefinition {
             .filter(
               (arrow) =>
                 !doubleIds.has(arrow.id) &&
+                !chainIdSet.has(arrow.id) &&
                 !wormholes.some((entry) =>
                   entry.arrows.some((core) => core.id === arrow.id),
                 ),
             )
             .map((arrow) => arrow.id),
+          // Relay chains close the replay: each chain arrow's only body
+          // blocker is its predecessor, which clears one entry earlier, so
+          // push order is tap order once every earlier arrow has left. The
+          // ids repeat: a leg that parks on a circle takes its second tap
+          // here, and an already-exited leg is skipped (replayCertificate
+          // ignores absent ids).
+          ...chainIds,
+          ...chainIds,
         ];
         // A planned wormhole whose core did not fit falls back to a
         // decorative pair on the assembled board. Plan zero never reaches

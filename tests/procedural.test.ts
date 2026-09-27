@@ -8,6 +8,7 @@ import {
   blockerReserve,
   doubleArrowFrequency,
   GENERATOR_VERSION,
+  MAX_GENERATED_ARROWS,
   generateLevel,
   getLevelConfig,
   getStopCount,
@@ -125,7 +126,7 @@ function normalizedShapeSignature(
 
 describe("generated double arrows", () => {
   test("uses v8 generation, keeps the authored v7 seed, and the planned frequency curve", () => {
-    expect(GENERATOR_VERSION).toBe(8);
+    expect(GENERATOR_VERSION).toBe(9);
     expect(AUTHORED_LEVEL_IDS).toEqual([1, 5, 11, 15, 20, 25, 30, 35]);
     expect(seedForLevel(25)).toBe(
       "par-arrows:runtime:7:level:25:double-intro:1",
@@ -161,14 +162,14 @@ describe("generated double arrows", () => {
             target.endpoint === "tail",
         ),
       ).toBe(true);
-      expect(level.arrows.length).toBeLessThanOrEqual(264);
+      expect(level.arrows.length).toBeLessThanOrEqual(MAX_GENERATED_ARROWS);
     }
   }, 60_000);
 });
 
 describe("runtime campaign generator", () => {
   test("has a versioned stable seed and rejects unsafe ids", () => {
-    expect(GENERATOR_VERSION).toBe(8);
+    expect(GENERATOR_VERSION).toBe(9);
     expect(seedForLevel(1_000_000)).toBe(seedForLevel(1_000_000));
     expect(seedForLevel(1_000_000)).not.toBe(seedForLevel(1_000_001));
     for (const id of [0, -1, 1.5, Number.MAX_SAFE_INTEGER, MAX_LEVEL_ID + 1])
@@ -183,30 +184,28 @@ describe("runtime campaign generator", () => {
   }, 30_000);
 
   test("preserves geometry through level four and authors levels five, eleven, and fifteen", () => {
+    // Re-rolled for generator v9: ids 2-10 keep their legacy seeds but the
+    // config curve changed their boards; ids 12-14 re-rolled with the seed.
     expect(geometryHash(generateLevel(2))).toBe(
-      "9fb45c3beaf0cafeacb20f56ee1fdf45bcccb17769cbc2229a1521339e85b7fa",
+      "9733f862eca9a38dff42d80ccbcb30eda7ddcd9134ec1c4162783a075bc0d19d",
     );
     expect(geometryHash(generateLevel(10))).toBe(
-      "48bf3896852038155c179facccc7174e71e86e0d24d6e5ccac99f770b41a9512",
+      "c8c4db8df7b295546352b4b7005178d231b77d7f4a24c3f58ab5f7ec1d8c39e5",
     );
-    // Re-rolled for generator v8.
     expect(geometryHash(generateLevel(12))).toBe(
-      "d13be7f00c46e04e1d30ccf11dc0a75f983d24c67b265eccb6e5198d5cf25752",
+      "dcf0d11e4ff3d185216a0fecf7683d4be7fa01bf770f3ec9045a226b0df95c40",
     );
-    // Re-rolled for generator v8.
     expect(geometryHash(generateLevel(13))).toBe(
-      "b8f2e766000bb224404e0829e94b5009b8ae91d09f9fc0b5eb3e1a8ab039df74",
+      "c870a16ec1328f71ce7c25203e52b73fe5e4e06b21744f4296a566aa221c70cf",
     );
-    // Re-rolled for generator v8.
     expect(geometryHash(generateLevel(14))).toBe(
-      "40afe8dfadcdbc9b3517e5cfe38456c9d8de2d5e9d0fa74c159672ca3917c8f8",
+      "231b703c742235131179600227da2ddea3325696fcad838c6dcfe52e79fa9a65",
     );
-    // Cubes 3 and 4 were rebuilt when content 10 fixed seam-crossing heads.
     expect(geometryHash(generateLevel(3))).toBe(
-      "27e46b2b26a34ecd41a6321be6b24d212d1d793b1d98c50dfe5defb17b0eca7f",
+      "769cf6639e328f386271f4be77d17bea9372803f27b0ef662e66688f6f1f2ee4",
     );
     expect(geometryHash(generateLevel(4))).toBe(
-      "f6b5538b04b4998cdc46983400c149d181948d814ddfbff82af6effd09878eba",
+      "701c3c604b6762e2eeab62f5334e395e6e88683eefdfe6039f69cdcad3bb2994",
     );
     expect(generateLevel(5)).toBe(STOP_INTRO_LEVEL);
     expect(generateLevel(15)).toBe(OVERLAP_INTRO_LEVEL);
@@ -223,8 +222,8 @@ describe("runtime campaign generator", () => {
     ).toBe(layouts.length);
     for (const level of layouts) {
       expect(validateLevel(level)).toEqual({ valid: true, errors: [] });
-      expect(level.gridSize).toBeLessThanOrEqual(26);
-      expect(level.arrows.length).toBeLessThanOrEqual(264);
+      expect(level.gridSize).toBeLessThanOrEqual(18);
+      expect(level.arrows.length).toBeLessThanOrEqual(MAX_GENERATED_ARROWS);
       expect(
         Math.max(...level.arrows.map((arrow) => arrow.path.length)),
       ).toBeLessThanOrEqual(40);
@@ -254,10 +253,13 @@ describe("runtime campaign generator", () => {
       );
       if (
         (level.stops ?? []).length > 0 ||
-        level.arrows.some((arrow) => arrow.kind === "double")
+        level.arrows.some((arrow) => arrow.kind === "double") ||
+        (level.directionals ?? []).length > 0 ||
+        (level.wormholes ?? []).length > 0
       ) {
-        // Parking deadlocks and double arrows replay the endpoint-aware
-        // solver solution instead of the plain reverse order.
+        // Circles, doubles, and any spot-bearing board replay the solver's
+        // own order: flip spots make routes order-dependent, so plain
+        // reverse order is not the guaranteed one on those cubes.
         replaySolution(level);
       } else {
         let certificateState = createGameState(level);
@@ -294,25 +296,50 @@ describe("runtime campaign generator", () => {
     }
   }, 60_000);
 
-  test("keeps the intended early curve and continuing capped progression", () => {
+  test("keeps the intended v9 curve and continuing capped progression", () => {
     expect(
       [2, 3, 4, 6, 7, 8, 9, 10].map((id) => getLevelConfig(id).arrowCount),
-    ).toEqual([60, 84, 108, 156, 168, 180, 180, 180]);
+    ).toEqual([40, 42, 44, 48, 50, 52, 54, 56]);
     expect(getLevelConfig(5).arrowCount).toBe(6);
     expect(getLevelConfig(3).lives).toBe(5);
     expect(getLevelConfig(6).lives).toBe(4);
     expect(getLevelConfig(7).lives).toBe(3);
-    expect(getLevelConfig(12).arrowCount).toBe(186);
-    expect(getLevelConfig(31).arrowCount).toBe(240);
-    expect(getLevelConfig(1_000_000).gridSize).toBe(26);
-    expect(getLevelConfig(1_000_000).arrowCount).toBe(264);
+    expect(getLevelConfig(12).arrowCount).toBe(60);
+    expect(getLevelConfig(31).arrowCount).toBe(98);
+    expect(getLevelConfig(1_000_000).gridSize).toBe(18);
+    expect(getLevelConfig(1_000_000).arrowCount).toBe(120);
+  });
+
+  test("v9 config curves", () => {
+    expect(getLevelConfig(2)).toEqual({
+      gridSize: 10,
+      arrowCount: 40,
+      lives: 5,
+      arrowScale: 10 / 8,
+    });
+    expect(getLevelConfig(12)).toEqual({
+      gridSize: 13,
+      arrowCount: 60,
+      lives: 3,
+      arrowScale: 13 / 14,
+    });
+    expect(getLevelConfig(40)).toEqual({
+      gridSize: 18,
+      arrowCount: 116,
+      lives: 3,
+      arrowScale: 18 / 14,
+    });
+    expect(getLevelConfig(52).arrowCount).toBe(120);
+    expect(getLevelConfig(32).gridSize).toBe(18);
   });
 
   test("constructs a broad deterministic seeded sweep without quality collapse", () => {
     for (const id of diverseLevelIds()) {
       const level = generateLevel(id);
       expect(seedForLevel(id)).toBe(
-        `par-arrows:runtime:${id <= 4 ? 1 : id <= 10 ? 4 : 8}:level:${id}`,
+        `par-arrows:runtime:${
+          id <= 4 ? 1 : id <= 10 ? 4 : GENERATOR_VERSION
+        }:level:${id}`,
       );
       expect(validateLevel(level).valid).toBe(true);
       // The face plan governs static spots; a flip core's spot is separate.
@@ -329,7 +356,7 @@ describe("runtime campaign generator", () => {
           expect(count).toBeLessThanOrEqual(4);
         }
       }
-      expect(level.gridSize).toBeLessThanOrEqual(26);
+      expect(level.gridSize).toBeLessThanOrEqual(18);
       // Tier-one fills to the exact historical count; the rare-shortfall
       // blocker pass only ever adds arrows on top of it, so a count below the
       // configured density still means a relaxed fallback tier fired for a
@@ -337,15 +364,20 @@ describe("runtime campaign generator", () => {
       expect(level.arrows.length).toBeGreaterThanOrEqual(
         getLevelConfig(id).arrowCount,
       );
-      expect(level.arrows.length).toBeLessThanOrEqual(264);
+      expect(level.arrows.length).toBeLessThanOrEqual(MAX_GENERATED_ARROWS);
       expect(
         Math.max(...level.arrows.map((arrow) => arrow.path.length)),
       ).toBeLessThanOrEqual(40);
-      expect(
-        level.arrows.some(
-          (arrow) => new Set(arrow.path.map((cell) => cell.face)).size >= 3,
-        ),
-      ).toBe(true);
+      // The construction guarantees the three-face spread on spot cubes
+      // only (a directional board without one restarts); elsewhere it was a
+      // statistical property of the v8 density, not a rule.
+      if ((level.directionals ?? []).length > 0) {
+        expect(
+          level.arrows.some(
+            (arrow) => new Set(arrow.path.map((cell) => cell.face)).size >= 3,
+          ),
+        ).toBe(true);
+      }
       const lengths = straightLengths(level);
       for (const length of [2, 3, 4]) expect(lengths).toContain(length);
     }

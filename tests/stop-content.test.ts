@@ -202,18 +202,17 @@ describe("stop-circle level content", () => {
     }
   }, 60_000);
 
-  // Re-rolled for generator v8. The v7 regression was cube 52; under v8 the
-  // same shape lives on cube 14: a circle at front:12:14 on r14-17's lane
-  // would park it onto r14-37's track while r14-37's body pins it, a
-  // collision-free strand. The generator must not place that circle, and the
-  // shipped cube's endgame around those arrows must stay winnable.
-  test("cube 14 can never park an arrow into a permanent deadlock", () => {
+  // Re-rolled for generator v9. A circle at front:9:4 on r13-23's lane would
+  // park it onto r13-44's track while r13-44's body pins it, a collision-free
+  // strand. The generator must not place that circle, and the shipped cube's
+  // endgame around those arrows must stay winnable.
+  test("cube 13 can never park an arrow into a permanent deadlock", () => {
     const endgameOf = (level: LevelDefinition): LevelDefinition => {
       let state = createGameState(level);
       for (let pass = 0; pass < level.arrows.length; pass += 1) {
         const before = state.remainingIds.length;
         for (const arrowId of [...state.remainingIds]) {
-          if (arrowId === "r14-17" || arrowId.includes("-park-")) continue;
+          if (arrowId === "r13-23" || arrowId.includes("-park-")) continue;
           const result = simulateMove(level, state, arrowId);
           if (result.kind === "exit") state = applyMove(level, state, result);
         }
@@ -226,8 +225,8 @@ describe("stop-circle level content", () => {
         ),
       };
     };
-    const level = generateLevel(14);
-    const trap = { face: "front" as const, x: 12, y: 14 };
+    const level = generateLevel(13);
+    const trap = { face: "front" as const, x: 9, y: 4 };
     expect((level.stops ?? []).map(cellKey)).not.toContain(cellKey(trap));
     // The rule bites: with that circle added, the park crosses a track and
     // the endgame strands.
@@ -236,7 +235,7 @@ describe("stop-circle level content", () => {
       stops: [...(level.stops ?? []), trap],
     };
     expect(validateLevel(trapped).valid).toBe(true);
-    expect(crossingParks(trapped)).toContain("r14-17->r14-37");
+    expect(crossingParks(trapped)).toContain("r13-23->r13-44");
     expect(hasStrandingState(endgameOf(trapped))).toBe(true);
     // The shipped cube keeps no crossing park and a winnable endgame.
     expect(crossingParks(level)).toEqual([]);

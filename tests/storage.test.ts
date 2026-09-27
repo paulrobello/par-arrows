@@ -302,7 +302,7 @@ describe("resumable campaign saves", () => {
     expect(save(state, 88)).toBe(true);
     expect(savedJson()).toMatchObject({
       contentVersion: 13,
-      generatorVersion: 8,
+      generatorVersion: 9,
       currentLevelId: 42,
       unlockedLevelId: 88,
       layout: layoutFingerprint(level),
@@ -1003,7 +1003,7 @@ describe("resumable campaign saves", () => {
       expect(saveCampaign(restored.value)).toBe(true);
       expect(savedJson()).toMatchObject({
         contentVersion: 13,
-        generatorVersion: 8,
+        generatorVersion: 9,
       });
     },
   );

@@ -52,8 +52,8 @@ describe("generator variety helpers", () => {
   test("blocker reserve scales the target over the level's arrow budget", () => {
     expect(blockerReserve(10)).toBe(0);
     for (const id of [11, 15, 20]) expect(blockerReserve(id)).toBe(0);
-    expect(blockerReserve(12)).toBe(56); // ceil(0.30 * 186)
-    expect(blockerReserve(60)).toBe(146); // ceil(0.55 * 264)
+    expect(blockerReserve(12)).toBe(18); // ceil(0.30 * 60)
+    expect(blockerReserve(60)).toBe(66); // ceil(0.55 * 120)
   });
 
   test("blockedStats disagrees between the bare board and the stop-assembled board", () => {
@@ -260,7 +260,11 @@ describe("blocked push", () => {
   test("share meets the target curve from level twelve onward", () => {
     for (const id of [12, 18, 30, 45, 80]) {
       const level = generateLevel(id);
-      const stats = blockedStats(level);
+      // The generator scores the stripped board (a ring-created exit shifts
+      // the share by one unit), so the test measures the same basis.
+      const stats = blockedStats(
+        level.wormholes ? { ...level, wormholes: [] } : level,
+      );
       expect(stats.total).toBeGreaterThan(0);
       expect(stats.blocked / stats.total).toBeGreaterThanOrEqual(
         blockedTarget(id) - 0.06,

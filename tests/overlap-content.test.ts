@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { OVERLAP_INTRO_LEVEL } from "../src/content/overlap-intro";
 import {
+  GENERATOR_VERSION,
   generateLevel,
   getLevelConfig,
   isAuthoredLevel,
@@ -110,7 +111,9 @@ describe("overlapping-tail level content", () => {
       expect(group).toHaveLength(expectedSize);
       expect(level.arrows).toHaveLength(getLevelConfig(id).arrowCount);
       expect(level).toEqual(generateLevel(id));
-      expect(seedForLevel(id)).toBe(`par-arrows:runtime:8:level:${id}`);
+      expect(seedForLevel(id)).toBe(
+        `par-arrows:runtime:${GENERATOR_VERSION}:level:${id}`,
+      );
       expect(validateLevel(level)).toEqual({ valid: true, errors: [] });
 
       let state = createGameState(level);
