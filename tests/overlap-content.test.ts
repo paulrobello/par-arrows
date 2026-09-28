@@ -107,7 +107,7 @@ describe("overlapping-tail level content", () => {
       [18, 3],
     ] as const) {
       const level = generateLevel(id);
-      const group = overlappingArrowIds(level, level.arrows[0]?.id ?? "");
+      const group = overlappingArrowIds(level, `r${id}-overlap-0`);
       expect(group).toHaveLength(expectedSize);
       expect(level.arrows).toHaveLength(getLevelConfig(id).arrowCount);
       expect(level).toEqual(generateLevel(id));
@@ -154,7 +154,7 @@ describe("overlapping-tail level content", () => {
       // Authored cube 25 teaches double arrows and carries no group.
       if (isAuthoredLevel(id)) continue;
       expect(level).toEqual(generateLevel(id));
-      const group = overlappingArrowIds(level, level.arrows[0]?.id ?? "");
+      const group = overlappingArrowIds(level, `r${id}-overlap-0`);
       expect(group.length).toBeGreaterThan(1);
       const members = level.arrows.filter((arrow) => group.includes(arrow.id));
       const shared = members

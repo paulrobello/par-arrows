@@ -744,9 +744,9 @@ async function assertGeneratedReversal(
 }
 
 /**
- * A generated region park that leaves a flip pending. On level 44 the relay2
- * traverser parks on the region circle back:9:10 with its tail still on the
- * flip spot back:10:10, so the spot's flip waits. The park and the pending
+ * A generated region park that leaves a flip pending. On level 128 the relay2
+ * traverser parks on the region circle back:4:15 with its tail still on the
+ * flip spot back:5:15, so the spot's flip waits. The park and the pending
  * flip survive a reload; once both relay2 caps clear, the traverser resumes,
  * moves off the spot and flips it from west to east; its exit path flips the
  * relay2's second spot too.
@@ -756,14 +756,14 @@ async function assertRegionPark(
   url: string,
   output: string,
 ): Promise<void> {
-  const levelId = 44;
-  const circle = "back:9:10";
-  const spotKey = "back:10:10";
-  const traverser = "r44-flip-relay2-traverser";
-  const east = "r44-flip-relay2-east";
-  const west = "r44-flip-relay2-west";
-  const secondSpot = "back:8:10";
-  const level = generateLevel(44);
+  const levelId = 128;
+  const circle = "back:4:15";
+  const spotKey = "back:5:15";
+  const traverser = "r128-flip-relay2-traverser";
+  const east = "r128-flip-relay2-east";
+  const west = "r128-flip-relay2-west";
+  const secondSpot = "back:3:15";
+  const level = generateLevel(levelId);
   assert.ok(level.stops?.some((stop) => cellKey(stop) === circle));
   const initial = createGameState(level);
   const park = simulateMove(level, initial, traverser);
@@ -855,7 +855,7 @@ async function assertRegionPark(
       score = next;
     }
     assert.ok(score >= 0.8, "The back face must face the camera");
-    await page.screenshot({ path: `${output}/flip/10-level44-parked.png` });
+    await page.screenshot({ path: `${output}/flip/10-level128-parked.png` });
 
     await activate(page, east);
     current = await state(page);
@@ -874,12 +874,12 @@ async function assertRegionPark(
       "The traverser moves off the spot and flips it",
     );
     await page.screenshot({
-      path: `${output}/flip/11-level44-resumed.png`,
+      path: `${output}/flip/11-level128-resumed.png`,
     });
     console.log(
       `flip: level ${levelId} parks ${traverser} on ${circle} over ${spotKey}, keeps the flip pending across a reload, then flips it east on resume after both relay caps clear`,
     );
-    assert.deepEqual(errors, [], "No page errors during the level 44 park");
+    assert.deepEqual(errors, [], "No page errors during the level 128 park");
   } finally {
     await context.close();
   }

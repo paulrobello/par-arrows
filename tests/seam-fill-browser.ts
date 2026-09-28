@@ -44,9 +44,9 @@ export async function assertSeamFills(
       select.value = "dark";
       select.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    // Level 50 is the first generated cube carrying a front-east yellow seam
-    // (the next are 54 and 66); level 10 has none, which is the contrast.
-    for (const id of [10, 50]) {
+    // Level 41 is the first generated cube carrying a front-east yellow seam
+    // (the next are 47 and 74); level 10 has none, which is the contrast.
+    for (const id of [10, 41]) {
       await page.evaluate(
         (id) => window.__PAR_ARROWS_TEST__?.loadLevel(id),
         id,
@@ -68,7 +68,7 @@ export async function assertSeamFills(
             policy.edge === "east" &&
             policy.policy === "continue",
         ) ?? false,
-        id === 50,
+        id === 41,
         "Keep one ordinary-edge fixture and one yellow-edge fixture",
       );
       const bounds = await page.locator("canvas").boundingBox();

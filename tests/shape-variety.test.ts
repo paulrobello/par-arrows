@@ -37,7 +37,7 @@ describe("canonical shapes", () => {
     ).toBeUndefined();
   });
 
-  // Ids 2-10 keep their legacy layouts, so the cap binds from level 12 up.
+  // The fill caps shapes on every generated id; this sweep samples 12 up.
   test("no generated level from 12 to 200 repeats one shape past its cap", () => {
     for (let id = 12; id <= 200; id += 1) {
       if (isAuthoredLevel(id)) continue;

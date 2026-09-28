@@ -6,6 +6,7 @@ import { WRAP_INTRO_LEVEL } from "../src/content/intro";
 import {
   GENERATOR_VERSION,
   generateLevel,
+  getLevelConfig,
   seedForLevel,
 } from "../src/content/procedural";
 import { createGameState, simulateMove } from "../src/core/game-state";
@@ -81,7 +82,7 @@ export async function assertWrapIntro(
     colorScheme: "light",
   });
   const levelTen = generateLevel(10);
-  assert.equal(levelTen.arrows.length, 56);
+  assert.equal(levelTen.arrows.length, getLevelConfig(10).arrowCount);
   const lastArrow = levelTen.arrows.find(
     (arrow) =>
       simulateMove(

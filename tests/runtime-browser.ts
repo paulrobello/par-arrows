@@ -3,6 +3,7 @@ import type { Browser, Page } from "playwright";
 import {
   GENERATOR_VERSION,
   generateLevel,
+  MAX_GENERATED_ARROWS,
   seedForLevel,
 } from "../src/content/procedural";
 import {
@@ -125,7 +126,9 @@ export async function assertRuntimeCampaign(
     await page.evaluate(() => window.__PAR_ARROWS_TEST__?.getLevel()),
     thousand,
   );
-  assert.ok(thousand.gridSize <= 26 && thousand.arrows.length <= 264);
+  assert.ok(
+    thousand.gridSize <= 26 && thousand.arrows.length <= MAX_GENERATED_ARROWS,
+  );
   await page.screenshot({ path: `${output}/runtime-cube-1000-mobile.png` });
   const safe = thousand.arrows.find((arrow) => {
     const move = simulateMove(thousand, createGameState(thousand), arrow.id);

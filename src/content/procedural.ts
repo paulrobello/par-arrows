@@ -19,6 +19,7 @@ import {
 import {
   cellKey,
   forwardInfo,
+  headingBetween,
   headingForPath,
   oppositeHeading,
   seamTransition,
@@ -48,12 +49,11 @@ import {
 } from "../core/validation";
 import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "./intro";
 import {
-  chainStats,
-  deepestUnit,
-  depthTarget,
-  CHAIN_TOLERANCE,
-  SHARE_TOLERANCE,
-} from "./difficulty";
+  dependencyFill,
+  type FillNode,
+  type FillResult,
+} from "./dependency-fill";
+import { clearShare, closureStats, meetsDepthGate } from "./difficulty";
 import { DIRECTIONAL_INTRO_LEVEL } from "./directional-intro";
 import { DOUBLE_INTRO_LEVEL } from "./double-intro";
 import { FLIP_INTRO_LEVEL } from "./flip-intro";
@@ -61,10 +61,10 @@ import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
 import { STOP_INTRO_LEVEL } from "./stop-intro";
 import { WORMHOLE_INTRO_LEVEL } from "./wormhole-intro";
 
-export const GENERATOR_VERSION = 9;
+export const GENERATOR_VERSION = 10;
 
-/** Absolute arrow ceiling: a level's fill target plus its blocker reserve. */
-export const MAX_GENERATED_ARROWS = 264;
+/** Absolute arrow ceiling: the largest fill target `getLevelConfig` returns. */
+export const MAX_GENERATED_ARROWS = 200;
 export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
 
 /** Authored teaching cubes; every other id is generated at runtime. */
@@ -100,17 +100,14 @@ export interface LevelConfig {
 /** The stable, inspectable input to the seeded layout generator. */
 export function seedForLevel(id: number): string {
   assertLevelId(id);
+  if (id === 1) return "par-arrows:runtime:1:level:1";
   if (id === 5) return "par-arrows:runtime:4:level:5:stop-intro:1";
   if (id === 11) return "par-arrows:runtime:2:level:11:wrap-intro:1";
-  if (id <= 4) return `par-arrows:runtime:1:level:${id}`;
   if (id === 15) return "par-arrows:runtime:3:level:15:overlap-intro:1";
-  // Cubes this release leaves byte-identical keep their v4 seed strings so
-  // existing saves still match metadata and resume instead of refreshing.
   if (id === 20) return "par-arrows:runtime:4:level:20:directional-intro:1";
   if (id === 25) return "par-arrows:runtime:7:level:25:double-intro:1";
   if (id === 30) return "par-arrows:runtime:7:level:30:flip-intro:1";
   if (id === 35) return "par-arrows:runtime:7:level:35:wormhole-intro:1";
-  if (id <= 10) return `par-arrows:runtime:4:level:${id}`;
   return `par-arrows:runtime:${GENERATOR_VERSION}:level:${id}`;
 }
 
@@ -226,50 +223,22 @@ export function getLevelConfig(id: number): LevelConfig {
     return { gridSize: 4, arrowCount: 6, lives: 5, arrowScale: 1 };
   }
   const gridSize = Math.min(18, 10 + Math.floor(id / 4));
+  // Through level 42 the count never falls below 0.075 arrows per cell,
+  // which raises coverage toward the 0.78 floor; the certificate tiers'
+  // coverage restart is what holds the floor.
   return {
     gridSize,
-    arrowCount: Math.min(170, id <= 42 ? 36 + 2 * id : 150 + 2 * (id - 43)),
+    arrowCount: Math.min(
+      MAX_GENERATED_ARROWS,
+      id <= 42
+        ? Math.max(36 + 2 * id, Math.round(0.075 * 6 * gridSize * gridSize))
+        : id <= 57
+          ? 150 + 2 * (id - 43)
+          : 178 + 2 * (id - 57),
+    ),
     lives: id <= 3 ? 5 : id <= 6 ? 4 : 3,
     arrowScale: gridSize / (id <= 3 ? 8 : id <= 6 ? 10 : 14),
   };
-}
-
-export interface BlockedStats {
-  readonly blocked: number;
-  readonly total: number;
-}
-
-/**
- * Tap units (a single arrow or one shared-tail group) whose immediate move at
- * the level's initial state is blocked. The denominator counts every unit.
- */
-export function blockedStats(level: LevelDefinition): BlockedStats {
-  const remaining = level.arrows.map((arrow) => arrow.id);
-  const counted = new Set<string>();
-  let blocked = 0;
-  let total = 0;
-  for (const arrow of level.arrows) {
-    if (counted.has(arrow.id)) continue;
-    for (const memberId of overlappingArrowIds(level, arrow.id)) {
-      counted.add(memberId);
-    }
-    total += 1;
-    if (simulateMove(level, remaining, arrow.id).kind === "blocked") {
-      blocked += 1;
-    }
-  }
-  return { blocked, total };
-}
-
-/**
- * Share of tap units that start blocked: 0 through the authored teaching ids,
- * then 0.30 at level 12 rising linearly to 0.55 at level 60 and holding.
- */
-export function blockedTarget(id: number): number {
-  assertLevelId(id);
-  if (id <= 10 || isAuthoredLevel(id)) return 0;
-  const progress = Math.min(1, (id - 12) / 48);
-  return Math.min(0.55, 0.3 + 0.25 * progress);
 }
 
 /** Probability that a generated level attempts a required-use double-arrow core. */
@@ -319,12 +288,6 @@ export function wormholePlan(id: number): 0 | 1 | 2 {
   return 1;
 }
 
-/** Extra arrows the blocker pass may spend toward the blocked target. */
-export function blockerReserve(id: number): number {
-  assertLevelId(id);
-  return Math.ceil(blockedTarget(id) * getLevelConfig(id).arrowCount);
-}
-
 export class Rng {
   constructor(private state: number) {}
 
@@ -362,9 +325,8 @@ function hashSeed(seed: string): number {
 
 /**
  * Core-placement stream for one construction attempt. Attempt 0 hashes the
- * plain stream name so every id that constructs first try keeps its exact
- * historical layout; later attempts salt the stream, because a deterministic
- * core that fails its certificate replay would otherwise fail identically on
+ * plain stream name; later attempts salt it, because a deterministic core
+ * that fails its certificate replay would otherwise fail identically on
  * every restart and make the whole id unconstructible.
  */
 function coreStream(id: number, name: string, restart: number): Rng {
@@ -390,8 +352,8 @@ function exitRay(
   return [];
 }
 
-/** First generated id whose fill caps repeated shapes; ids 2-10 keep legacy layouts. */
-const FIRST_SHAPE_CAPPED_LEVEL = 12;
+/** First generated id whose fill caps repeated shapes. */
+const FIRST_SHAPE_CAPPED_LEVEL = 2;
 
 /** Most copies of one canonical shape a level of `arrowCount` arrows may carry. */
 export function shapeCap(arrowCount: number): number {
@@ -504,68 +466,6 @@ function shuffledFaces(rng: Rng): readonly FaceId[] {
   return faces;
 }
 
-function candidate(
-  rng: Rng,
-  level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
-  occupied: ReadonlySet<string>,
-  length: number,
-  rayExempt?: ReadonlySet<string>,
-): readonly Cell[] | undefined {
-  const size = level.gridSize;
-  const head: Cell = {
-    face: rng.pick(FACES),
-    x: rng.int(size),
-    y: rng.int(size),
-  };
-  const heading = rng.pick(HEADINGS);
-  const ray = exitRay(level, head, heading);
-  // The ray may cross an exempt corridor, but the head is the arrow's own
-  // cell and may never sit on one.
-  if (
-    ray.length === 0 ||
-    occupied.has(cellKey(head)) ||
-    ray.some(
-      (cell) => occupied.has(cellKey(cell)) && !rayExempt?.has(cellKey(cell)),
-    )
-  )
-    return undefined;
-
-  const used = new Set<string>(occupied);
-  for (const cell of ray) used.add(cellKey(cell));
-  const backwards: Cell[] = [head];
-  let current = head;
-  let previousHeading = oppositeHeading(heading);
-  for (let step = 1; step < length; step += 1) {
-    const allowed =
-      step === 1
-        ? [previousHeading]
-        : HEADINGS.filter((next) => next !== oppositeHeading(previousHeading));
-    const options = allowed
-      .map((next) => ({
-        heading: next,
-        cell: stepSurface(current, next, size),
-      }))
-      .filter(({ cell }) => !used.has(cellKey(cell)));
-    if (options.length === 0) break;
-    const seams = options.filter(({ cell }) => cell.face !== current.face);
-    const turn = options.filter(
-      ({ heading: next }) => next !== previousHeading,
-    );
-    const pool =
-      seams.length > 0 && rng.next() < 0.38
-        ? seams
-        : turn.length > 0 && rng.next() < 0.7
-          ? turn
-          : options;
-    const choice = rng.pick(pool);
-    backwards.push(choice.cell);
-    used.add(cellKey(choice.cell));
-    current = choice.cell;
-    previousHeading = choice.heading;
-  }
-  return backwards.length >= 2 ? backwards.reverse() : undefined;
-}
-
 /**
  * One leg of a group member's surface walk. Fixed legs step a set number of
  * cells; seam legs walk forward until the walk crosses a cube seam and then
@@ -592,59 +492,6 @@ interface OverlapPattern {
 
 const HEADING_CYCLE: readonly Heading[] = ["east", "south", "west", "north"];
 
-const AIM_VECTORS: readonly (readonly [number, number])[] = [
-  [1, 0],
-  [-1, 0],
-  [0, 1],
-  [0, -1],
-];
-
-/**
- * A straight path whose exit ray runs into one of the target body cells: the
- * head sits one step back along the aimed heading, so the arrow's tap blocks
- * on the target's owner and extends the dependency chain. Same-face lanes
- * only; returns undefined when no lane fits.
- */
-function aimedCandidate(
-  rng: Rng,
-  size: number,
-  occupied: ReadonlySet<string>,
-  targets: readonly Cell[],
-  laneForbidden: ReadonlySet<string>,
-): readonly Cell[] | undefined {
-  for (let attempt = 0; attempt < 24; attempt += 1) {
-    const target = targets[rng.int(targets.length)] as Cell;
-    const [dx, dy] = AIM_VECTORS[rng.int(AIM_VECTORS.length)] as readonly [
-      number,
-      number,
-    ];
-    const cells: Cell[] = [];
-    let fits = true;
-    for (let step = 1; step <= 5; step += 1) {
-      const cell: Cell = {
-        face: target.face,
-        x: target.x - dx * step,
-        y: target.y - dy * step,
-      };
-      if (cell.x < 0 || cell.y < 0 || cell.x >= size || cell.y >= size) {
-        if (step === 1) fits = false;
-        break;
-      }
-      cells.push(cell);
-    }
-    if (!fits || cells.length < 2) continue;
-    if (
-      cells.some(
-        (cell) =>
-          occupied.has(cellKey(cell)) || laneForbidden.has(cellKey(cell)),
-      )
-    )
-      continue;
-    return cells.reverse();
-  }
-  return undefined;
-}
-
 function rotateHeading(heading: Heading, quarterTurns: number): Heading {
   const index = HEADING_CYCLE.indexOf(heading);
   return HEADING_CYCLE[
@@ -657,8 +504,12 @@ function rotateHeading(heading: Heading, quarterTurns: number): Heading {
  * same way, so pairwise overlaps are always common prefixes; patterns differ
  * in where members peel off and how far their own portions run. "seam"
  * members cross one cube seam, "wrap" members cross two and park their heads
- * on a third face, "staggered" members peel at different points, and "lanes"
- * members run long parallel bodies far from the shared tail.
+ * on a third face, "staggered" members peel at different points, "lanes"
+ * members run long parallel bodies far from the shared tail. "fork" members
+ * turn their final legs outward, "seam-fork" parks one head on the start face
+ * and the other past a seam, and "trident" is the trio fork: the fork pair
+ * plus a member that runs straight on. All three send their heads different
+ * ways.
  */
 const PAIR_PATTERNS: readonly OverlapPattern[] = [
   {
@@ -668,12 +519,12 @@ const PAIR_PATTERNS: readonly OverlapPattern[] = [
       [
         { heading: "east", steps: 1 },
         { heading: "north", steps: 1 },
-        { heading: "east", steps: 1 },
+        { heading: "north", steps: 1 },
       ],
       [
         { heading: "east", steps: 1 },
         { heading: "south", steps: 1 },
-        { heading: "east", steps: 1 },
+        { heading: "south", steps: 1 },
       ],
     ],
   },
@@ -741,6 +592,35 @@ const PAIR_PATTERNS: readonly OverlapPattern[] = [
       ],
     ],
   },
+  {
+    name: "fork",
+    lead: false,
+    members: [
+      [
+        { heading: "east", steps: 2 },
+        { heading: "north", steps: 3 },
+      ],
+      [
+        { heading: "east", steps: 2 },
+        { heading: "south", steps: 3 },
+      ],
+    ],
+  },
+  {
+    name: "seam-fork",
+    lead: true,
+    members: [
+      [
+        { heading: "east", steps: 2 },
+        { heading: "north", steps: 3 },
+      ],
+      [
+        { heading: "east", steps: 2 },
+        { heading: "east", untilSeam: true, extra: 1, maxToSeam: 6 },
+        { heading: "south", steps: 2 },
+      ],
+    ],
+  },
 ];
 
 const TRIO_PATTERNS: readonly OverlapPattern[] = [
@@ -748,6 +628,21 @@ const TRIO_PATTERNS: readonly OverlapPattern[] = [
     name: "classic",
     lead: false,
     members: [...PAIR_PATTERNS[0]!.members, [{ heading: "east", steps: 3 }]],
+  },
+  {
+    name: "trident",
+    lead: false,
+    members: [
+      [
+        { heading: "east", steps: 2 },
+        { heading: "north", steps: 3 },
+      ],
+      [
+        { heading: "east", steps: 2 },
+        { heading: "south", steps: 3 },
+      ],
+      [{ heading: "east", steps: 5 }],
+    ],
   },
   {
     name: "staggered",
@@ -1059,9 +954,9 @@ interface ParkDelta {
  * its own body; its spot counts against the cube's static-spot plan, so the
  * pattern is eligible only on a spot-plan pass. A pattern is eligible only
  * when the level's stop budget covers its circles. `others` lists the non-parker
- * arrows in reverse unwinding order: the certificate tail drives arrows
- * last-placed-first, so the last listed arrow must be the one that moves
- * immediately after the park.
+ * arrows in reverse unwinding order: the certificate drives core arrows
+ * last-placed-first right after the park legs, so the last listed arrow must
+ * be the one that moves immediately after the park.
  */
 export const PARK_PATTERNS: readonly {
   readonly name: string;
@@ -1280,9 +1175,6 @@ export const PARK_PATTERNS: readonly {
 /** Ids for the non-parker core arrows, in pattern order. */
 const PARK_FOLLOWER_IDS = ["park-b", "park-f", "park-g", "park-h"] as const;
 
-/** Patterns ids <= 10 draw from, so their layouts stay byte-identical. */
-const LEGACY_PARK_PATTERN_COUNT = 4;
-
 const PARK_CERTIFICATE_PREFIX = "park:";
 
 interface ParkingCore {
@@ -1309,6 +1201,13 @@ interface DoubleCore {
   readonly certificate: readonly MoveTarget[];
 }
 
+/**
+ * A required-use two-headed core on one face. The double is a 5-10 cell
+ * self-avoiding walk that turns like a fill arrow. Blocker `b` occupies the
+ * two cells directly past its head and faces it, so the head end and `b`
+ * block each other; blocker `a` aims from the side at a non-head body cell.
+ * Only the tail end can move first, which the core's certificate must show.
+ */
 function doubleCore(
   id: number,
   level: LevelDefinition,
@@ -1318,56 +1217,68 @@ function doubleCore(
   const planned = coreStream(id, "double-plan", 0).next();
   if (id < 26 || planned >= doubleArrowFrequency(id)) return undefined;
   const rng = coreStream(id, "double-core", restart);
-  const pattern = [
-    {
-      id: "double",
-      kind: "double" as const,
-      cells: [
-        [0, 0],
-        [1, 0],
-      ],
-    },
-    {
-      id: "a",
-      cells: [
-        [0, 2],
-        [0, 1],
-      ],
-    },
-    {
-      id: "b",
-      cells: [
-        [3, 0],
-        [2, 0],
-      ],
-    },
-  ] as const;
+  const size = level.gridSize;
+  const inBounds = (cell: Cell): boolean =>
+    cell.x >= 0 && cell.y >= 0 && cell.x < size && cell.y < size;
+  const offset = (cell: Cell, heading: Heading, steps: number): Cell => ({
+    face: cell.face,
+    x: cell.x + HEADING_VECTORS[heading].dx * steps,
+    y: cell.y + HEADING_VECTORS[heading].dy * steps,
+  });
   const faces = shuffledFaces(rng);
-  for (let attempt = 0; attempt < 48; attempt += 1) {
+  for (let attempt = 0; attempt < 96; attempt += 1) {
     const face = faces[attempt % faces.length] as FaceId;
-    const rotation = rng.int(4);
-    const base: Cell = {
-      face,
-      x: 1 + rng.int(Math.max(1, level.gridSize - 5)),
-      y: 1 + rng.int(Math.max(1, level.gridSize - 4)),
-    };
-    const arrows: ArrowDefinition[] = pattern.map((entry) => ({
-      id: `r${id}-double-${entry.id}`,
-      ...(entry.id === "double" ? { kind: "double" as const } : {}),
-      path: entry.cells.map(([dx, dy]) => patternCell(base, dx, dy, rotation)),
-    }));
+    const length = 5 + rng.int(6);
+    const tail: Cell = { face, x: rng.int(size), y: rng.int(size) };
+    if (occupied.has(cellKey(tail))) continue;
+    const body: Cell[] = [tail];
+    const used = new Set([cellKey(tail)]);
+    let previous: Heading | undefined;
+    for (let step = 1; step < length; step += 1) {
+      const current = body[body.length - 1] as Cell;
+      const options = HEADINGS.filter(
+        (heading) => !previous || heading !== oppositeHeading(previous),
+      )
+        .map((heading) => ({ heading, cell: offset(current, heading, 1) }))
+        .filter(
+          ({ cell }) =>
+            inBounds(cell) &&
+            !used.has(cellKey(cell)) &&
+            !occupied.has(cellKey(cell)),
+        );
+      if (options.length === 0) break;
+      const turn = previous
+        ? options.filter(({ heading }) => heading !== previous)
+        : [];
+      const pool = turn.length > 0 && rng.next() < 0.7 ? turn : options;
+      const choice = rng.pick(pool);
+      body.push(choice.cell);
+      used.add(cellKey(choice.cell));
+      previous = choice.heading;
+    }
+    if (body.length < length || !previous) continue;
+    const head = body[body.length - 1] as Cell;
+    const blockerB = [offset(head, previous, 2), offset(head, previous, 1)];
+    const target = rng.int(body.length - 1);
+    const aimed = body[target] as Cell;
+    const link = headingBetween(aimed, body[target + 1] as Cell, size);
+    if (!link) continue;
+    const side = rng.pick(
+      HEADINGS.filter(
+        (heading) => heading !== link && heading !== oppositeHeading(link),
+      ),
+    );
+    const blockerA = [offset(aimed, side, 2), offset(aimed, side, 1)];
+    const arrows: ArrowDefinition[] = [
+      { id: `r${id}-double-double`, kind: "double", path: body },
+      { id: `r${id}-double-a`, path: blockerA },
+      { id: `r${id}-double-b`, path: blockerB },
+    ];
     const cells = arrows.flatMap((arrow) => arrow.path);
     const keys = cells.map(cellKey);
     if (
       new Set(keys).size !== keys.length ||
-      cells.some(
-        (cell) =>
-          cell.x < 0 ||
-          cell.y < 0 ||
-          cell.x >= level.gridSize ||
-          cell.y >= level.gridSize ||
-          occupied.has(cellKey(cell)),
-      )
+      cells.some((cell) => !inBounds(cell) || occupied.has(cellKey(cell)))
     )
       continue;
     const coreLevel: LevelDefinition = { ...level, arrows };
@@ -2007,8 +1918,8 @@ function parksOnFlipSpot(level: LevelDefinition, stop: Cell): boolean {
 
 /**
  * Prove a finished level's flip region and build its certificate lead. The
- * region is re-derived on the assembled board — later spots, circles and
- * blockers can bend tracks into it — and every arrow outside it must keep
+ * region is re-derived on the assembled board — later spots and circles
+ * can bend tracks into it — and every arrow outside it must keep
  * every track, under every flip state, off the region's cells. The region's
  * own solution, found on a board holding only its arrows and circles, then
  * replays first: by closure no outside body sits on a region track. A park
@@ -2117,9 +2028,9 @@ function parkingCore(
   const rng = coreStream(id, "park-core", restart);
   // A pattern with its own spots spends the cube's static-spot plan, so it
   // is only drawn on a pass that plans spots, and only onto a planned face.
-  const catalog = (
-    id <= 10 ? PARK_PATTERNS.slice(0, LEGACY_PARK_PATTERN_COUNT) : PARK_PATTERNS
-  ).filter((pattern) => !pattern.spots || spotFaces.length > 0);
+  const catalog = PARK_PATTERNS.filter(
+    (pattern) => !pattern.spots || spotFaces.length > 0,
+  );
   const patternCost = (pattern: (typeof PARK_PATTERNS)[number]): number =>
     pattern.stops.length + (pattern.second?.stops.length ?? 0);
   const eligible = catalog.filter(
@@ -2242,9 +2153,10 @@ function parkingCore(
       })),
     ];
     if (!arrows.every((arrow) => rayClear(arrow.path))) continue;
-    // The core drives last in the level's certificate, against an otherwise
-    // empty cube with the park legs already applied; prove that tail here so
-    // a hostile wrap config rejects this placement instead of the level.
+    // The core drives right after its park legs, with every graph node still
+    // on the board; that is safe because every lead track is reserved against
+    // fill bodies. Prove the core alone here so a hostile wrap config rejects
+    // this placement instead of the level.
     const coreLevel: LevelDefinition = {
       ...level,
       arrows,
@@ -2658,7 +2570,7 @@ function reversalBlockers(
   const plain = arrows.filter(
     (arrow) =>
       arrow.kind !== "double" &&
-      /^r\d+-(\d+|block-\d+|straight-\d+|wrap-\d+)$/.test(arrow.id),
+      /^r\d+-(\d+|straight-\d+|wrap-\d+)$/.test(arrow.id),
   );
   for (let index = plain.length - 1; index > 0; index -= 1) {
     const replacement = rng.int(index + 1);
@@ -2965,13 +2877,15 @@ function validateGenerated(
 }
 
 /**
- * Build a pure, reproducible level. Insertion is reverse construction: each
- * arrow has an exit unobstructed by earlier arrows, so reverse insertion is a
- * real no-mistake solution certificate. Levels carrying stop circles also embed
- * the parking core, whose circles are reserved from every later arrow so the
- * replayed certificate — the park legs, then the reverse drive — can never
- * fail because of parking. A flip core's proven interaction region is
- * reserved the same way, and the region's own solution leads the certificate.
+ * Build a pure, reproducible level. Cores lead; every other arrow is a node
+ * in an acyclic "must leave first" graph built by `dependencyFill`, and
+ * `level.arrows` lists those nodes in reverse removal order ahead of the
+ * cores, so the core certificates followed by the reversed node section are
+ * a real no-mistake solution certificate. Levels carrying stop circles also
+ * embed the parking core, whose circles and tracks are reserved from every
+ * fill body so the park legs can never fail. A flip core's proven
+ * interaction region is reserved the same way, and the region's own solution
+ * leads the certificate.
  */
 export function generateLevel(id: number): LevelDefinition {
   assertLevelId(id);
@@ -2992,17 +2906,15 @@ export function generateLevel(id: number): LevelDefinition {
   // id with the plan forced empty — a cube without spots is always legal, and
   // generation must never give up on an id.
   const plannedSpotPlan = directionalFacePlan(id);
-  // Acceptance tiers, tried strictly in order. Tier one's ordinary passes are
-  // the historical exact-count, certificate-replayed construction. A later
-  // tier only sees an id that every earlier tier rejected across both spot
-  // plans and all eight restarts: it trades exact density and, in the last
-  // tier, the reverse-construction certificate for a solver-proven level
+  // Acceptance tiers, tried strictly in order. Both certificate tiers are
+  // exact-count, certificate-replayed construction. The last tier only sees
+  // an id that every earlier tier rejected across both spot plans and all
+  // eight restarts: it trades the certificate for a solver-proven level
   // instead of throwing.
-  const reserve = blockerReserve(id);
   const tiers = [
-    { minArrows: config.arrowCount, certificate: true },
-    { minArrows: config.arrowCount - 12, certificate: true },
-    { minArrows: config.arrowCount - 12, certificate: false },
+    { certificate: true },
+    { certificate: true },
+    { certificate: false },
   ];
   // A planned flip core gets its own pass ahead of every tier's ordinary
   // passes. The flip pass shares no stream with them, so a level that ends
@@ -3012,7 +2924,7 @@ export function generateLevel(id: number): LevelDefinition {
     flipCoreFrequency(id) > 0 &&
     coreStream(id, "flip-plan", 0).next() < flipCoreFrequency(id);
   const wormholeSlots = wormholePlan(id);
-  for (const tier of tiers) {
+  for (const [tierIndex, tier] of tiers.entries()) {
     const passes = [
       ...(flipPlanned ? [{ spotPlan: plannedSpotPlan, flipPass: true }] : []),
       { spotPlan: plannedSpotPlan, flipPass: false },
@@ -3024,8 +2936,11 @@ export function generateLevel(id: number): LevelDefinition {
       // exact plan-zero construction.
       let slots = tier.certificate ? wormholeSlots : 0;
       construction: for (let restart = 0; restart < 8; restart += 1) {
+        // Tier 0 keeps the unsalted construction seeds; each later tier salts
+        // the construction RNG so it never replays a rejected earlier tier.
+        // Core streams stay keyed by `restart` alone.
         const rng = new Rng(
-          (baseSeed + Math.imul(restart + 1, 0x9e3779b9)) >>> 0,
+          (baseSeed + Math.imul(restart + 1 + tierIndex * 8, 0x9e3779b9)) >>> 0,
         );
         const occupied = new Set<string>();
         const arrows: ArrowDefinition[] = [];
@@ -3051,6 +2966,7 @@ export function generateLevel(id: number): LevelDefinition {
         // one shared offset along those static tracks, so no spot, static or
         // flip, may ever land on one of them.
         const groupTracks = new Set<string>();
+        let groupArrows: readonly ArrowDefinition[] = [];
         if (id >= 16) {
           const group = overlapStarter(
             id,
@@ -3066,6 +2982,7 @@ export function generateLevel(id: number): LevelDefinition {
             skip = "overlap";
             continue construction;
           }
+          groupArrows = group;
           for (const arrow of group) {
             for (const cell of arrow.path) occupied.add(cellKey(cell));
             for (const cell of arrowTrack(candidateLevel, arrow)) {
@@ -3104,11 +3021,12 @@ export function generateLevel(id: number): LevelDefinition {
           for (const stop of core.stops) occupied.add(cellKey(stop));
           for (const spot of parkSpots) occupied.add(cellKey(spot.cell));
         }
-        // The park legs lead the certificate replay, so the parked windows along
-        // the park core's routes block everything that drives after them. The
-        // directional core checks these tracks in addition to `occupied`; they are
-        // deliberately NOT reserved globally, which would shift every circle
-        // cube's layout.
+        // The park core leaves right after its legs, ahead of every graph
+        // node, so no later body may sit on its tracks: starters and wrap
+        // arrows redraw off them and the fill treats them as forbidden
+        // bodies. Fill routes may not cross them either: the park core's
+        // circles must stay strand-safe, and `strandSafeCircle` rejects a
+        // parked window that lands on any other arrow's track.
         const parkTrackKeys = new Set<string>();
         if (core) {
           for (const arrow of core.arrows) {
@@ -3252,6 +3170,8 @@ export function generateLevel(id: number): LevelDefinition {
           for (const arrow of flip.arrows) arrows.push(arrow);
           for (const key of flip.cells) occupied.add(key);
         }
+        // Straight and wrap starters: graph nodes placed ahead of the fill.
+        const starterArrows: ArrowDefinition[] = [];
         for (const [index, length] of [2, 3, 4].entries()) {
           const face = faces[index];
           const heading = HEADINGS.map(
@@ -3267,14 +3187,27 @@ export function generateLevel(id: number): LevelDefinition {
             throw new Error(
               "Could not choose a seeded straight-arrow starter.",
             );
+          const laneBlocked = new Set([...occupied, ...parkTrackKeys]);
           let path = straightCandidate(
             rng,
             config.gridSize,
             face,
             heading,
             length,
-            occupied,
+            laneBlocked,
           );
+          // A lane that touches a reserved cell or a park track redraws; only
+          // thirty-two misses give up the restart.
+          for (let redraw = 0; !path && redraw < 32; redraw += 1) {
+            path = straightCandidate(
+              rng,
+              config.gridSize,
+              face,
+              heading,
+              length,
+              laneBlocked,
+            );
+          }
           // A wormhole end reserved ahead of the starters must stay off
           // every later route: a starter whose straight lane runs over an
           // end draws another lane, and only sixteen straight misses give
@@ -3293,8 +3226,8 @@ export function generateLevel(id: number): LevelDefinition {
             if (redraw >= 16) {
               // Withdraw the plan instead of restarting on shifted streams:
               // the pass rebuilds from restart 0 with zero slots, which is
-              // byte-identical to the plan-zero construction, so a planned
-              // hole can never change a zero-hole layout.
+              // the plan-zero construction, so a planned hole can never
+              // change a zero-hole layout.
               skip = "wormhole";
               slots = 0;
               restart = -1;
@@ -3306,7 +3239,7 @@ export function generateLevel(id: number): LevelDefinition {
               face,
               heading,
               length,
-              occupied,
+              laneBlocked,
             );
           }
           if (!path) {
@@ -3321,6 +3254,7 @@ export function generateLevel(id: number): LevelDefinition {
             throw new Error("Seeded straight-arrow starter was invalid.");
           for (const cell of path) occupied.add(cellKey(cell));
           arrows.push(arrow);
+          starterArrows.push(arrow);
         }
         for (let index = 0; index < edgePolicies.length; index += 2) {
           let accepted = false;
@@ -3333,7 +3267,7 @@ export function generateLevel(id: number): LevelDefinition {
               rule.face,
               rule.edge,
               5 + index / 2,
-              occupied,
+              new Set([...occupied, ...parkTrackKeys]),
             );
             const head = path?.[path.length - 1];
             if (!path || !head) continue;
@@ -3358,6 +3292,7 @@ export function generateLevel(id: number): LevelDefinition {
               continue;
             for (const cell of path) occupied.add(cellKey(cell));
             arrows.push(arrow);
+            starterArrows.push(arrow);
             accepted = true;
             break;
           }
@@ -3366,8 +3301,8 @@ export function generateLevel(id: number): LevelDefinition {
             continue construction;
           }
         }
-        // Fill and blocker arrows may not push any canonical shape past the
-        // level's cap, so no short zigzag gets stamped across the cube.
+        // Fill arrows may not push any canonical shape past the level's cap,
+        // so no short zigzag gets stamped across the cube.
         const shapeCounts = new Map<string, number>();
         const capShapes = id >= FIRST_SHAPE_CAPPED_LEVEL;
         const cap = shapeCap(config.arrowCount);
@@ -3385,106 +3320,124 @@ export function generateLevel(id: number): LevelDefinition {
           const shape = shapeOf(path);
           if (shape) shapeCounts.set(shape, (shapeCounts.get(shape) ?? 0) + 1);
         };
-        // A wormhole board reserves both ends and every core track cell, so
-        // its fill works a little harder for the same arrow count; the
-        // bound is unchanged (and the layout historical) when none placed.
-        for (
-          let attempt = 0;
-          arrows.length < config.arrowCount &&
-          attempt < config.arrowCount * (900 + 400 * wormholes.length);
-          attempt += 1
-        ) {
-          const path = candidate(
-            rng,
-            candidateLevel,
-            occupied,
-            Math.max(
-              2,
-              Math.floor(
-                targetLength(rng, id, config) *
-                  (1 - edgePolicies.length * 0.05),
-              ),
-            ),
-            rayExemptCells,
-          );
-          if (!path || shapeFull(path)) continue;
-          const arrow: ArrowDefinition = {
-            id: `r${id}-${arrows.length}`,
-            path,
-          };
-          if (!validateLevel({ ...candidateLevel, arrows: [arrow] }).valid)
-            continue;
-          for (const cell of path) occupied.add(cellKey(cell));
-          countShape(path);
-          arrows.push(arrow);
-        }
-        // Shared-tail members may never have another arrow on their travel
-        // route, so blockers avoid every group member's solo route. Computed
-        // lazily and memoized: cheap relative to construction, but only
-        // needed when a blocker pass actually runs.
-        let blockerScaffold:
-          | { groupRouteCells: Set<string>; aheadKeys: string[][] }
-          | undefined;
-        const ensureBlockerScaffold = () => {
-          if (blockerScaffold) return blockerScaffold;
-          const groupRouteCells = new Set<string>();
-          for (const arrow of arrows) {
-            const group = overlappingArrowIds(
-              { ...candidateLevel, arrows },
-              arrow.id,
-            );
-            if (group.length < 2) continue;
-            for (const memberId of group) {
-              const route = simulateMove(
-                { ...candidateLevel, arrows },
-                [memberId],
-                memberId,
-              );
-              for (const cell of route.route) {
-                groupRouteCells.add(cellKey(cell));
-              }
-            }
-          }
-          const aheadKeys = arrows.map((arrow) =>
-            arrowTrack(candidateLevel, arrow)
-              .slice(arrow.path.length)
-              .map(cellKey),
-          );
-          blockerScaffold = { groupRouteCells, aheadKeys };
-          return blockerScaffold;
+        const uncountShape = (path: readonly Cell[]): void => {
+          const shape = shapeOf(path);
+          if (shape) shapeCounts.set(shape, (shapeCounts.get(shape) ?? 1) - 1);
         };
-        let blockedUnits = 0;
-        let totalUnits = 0;
-        let placed = 0;
-        // Places up to the remaining reserve, scored against `boardForScoring`
-        // — the object whose `blocked`/`paused` split decides whether a
-        // candidate actually helps. The bare board (first call, below) is a
-        // cheap estimate; once stops and directionals are known, a second
-        // call re-scores against the fully assembled level, since a stop can
-        // turn `blocked` into `paused` and a spot can bend a route clear.
-        const runBlockerPass = (
-          boardForScoring: Pick<
-            LevelDefinition,
-            "gridSize" | "edgePolicies" | "directionals" | "stops"
-          >,
-        ): void => {
-          const { groupRouteCells, aheadKeys } = ensureBlockerScaffold();
-          for (
-            let attempt = 0;
-            placed < reserve &&
-            arrows.length < MAX_GENERATED_ARROWS &&
-            attempt < reserve * 60;
-            attempt += 1
-          ) {
-            if (
-              totalUnits > 0 &&
-              blockedUnits / totalUnits >= blockedTarget(id) - 0.06
-            )
-              break;
-            const path = candidate(
-              rng,
-              candidateLevel,
-              occupied,
+        // Lead arrows clear first, in certificate order; they are not graph
+        // nodes. Their bodies are never fill cells. A fill route may cross a
+        // double, directional or wormhole lead body, which is gone before
+        // the fill moves; park and flip bodies stay ray-forbidden through
+        // the park tracks and the flip region below.
+        const leadIds = new Set<string>([
+          ...(core?.arrows ?? []).map((arrow) => arrow.id),
+          ...(directionalSpot?.arrows ?? []).map((arrow) => arrow.id),
+          ...(double?.arrows ?? []).map((arrow) => arrow.id),
+          ...wormholes.flatMap((entry) =>
+            entry.arrows.map((arrow) => arrow.id),
+          ),
+          ...(flip?.arrows ?? []).map((arrow) => arrow.id),
+        ]);
+        const leadBodies = new Set(
+          arrows
+            .filter((arrow) => leadIds.has(arrow.id))
+            .flatMap((arrow) => arrow.path.map(cellKey)),
+        );
+        // The board every pre-fill route runs on: wrap edges plus every spot
+        // placed so far. Fill routes come from `routeFrom`, which sees only
+        // wrap edges, so every spot cell and portal end is ray-forbidden
+        // below and a fill route never reaches a cell that would bend it.
+        const nodeBoard = {
+          ...candidateLevel,
+          directionals: [
+            ...(directionalSpot ? [directionalSpot.spot] : []),
+            ...parkSpots,
+            ...(flip ? flip.spots : []),
+          ],
+        };
+        // Reserved cells no fill body may use: everything `occupied` holds
+        // that is not a placed body, plus the parking core's tracks, which
+        // must stay clear because the park core leaves before any fill.
+        const bodyKeys = new Set(
+          arrows.flatMap((arrow) => arrow.path.map(cellKey)),
+        );
+        const forbiddenBody = new Set<string>([
+          ...[...occupied].filter((key) => !bodyKeys.has(key)),
+          ...parkTrackKeys,
+        ]);
+        // Cells no fill route may cross: circles, which stop a route; spots
+        // placed so far, which bend it; portal ends, which move it; the flip
+        // region, whose closure counts every cell an arrow can reach; and
+        // the park tracks, which must stay off every other arrow's track for
+        // the core circles to stay strand-safe. Every other lead body and
+        // track is empty by the time any fill arrow moves, so routes may
+        // cross them.
+        const forbiddenRay = new Set<string>([
+          ...(core ? core.stops : []).map(cellKey),
+          ...(flip ? flip.stops : []).map(cellKey),
+          ...nodeBoard.directionals.map((spot) => cellKey(spot.cell)),
+          ...(flip?.cells ?? []),
+          ...portalKeys,
+          ...parkTrackKeys,
+        ]);
+        // Every lead arrow replays while the whole fill is still on the
+        // board, so no fill body may sit anywhere a lead can travel: both
+        // ends of a double, and every flip state for the flip core.
+        const leadBoard = {
+          ...nodeBoard,
+          ...(wormholes.length > 0
+            ? { wormholes: wormholes.map((entry) => entry.wormhole) }
+            : {}),
+        };
+        const flipIds = new Set((flip?.arrows ?? []).map((arrow) => arrow.id));
+        for (const arrow of arrows) {
+          if (!leadIds.has(arrow.id)) continue;
+          const keys = flipIds.has(arrow.id)
+            ? occupancyKeys(leadBoard, arrow)
+            : trackKeys(leadBoard, arrow);
+          for (const key of keys) forbiddenBody.add(key);
+        }
+        // Graph nodes placed before the fill leave after every lead, so no
+        // lead may still need a cell they sit on.
+        const nodeArrows = [...groupArrows, ...starterArrows];
+        if (
+          nodeArrows.some((arrow) =>
+            arrow.path.some((cell) => parkTrackKeys.has(cellKey(cell))),
+          )
+        ) {
+          skip = "park-track";
+          continue construction;
+        }
+        const nodeRoute = (arrow: ArrowDefinition): readonly string[] =>
+          arrowTrack(nodeBoard, arrow).slice(arrow.path.length).map(cellKey);
+        const graphNodes: FillNode[] = [
+          ...(groupArrows.length > 0
+            ? [
+                {
+                  id: (groupArrows[0] as ArrowDefinition).id,
+                  arrows: groupArrows,
+                  routeKeys: new Set(groupArrows.flatMap(nodeRoute)),
+                },
+              ]
+            : []),
+          ...starterArrows.map((arrow) => ({
+            id: arrow.id,
+            arrows: [arrow],
+            routeKeys: new Set(nodeRoute(arrow)),
+          })),
+        ];
+        const prefilled = arrows.length;
+        let fill: FillResult;
+        try {
+          fill = dependencyFill({
+            level: candidateLevel,
+            rng,
+            idPrefix: `r${id}-`,
+            firstIndex: prefilled,
+            target: config.arrowCount - prefilled,
+            attempts: config.arrowCount * (900 + 400 * wormholes.length),
+            clearShare: clearShare(id),
+            length: () =>
               Math.max(
                 2,
                 Math.floor(
@@ -3492,61 +3445,39 @@ export function generateLevel(id: number): LevelDefinition {
                     (1 - edgePolicies.length * 0.05),
                 ),
               ),
-              rayExemptCells,
-            );
-            if (!path || shapeFull(path)) continue;
-            if (path.some((cell) => groupRouteCells.has(cellKey(cell))))
-              continue;
-            const blocker: ArrowDefinition = {
-              id: `r${id}-block-${placed}`,
-              path,
-            };
-            if (!validateLevel({ ...candidateLevel, arrows: [blocker] }).valid)
-              continue;
-            const pathKeys = new Set(path.map(cellKey));
-            const affected: number[] = [];
-            aheadKeys.forEach((keys, index) => {
-              if (keys.some((key) => pathKeys.has(key))) affected.push(index);
-            });
-            if (affected.length === 0) continue;
-            const blockedAmong = (board: readonly ArrowDefinition[]): number =>
-              affected.filter(
-                (index) =>
-                  simulateMove(
-                    { ...candidateLevel, ...boardForScoring, arrows: board },
-                    board.map((entry) => entry.id),
-                    arrows[index]!.id,
-                  ).kind === "blocked",
-              ).length;
-            const before = blockedAmong(arrows);
-            const after = blockedAmong([...arrows, blocker]);
-            if (after <= before) continue;
-            for (const cell of path) occupied.add(cellKey(cell));
-            countShape(path);
-            arrows.push(blocker);
-            aheadKeys.push(
-              arrowTrack(candidateLevel, blocker)
-                .slice(blocker.path.length)
-                .map(cellKey),
-            );
-            blockedUnits += after - before;
-            totalUnits += 1;
-            placed += 1;
-          }
-        };
-        const naturalStats = blockedStats({ ...candidateLevel, arrows });
-        if (
-          reserve > 0 &&
-          naturalStats.total > 0 &&
-          naturalStats.blocked / naturalStats.total < blockedTarget(id) - 0.06
-        ) {
-          blockedUnits = naturalStats.blocked;
-          totalUnits = naturalStats.total;
-          runBlockerPass(candidateLevel);
+            nodes: graphNodes,
+            leadBodies,
+            forbiddenBody,
+            forbiddenRay,
+            maxPathLength: 40,
+            shapeFull,
+            countShape,
+            uncountShape,
+          });
+        } catch (error) {
+          if (
+            !(error instanceof Error) ||
+            error.message !== "Dependency fill input nodes contain a cycle."
+          )
+            throw error;
+          skip = "fill-cycle";
+          continue construction;
         }
-        if (arrows.length < tier.minArrows) {
+        if (fill.placed < config.arrowCount - prefilled) {
           skip = "count";
           continue;
+        }
+        // Emit graph nodes in reverse removal order, then the leads: the
+        // certificate's reversed array is then a valid removal order, and
+        // `cellsBefore` in the spot passes means "bodies still present when
+        // this arrow moves". `arrows` stays the same array object.
+        const leads = arrows.filter((arrow) => leadIds.has(arrow.id));
+        arrows.length = 0;
+        for (const node of [...fill.order].reverse())
+          arrows.push(...node.arrows);
+        arrows.push(...leads);
+        for (const arrow of arrows) {
+          for (const cell of arrow.path) occupied.add(cellKey(cell));
         }
         const coreFace = directionalSpot?.spot.cell.face;
         const bearingFaces = (
@@ -3646,9 +3577,6 @@ export function generateLevel(id: number): LevelDefinition {
             ? { wormholes: wormholes.map((entry) => entry.wormhole) }
             : {}),
         });
-        // `level.arrows` is the SAME array as `arrows`: a later push (the
-        // assembled-board top-up below) is visible through `level` without
-        // rebuilding it.
         let level = assemble(placeStops());
         if (
           directional &&
@@ -3659,180 +3587,6 @@ export function generateLevel(id: number): LevelDefinition {
           skip = "faces";
           continue;
         }
-        // The blocked-share gate and the top-up scoring measure the board
-        // the construction passes planned around: stripping the wormholes
-        // keeps the portal's ring-created exit from shifting the share by
-        // one unit and rejecting boards the historical plan accepted. The
-        // final replay still validates the real board.
-        let statsBoard =
-          wormholes.length > 0 ? { ...level, wormholes: [] } : level;
-        let assembledStats = blockedStats(statsBoard);
-        if (
-          reserve > 0 &&
-          placed < reserve &&
-          assembledStats.total > 0 &&
-          assembledStats.blocked / assembledStats.total <
-            blockedTarget(id) - 0.06
-        ) {
-          // The bare-board estimate above said the natural fill already met
-          // target (or never ran the pass at all), but stops turn `blocked`
-          // into `paused` and spots bend routes, so the assembled level can
-          // still fall short. Top up against the real board rather than
-          // silently accepting a below-target level — including in the
-          // no-certificate fallback tier, which has no share gate of its own
-          // and must not thrash into silent under-target acceptance.
-          blockedUnits = assembledStats.blocked;
-          totalUnits = assembledStats.total;
-          const placedBefore = placed;
-          runBlockerPass(statsBoard);
-          // A new blocker's track can cross a circle's parked window, so the
-          // circles are chosen again against the final arrows.
-          if (placed > placedBefore) {
-            level = assemble(placeStops());
-            statsBoard =
-              wormholes.length > 0 ? { ...level, wormholes: [] } : level;
-          }
-          assembledStats = blockedStats(statsBoard);
-        }
-        // Depth pass: deepen the blocking DAG toward depthTarget(id), the
-        // way the blocker pass reaches its share target. A chain arrow is
-        // accepted only when it lengthens the longest dependency path; it
-        // lands after the circles were chosen, so the circles are re-chosen
-        // and every score recomputed on the final arrow set, exactly like
-        // the blocker top-up above.
-        const depthGate = depthTarget(id);
-        let chainPlaced = 0;
-        const chainIds: string[] = [];
-        const chainIdSet = new Set<string>();
-        // Accepted chain arrows reserve their actual route against later
-        // chain placements: a later body on an earlier relay arrow's route
-        // would break its certificate tap (the predecessor ordering).
-        const chainLaneKeys = new Set<string>();
-        let depth = chainStats(statsBoard);
-        if (
-          depth.chain < depthGate.minChain ||
-          depth.forcedShare < depthGate.minForced
-        ) {
-          const { groupRouteCells } = ensureBlockerScaffold();
-          let aim = deepestUnit(statsBoard);
-          let relayChain = depth.chain;
-          for (
-            let attempt = 0;
-            attempt < 400 && arrows.length < MAX_GENERATED_ARROWS;
-            attempt += 1
-          ) {
-            if (relayChain >= depthGate.minChain) break;
-            // Aimed candidate: a straight lane whose exit ray runs into a
-            // deepest unit's body, so the tap blocks there and extends the
-            // longest dependency path. The aim refreshes after each
-            // acceptance because the new chain arrow becomes the next
-            // deepest unit; an ordinary candidate falls back when nothing
-            // aims.
-            let path: readonly Cell[] | undefined;
-            if (aim.bodies.length > 0) {
-              path = aimedCandidate(
-                rng,
-                config.gridSize,
-                occupied,
-                aim.bodies,
-                chainLaneKeys,
-              );
-            }
-            if (!path) {
-              path = candidate(
-                rng,
-                candidateLevel,
-                occupied,
-                Math.max(
-                  2,
-                  Math.floor(
-                    targetLength(rng, id, config) *
-                      (1 - edgePolicies.length * 0.05),
-                  ),
-                ),
-                rayExemptCells,
-              );
-            }
-            if (!path || shapeFull(path)) continue;
-            if (path.some((cell) => groupRouteCells.has(cellKey(cell))))
-              continue;
-            if (path.some((cell) => chainLaneKeys.has(cellKey(cell)))) continue;
-            const chainArrow: ArrowDefinition = {
-              id: `r${id}-chain-${chainPlaced}`,
-              path,
-            };
-            if (
-              !validateLevel({ ...candidateLevel, arrows: [chainArrow] }).valid
-            )
-              continue;
-            // A chain arrow whose route enters a portal end teleports and
-            // could unlock the wormhole core's required-use deadlock; every
-            // chain route keeps off the ends themselves.
-            if (portalKeys.size > 0) {
-              const head = path[path.length - 1] as Cell;
-              const before = path[path.length - 2] as Cell;
-              const heading: Heading =
-                before.y === head.y
-                  ? head.x > before.x
-                    ? "east"
-                    : "west"
-                  : head.y > before.y
-                    ? "south"
-                    : "north";
-              if (
-                exitRay(candidateLevel, head, heading).some((cell) =>
-                  portalKeys.has(cellKey(cell)),
-                )
-              )
-                continue;
-            }
-            // Cheap acceptance: the candidate must block on the deepest
-            // unit — one simulateMove instead of a full DAG probe, which
-            // only runs once after the pass. The relay's chain length
-            // advances by exactly one per acceptance because the blocker
-            // sits at the current maximum depth.
-            const probeBoard = {
-              ...statsBoard,
-              arrows: [...arrows, chainArrow],
-            };
-            const probe = simulateMove(
-              probeBoard,
-              probeBoard.arrows.map((arrow) => arrow.id),
-              chainArrow.id,
-              "head",
-            );
-            if (
-              probe.kind !== "blocked" ||
-              !probe.blockerId ||
-              !aim.memberIds.includes(probe.blockerId)
-            )
-              continue;
-            // The lane is the arrow's actual route on the assembled board
-            // (spots bend straight lanes). It stays out of the flip region:
-            // replay-time flip evolution must never bend a chain leg
-            // somewhere the lane reservation cannot see.
-            const lane = arrowTrack(statsBoard, chainArrow);
-            if (flip && lane.some((cell) => flip.cells.has(cellKey(cell)))) {
-              continue;
-            }
-            for (const cell of path) occupied.add(cellKey(cell));
-            countShape(path);
-            arrows.push(chainArrow);
-            chainIds.push(chainArrow.id);
-            chainIdSet.add(chainArrow.id);
-            for (const cell of lane) chainLaneKeys.add(cellKey(cell));
-            relayChain += 1;
-            chainPlaced += 1;
-            aim = deepestUnit(statsBoard);
-          }
-          if (chainPlaced > 0) {
-            level = assemble(placeStops());
-            statsBoard =
-              wormholes.length > 0 ? { ...level, wormholes: [] } : level;
-            depth = chainStats(statsBoard);
-            assembledStats = blockedStats(statsBoard);
-          }
-        }
         if (
           core &&
           !core.stops.every(
@@ -3842,67 +3596,49 @@ export function generateLevel(id: number): LevelDefinition {
           skip = "strand";
           continue;
         }
-        if (
-          tier.certificate &&
-          assembledStats.total > 0 &&
-          assembledStats.blocked / assembledStats.total <
-            blockedTarget(id) - 0.06
-        ) {
-          skip = "blockers";
-          continue;
-        }
-        // Certificate tiers only, like the share gate above: the last-resort
-        // tier accepts a short board rather than throwing, and the
-        // depth-generation sweep is the net that catches any id shipping
-        // under target.
-        if (
-          tier.certificate &&
-          (depth.chain < depthGate.minChain - CHAIN_TOLERANCE ||
-            depth.forcedShare < depthGate.minForced - SHARE_TOLERANCE)
-        ) {
+        // Certificate tiers restart a board short of its depth floors; the
+        // last tier accepts it rather than throwing.
+        const statsBoard =
+          wormholes.length > 0 ? { ...level, wormholes: [] } : level;
+        if (tier.certificate && !meetsDepthGate(id, closureStats(statsBoard))) {
           skip = "depth";
           continue;
         }
-        // Built after any assembled-board top-up so newly placed blockers —
-        // always the latest-pushed `arrows` entries — lead the reversed
-        // replay, matching the reverse-construction safety argument.
-        const doubleIds = new Set(
-          double?.arrows.map((arrow) => arrow.id) ?? [],
-        );
+        // Certificate tiers restart a board whose bodies cover less than
+        // 0.78 of a cube of grid 13 or larger; the final tier accepts it, and
+        // the depth sweep pins the floor.
+        if (
+          tier.certificate &&
+          config.gridSize >= 13 &&
+          new Set(arrows.flatMap((arrow) => arrow.path.map(cellKey))).size <
+            0.78 * 6 * config.gridSize ** 2
+        ) {
+          skip = "coverage";
+          continue;
+        }
         // The flip region is proven again on the assembled level: later
-        // spots, circles and blockers can bend tracks toward it, and nothing
-        // outside it may ever reach its cells. Its own solution leads.
+        // spots and circles can bend tracks toward it, and nothing outside
+        // it may ever reach its cells. Its own solution leads.
         const flipLead = flip ? flipRegionLead(level) : [];
+        // Leads replay first, each core in the order its own proof uses; the
+        // park core unwinds in reverse placement order right after its legs.
+        // The graph section follows in removal order.
         const certificate: CertificateEntry[] = [
           ...wormholes.flatMap((entry) => entry.certificate),
           ...(double ? double.certificate : []),
           ...(core ? core.parkLegs : []),
+          ...(core ? [...core.arrows].reverse().map((arrow) => arrow.id) : []),
           ...(directionalSpot
             ? directionalSpot.arrows.map((arrow) => arrow.id)
             : []),
           ...[...arrows]
             .reverse()
-            .filter(
-              (arrow) =>
-                !doubleIds.has(arrow.id) &&
-                !chainIdSet.has(arrow.id) &&
-                !wormholes.some((entry) =>
-                  entry.arrows.some((core) => core.id === arrow.id),
-                ),
-            )
+            .filter((arrow) => !leadIds.has(arrow.id))
             .map((arrow) => arrow.id),
-          // Relay chains close the replay: each chain arrow's only body
-          // blocker is its predecessor, which clears one entry earlier, so
-          // push order is tap order once every earlier arrow has left. The
-          // ids repeat: a leg that parks on a circle takes its second tap
-          // here, and an already-exited leg is skipped (replayCertificate
-          // ignores absent ids).
-          ...chainIds,
-          ...chainIds,
         ];
         // A planned wormhole whose core did not fit falls back to a
         // decorative pair on the assembled board. Plan zero never reaches
-        // this, so zero-wormhole levels keep their exact historical layout.
+        // this, so a zero-wormhole level never draws the decorative stream.
         if (wormholes.length === 0 && slots > 0) {
           const deco = decorativeWormhole(
             level,
@@ -3968,11 +3704,22 @@ export function generateLevel(id: number): LevelDefinition {
               ...(trimmedStops.length > 0 ? { stops: trimmedStops } : {}),
             };
             const trimmedLead = flip ? flipRegionLead(trimmed) : [];
+            // Fewer spots change routes, so closure is measured again; the
+            // arrows are unchanged, so coverage is too.
             const trimmedSafe =
               trimmedLead !== undefined &&
               (!core ||
                 core.stops.every(
                   strandSafeCircle(trimmedBoard, arrows, coreIds, "core"),
+                )) &&
+              (!tier.certificate ||
+                meetsDepthGate(
+                  id,
+                  closureStats(
+                    wormholes.length > 0
+                      ? { ...trimmed, wormholes: [] }
+                      : trimmed,
+                  ),
                 ));
             const trimmedAccepted =
               trimmedSafe &&

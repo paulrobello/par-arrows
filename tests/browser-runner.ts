@@ -139,6 +139,32 @@ async function closeWithinDeadline(promise: Promise<void>): Promise<void> {
   }
 }
 
+// Chrome's crash handler double-forks out of Chrome's process tree and
+// inherits Chrome's stderr, whose peer socket the runner holds, so
+// browser.close() waits on it; Chrome restarts a killed handler while it
+// runs, so release repeats until close settles.
+async function releaseCrashHandlers(): Promise<void> {
+  const own = await Bun.$`lsof -nP -a -U -p ${process.pid}`.nothrow().quiet();
+  const addresses = new Set(
+    [...own.stdout.toString().matchAll(/\sunix\s+(0x[0-9a-f]+)\s/g)].map(
+      (match) => match[1],
+    ),
+  );
+  const handlers = await Bun.$`pgrep -x chrome_crashpad_handler`
+    .nothrow()
+    .quiet();
+  for (const pid of handlers.stdout.toString().split("\n").filter(Boolean)) {
+    const stderr = await Bun.$`lsof -nP -a -U -d 2 -p ${pid}`.nothrow().quiet();
+    const peer = stderr.stdout.toString().match(/->(0x[0-9a-f]+)/)?.[1];
+    if (peer === undefined || !addresses.has(peer)) continue;
+    try {
+      process.kill(Number(pid), "SIGTERM");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
+    }
+  }
+}
+
 async function snapshot(page: Page): Promise<Snapshot> {
   const raw = await page.evaluate(() => window.render_game_to_text?.());
   assert.ok(raw, "Game diagnostics must be available");
@@ -1542,11 +1568,13 @@ try {
   await assertContextRecovery(browser, url, output);
   await assertLevelPreview(browser, url, output);
   await assertWrappingEdges(browser, url, output, {
-    // Level 54 pairs exactly one wrapping seam with no spots and no wormholes,
-    // which the single-edge visibility fixture needs, with crossing arrows
-    // suitable for movement and rebound evidence.
-    movementLevelId: 54,
-    reboundLevelId: 54,
+    // Level 81 is the first cube whose sole wrapping pair is the
+    // front-east/right-west seam, which the single-edge visibility fixture
+    // needs, and it has no wormholes, whose orange ring would count as seam
+    // yellow. r81-wrap-0 crosses that seam: it exits alone (movement) and is
+    // blocked on the full board (rebound).
+    movementLevelId: 81,
+    reboundLevelId: 81,
   });
   await assertVersionReload(page);
   await assertThemeBootstrap(browser);
@@ -1579,7 +1607,19 @@ try {
     try {
       if (primaryContext) await closeWithinDeadline(primaryContext.close());
     } finally {
-      if (browser) await closeWithinDeadline(browser.close());
+      if (browser) {
+        let settled = false;
+        const closing = closeWithinDeadline(browser.close()).finally(() => {
+          settled = true;
+        });
+        if (engine === chromium) {
+          while (!settled) {
+            await releaseCrashHandlers();
+            await Promise.race([closing.catch(() => {}), Bun.sleep(250)]);
+          }
+        }
+        await closing;
+      }
     }
   } catch (cleanupError) {
     if (primaryError === undefined) primaryError = cleanupError;

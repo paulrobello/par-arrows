@@ -1,19 +1,17 @@
 /**
  * Deterministic construction stress for generateLevel: asserts that a sample
  * of far level ids constructs without throwing and that every produced level
- * satisfies the observable runtime contract (validator, density floor, and
- * generator bounds). Ids are derived deterministically, so any failure
+ * satisfies the observable runtime contract: it validates, carries exactly
+ * the configured arrow count, and stays within the grid, arrow-count and
+ * path-length bounds. Ids are derived deterministically, so any failure
  * reproduces exactly.
  *
  * Run: bun scripts/stress-generate.ts [sampleSize]   (default 5000)
- * The acceptance-tier ladder in generateLevel keeps tier one (exact density,
- * replayed certificate) byte-identical; this script additionally guards that
- * relaxed tiers never fire for the sampled ids by asserting the exact
- * configured arrow count.
  */
 import {
   generateLevel,
   getLevelConfig,
+  MAX_GENERATED_ARROWS,
   MAX_LEVEL_ID,
 } from "../src/content/procedural";
 import type { LevelDefinition } from "../src/core/types";
@@ -63,7 +61,8 @@ for (const [index, id] of [...ids].sort((a, b) => a - b).entries()) {
     );
   }
   if (level.gridSize > 26) problems.push("grid over 26");
-  if (level.arrows.length > 264) problems.push("arrow count over cap 264");
+  if (level.arrows.length > MAX_GENERATED_ARROWS)
+    problems.push(`arrow count over cap ${MAX_GENERATED_ARROWS}`);
   const longest = Math.max(...level.arrows.map((arrow) => arrow.path.length));
   if (longest > 40) problems.push(`path over 40: ${longest}`);
   if (problems.length > 0) failures.push(`${id}: ${problems.join("; ")}`);

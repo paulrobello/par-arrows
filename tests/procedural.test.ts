@@ -5,7 +5,6 @@ import { OVERLAP_INTRO_LEVEL } from "../src/content/overlap-intro";
 import { STOP_INTRO_LEVEL } from "../src/content/stop-intro";
 import {
   AUTHORED_LEVEL_IDS,
-  blockerReserve,
   doubleArrowFrequency,
   GENERATOR_VERSION,
   MAX_GENERATED_ARROWS,
@@ -14,9 +13,11 @@ import {
   getStopCount,
   getWrappingEdgePolicies,
   getWrappingEdgeWeights,
+  isAuthoredLevel,
   MAX_LEVEL_ID,
   seedForLevel,
 } from "../src/content/procedural";
+import { cachedLevel } from "./generated-levels";
 import {
   applyMove,
   createGameState,
@@ -125,12 +126,13 @@ function normalizedShapeSignature(
 }
 
 describe("generated double arrows", () => {
-  test("uses v8 generation, keeps the authored v7 seed, and the planned frequency curve", () => {
-    expect(GENERATOR_VERSION).toBe(9);
+  test("uses v10 generation, keeps the authored seeds, and the planned frequency curve", () => {
+    expect(GENERATOR_VERSION).toBe(10);
     expect(AUTHORED_LEVEL_IDS).toEqual([1, 5, 11, 15, 20, 25, 30, 35]);
     expect(seedForLevel(25)).toBe(
       "par-arrows:runtime:7:level:25:double-intro:1",
     );
+    expect(seedForLevel(1)).toBe("par-arrows:runtime:1:level:1");
     expect(doubleArrowFrequency(25)).toBe(0);
     expect(doubleArrowFrequency(26)).toBeCloseTo(0.2);
     expect(doubleArrowFrequency(60)).toBeCloseTo(0.45);
@@ -165,11 +167,45 @@ describe("generated double arrows", () => {
       expect(level.arrows.length).toBeLessThanOrEqual(MAX_GENERATED_ARROWS);
     }
   }, 60_000);
+
+  test("generated doubles are long and bend", () => {
+    const lengths: number[] = [];
+    let bent = 0;
+    for (let id = 26; id <= 200; id += 1) {
+      if (isAuthoredLevel(id)) continue;
+      const level = cachedLevel(id);
+      const double = level.arrows.find((arrow) => arrow.kind === "double");
+      if (!double) continue;
+      expect(double.path.length).toBeGreaterThanOrEqual(5);
+      lengths.push(double.path.length);
+      const headings = new Set(
+        double.path
+          .slice(1)
+          .map((cell, index) =>
+            headingBetween(
+              double.path[index] as (typeof double.path)[number],
+              cell,
+              level.gridSize,
+            ),
+          ),
+      );
+      if (headings.size > 1) bent += 1;
+    }
+    expect(lengths.length).toBeGreaterThan(0);
+    expect(bent * 2).toBeGreaterThanOrEqual(lengths.length);
+    lengths.sort((left, right) => left - right);
+    const middle = Math.floor(lengths.length / 2);
+    const median =
+      lengths.length % 2 === 1
+        ? (lengths[middle] as number)
+        : ((lengths[middle - 1] as number) + (lengths[middle] as number)) / 2;
+    expect(median).toBeGreaterThanOrEqual(6);
+  }, 900_000);
 });
 
 describe("runtime campaign generator", () => {
   test("has a versioned stable seed and rejects unsafe ids", () => {
-    expect(GENERATOR_VERSION).toBe(9);
+    expect(GENERATOR_VERSION).toBe(10);
     expect(seedForLevel(1_000_000)).toBe(seedForLevel(1_000_000));
     expect(seedForLevel(1_000_000)).not.toBe(seedForLevel(1_000_001));
     for (const id of [0, -1, 1.5, Number.MAX_SAFE_INTEGER, MAX_LEVEL_ID + 1])
@@ -183,29 +219,28 @@ describe("runtime campaign generator", () => {
     }
   }, 30_000);
 
-  test("preserves geometry through level four and authors levels five, eleven, and fifteen", () => {
-    // Re-rolled for generator v9: ids 2-10 keep their legacy seeds but the
-    // config curve changed their boards; ids 12-14 re-rolled with the seed.
+  test("pins v10 geometry for early generated levels and keeps the authored cubes", () => {
+    // Re-rolled for generator v10.
     expect(geometryHash(generateLevel(2))).toBe(
-      "9733f862eca9a38dff42d80ccbcb30eda7ddcd9134ec1c4162783a075bc0d19d",
+      "cf2f92bda9b5b1a9480f8aaf12afbbbc8d3180712c4cc10ab7718c8bc0ac507c",
     );
     expect(geometryHash(generateLevel(10))).toBe(
-      "c8c4db8df7b295546352b4b7005178d231b77d7f4a24c3f58ab5f7ec1d8c39e5",
+      "0bed69470ffe8eb628f51a0c6e31f46008e720f5687c80f17bcd63fc53e9702a",
     );
     expect(geometryHash(generateLevel(12))).toBe(
-      "dcf0d11e4ff3d185216a0fecf7683d4be7fa01bf770f3ec9045a226b0df95c40",
+      "58ef432b859859849aeff9004a7dd3e06955d72be7f31127ecc43692ce4fef33",
     );
     expect(geometryHash(generateLevel(13))).toBe(
-      "c870a16ec1328f71ce7c25203e52b73fe5e4e06b21744f4296a566aa221c70cf",
+      "0d9e3439637e03909bce98cafd27762e02ab5cce21f2c314971fab8078fb5be3",
     );
     expect(geometryHash(generateLevel(14))).toBe(
-      "231b703c742235131179600227da2ddea3325696fcad838c6dcfe52e79fa9a65",
+      "6ee76798966de9cc6bd19b6bbdd5096dd4899a50f4fa42dcef2999608cea35fe",
     );
     expect(geometryHash(generateLevel(3))).toBe(
-      "769cf6639e328f386271f4be77d17bea9372803f27b0ef662e66688f6f1f2ee4",
+      "85c87297ba08873c5c4ae32928903b3c15c58471411372c13d68570cf5167f70",
     );
     expect(geometryHash(generateLevel(4))).toBe(
-      "701c3c604b6762e2eeab62f5334e395e6e88683eefdfe6039f69cdcad3bb2994",
+      "7ba22f8ad4e119aa3ff883ca0fbab432846c6492039ef85baaed8dde7a9adea6",
     );
     expect(generateLevel(5)).toBe(STOP_INTRO_LEVEL);
     expect(generateLevel(15)).toBe(OVERLAP_INTRO_LEVEL);
@@ -213,7 +248,7 @@ describe("runtime campaign generator", () => {
     expect(getWrappingEdgePolicies(15)).toEqual([]);
   });
 
-  test("builds bounded valid levels with reverse construction certificates", () => {
+  test("builds bounded valid levels that clear in removal order or by the solver", () => {
     const layouts = [2, 3, 7, 10, 14, 16, 327, 1_000, 1_000_000].map(
       generateLevel,
     );
@@ -296,41 +331,47 @@ describe("runtime campaign generator", () => {
     }
   }, 60_000);
 
-  test("keeps the intended v9 curve and continuing capped progression", () => {
+  test("keeps the intended v10 curve and continuing capped progression", () => {
     expect(
       [2, 3, 4, 6, 7, 8, 9, 10].map((id) => getLevelConfig(id).arrowCount),
-    ).toEqual([40, 42, 44, 48, 50, 52, 54, 56]);
+    ).toEqual([45, 45, 54, 54, 54, 65, 65, 65]);
     expect(getLevelConfig(5).arrowCount).toBe(6);
     expect(getLevelConfig(3).lives).toBe(5);
     expect(getLevelConfig(6).lives).toBe(4);
     expect(getLevelConfig(7).lives).toBe(3);
-    expect(getLevelConfig(12).arrowCount).toBe(60);
-    expect(getLevelConfig(31).arrowCount).toBe(98);
+    expect(getLevelConfig(12).arrowCount).toBe(76);
+    expect(getLevelConfig(31).arrowCount).toBe(130);
     expect(getLevelConfig(1_000_000).gridSize).toBe(18);
-    expect(getLevelConfig(1_000_000).arrowCount).toBe(170);
+    expect(getLevelConfig(1_000_000).arrowCount).toBe(200);
   });
 
-  test("v9 config curves", () => {
+  test("v10 config curves", () => {
     expect(getLevelConfig(2)).toEqual({
       gridSize: 10,
-      arrowCount: 40,
+      arrowCount: 45,
       lives: 5,
       arrowScale: 10 / 8,
     });
     expect(getLevelConfig(12)).toEqual({
       gridSize: 13,
-      arrowCount: 60,
+      arrowCount: 76,
       lives: 3,
       arrowScale: 13 / 14,
     });
     expect(getLevelConfig(40)).toEqual({
       gridSize: 18,
-      arrowCount: 116,
+      arrowCount: 146,
       lives: 3,
       arrowScale: 18 / 14,
     });
+    expect(getLevelConfig(32).arrowCount).toBe(146);
+    expect(getLevelConfig(42).arrowCount).toBe(146);
     expect(getLevelConfig(43).arrowCount).toBe(150);
     expect(getLevelConfig(52).arrowCount).toBe(168);
+    expect(getLevelConfig(57).arrowCount).toBe(178);
+    expect(getLevelConfig(67).arrowCount).toBe(198);
+    expect(getLevelConfig(68).arrowCount).toBe(200);
+    expect(getLevelConfig(69).arrowCount).toBe(200);
     expect(getLevelConfig(32).gridSize).toBe(18);
   });
 
@@ -338,9 +379,7 @@ describe("runtime campaign generator", () => {
     for (const id of diverseLevelIds()) {
       const level = generateLevel(id);
       expect(seedForLevel(id)).toBe(
-        `par-arrows:runtime:${
-          id <= 4 ? 1 : id <= 10 ? 4 : GENERATOR_VERSION
-        }:level:${id}`,
+        `par-arrows:runtime:${GENERATOR_VERSION}:level:${id}`,
       );
       expect(validateLevel(level).valid).toBe(true);
       // The face plan governs static spots; a flip core's spot is separate.
@@ -358,13 +397,8 @@ describe("runtime campaign generator", () => {
         }
       }
       expect(level.gridSize).toBeLessThanOrEqual(18);
-      // Tier-one fills to the exact historical count; the rare-shortfall
-      // blocker pass only ever adds arrows on top of it, so a count below the
-      // configured density still means a relaxed fallback tier fired for a
-      // sampled id, i.e. strict construction regressed.
-      expect(level.arrows.length).toBeGreaterThanOrEqual(
-        getLevelConfig(id).arrowCount,
-      );
+      // Every tier fills to the exact configured count.
+      expect(level.arrows.length).toBe(getLevelConfig(id).arrowCount);
       expect(level.arrows.length).toBeLessThanOrEqual(MAX_GENERATED_ARROWS);
       expect(
         Math.max(...level.arrows.map((arrow) => arrow.path.length)),
@@ -589,7 +623,8 @@ describe("runtime campaign generator", () => {
 
   test("park cores vary in shape across the campaign", () => {
     const shapes = new Set<string>();
-    for (let id = 6; id <= 60; id += 1) {
+    // Re-rolled for generator v10: the first twin core lands on level 75.
+    for (let id = 6; id <= 75; id += 1) {
       const level = generateLevel(id);
       if ((level.stops ?? []).length === 0) continue;
       const parkArrows = level.arrows.filter((arrow) =>
