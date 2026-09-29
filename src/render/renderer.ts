@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+import { spotStates } from "../core/directionals";
 import { overlappingArrowIds } from "../core/overlap";
 import {
   advanceWithPortals,
@@ -18,6 +19,7 @@ import {
 import type {
   ArrowDefinition,
   Cell,
+  DirectionalSpotDefinition,
   GameState,
   FaceId,
   Heading,
@@ -35,6 +37,10 @@ const STOP_CIRCLE_THICKNESS = 0.1;
 const DIRECTIONAL_CHEVRON_SPAN = 0.24;
 const DIRECTIONAL_CHEVRON_DEPTH = 0.16;
 const DIRECTIONAL_CHEVRON_BAND = 0.08;
+const ROTOR_RING_RADIUS = 0.4;
+const ROTOR_RING_THICKNESS = 0.07;
+/** Half of each rotor ring arc; the arcs center on the diagonals, so a notch marks each heading. */
+const ROTOR_ARC_HALF_SPAN = (Math.PI / 180) * 34;
 const GRID_LINE_OFFSET = 0.004;
 const CUBE_FACES: readonly FaceId[] = [
   "front",
@@ -60,6 +66,7 @@ interface ThemePalette {
   readonly stop: number;
   readonly directional: number;
   readonly flip: number;
+  readonly rotor: number;
   readonly wormhole: readonly [number, number];
   /** Side-marker colors, indexed by `wormholeDotColorIndex`. */
   readonly wormholeDots: readonly [number, number, number, number];
@@ -88,6 +95,7 @@ export const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     stop: 0x1d9a86,
     directional: 0x0f7fa8,
     flip: 0xc0266d,
+    rotor: 0x8f6f1a,
     wormhole: [0xe07a10, 0x1f3fbf],
     wormholeDots: [0xe11d48, 0xeab308, 0x0d9488, 0x7c3aed],
     doubleTail: 0x6d28d9,
@@ -106,6 +114,7 @@ export const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     stop: 0x3fe0c0,
     directional: 0x3ac8f0,
     flip: 0xff6fb5,
+    rotor: 0xc9a24a,
     wormhole: [0xffa040, 0x4f6bff],
     wormholeDots: [0xfb7185, 0xfde047, 0x2dd4bf, 0xa78bfa],
     doubleTail: 0xc084fc,
@@ -128,10 +137,11 @@ export function wormholeDotColorIndex(side: Heading, end: "a" | "b"): number {
 const FLIP_TURN_WINDOW = 0.12;
 
 /**
- * How far (0..1) a flip glyph has turned at `travel` along a move whose
- * world-space `distance` is measured like `motionDistance` (one cell is
- * 2 / gridSize), for a flip that fired after `step` head cell steps. Step 0
- * fires as the body slides out after the head has left the cube.
+ * How far (0..1) a flip or rotor glyph has turned through one advance at
+ * `travel` along a move whose world-space `distance` is measured like
+ * `motionDistance` (one cell is 2 / gridSize), for an advance reported in
+ * `spotFlips` after `step` head cell steps. Step 0 fires as the body slides
+ * out after the head has left the cube.
  */
 export function flipTurnProgress(
   step: number,
@@ -144,6 +154,16 @@ export function flipTurnProgress(
       ? 1
       : Math.min(1, (step * 2) / gridSize / distance);
   return Math.min(1, Math.max(0, (travel - at) / FLIP_TURN_WINDOW));
+}
+
+/**
+ * The in-plane angle, about the face's outward normal, of one advance of a
+ * stateful spot's glyph: half a turn for a flip, and a quarter turn for a
+ * rotor, negative because face-local north turns to east clockwise when seen
+ * from outside the cube.
+ */
+export function spotTurnAngle(kind: DirectionalSpotDefinition["kind"]): number {
+  return kind === "rotor" ? -Math.PI / 2 : Math.PI;
 }
 
 export function arrowDimensions(
@@ -954,6 +974,7 @@ export class PuzzleRenderer {
   private readonly stopCirclesGroup = new THREE.Group();
   private readonly directionalsGroup = new THREE.Group();
   private readonly wormholesGroup = new THREE.Group();
+  /** Settled advance count of each flip or rotor glyph, keyed by cell. */
   private readonly flipTurns = new Map<string, number>();
   private flipMotion = false;
   private readonly arrowsGroup = new THREE.Group();
@@ -1101,8 +1122,15 @@ export class PuzzleRenderer {
     this.directionalsGroup.traverse((child) => {
       const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
       if (mesh.material instanceof THREE.MeshBasicMaterial) {
+        const kind = mesh.userData.spotKind as
+          | DirectionalSpotDefinition["kind"]
+          | undefined;
         mesh.material.color.set(
-          mesh.userData.flip ? palette.flip : palette.directional,
+          kind === "flip"
+            ? palette.flip
+            : kind === "rotor"
+              ? palette.rotor
+              : palette.directional,
         );
       }
     });
@@ -1466,22 +1494,23 @@ export class PuzzleRenderer {
     this.render();
   }
 
-  /** Snap every flip glyph to the settled spot state. */
+  /** Snap every flip and rotor glyph to the settled spot state. */
   setSpotHeadings(
     headings: Readonly<Record<string, Heading>> | undefined,
   ): void {
     for (const child of this.directionalsGroup.children) {
-      const key = child.userData.flip as string | undefined;
+      const key = child.userData.stateful as string | undefined;
       if (!key) continue;
       const spot = this.level?.directionals?.find(
         (entry) => cellKey(entry.cell) === key,
       );
-      const turned =
-        spot !== undefined &&
-        headings?.[key] !== undefined &&
-        headings[key] !== spot.heading;
-      this.flipTurns.set(key, turned ? 1 : 0);
-      this.orientFlip(child, turned ? 1 : 0);
+      const current = headings?.[key];
+      const turns =
+        spot === undefined || current === undefined
+          ? 0
+          : Math.max(0, spotStates(spot).indexOf(current));
+      this.flipTurns.set(key, turns);
+      this.orientFlip(child, turns);
     }
   }
 
@@ -1505,20 +1534,33 @@ export class PuzzleRenderer {
     }
     if (turns.size === 0) return;
     for (const child of this.directionalsGroup.children) {
-      const key = child.userData.flip as string | undefined;
+      const key = child.userData.stateful as string | undefined;
       const turn = key === undefined ? undefined : turns.get(key);
       if (key === undefined || turn === undefined) continue;
-      this.orientFlip(child, ((this.flipTurns.get(key) ?? 0) + turn) % 2);
+      this.orientFlip(child, (this.flipTurns.get(key) ?? 0) + turn);
     }
   }
 
-  private orientFlip(mesh: THREE.Object3D, turn: number): void {
+  /** Advances each flip or rotor glyph currently shows, keyed by cell; fractional mid-turn. */
+  spotGlyphTurns(): Record<string, number> {
+    const turns: Record<string, number> = {};
+    for (const child of this.directionalsGroup.children) {
+      const key = child.userData.stateful as string | undefined;
+      if (key) turns[key] = (child.userData.turns as number | undefined) ?? 0;
+    }
+    return turns;
+  }
+
+  /** Turn a flip or rotor glyph `turns` advances (fractional mid-move) from its authored heading. */
+  private orientFlip(mesh: THREE.Object3D, turns: number): void {
+    mesh.userData.turns = turns;
     const base = mesh.userData.baseQuaternion as THREE.Quaternion;
     const normal = mesh.userData.normal as THREE.Vector3;
+    const step = mesh.userData.turnAngle as number;
     mesh.quaternion
       .copy(base)
       .premultiply(
-        new THREE.Quaternion().setFromAxisAngle(normal, Math.PI * turn),
+        new THREE.Quaternion().setFromAxisAngle(normal, step * turns),
       );
   }
 
@@ -1972,8 +2014,10 @@ export class PuzzleRenderer {
   }
 
   /**
-   * Two flat chevrons on each directional-spot cell, pointing along the
-   * spot's heading, just above its cube face like stop circles.
+   * Flat glyphs on each directional-spot cell, pointing along the spot's
+   * heading, just above its cube face like stop circles: two chevrons for a
+   * static spot, a chevron over a dot for a flip spot, and a chevron inside a
+   * ring notched at each of the four headings a rotor cycles through.
    */
   private createDirectionals(level: LevelDefinition): void {
     const pitch = 2 / level.gridSize;
@@ -1991,6 +2035,16 @@ export class PuzzleRenderer {
           [0, offset - band],
           [-span, offset - depth - band],
         ].map(([x, y]) => new THREE.Vector2(x as number, y as number));
+      const arc = (center: number): THREE.Shape => {
+        const outer = pitch * (ROTOR_RING_RADIUS + ROTOR_RING_THICKNESS / 2);
+        const inner = pitch * (ROTOR_RING_RADIUS - ROTOR_RING_THICKNESS / 2);
+        const from = center - ROTOR_ARC_HALF_SPAN;
+        const to = center + ROTOR_ARC_HALF_SPAN;
+        const shape = new THREE.Shape();
+        shape.absarc(0, 0, outer, from, to, false);
+        shape.absarc(0, 0, inner, to, from, true);
+        return shape;
+      };
       const shapes =
         spot.kind === "flip"
           ? [
@@ -2004,14 +2058,23 @@ export class PuzzleRenderer {
                 false,
               ),
             ]
-          : [apex, apex - band - pitch * 0.14].map(
-              (offset) => new THREE.Shape(chevron(offset)),
-            );
+          : spot.kind === "rotor"
+            ? [
+                new THREE.Shape(chevron(apex + band / 2)),
+                ...[1, 3, 5, 7].map((eighth) => arc((eighth * Math.PI) / 4)),
+              ]
+            : [apex, apex - band - pitch * 0.14].map(
+                (offset) => new THREE.Shape(chevron(offset)),
+              );
       const mesh = new THREE.Mesh(
         new THREE.ShapeGeometry(shapes),
         new THREE.MeshBasicMaterial({
           color:
-            spot.kind === "flip" ? this.palette.flip : this.palette.directional,
+            spot.kind === "flip"
+              ? this.palette.flip
+              : spot.kind === "rotor"
+                ? this.palette.rotor
+                : this.palette.directional,
           side: THREE.DoubleSide,
           toneMapped: false,
           transparent: true,
@@ -2038,8 +2101,10 @@ export class PuzzleRenderer {
       mesh.renderOrder = -1;
       mesh.userData.directional = cellKey(spot.cell);
       mesh.userData.normal = normal;
-      if (spot.kind === "flip") {
-        mesh.userData.flip = cellKey(spot.cell);
+      mesh.userData.spotKind = spot.kind ?? "static";
+      if (spot.kind === "flip" || spot.kind === "rotor") {
+        mesh.userData.stateful = cellKey(spot.cell);
+        mesh.userData.turnAngle = spotTurnAngle(spot.kind);
         mesh.userData.baseQuaternion = mesh.quaternion.clone();
       }
       this.directionalsGroup.add(mesh);

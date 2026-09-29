@@ -128,7 +128,7 @@ function normalizedShapeSignature(
 describe("generated double arrows", () => {
   test("uses v10 generation, keeps the authored seeds, and the planned frequency curve", () => {
     expect(GENERATOR_VERSION).toBe(10);
-    expect(AUTHORED_LEVEL_IDS).toEqual([1, 5, 11, 15, 20, 25, 30, 35]);
+    expect(AUTHORED_LEVEL_IDS).toEqual([1, 5, 11, 15, 20, 25, 30, 35, 40]);
     expect(seedForLevel(25)).toBe(
       "par-arrows:runtime:7:level:25:double-intro:1",
     );
@@ -358,7 +358,7 @@ describe("runtime campaign generator", () => {
       lives: 3,
       arrowScale: 13 / 14,
     });
-    expect(getLevelConfig(40)).toEqual({
+    expect(getLevelConfig(41)).toEqual({
       gridSize: 18,
       arrowCount: 146,
       lives: 3,
@@ -382,9 +382,9 @@ describe("runtime campaign generator", () => {
         `par-arrows:runtime:${GENERATOR_VERSION}:level:${id}`,
       );
       expect(validateLevel(level).valid).toBe(true);
-      // The face plan governs static spots; a flip core's spot is separate.
+      // The face plan governs static spots; a flip or rotor core's spot is separate.
       const spots = (level.directionals ?? []).filter(
-        (spot) => spot.kind !== "flip",
+        (spot) => spot.kind !== "flip" && spot.kind !== "rotor",
       );
       if (spots.length > 0) {
         const perFace = new Map<string, number>();
@@ -435,7 +435,14 @@ describe("runtime campaign generator", () => {
     expect(getWrappingEdgeWeights(MAX_LEVEL_ID)).toEqual(final);
     for (let id = 12; id <= 100; id += 1) {
       const current = getWrappingEdgeWeights(id);
-      if (id === 15 || id === 20 || id === 25 || id === 30 || id === 35) {
+      if (
+        id === 15 ||
+        id === 20 ||
+        id === 25 ||
+        id === 30 ||
+        id === 35 ||
+        id === 40
+      ) {
         expect(current).toEqual([1, 0, 0, 0]);
         continue;
       }
@@ -450,7 +457,9 @@ describe("runtime campaign generator", () => {
                 ? 29
                 : id === 36
                   ? 34
-                  : id - 1,
+                  : id === 41
+                    ? 39
+                    : id - 1,
       );
       expect(current[0]).toBe(0.25);
       expect(
@@ -630,6 +639,13 @@ describe("runtime campaign generator", () => {
       const parkArrows = level.arrows.filter((arrow) =>
         arrow.id.includes("-park-"),
       );
+      // A rotor core takes the first circle; with a budget of one it holds
+      // the level's only circle and no parking core is placed.
+      if (
+        parkArrows.length === 0 &&
+        level.arrows.some((arrow) => arrow.id.includes("-rotor-"))
+      )
+        continue;
       shapes.add(
         `${parkArrows.length}:${parkArrows.reduce(
           (cells, arrow) => cells + arrow.path.length,

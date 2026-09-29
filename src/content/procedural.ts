@@ -1,8 +1,4 @@
-import {
-  flippedHeading,
-  hasFlipSpots,
-  spotHeadingAt,
-} from "../core/directionals";
+import { advancedSpotHeading, hasStatefulSpots } from "../core/directionals";
 import {
   applyMove,
   createGameState,
@@ -58,6 +54,7 @@ import { DIRECTIONAL_INTRO_LEVEL } from "./directional-intro";
 import { DOUBLE_INTRO_LEVEL } from "./double-intro";
 import { FLIP_INTRO_LEVEL } from "./flip-intro";
 import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
+import { ROTOR_INTRO_LEVEL } from "./rotor-intro";
 import { STOP_INTRO_LEVEL } from "./stop-intro";
 import { WORMHOLE_INTRO_LEVEL } from "./wormhole-intro";
 
@@ -69,7 +66,7 @@ export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
 
 /** Authored teaching cubes; every other id is generated at runtime. */
 export const AUTHORED_LEVEL_IDS: readonly number[] = [
-  1, 5, 11, 15, 20, 25, 30, 35,
+  1, 5, 11, 15, 20, 25, 30, 35, 40,
 ];
 
 const AUTHORED = new Set(AUTHORED_LEVEL_IDS);
@@ -108,6 +105,7 @@ export function seedForLevel(id: number): string {
   if (id === 25) return "par-arrows:runtime:7:level:25:double-intro:1";
   if (id === 30) return "par-arrows:runtime:7:level:30:flip-intro:1";
   if (id === 35) return "par-arrows:runtime:7:level:35:wormhole-intro:1";
+  if (id === 40) return "par-arrows:runtime:7:level:40:rotor-intro:1";
   return `par-arrows:runtime:${GENERATOR_VERSION}:level:${id}`;
 }
 
@@ -261,6 +259,40 @@ export function flipCoreFrequency(id: number): number {
     (id - FIRST_FLIP_LEVEL) / (90 - FIRST_FLIP_LEVEL),
   );
   return 0.25 + 0.4 * progress;
+}
+
+/** True when a generated level plans a flip core, on its own stream. */
+export function flipCorePlanned(id: number): boolean {
+  return (
+    flipCoreFrequency(id) > 0 &&
+    coreStream(id, "flip-plan", 0).next() < flipCoreFrequency(id)
+  );
+}
+
+/** First generated level that can embed a rotor core. */
+const FIRST_ROTOR_LEVEL = 41;
+
+/** Probability that a generated level without a flip plan draws a rotor core. */
+export function rotorCoreFrequency(id: number): number {
+  assertLevelId(id);
+  if (id < FIRST_ROTOR_LEVEL || isAuthoredLevel(id)) return 0;
+  const progress = Math.min(
+    1,
+    (id - FIRST_ROTOR_LEVEL) / (90 - FIRST_ROTOR_LEVEL),
+  );
+  return 0.25 + 0.3 * progress;
+}
+
+/**
+ * True when a generated level plans a rotor core. Levels are flip-or-rotor:
+ * a flip plan wins and the rotor stream is never drawn. A rotor core carries
+ * its own load-bearing circle taken from `getStopCount`, so a level with no
+ * circle budget plans none.
+ */
+export function rotorCorePlanned(id: number): boolean {
+  if (rotorCoreFrequency(id) === 0 || flipCorePlanned(id)) return false;
+  if (getStopCount(id) < 1) return false;
+  return coreStream(id, "rotor-plan", 0).next() < rotorCoreFrequency(id);
 }
 
 /** First generated level that can embed a wormhole core. */
@@ -1610,6 +1642,124 @@ export function flipCoreIds(arrows: readonly ArrowDefinition[]): string[] {
     .map((arrow) => arrow.id);
 }
 
+/**
+ * Rotor-core layouts relative to the rotor at (0, 0), authored pointing
+ * east, with the pattern's own circle. A rotor core without a circle can
+ * never require its rotor to turn: with no park, a frozen rotor is a static
+ * spot, and a route an arrow has cleared stays clear because the board only
+ * loses arrows. So every pattern parks its first arrow on its circle.
+ * "cycle-gate": the opener runs head-on into the rotor, reverses back over
+ * its own body and parks on the circle, turning the rotor south; the
+ * dropper then passes straight south, which the east aim would bend into the
+ * parked opener, and turns the rotor west; the latch, whose lane crossed the
+ * dropper's body, leaves; and the opener resumes past the latch's tail.
+ * "lane-window": the same opener; the riser bounces off the south aim and
+ * turns it west; the window arrow's exit is clear only at that west aim
+ * (north sends it back into its capper, south into the riser, east into
+ * the parked opener) and turns the rotor north; the capper then bounces off
+ * north; the latch and the opener finish.
+ */
+export const ROTOR_PATTERNS: readonly {
+  readonly name: "cycle-gate" | "lane-window";
+  readonly heading: Heading;
+  readonly stop: readonly [number, number];
+  readonly arrows: readonly {
+    readonly name: string;
+    readonly cells: readonly (readonly [number, number])[];
+  }[];
+}[] = [
+  {
+    name: "cycle-gate",
+    heading: "east",
+    stop: [5, 0],
+    arrows: [
+      {
+        name: "opener",
+        cells: [
+          [2, 0],
+          [1, 0],
+        ],
+      },
+      {
+        name: "dropper",
+        cells: [
+          [0, -2],
+          [0, -1],
+        ],
+      },
+      {
+        name: "latch",
+        cells: [
+          [6, 0],
+          [6, -1],
+          [5, -1],
+        ],
+      },
+    ],
+  },
+  {
+    name: "lane-window",
+    heading: "east",
+    stop: [5, 0],
+    arrows: [
+      {
+        name: "opener",
+        cells: [
+          [2, 0],
+          [1, 0],
+        ],
+      },
+      {
+        name: "riser",
+        cells: [
+          [0, 2],
+          [0, 1],
+        ],
+      },
+      {
+        name: "window",
+        cells: [
+          [0, -2],
+          [0, -1],
+        ],
+      },
+      {
+        name: "capper",
+        cells: [
+          [0, -4],
+          [0, -3],
+        ],
+      },
+      {
+        name: "latch",
+        cells: [
+          [6, 0],
+          [6, -1],
+          [5, -1],
+        ],
+      },
+    ],
+  },
+];
+
+/** Every generated rotor-core arrow id carries this marker; seeds are found by it. */
+const ROTOR_CORE_MARKER = "-rotor-";
+
+/** Ids of a level's generated rotor-core arrows, the seeds of its region. */
+export function rotorCoreIds(arrows: readonly ArrowDefinition[]): string[] {
+  return arrows
+    .filter((arrow) => arrow.id.includes(ROTOR_CORE_MARKER))
+    .map((arrow) => arrow.id);
+}
+
+/**
+ * Seeds of a level's stateful-spot region: its flip core or its rotor core.
+ * A generated level carries at most one of the two.
+ */
+function regionCoreIds(arrows: readonly ArrowDefinition[]): string[] {
+  return [...flipCoreIds(arrows), ...rotorCoreIds(arrows)];
+}
+
 interface FlipCore {
   readonly arrows: readonly ArrowDefinition[];
   readonly spots: readonly DirectionalSpotDefinition[];
@@ -1761,9 +1911,117 @@ function flipCore(
   return undefined;
 }
 
+/** A rotor spot frozen at its current heading: the static spot it would be. */
+function frozenSpots(
+  spots: readonly DirectionalSpotDefinition[],
+): DirectionalSpotDefinition[] {
+  return spots.map((spot) =>
+    spot.kind === "rotor" ? { cell: spot.cell, heading: spot.heading } : spot,
+  );
+}
+
+/**
+ * Place a rotor core on its own seeded stream and prove its interaction
+ * region, modeled on `flipCore`. The pattern rotates about its rotor, which
+ * keeps a six-cell margin from every face edge so each rotation fits. Every
+ * cell a core arrow can reach under any rotor state must avoid every reserved
+ * cell and the parking core's and groups' tracks, and no head may pass the
+ * rotor twice. The core board alone (its arrows, rotor and circle) must be
+ * solvable, strand-free, and unsolvable with the rotor frozen at its authored
+ * heading, so the rotor's turning is required. The pattern's circle comes
+ * out of the level's circle budget, and the proven region's cells are
+ * reserved from later placement the way a flip region's are.
+ */
+function rotorCore(
+  id: number,
+  level: LevelDefinition,
+  occupied: ReadonlySet<string>,
+  parkTracks: ReadonlySet<string>,
+  restart: number,
+): FlipCore | undefined {
+  const size = level.gridSize;
+  const rng = coreStream(id, "rotor-core", restart);
+  const pattern = ROTOR_PATTERNS[
+    rng.int(ROTOR_PATTERNS.length)
+  ] as (typeof ROTOR_PATTERNS)[number];
+  const faces = shuffledFaces(rng);
+  const margin = 6;
+  const inBounds = (cell: Cell): boolean =>
+    cell.x >= 0 && cell.y >= 0 && cell.x < size && cell.y < size;
+  for (let attempt = 0; attempt < 64; attempt += 1) {
+    const face = faces[attempt % faces.length] as FaceId;
+    const rotation = rng.int(4);
+    const rotor: Cell = {
+      face,
+      x: margin + rng.int(Math.max(1, size - 2 * margin)),
+      y: margin + rng.int(Math.max(1, size - 2 * margin)),
+    };
+    const at = ([dx, dy]: readonly [number, number]): Cell =>
+      patternCell(rotor, dx, dy, rotation);
+    const spots: DirectionalSpotDefinition[] = [
+      {
+        cell: rotor,
+        heading: rotateHeading(pattern.heading, rotation),
+        kind: "rotor",
+      },
+    ];
+    const stop = at(pattern.stop);
+    const arrows: ArrowDefinition[] = pattern.arrows.map((entry) => ({
+      id: `r${id}${ROTOR_CORE_MARKER}${pattern.name}-${entry.name}`,
+      path: entry.cells.map(at),
+    }));
+    const cells = [...arrows.flatMap((arrow) => arrow.path), rotor, stop];
+    if (cells.some((cell) => !inBounds(cell) || occupied.has(cellKey(cell))))
+      continue;
+    const board = {
+      ...level,
+      directionals: [...(level.directionals ?? []), ...spots],
+    };
+    const rotorKey = cellKey(rotor);
+    const reach = new Set<string>([rotorKey, cellKey(stop)]);
+    let singlePass = true;
+    for (const probe of flipHeadingProbes(board)) {
+      for (const arrow of arrows) {
+        const keys = arrowTrack(probe, arrow).map(cellKey);
+        if (keys.filter((key) => key === rotorKey).length > 1)
+          singlePass = false;
+        for (const key of keys) reach.add(key);
+      }
+    }
+    if (
+      !singlePass ||
+      [...reach].some((key) => occupied.has(key) || parkTracks.has(key))
+    )
+      continue;
+    const coreLevel: LevelDefinition = {
+      ...level,
+      arrows,
+      directionals: spots,
+      stops: [stop],
+    };
+    if (!validateLevel(coreLevel).valid) continue;
+    if (!solveLevelTargets(coreLevel)) continue;
+    if (
+      solveLevelTargets({ ...coreLevel, directionals: frozenSpots(spots) }) !==
+      undefined
+    )
+      continue;
+    if (hasStrandingState(coreLevel) !== false) continue;
+    const verdict = acceptFlipRegion(
+      level,
+      [...level.arrows, ...arrows],
+      board.directionals,
+      [...(level.stops ?? []), stop],
+    );
+    if (!verdict.ok) continue;
+    return { arrows, spots, stops: [stop], cells: verdict.cells };
+  }
+  return undefined;
+}
+
 /**
  * Accept a flip placement by proving its interaction region: seed arrows are
- * the flip core's, outside placed arrows block but are never tapped. `spots`
+ * the flip or rotor core's, outside placed arrows block but are never tapped. `spots`
  * is every spot on the board, flip and static, so region tracks bend as they
  * will in play. Returns the region cells for occupancy; ok:false means the
  * caller must not reserve them and tries its next fallback. `reason` is the
@@ -1788,7 +2046,7 @@ export function acceptFlipRegion(
     directionals: [...spots],
     ...(stops.length > 0 ? { stops } : {}),
   };
-  const seeds = flipCoreIds(arrows);
+  const seeds = regionCoreIds(arrows);
   const region = interactionRegion(level, seeds);
   if (!region) return { ok: false, cells: new Set(), reason: "overflow" };
   const verdict = proveRegion(level, createGameState(level), region);
@@ -1868,7 +2126,7 @@ function parksOnFlipSpot(level: LevelDefinition, stop: Cell): boolean {
 function flipRegionLead(
   level: LevelDefinition,
 ): readonly CertificateEntry[] | undefined {
-  const seeds = flipCoreIds(level.arrows);
+  const seeds = regionCoreIds(level.arrows);
   if (seeds.length === 0) return [];
   const region = interactionRegion(level, seeds);
   if (!region) return undefined;
@@ -2719,8 +2977,8 @@ function chooseStops(
 /**
  * Replay a construction certificate. A park entry advances the named arrow to
  * its next circle and leaves it parked there; every other entry is driven
- * through its pauses until it exits before the next arrow is tried. Flip-spot
- * directions carry from move to move, as they do in play.
+ * through its pauses until it exits before the next arrow is tried. Flip and
+ * rotor directions carry from move to move, as they do in play.
  */
 type CertificateEntry = string | MoveTarget;
 
@@ -2732,25 +2990,28 @@ function replayCertificate(
   const offsets: Record<string, number> = {};
   const settledPaths: Record<string, readonly Cell[]> = {};
   const spotHeadings: Record<string, Heading> = {};
-  const flipLevel = hasFlipSpots(level);
+  const statefulLevel = hasStatefulSpots(level);
   const maximumLegs = level.gridSize * 6 + 2;
   const foldFlips = (result: MoveResult): void => {
     for (const member of result.members ?? [result]) {
       for (const flip of member.spotFlips ?? []) {
-        spotHeadings[cellKey(flip.cell)] = flippedHeading(
-          spotHeadingAt(level, flip.cell, spotHeadings) as Heading,
-        );
+        spotHeadings[cellKey(flip.cell)] = advancedSpotHeading(
+          level,
+          flip.cell,
+          spotHeadings,
+        ) as Heading;
       }
     }
   };
-  // Mirrors `applyMove`: a double, or a lone single on a flip level, parks by
-  // its exact settled path; everything else advances its group's offsets.
+  // Mirrors `applyMove`: a double, or a lone single on a flip or rotor level,
+  // parks by its exact settled path; everything else advances its group's
+  // offsets.
   const park = (arrowId: string, result: MoveResult): void => {
     const arrow = level.arrows.find((candidate) => candidate.id === arrowId);
     const group = overlappingArrowIds(level, arrowId);
     if (
       result.settledPath &&
-      (arrow?.kind === "double" || (flipLevel && group.length === 1))
+      (arrow?.kind === "double" || (statefulLevel && group.length === 1))
     ) {
       settledPaths[arrowId] = result.settledPath;
     } else {
@@ -2837,6 +3098,7 @@ export function generateLevel(id: number): LevelDefinition {
   if (id === 25) return DOUBLE_INTRO_LEVEL;
   if (id === 30) return FLIP_INTRO_LEVEL;
   if (id === 35) return WORMHOLE_INTRO_LEVEL;
+  if (id === 40) return ROTOR_INTRO_LEVEL;
   const config = getLevelConfig(id);
   const baseSeed = hashSeed(seedForLevel(id));
   const edgePolicies = getWrappingEdgePolicies(id);
@@ -2860,17 +3122,31 @@ export function generateLevel(id: number): LevelDefinition {
   // passes. The flip pass shares no stream with them, so a level that ends
   // without a flip core comes out of the ordinary passes exactly as it would
   // with no flip plan at all.
-  const flipPlanned =
-    flipCoreFrequency(id) > 0 &&
-    coreStream(id, "flip-plan", 0).next() < flipCoreFrequency(id);
+  const flipPlanned = flipCorePlanned(id);
+  // A planned rotor core gets its own pass the same way, but only on the
+  // certificate tiers; like the flip pass it shares no stream with the
+  // ordinary passes, so a level that ends without a rotor core is the exact
+  // plan-zero construction.
+  const rotorPlanned = rotorCorePlanned(id);
   const wormholeSlots = wormholePlan(id);
   for (const [tierIndex, tier] of tiers.entries()) {
     const passes = [
-      ...(flipPlanned ? [{ spotPlan: plannedSpotPlan, flipPass: true }] : []),
-      { spotPlan: plannedSpotPlan, flipPass: false },
-      { spotPlan: [] as readonly number[], flipPass: false },
+      ...(flipPlanned
+        ? [{ spotPlan: plannedSpotPlan, flipPass: true, rotorPass: false }]
+        : []),
+      ...(rotorPlanned && tier.certificate
+        ? [{ spotPlan: plannedSpotPlan, flipPass: false, rotorPass: true }]
+        : []),
+      { spotPlan: plannedSpotPlan, flipPass: false, rotorPass: false },
+      {
+        spotPlan: [] as readonly number[],
+        flipPass: false,
+        rotorPass: false,
+      },
     ];
-    for (const { spotPlan, flipPass } of passes) {
+    for (const { spotPlan, flipPass, rotorPass } of passes) {
+      // The rotor core's own circle comes out of the circle budget first.
+      const parkBudget = getStopCount(id) - (rotorPass ? 1 : 0);
       // Wormhole slots, like the double core, exist only on certificate
       // tiers; a give-up below withdraws them so the pass rebuilds as the
       // exact plan-zero construction.
@@ -2932,12 +3208,12 @@ export function generateLevel(id: number): LevelDefinition {
           }
         }
         const core =
-          getStopCount(id) >= 1
+          parkBudget >= 1
             ? parkingCore(
                 id,
                 { ...candidateLevel, arrows },
                 occupied,
-                getStopCount(id),
+                parkBudget,
                 restart,
                 planFaceIds,
                 groupTracks,
@@ -3079,30 +3355,41 @@ export function generateLevel(id: number): LevelDefinition {
             : directional
               ? dirCells
               : undefined;
+        // The flip or rotor core, whichever this pass plans. Both are
+        // stateful-spot regions and every step below treats them alike:
+        // proven region, reserved cells, region circles, certificate lead.
+        const regionBoard: LevelDefinition = {
+          ...candidateLevel,
+          arrows,
+          ...(directionalSpot || parkSpots.length > 0
+            ? {
+                directionals: [
+                  ...(directionalSpot ? [directionalSpot.spot] : []),
+                  ...parkSpots,
+                ],
+              }
+            : {}),
+          ...(core ? { stops: core.stops } : {}),
+        };
+        const regionTracks = new Set([...parkTrackKeys, ...groupTracks]);
         const flip = flipPass
           ? flipCore(
               id,
-              {
-                ...candidateLevel,
-                arrows,
-                ...(directionalSpot || parkSpots.length > 0
-                  ? {
-                      directionals: [
-                        ...(directionalSpot ? [directionalSpot.spot] : []),
-                        ...parkSpots,
-                      ],
-                    }
-                  : {}),
-                ...(core ? { stops: core.stops } : {}),
-              },
+              regionBoard,
               occupied,
-              new Set([...parkTrackKeys, ...groupTracks]),
+              regionTracks,
               getStopCount(id) - (core ? core.stops.length : 0),
               restart,
             )
-          : undefined;
+          : rotorPass
+            ? rotorCore(id, regionBoard, occupied, regionTracks, restart)
+            : undefined;
         if (flipPass && !flip) {
           skip = "flip-core";
+          continue construction;
+        }
+        if (rotorPass && !flip) {
+          skip = "rotor-core";
           continue construction;
         }
         if (flip) {

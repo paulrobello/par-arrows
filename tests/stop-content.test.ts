@@ -45,7 +45,8 @@ function crossingParks(level: LevelDefinition): readonly string[] {
     if (
       arrow.kind === "double" ||
       arrow.id.includes("-park-") ||
-      arrow.id.includes("-flip-")
+      arrow.id.includes("-flip-") ||
+      arrow.id.includes("-rotor-")
     )
       continue;
     const unit = overlappingArrowIds(level, arrow.id);

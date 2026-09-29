@@ -14,9 +14,9 @@ import type {
   SpotFlip,
 } from "./types";
 import {
-  flippedHeading,
-  hasFlipSpots,
-  isFlipSpot,
+  advancedSpotHeading,
+  hasStatefulSpots,
+  isStatefulSpot,
   spotHeadingAt,
 } from "./directionals";
 import { overlappingArrowIds } from "./overlap";
@@ -132,9 +132,9 @@ function simulateSingle(
 
   const route: Cell[] = [initialHead];
   // `body` is the arrow's occupied cells, tail first; `live` is the spot
-  // state this move reads, so a spot flipped earlier in the move redirects
-  // a later entry. Levels without flip spots skip body tracking entirely.
-  const tracksFlips = hasFlipSpots(level);
+  // state this move reads, so a spot advanced earlier in the move redirects
+  // a later entry. Levels without flip or rotor spots skip body tracking.
+  const tracksFlips = hasStatefulSpots(level);
   let body: Cell[] = [...path];
   const live: Record<string, Heading> = {
     ...(settledState.spotHeadings ?? {}),
@@ -144,10 +144,10 @@ function simulateSingle(
   const releaseTail = (step: number): void => {
     const leaving = body[0];
     body = body.slice(1);
-    if (!leaving || !isFlipSpot(level, leaving)) return;
+    if (!leaving || !isStatefulSpot(level, leaving)) return;
     const key = cellKey(leaving);
     if (body.some((cell) => cellKey(cell) === key)) return;
-    live[key] = flippedHeading(spotHeadingAt(level, leaving, live) as Heading);
+    live[key] = advancedSpotHeading(level, leaving, live) as Heading;
     spotFlips.push({ cell: leaving, step });
   };
   const flipResult = () => (spotFlips.length > 0 ? { spotFlips } : {});
@@ -157,8 +157,8 @@ function simulateSingle(
   const visited = new Set<string>();
   const maximumSteps = 6 * level.gridSize * level.gridSize * 4;
   for (let step = 1; step <= maximumSteps; step += 1) {
-    // On flip levels the future also depends on the spot state and on where
-    // the body is, because a pending flip fires when the tail leaves.
+    // On flip and rotor levels the future also depends on the spot state and
+    // on where the body is, because a pending advance fires when the tail leaves.
     const stateKey = tracksFlips
       ? `${cellKey(current)}:${currentHeading}:${spotStateKey(live)}:${body.map(cellKey).join("|")}`
       : `${cellKey(current)}:${currentHeading}`;

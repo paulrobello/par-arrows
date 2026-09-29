@@ -58,8 +58,8 @@ test("generation stays under one second per level", () => {
 }, 60_000);
 
 test("generation is deterministic", () => {
-  expect(layoutFingerprint(generateLevel(40))).toBe(
-    layoutFingerprint(generateLevel(40)),
+  expect(layoutFingerprint(generateLevel(41))).toBe(
+    layoutFingerprint(generateLevel(41)),
   );
   expect(layoutFingerprint(generateLevel(120))).toBe(
     layoutFingerprint(generateLevel(120)),

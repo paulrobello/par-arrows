@@ -6,6 +6,7 @@ import {
   getStopCount,
   isAuthoredLevel,
   Rng,
+  rotorCorePlanned,
   seedForLevel,
   wormholePlan,
 } from "../src/content/procedural";
@@ -33,6 +34,10 @@ const V9 = {
   doubles: 72 / 72,
 } as const;
 
+// Rotor cores arrived after v9, so their pin is the ratio measured when they
+// shipped: 31 placed of 31 planned over levels 41-200.
+const ROTOR_CORES = 31 / 31;
+
 test("mechanic placement ratios stay within 10% of v9", () => {
   const totals = {
     staticPlanned: 0,
@@ -47,6 +52,8 @@ test("mechanic placement ratios stay within 10% of v9", () => {
     flipLevels: 0,
     doublePlanned: 0,
     doubleLevels: 0,
+    rotorPlanned: 0,
+    rotorLevels: 0,
   };
   for (let id = 2; id <= 200; id += 1) {
     if (isAuthoredLevel(id)) continue;
@@ -56,7 +63,7 @@ test("mechanic placement ratios stay within 10% of v9", () => {
       0,
     );
     totals.staticPlaced += (level.directionals ?? []).filter(
-      (spot) => spot.kind !== "flip",
+      (spot) => spot.kind !== "flip" && spot.kind !== "rotor",
     ).length;
     totals.holesPlanned += wormholePlan(id);
     totals.holesPlaced += level.wormholes?.length ?? 0;
@@ -73,6 +80,9 @@ test("mechanic placement ratios stay within 10% of v9", () => {
       totals.doublePlanned += 1;
     if (level.arrows.some((arrow) => arrow.kind === "double"))
       totals.doubleLevels += 1;
+    if (rotorCorePlanned(id)) totals.rotorPlanned += 1;
+    if ((level.directionals ?? []).some((spot) => spot.kind === "rotor"))
+      totals.rotorLevels += 1;
   }
   expect(totals.staticPlaced / totals.staticPlanned).toBeGreaterThanOrEqual(
     V9.staticSpots * 0.9,
@@ -89,5 +99,9 @@ test("mechanic placement ratios stay within 10% of v9", () => {
   expect(totals.doublePlanned).toBeGreaterThan(0);
   expect(totals.doubleLevels / totals.doublePlanned).toBeGreaterThanOrEqual(
     V9.doubles * 0.9,
+  );
+  expect(totals.rotorPlanned).toBeGreaterThan(0);
+  expect(totals.rotorLevels / totals.rotorPlanned).toBeGreaterThanOrEqual(
+    ROTOR_CORES * 0.9,
   );
 }, 900_000);

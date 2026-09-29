@@ -1,4 +1,10 @@
-import { flippedHeading, spotHeadingAt } from "./directionals";
+import {
+  advancedSpotHeading,
+  hasFlipSpots,
+  hasRotorSpots,
+  spotHeadingAt,
+  spotStates,
+} from "./directionals";
 import {
   applyMove,
   createGameState,
@@ -17,6 +23,7 @@ import {
 import type {
   ArrowDefinition,
   Cell,
+  DirectionalSpotDefinition,
   Endpoint,
   GameState,
   Heading,
@@ -81,19 +88,30 @@ function loopError(
   return `Arrow ${arrow.id} has a nonterminating continuation loop from its ${endpoint} endpoint.`;
 }
 
+/** Flip and rotor spots in declaration order: the spots whose direction changes. */
+function statefulSpots(
+  level: Pick<LevelDefinition, "directionals">,
+): DirectionalSpotDefinition[] {
+  return (level.directionals ?? []).filter(
+    (spot) => spot.kind === "flip" || spot.kind === "rotor",
+  );
+}
+
 /**
- * Every spot-heading state the flip spots can hold, keyed by cell: a spot
- * stored at its authored direction is left out. Shared by the loop checks
- * (for wormhole levels) and the fold check.
+ * Every spot-heading state the flip and rotor spots can hold, keyed by cell:
+ * a spot stored at its authored direction is left out. A flip contributes two
+ * states and a rotor four, and combinations multiply. Shared by the loop
+ * checks (for wormhole levels) and the fold check.
  */
-function flipCombos(level: LevelDefinition): Record<string, Heading>[] {
+function spotStateCombos(level: LevelDefinition): Record<string, Heading>[] {
   const combos: Record<string, Heading>[] = [{}];
-  for (const spot of (level.directionals ?? []).filter(
-    (candidate) => candidate.kind === "flip",
-  )) {
+  for (const spot of statefulSpots(level)) {
     const key = cellKey(spot.cell);
+    const alternatives = spotStates(spot).slice(1);
     for (const combo of [...combos]) {
-      combos.push({ ...combo, [key]: flippedHeading(spot.heading) });
+      for (const heading of alternatives) {
+        combos.push({ ...combo, [key]: heading });
+      }
     }
   }
   return combos;
@@ -127,7 +145,7 @@ interface FoldState {
  * Report a stop circle that would park an arrow with its body covering one
  * cell twice. Searches every sequence of the arrow's own taps, from either
  * end of a double, starting from each given spot state and carrying the
- * arrow's own flips between legs. Other arrows are left out, so a flip that
+ * arrow's own flip and rotor advances between legs. Other arrows are left out, so a flip that
  * another arrow makes between this arrow's legs is not modelled.
  */
 function foldedStopError(
@@ -170,9 +188,11 @@ function foldedStopError(
       }
       const next: Record<string, Heading> = { ...spots };
       for (const flip of result.spotFlips ?? []) {
-        next[cellKey(flip.cell)] = flippedHeading(
-          spotHeadingAt(level, flip.cell, next) as Heading,
-        );
+        next[cellKey(flip.cell)] = advancedSpotHeading(
+          level,
+          flip.cell,
+          next,
+        ) as Heading;
       }
       pending.push({
         body: endpoint === "head" ? parked : [...parked].reverse(),
@@ -240,11 +260,11 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
   }
 
   // A portal can redirect a head into a spot-dependent route, so wormhole
-  // levels trace every loop once per flip-spot state; without wormholes one
-  // authored-state trace keeps the historical behavior unchanged.
+  // levels trace every loop once per flip and rotor state; without wormholes
+  // one authored-state trace keeps the historical behavior unchanged.
   const loopCombos =
     (level.wormholes?.length ?? 0) > 0
-      ? flipCombos(level)
+      ? spotStateCombos(level)
       : [{} as Record<string, Heading>];
   const ids = new Set<string>();
   const cells = new Map<string, string[]>();
@@ -368,6 +388,9 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
     if (spot.kind === "flip" && stopCells.has(key)) {
       errors.push(`Flip spot ${key} shares its cell with a stop circle.`);
     }
+    if (spot.kind === "rotor" && stopCells.has(key)) {
+      errors.push(`Rotor spot ${key} shares its cell with a stop circle.`);
+    }
     if (arrowCells.has(key)) {
       errors.push(`Directional spot ${key} sits on an arrow's starting cell.`);
     }
@@ -406,12 +429,15 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
   }
   // A fold can only park on a stop circle, so levels without one skip the search.
   if (stopCells.size > 0) {
-    const combos = flipCombos(level);
+    const combos = spotStateCombos(level);
     for (const arrow of level.arrows) {
       const problem = foldedStopError(level, arrow, combos);
       if (problem && !errors.includes(problem)) errors.push(problem);
     }
   }
+
+  const mixed = mixedSpotRegionError(level);
+  if (mixed) errors.push(mixed);
 
   const checkedGroups = new Set<string>();
   for (const arrow of level.arrows) {
@@ -698,8 +724,9 @@ export function hasStrandingState(
 
 /**
  * True when some collision-free reachable state has an arrow whose tap is
- * safe with the flip spots as they are and a collision with them reversed,
- * or the other way round. Undefined when the state space exceeds `limit`.
+ * safe with the flip and rotor spots as they are and a collision with one of
+ * them in another of its directions, or the other way round. Undefined when
+ * the state space exceeds `limit`.
  * `tapFilter` restricts which arrows may be tapped and `blockedCells` adds
  * static occupancy; with neither, this is the whole-level check.
  */
@@ -710,9 +737,7 @@ function enumeratedFlipInterest(
   tapFilter?: (arrowId: string) => boolean,
   blockedCells?: ReadonlySet<string>,
 ): boolean | undefined {
-  const flips = (level.directionals ?? []).filter(
-    (spot) => spot.kind === "flip",
-  );
+  const flips = statefulSpots(level);
   if (flips.length === 0) return false;
   const seen = new Set<string>();
   const pending = [state];
@@ -740,25 +765,28 @@ function enumeratedFlipInterest(
             spot.cell,
             current.spotHeadings,
           ) as Heading;
-          const reversed: GameState = {
-            ...current,
-            spotHeadings: {
-              ...(current.spotHeadings ?? {}),
-              [spotKey]: flippedHeading(spotHeading),
-            },
-          };
-          const other = probeMove(
-            level,
-            reversed,
-            target.arrowId,
-            target.endpoint,
-            blockedCells,
-          );
-          if (
-            safe(result.kind) !== safe(other.kind) &&
-            (result.kind === "blocked" || other.kind === "blocked")
-          ) {
-            return true;
+          for (const heading of spotStates(spot)) {
+            if (heading === spotHeading) continue;
+            const turned: GameState = {
+              ...current,
+              spotHeadings: {
+                ...(current.spotHeadings ?? {}),
+                [spotKey]: heading,
+              },
+            };
+            const other = probeMove(
+              level,
+              turned,
+              target.arrowId,
+              target.endpoint,
+              blockedCells,
+            );
+            if (
+              safe(result.kind) !== safe(other.kind) &&
+              (result.kind === "blocked" || other.kind === "blocked")
+            ) {
+              return true;
+            }
           }
         }
         if (!safe(result.kind)) continue;
@@ -772,8 +800,9 @@ function enumeratedFlipInterest(
 
 /**
  * True when some collision-free reachable state has an arrow whose tap is
- * safe with the flip spots as they are and a collision with them reversed,
- * or the other way round. Undefined when the state space exceeds `limit`.
+ * safe with the flip and rotor spots as they are and a collision with one of
+ * them in another of its directions, or the other way round. Undefined when
+ * the state space exceeds `limit`.
  */
 export function flipInterest(
   level: LevelDefinition,
@@ -893,7 +922,7 @@ export function solveLevel(
 export interface InteractionRegion {
   /** Arrow ids in the region, including the seed arrows. */
   readonly arrowIds: readonly string[];
-  /** Flip-spot and stop cell keys inside the region. */
+  /** Spot and stop cell keys inside the region. */
   readonly spotKeys: readonly string[];
   readonly stopKeys: readonly string[];
   /** Every `occupancyKeys` cell of every region arrow. */
@@ -902,7 +931,7 @@ export interface InteractionRegion {
 
 /**
  * Cell keys an arrow occupies now or can ever occupy (its authored body plus
- * its track, traced from both ends of a double) under every flip-spot
+ * its track, traced from both ends of a double) under every flip and rotor
  * direction, so a closure derived from these keys stays valid whatever a
  * spot's current direction is.
  */
@@ -921,30 +950,29 @@ export function occupancyKeys(
 }
 
 /**
- * Level variants covering every direction each flip spot can hold. The
- * generator bounds reach and region closure with this same state set, so
- * both sides of a proof agree on which flip states exist.
+ * Level variants covering every direction each flip or rotor spot can hold:
+ * two per flip and four per rotor, multiplied across spots. The generator
+ * bounds reach and region closure with this same state set, so both sides of
+ * a proof agree on which spot states exist.
  */
 export function flipHeadingProbes<
   T extends Pick<LevelDefinition, "directionals">,
 >(level: T): readonly T[] {
-  const flips = (level.directionals ?? []).filter(
-    (spot) => spot.kind === "flip",
-  );
-  if (flips.length === 0) return [level];
+  const stateful = statefulSpots(level);
+  if (stateful.length === 0) return [level];
   let probes: T[] = [level];
-  for (const spot of flips) {
-    const reversed = flippedHeading(spot.heading);
+  for (const spot of stateful) {
+    const alternatives = spotStates(spot).slice(1);
     probes = probes.flatMap((probe) => [
       probe,
-      {
+      ...alternatives.map((heading) => ({
         ...probe,
         directionals: (probe.directionals ?? []).map((candidate) =>
           cellKey(candidate.cell) === cellKey(spot.cell)
-            ? { ...candidate, heading: reversed }
+            ? { ...candidate, heading }
             : candidate,
         ),
-      },
+      })),
     ]);
   }
   return probes;
@@ -954,7 +982,7 @@ export function flipHeadingProbes<
  * Close seed arrows under reachability: an arrow joins the region when any
  * cell of its `occupancyKeys` is also in a region member's `occupancyKeys`,
  * stop circles and spot cells included, so both ends of a double and every
- * flip direction count. Undefined past `maxArrows`.
+ * flip and rotor direction count. Undefined past `maxArrows`.
  */
 export function interactionRegion(
   level: LevelDefinition,
@@ -1050,4 +1078,33 @@ export function proveRegion(
     return { ok: false, reason: "unsolvable" };
   }
   return { ok: true };
+}
+
+/**
+ * Report a flip spot and a rotor spot sharing one interaction region. The
+ * region seeded by every arrow that can reach a rotor cell covers each
+ * rotor-touching component, so one unbounded closure finds any flip cell a
+ * rotor's arrows could also reach.
+ */
+function mixedSpotRegionError(level: LevelDefinition): string | undefined {
+  if (!hasFlipSpots(level) || !hasRotorSpots(level)) return undefined;
+  const spots = level.directionals ?? [];
+  const rotorKeys = new Set(
+    spots
+      .filter((spot) => spot.kind === "rotor")
+      .map((spot) => cellKey(spot.cell)),
+  );
+  const seeds = level.arrows
+    .filter((arrow) =>
+      [...occupancyKeys(level, arrow)].some((key) => rotorKeys.has(key)),
+    )
+    .map((arrow) => arrow.id);
+  if (seeds.length === 0) return undefined;
+  const region = interactionRegion(level, seeds, Number.POSITIVE_INFINITY);
+  const flip = spots.find(
+    (spot) => spot.kind === "flip" && region?.cells.has(cellKey(spot.cell)),
+  );
+  return flip
+    ? `Flip spot ${cellKey(flip.cell)} shares an interaction region with a rotor spot.`
+    : undefined;
 }

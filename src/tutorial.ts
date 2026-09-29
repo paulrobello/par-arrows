@@ -22,7 +22,7 @@ export interface TutorialScript {
 }
 
 export const SCRIPTED_LEVEL_IDS: readonly number[] = [
-  1, 5, 11, 15, 20, 25, 30, 35,
+  1, 5, 11, 15, 20, 25, 30, 35, 40,
 ];
 
 const LEVEL_ONE_SCRIPT: TutorialScript = {
@@ -291,6 +291,35 @@ const WORMHOLE_INTRO_SCRIPT: TutorialScript = {
   ],
 };
 
+const ROTOR_INTRO_SCRIPT: TutorialScript = {
+  levelId: 40,
+  title: "Turn the rotor.",
+  steps: [
+    {
+      copy: "Rotors turn. This one points back at the arrow heading into it, so the arrow will turn around and travel back over itself. Tap it.",
+      highlightId: "rotor-intro-turner",
+      advance: {
+        kind: "move",
+        arrowIds: ["rotor-intro-turner"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "Once that arrow had fully passed, the rotor turned a quarter clockwise. It now bends this arrow onto a clear lane. Tap it.",
+      highlightId: "rotor-intro-bender",
+      advance: {
+        kind: "move",
+        arrowIds: ["rotor-intro-bender"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "Every pass turns a rotor another quarter, all the way round. Clear the remaining arrows.",
+      advance: { kind: "won" },
+    },
+  ],
+};
+
 const SCRIPTS: readonly TutorialScript[] = [
   LEVEL_ONE_SCRIPT,
   STOP_INTRO_SCRIPT,
@@ -300,6 +329,7 @@ const SCRIPTS: readonly TutorialScript[] = [
   DOUBLE_INTRO_SCRIPT,
   FLIP_INTRO_SCRIPT,
   WORMHOLE_INTRO_SCRIPT,
+  ROTOR_INTRO_SCRIPT,
 ];
 
 export function scriptForLevel(levelId: number): TutorialScript | undefined {

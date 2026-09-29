@@ -301,7 +301,7 @@ describe("resumable campaign saves", () => {
     const state = exitedState(level);
     expect(save(state, 88)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 13,
+      contentVersion: 14,
       generatorVersion: 10,
       currentLevelId: 42,
       unlockedLevelId: 88,
@@ -396,7 +396,7 @@ describe("resumable campaign saves", () => {
     if (!restored.value) throw new Error("Expected refreshed campaign");
     expect(saveCampaign(restored.value)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 13,
+      contentVersion: 14,
       layout: layoutFingerprint(level),
     });
     expect((await loadCampaign(async () => level)).recovered).toBe(false);
@@ -844,6 +844,143 @@ describe("resumable campaign saves", () => {
     }
   });
 
+  test("a rotor cube round-trips a parked single's path, its pending advance and every turned heading", async () => {
+    const cellAt = (x: number, y: number) => ({ face: "front" as const, x, y });
+    const level: LevelDefinition = {
+      id: 41,
+      title: "Stored rotor",
+      gridSize: 6,
+      lives: 3,
+      arrows: [
+        { id: "mover", path: [cellAt(0, 2), cellAt(1, 2)] },
+        { id: "other", path: [cellAt(0, 4), cellAt(1, 4)] },
+      ],
+      directionals: [{ cell: cellAt(2, 2), heading: "north", kind: "rotor" }],
+      stops: [cellAt(2, 1)],
+    };
+    let state = createGameState(level);
+    state = applyMove(level, state, simulateMove(level, state, "mover"));
+    // The mover bends north through the rotor and parks with its tail still
+    // on it, so the rotor's advance waits.
+    expect(state.settledPaths?.mover).toEqual([cellAt(2, 2), cellAt(2, 1)]);
+    expect(state.offsets).toEqual({});
+    expect(state.spotHeadings ?? {}).toEqual({});
+    expect(save(state, 41, level)).toBe(true);
+    const restored = await loadCampaign(async () => level);
+    expect(restored.recovered).toBe(false);
+    expect(restored.value?.state).toEqual(state);
+    const resumed = restored.value?.state as GameState;
+    const onward = applyMove(
+      level,
+      resumed,
+      simulateMove(level, resumed, "mover"),
+    );
+    // A quarter-turn off the authored axis, which the flip rule would refuse.
+    expect(onward.spotHeadings).toEqual({ "front:2:2": "east" });
+    expect(save(onward, 41, level)).toBe(true);
+    const turned = await loadCampaign(async () => level);
+    expect(turned.recovered).toBe(false);
+    expect(turned.value?.state).toEqual(onward);
+    for (const heading of ["north", "east", "south", "west"] as const) {
+      const at = {
+        ...createGameState(level),
+        spotHeadings: { "front:2:2": heading },
+      } as GameState;
+      expect(save(at, 41, level)).toBe(true);
+      const loaded = await loadCampaign(async () => level);
+      expect(loaded.recovered).toBe(false);
+      expect(loaded.value?.state).toEqual(at);
+    }
+  });
+
+  test("rejects a rotor heading outside its four directions and headings on non-rotor cells", async () => {
+    const cellAt = (x: number, y: number) => ({ face: "front" as const, x, y });
+    const level: LevelDefinition = {
+      id: 41,
+      title: "Bad rotor",
+      gridSize: 6,
+      lives: 3,
+      arrows: [{ id: "a", path: [cellAt(0, 0), cellAt(1, 0)] }],
+      directionals: [
+        { cell: cellAt(3, 3), heading: "north", kind: "rotor" },
+        { cell: cellAt(4, 4), heading: "east" },
+      ],
+    };
+    for (const spotHeadings of [
+      { "front:3:3": "up" },
+      { "front:3:3": "northeast" },
+      { "front:3:3": 3 },
+      { "front:4:4": "south" },
+      { "front:0:0": "north" },
+    ]) {
+      const state = { ...createGameState(level), spotHeadings } as GameState;
+      expect(save(state, 41, level)).toBe(true);
+      const restored = await loadCampaign(async () => level);
+      expect(restored.recovered).toBe(true);
+      expect(restored.value?.state).toEqual(createGameState(level));
+    }
+  });
+
+  test("a group parked on a rotor cube round-trips by shared offset, never by settled path", async () => {
+    const cellAt = (x: number, y: number) => ({ face: "front" as const, x, y });
+    const level: LevelDefinition = {
+      id: 41,
+      title: "Stored group on a rotor cube",
+      gridSize: 5,
+      lives: 2,
+      arrows: [
+        { id: "north", path: [cellAt(0, 2), cellAt(1, 2), cellAt(1, 1)] },
+        { id: "east", path: [cellAt(0, 2), cellAt(1, 2), cellAt(2, 2)] },
+      ],
+      directionals: [{ cell: cellAt(4, 4), heading: "north", kind: "rotor" }],
+      stops: [cellAt(3, 2)],
+    };
+    let state = createGameState(level);
+    state = applyMove(level, state, simulateMove(level, state, "north"));
+    expect(state.offsets).toEqual({ north: 1, east: 1 });
+    expect(state.settledPaths).toEqual({});
+    expect(save(state, 41, level)).toBe(true);
+    const restored = await loadCampaign(async () => level);
+    expect(restored.recovered).toBe(false);
+    expect(restored.value?.state).toEqual(state);
+    const forged = {
+      ...state,
+      settledPaths: { east: [cellAt(1, 2), cellAt(2, 2), cellAt(3, 2)] },
+    } as GameState;
+    expect(save(forged, 41, level)).toBe(true);
+    const refused = await loadCampaign(async () => level);
+    expect(refused.recovered).toBe(true);
+    expect(refused.value?.state).toEqual(createGameState(level));
+  });
+
+  test("a content-13 save on the rotor intro refreshes once and keeps progression", async () => {
+    const level = generateLevel(40);
+    expect(save(exitedState(level), 44, level)).toBe(true);
+    const current = savedJson();
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({ ...current, contentVersion: 13 }),
+    );
+    const restored = await loadCampaign(async () => level);
+    expect(restored.recovered).toBe(true);
+    expect(restored.contentUpdated).toBe(true);
+    expect(restored.value).toMatchObject({
+      currentLevelId: 40,
+      unlockedLevelId: 44,
+      tutorialComplete: true,
+      state: createGameState(level),
+    });
+    if (!restored.value) throw new Error("Expected refreshed campaign");
+    expect(saveCampaign(restored.value)).toBe(true);
+    expect(savedJson()).toMatchObject({
+      contentVersion: 14,
+      layout: layoutFingerprint(level),
+    });
+    const again = await loadCampaign(async () => level);
+    expect(again.recovered).toBe(false);
+    expect(again.contentUpdated).toBe(false);
+  });
+
   test("never restores two arrows onto one cell, however each is parked", async () => {
     const cellAt = (x: number, y: number) => ({ face: "front" as const, x, y });
     const flipLevel: LevelDefinition = {
@@ -918,7 +1055,7 @@ describe("resumable campaign saves", () => {
     if (!restored.value) throw new Error("Expected refreshed campaign");
     expect(saveCampaign(restored.value)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 13,
+      contentVersion: 14,
       layout: layoutFingerprint(level),
     });
     expect((await loadCampaign(async () => level)).recovered).toBe(false);
@@ -1002,7 +1139,7 @@ describe("resumable campaign saves", () => {
       if (!restored.value) throw new Error("Expected restored campaign");
       expect(saveCampaign(restored.value)).toBe(true);
       expect(savedJson()).toMatchObject({
-        contentVersion: 13,
+        contentVersion: 14,
         generatorVersion: 10,
       });
     },

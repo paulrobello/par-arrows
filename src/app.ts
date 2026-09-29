@@ -396,8 +396,10 @@ export class ParArrowsApp {
           this.displayedState.spotHeadings,
         ),
       })),
+      // Flip and rotor spots a remaining arrow still covers: each advances
+      // once that arrow moves off it.
       pendingFlips: (this.level.directionals ?? [])
-        .filter((spot) => spot.kind === "flip")
+        .filter((spot) => spot.kind === "flip" || spot.kind === "rotor")
         .map((spot) => cellKey(spot.cell))
         .filter((key) =>
           this.level.arrows.some(
@@ -408,6 +410,7 @@ export class ParArrowsApp {
               ),
           ),
         ),
+      spotGlyphTurns: this.renderer.spotGlyphTurns(),
       parkedOffsets: Object.fromEntries(
         Object.entries(this.displayedState.offsets).filter(
           ([, offset]) => offset > 0,

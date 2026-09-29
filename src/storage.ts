@@ -3,7 +3,7 @@ import {
   MAX_LEVEL_ID,
   seedForLevel,
 } from "./content/procedural";
-import { hasFlipSpots } from "./core/directionals";
+import { hasStatefulSpots, spotStates } from "./core/directionals";
 import { createGameState } from "./core/game-state";
 import { overlappingArrowIds } from "./core/overlap";
 import {
@@ -12,13 +12,13 @@ import {
   settledPathOf,
   stopKeys,
 } from "./core/stops";
-import { cellKey, oppositeHeading } from "./core/topology";
+import { cellKey } from "./core/topology";
 import { linkHeading } from "./core/wormholes";
-import type { Cell, GameState, LevelDefinition } from "./core/types";
+import type { Cell, GameState, Heading, LevelDefinition } from "./core/types";
 
 const STORAGE_KEY = "par-arrows:campaign:v1";
 const SETTINGS_KEY = "par-arrows:settings:v1";
-const CONTENT_VERSION = 13;
+const CONTENT_VERSION = 14;
 
 export interface CampaignSave {
   readonly currentLevelId: number;
@@ -269,14 +269,14 @@ function hasValidSettledPaths(
 ): value is Readonly<Record<string, readonly Cell[]>> {
   if (value === undefined) return true;
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const flipLevel = hasFlipSpots(level);
+  const statefulLevel = hasStatefulSpots(level);
   for (const [id, pathValue] of Object.entries(value)) {
     const arrow = level.arrows.find((candidate) => candidate.id === id);
     // A shared-tail group parks by one offset shared across its members.
     if (
       !arrow ||
       groupedIds.has(id) ||
-      (arrow.kind !== "double" && !flipLevel) ||
+      (arrow.kind !== "double" && !statefulLevel) ||
       !remainingIds.has(id) ||
       !Array.isArray(pathValue) ||
       pathValue.length !== arrow.path.length ||
@@ -302,7 +302,7 @@ function hasValidSettledPaths(
     if (arrow.kind === "double") {
       if (!reachableSettledPath(level, id, path)) return false;
     } else {
-      // Flip-level tracks depend on spot state, so a parked single is checked structurally and must rest on a stop.
+      // Flip- and rotor-level tracks depend on spot state, so a parked single is checked structurally and must rest on a stop.
       const head = path[path.length - 1];
       if (!head || !stopKeys(level).has(cellKey(head))) return false;
     }
@@ -310,7 +310,11 @@ function hasValidSettledPaths(
   return true;
 }
 
-/** Stored spot directions may name only flip spots, on the spot's own axis. */
+/**
+ * Stored spot directions may name only flip and rotor spots, each holding one
+ * of the directions it cycles through: a flip its own axis, a rotor any
+ * quarter-turn.
+ */
 function hasValidSpotHeadings(value: unknown, level: LevelDefinition): boolean {
   if (value === undefined) return true;
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
@@ -318,9 +322,8 @@ function hasValidSpotHeadings(value: unknown, level: LevelDefinition): boolean {
     const spot = (level.directionals ?? []).find(
       (entry) => cellKey(entry.cell) === key,
     );
-    if (spot?.kind !== "flip") return false;
-    if (heading !== spot.heading && heading !== oppositeHeading(spot.heading))
-      return false;
+    if (spot?.kind !== "flip" && spot?.kind !== "rotor") return false;
+    if (!spotStates(spot).includes(heading as Heading)) return false;
   }
   return true;
 }

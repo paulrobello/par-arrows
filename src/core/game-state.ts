@@ -1,4 +1,4 @@
-import { flippedHeading, hasFlipSpots, spotHeadingAt } from "./directionals";
+import { advancedSpotHeading, hasStatefulSpots } from "./directionals";
 import { simulateMove as simulate } from "./movement";
 import { overlappingArrowIds } from "./overlap";
 import {
@@ -71,9 +71,7 @@ function afterFlips(
   for (const member of result.members ?? [result]) {
     for (const flip of member.spotFlips ?? []) {
       const key = cellKey(flip.cell);
-      next[key] = flippedHeading(
-        spotHeadingAt(level, flip.cell, next) as Heading,
-      );
+      next[key] = advancedSpotHeading(level, flip.cell, next) as Heading;
     }
   }
   return next;
@@ -132,7 +130,7 @@ export function applyMove(
       };
     }
     if (
-      hasFlipSpots(level) &&
+      hasStatefulSpots(level) &&
       groupIds.length === 1 &&
       result.settledPath?.length === clicked.path.length
     ) {

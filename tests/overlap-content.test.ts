@@ -147,7 +147,7 @@ describe("overlapping-tail level content", () => {
     let wrappedCubes = 0;
     let staggeredCubes = 0;
     for (const id of [
-      16, 17, 18, 19, 21, 22, 23, 24, 25, 28, 40, 44, 46, 47, 49, 55, 58, 70,
+      16, 17, 18, 19, 21, 22, 23, 24, 25, 28, 41, 44, 46, 47, 49, 55, 58, 70,
     ]) {
       const level = generateLevel(id);
       expect(validateLevel(level)).toEqual({ valid: true, errors: [] });

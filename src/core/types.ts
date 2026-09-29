@@ -31,8 +31,11 @@ export interface EdgePolicyDefinition {
 export interface DirectionalSpotDefinition {
   readonly cell: Cell;
   readonly heading: Heading;
-  /** A flip spot reverses once an arrow has fully passed through it. */
-  readonly kind?: "static" | "flip";
+  /**
+   * A flip spot reverses once an arrow has fully passed through it; a rotor
+   * spot turns a quarter clockwise (north, east, south, west) instead.
+   */
+  readonly kind?: "static" | "flip" | "rotor";
 }
 
 /** Two paired portal cells; a head entering either end leaves the other. */
@@ -67,7 +70,7 @@ export interface GameState {
   readonly levelId: number;
   readonly remainingIds: readonly string[];
   readonly failedIds: readonly string[];
-  /** Exact occupied paths of parked double arrows, and of parked single arrows on flip levels. */
+  /** Exact occupied paths of parked double arrows, and of parked single arrows on flip or rotor levels. */
   readonly settledPaths?: Readonly<Record<string, readonly Cell[]>>;
   /** Paid double-arrow failures, keyed by arrow and settled path. */
   readonly failedPositions?: readonly string[];
@@ -77,7 +80,7 @@ export interface GameState {
   readonly revision: number;
   /** Forward steps already travelled by each arrow parked on a stop circle. */
   readonly offsets: Readonly<Record<string, number>>;
-  /** Current direction of each flip spot that has flipped, keyed by cell. */
+  /** Current direction of each flip or rotor spot that has advanced, keyed by cell. */
   readonly spotHeadings?: Readonly<Record<string, Heading>>;
 }
 
@@ -109,7 +112,7 @@ export interface ContactTrace {
   readonly distance: number;
 }
 
-/** A flip spot reversing during a move, after `step` forward steps. */
+/** A flip or rotor spot advancing during a move, after `step` forward steps. */
 export interface SpotFlip {
   readonly cell: Cell;
   readonly step: number;
@@ -130,12 +133,12 @@ export interface MoveResult {
   readonly stateRevision: number;
   /**
    * Forward steps already travelled before this attempt began. A parked
-   * single arrow on a flip level reports 0: its position lives in `settledPaths`.
+   * single arrow on a flip or rotor level reports 0: its position lives in `settledPaths`.
    */
   readonly offset: number;
   /** Forward steps this attempt travels before parking on a stop circle. */
   readonly pausedSteps?: number;
-  /** Exact occupied path after a double arrow, or any arrow on a flip level, parks. */
+  /** Exact occupied path after a double arrow, or any arrow on a flip or rotor level, parks. */
   readonly settledPath?: readonly Cell[];
   /** Flip spots the moving body cleared, in order; rewound on a collision. */
   readonly spotFlips?: readonly SpotFlip[];

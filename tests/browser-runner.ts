@@ -31,6 +31,7 @@ import { assertStopIntro } from "./stop-browser";
 import { assertDirectionalIntro } from "./directional-browser";
 import { assertDoubleIntro } from "./double-browser";
 import { assertFlipIntro } from "./flip-browser";
+import { assertRotorIntro } from "./rotor-browser";
 import { assertWormholeIntro } from "./wormhole-browser";
 import { assertPwaPrompt } from "./pwa-browser";
 import { assertReliableTaps } from "./tap-browser";
@@ -109,6 +110,7 @@ const STOP_ONLY_COMPLETE = Symbol("stop-only-complete");
 const DIRECTIONAL_ONLY_COMPLETE = Symbol("directional-only-complete");
 const DOUBLE_ONLY_COMPLETE = Symbol("double-only-complete");
 const FLIP_ONLY_COMPLETE = Symbol("flip-only-complete");
+const ROTOR_ONLY_COMPLETE = Symbol("rotor-only-complete");
 const WORMHOLE_ONLY_COMPLETE = Symbol("wormhole-only-complete");
 const PWA_ONLY_COMPLETE = Symbol("pwa-only-complete");
 const RESIZE_ONLY_COMPLETE = Symbol("resize-only-complete");
@@ -1093,6 +1095,20 @@ try {
     throw FLIP_ONLY_COMPLETE;
   }
 
+  if (process.env.ROTOR_ONLY === "1") {
+    await assertRotorIntro(browser, url, output);
+    assert.deepEqual(failures, [], "Browser must not report uncaught errors");
+    await Bun.write(
+      `${output}/rotor-summary.json`,
+      JSON.stringify(
+        { passed: true, browser: engine.name(), physicalDevice: false },
+        null,
+        2,
+      ),
+    );
+    throw ROTOR_ONLY_COMPLETE;
+  }
+
   if (process.env.OVERLAP_ONLY === "1") {
     await assertOverlapIntro(browser, url, output);
     assert.deepEqual(failures, [], "Browser must not report uncaught errors");
@@ -1566,6 +1582,7 @@ try {
   await assertDoubleIntro(browser, url, output);
   await assertFlipIntro(browser, url, output);
   await assertWormholeIntro(browser, url, output);
+  await assertRotorIntro(browser, url, output);
   await assertPwaPrompt(browser, url, output);
   await assertTutorialFlow(browser, url, output);
   await assertConsistentMotion(browser, url, output);
@@ -1603,6 +1620,7 @@ try {
     error !== DIRECTIONAL_ONLY_COMPLETE &&
     error !== DOUBLE_ONLY_COMPLETE &&
     error !== FLIP_ONLY_COMPLETE &&
+    error !== ROTOR_ONLY_COMPLETE &&
     error !== WORMHOLE_ONLY_COMPLETE &&
     error !== PWA_ONLY_COMPLETE &&
     error !== RESIZE_ONLY_COMPLETE &&

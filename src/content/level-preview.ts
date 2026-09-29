@@ -4,6 +4,7 @@ import {
   hasDirectionalCore,
   MAX_LEVEL_ID,
 } from "./procedural";
+import { ROTOR_INTRO_LEVEL } from "./rotor-intro";
 
 export interface LevelPreview {
   readonly active: boolean;
@@ -15,7 +16,8 @@ export interface LevelPreview {
     | "directional"
     | "double"
     | "flip"
-    | "wormhole";
+    | "wormhole"
+    | "rotor";
   readonly wraps?: number;
   readonly resolvedLevelId?: number;
   readonly error?: string;
@@ -65,6 +67,7 @@ export function parseLevelPreview(search: string): LevelPreview {
     | "double"
     | "flip"
     | "wormhole"
+    | "rotor"
     | undefined;
   if (rawFeature !== null) {
     const normalized = rawFeature.toLowerCase();
@@ -82,6 +85,8 @@ export function parseLevelPreview(search: string): LevelPreview {
       feature = "flip";
     } else if (["wormhole", "portal", "wormholes"].includes(normalized)) {
       feature = "wormhole";
+    } else if (["rotor", "rotors"].includes(normalized)) {
+      feature = "rotor";
     } else {
       return { active: true, error: `Unknown test feature: ${rawFeature}.` };
     }
@@ -146,6 +151,9 @@ export function resolveLevelPreview(
   }
   if (preview.feature === "wormhole") {
     return { ...preview, resolvedLevelId: 35 };
+  }
+  if (preview.feature === "rotor") {
+    return { ...preview, resolvedLevelId: ROTOR_INTRO_LEVEL.id };
   }
   const startLevelId =
     preview.feature === "overlap"
