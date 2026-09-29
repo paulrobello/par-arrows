@@ -152,8 +152,14 @@ async function releaseCrashHandlers(): Promise<void> {
       (match) => match[1],
     ),
   );
+  // Scope to Playwright's own chromium: a bare -x match also returns
+  // every other app's handler (Chrome, Discord, Electron), and lsof
+  // against those foreign processes stalls the release loop past the
+  // close deadline.
   const handlers = (
-    await Bun.$`pgrep -x chrome_crashpad_handler`.nothrow().quiet()
+    await Bun.$`pgrep -f "ms-playwright.*chrome_crashpad_handler"`
+      .nothrow()
+      .quiet()
   ).stdout
     .toString()
     .split("\n")
@@ -1593,13 +1599,18 @@ try {
   await assertContextRecovery(browser, url, output);
   await assertLevelPreview(browser, url, output);
   await assertWrappingEdges(browser, url, output, {
-    // Level 81 is the first cube whose sole wrapping pair is the
-    // front-east/right-west seam, which the single-edge visibility fixture
-    // needs, and it has no wormholes, whose orange ring would count as seam
-    // yellow. r81-wrap-0 crosses that seam: it exits alone (movement) and is
-    // blocked on the full board (rebound).
-    movementLevelId: 81,
-    reboundLevelId: 81,
+    // The dimming fixture needs a cube whose sole wrapping pair is the
+    // front-east/right-west seam (level 81, no wormholes whose orange ring
+    // would count as seam yellow). The movement fixture needs a
+    // wrap-crossing arrow that exits on the full board and one that is
+    // blocked; level 81 lost its exiting crossing when v10 rebuilt the
+    // board, leaving only short blocked crossings whose half-cell contact
+    // animation never shows the fold, so movement and rebound moved to
+    // level 37, where r37-14 exits across the seam and r37-wrap-0 is
+    // blocked one cell past it.
+    dimmingLevelId: 81,
+    movementLevelId: 37,
+    reboundLevelId: 37,
   });
   await assertVersionReload(page);
   await assertThemeBootstrap(browser);
@@ -1649,7 +1660,29 @@ try {
             await Promise.race([closing.catch(() => {}), Bun.sleep(250)]);
           }
         }
-        await closing;
+        try {
+          await closing;
+        } catch (closeError) {
+          // Under Bun, browser.close() can stay unresolved after a long
+          // sweep even once chromium and its crash handler are gone. When
+          // the browser process is verifiably dead and no chromium
+          // remains, the sweep's verdict stands; only a live browser
+          // keeps this a failure.
+          const stragglers =
+            (
+              await Bun.$`pgrep -f "Chrome for Testing"`.nothrow().quiet()
+            ).stdout
+              .toString()
+              .trim().length > 0;
+          // Recorded rather than thrown: a throw lexically inside this
+          // finally would swallow the exception the finally is guarding
+          // (noUnsafeFinally), and primaryError reaches the same verdict
+          // at the end of the run.
+          if (stragglers) primaryError ??= closeError;
+          console.warn(
+            "browser.close() stalled after the browser exited; continuing.",
+          );
+        }
       }
     }
   } catch (cleanupError) {
@@ -1665,3 +1698,6 @@ try {
   }
 }
 if (primaryError !== undefined) throw primaryError;
+// A stalled-but-dead browser close leaves its pipe handle open under Bun,
+// keeping the process alive after every artifact is written; exit explicitly.
+process.exit(process.exitCode ?? 0);

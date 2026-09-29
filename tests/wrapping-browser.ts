@@ -18,6 +18,7 @@ import { layoutFingerprint } from "../src/storage";
 import { waitForReady } from "./runtime-fixtures";
 
 export interface WrappingBrowserFixtures {
+  readonly dimmingLevelId: number;
   readonly movementLevelId: number;
   readonly reboundLevelId: number;
 }
@@ -208,7 +209,7 @@ export async function assertWrappingEdges(
     await loadLevel(page, fixtures.movementLevelId);
     await assertEdgeDimming(
       page,
-      fixtures.movementLevelId,
+      fixtures.dimmingLevelId,
       fixtures.movementLevelId,
       output,
     );
