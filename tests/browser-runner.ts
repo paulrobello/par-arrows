@@ -150,13 +150,21 @@ async function releaseCrashHandlers(): Promise<void> {
       (match) => match[1],
     ),
   );
-  const handlers = await Bun.$`pgrep -x chrome_crashpad_handler`
+  const handlers = (
+    await Bun.$`pgrep -x chrome_crashpad_handler`.nothrow().quiet()
+  ).stdout
+    .toString()
+    .split("\n")
+    .filter(Boolean);
+  if (handlers.length === 0) return;
+  // One lsof covers every handler: `-d 2` keeps each process's stderr row.
+  const stderr = await Bun.$`lsof -nP -a -U -d 2 -p ${handlers.join(",")}`
     .nothrow()
     .quiet();
-  for (const pid of handlers.stdout.toString().split("\n").filter(Boolean)) {
-    const stderr = await Bun.$`lsof -nP -a -U -d 2 -p ${pid}`.nothrow().quiet();
-    const peer = stderr.stdout.toString().match(/->(0x[0-9a-f]+)/)?.[1];
-    if (peer === undefined || !addresses.has(peer)) continue;
+  for (const row of stderr.stdout.toString().split("\n")) {
+    const pid = row.trim().split(/\s+/)[1];
+    const peer = row.match(/->(0x[0-9a-f]+)/)?.[1];
+    if (!pid || peer === undefined || !addresses.has(peer)) continue;
     try {
       process.kill(Number(pid), "SIGTERM");
     } catch (error) {
@@ -1613,8 +1621,13 @@ try {
           settled = true;
         });
         if (engine === chromium) {
+          // A pass that hangs (a stuck lsof) must not outlast the close
+          // deadline, so each pass races the close itself.
           while (!settled) {
-            await releaseCrashHandlers();
+            await Promise.race([
+              releaseCrashHandlers(),
+              closing.catch(() => {}),
+            ]);
             await Promise.race([closing.catch(() => {}), Bun.sleep(250)]);
           }
         }

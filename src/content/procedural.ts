@@ -1451,66 +1451,6 @@ function wormholeCore(
 }
 
 /**
- * Fallback for a planned wormhole whose core did not fit: a decorative pair
- * on the assembled board, drawn from cells existing arrows sweep through.
- * Both ends dodge every reserved, group-track, flip-region, stop and spot
- * cell, and the pair survives only when the assembled level still validates,
- * replays its construction certificate, and — on a flip cube — keeps a
- * proven flip region that no outside track enters. Twenty-four candidates,
- * then give up; a failure drops the wormhole without restarting the level.
- */
-export function decorativeWormhole(
-  level: LevelDefinition,
-  occupied: ReadonlySet<string>,
-  rng: Rng,
-  certificate: readonly CertificateEntry[],
-  flipCells: ReadonlySet<string> | undefined,
-  groupTracks: ReadonlySet<string>,
-): WormholeDefinition | undefined {
-  const spotKeys = new Set(
-    (level.directionals ?? []).map((spot) => cellKey(spot.cell)),
-  );
-  const stopKeys = new Set((level.stops ?? []).map(cellKey));
-  const trackCells: Cell[] = [];
-  const seen = new Set<string>();
-  for (const arrow of level.arrows) {
-    for (const cell of arrowTrack(level, arrow)) {
-      const key = cellKey(cell);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      trackCells.push(cell);
-    }
-  }
-  if (trackCells.length < 2) return undefined;
-  for (let attempt = 0; attempt < 24; attempt += 1) {
-    const a = rng.pick(trackCells);
-    const b = rng.pick(trackCells);
-    const keys = [cellKey(a), cellKey(b)];
-    if (keys[0] === keys[1]) continue;
-    if (
-      keys.some(
-        (key) =>
-          occupied.has(key) ||
-          flipCells?.has(key) ||
-          groupTracks.has(key) ||
-          stopKeys.has(key) ||
-          spotKeys.has(key),
-      )
-    )
-      continue;
-    const candidate: LevelDefinition = {
-      ...level,
-      wormholes: [{ id: "w1", a, b }],
-    };
-    if (!validateLevel(candidate).valid) continue;
-    if (!replayCertificate(candidate, certificate)) continue;
-    if (flipCells && !flipRegionLead(candidate)) continue;
-    return { id: "w1", a, b };
-  }
-  return undefined;
-}
-
-/**
  * Flip-core layouts relative to the spot cell at (2, 2). Every arrow's head
  * aims at the spot or passes it, so all of the core's routes run through or
  * beside it; the proven interaction region is reserved before other arrows
@@ -3087,9 +3027,8 @@ export function generateLevel(id: number): LevelDefinition {
           }
         }
         // A planned wormhole core gets its slots right after the double
-        // core, on its own stream. A placement that fails is dropped: the
-        // level falls back to a decorative pair and never restarts for a
-        // wormhole.
+        // core, on its own stream. A placement that fails drops the hole
+        // and never restarts the level.
         const wormholes: WormholeCore[] = [];
         const wormholeExempt = new Set<string>();
         for (let slot = 0; slot < slots; slot += 1) {
@@ -3636,25 +3575,6 @@ export function generateLevel(id: number): LevelDefinition {
             .filter((arrow) => !leadIds.has(arrow.id))
             .map((arrow) => arrow.id),
         ];
-        // A planned wormhole whose core did not fit falls back to a
-        // decorative pair on the assembled board. Plan zero never reaches
-        // this, so a zero-wormhole level never draws the decorative stream.
-        if (wormholes.length === 0 && slots > 0) {
-          const deco = decorativeWormhole(
-            level,
-            occupied,
-            coreStream(id, "wormhole-deco", restart),
-            certificate,
-            flip ? flip.cells : undefined,
-            groupTracks,
-          );
-          if (deco) {
-            wormholes.push({ arrows: [], wormhole: deco, certificate: [] });
-            occupied.add(cellKey(deco.a));
-            occupied.add(cellKey(deco.b));
-            level = { ...level, wormholes: [deco] };
-          }
-        }
         const accepted =
           flipLead !== undefined &&
           (tier.certificate
