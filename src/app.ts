@@ -15,6 +15,7 @@ import {
   seedForLevel,
 } from "./content/procedural";
 import { spotHeadingAt } from "./core/directionals";
+import { pendingCollapseKeys } from "./core/fragile";
 import { applyMove, createGameState, simulateMove } from "./core/game-state";
 import { settledPathOf } from "./core/stops";
 import { resolvePick } from "./pick";
@@ -411,6 +412,20 @@ export class ParArrowsApp {
           ),
         ),
       spotGlyphTurns: this.renderer.spotGlyphTurns(),
+      // Fragile cells, whether each has collapsed into a hole, and those a
+      // remaining arrow still covers: each collapses once that arrow moves
+      // off it. `fragileGlyphCollapse` is how far each hole currently shows.
+      fragile: (this.level.fragile ?? []).map((cell) => ({
+        cell: cellKey(cell),
+        collapsed: (this.displayedState.collapsed ?? []).includes(
+          cellKey(cell),
+        ),
+      })),
+      pendingCollapses: [
+        ...pendingCollapseKeys(this.level, this.displayedState),
+      ],
+      fragileGlyphCollapse: this.renderer.fragileCollapseProgress(),
+      fallenIds: this.displayedState.fallenIds ?? [],
       parkedOffsets: Object.fromEntries(
         Object.entries(this.displayedState.offsets).filter(
           ([, offset]) => offset > 0,
@@ -628,14 +643,25 @@ export class ParArrowsApp {
         this.motion.result,
         progress,
       );
+      // A fall costs its life as the head turns into the hole, which the
+      // track reaches at its surface share of travel.
+      const impactAt =
+        this.motion.result.kind === "blocked"
+          ? 0.5
+          : this.motion.result.kind === "fall"
+            ? this.fallImpactProgress(this.motion.result)
+            : undefined;
       if (
-        this.motion.result.kind === "blocked" &&
+        impactAt !== undefined &&
         !this.motion.impactShown &&
-        progress >= 0.5
+        progress >= impactAt
       ) {
         this.motion.impactShown = true;
         this.displayedState = this.state;
-        this.renderer.updateState(this.state);
+        // A falling arrow is already off the board in `state`, but it keeps
+        // diving until the move settles, so only a rebound restyles it here.
+        if (this.motion.result.kind === "blocked")
+          this.renderer.updateState(this.state);
         this.renderUi();
         this.flashLifeLost();
       }
@@ -648,6 +674,13 @@ export class ParArrowsApp {
       this.updateHint(delta);
       return;
     }
+  }
+
+  /** The share of a fall's travel at which its head reaches the hole. */
+  private fallImpactProgress(result: MoveResult): number {
+    const total = this.renderer.motionDistance(result.arrowId, result);
+    const surface = ((result.route.length - 1) * 2) / this.level.gridSize;
+    return total > 0 ? Math.min(1, surface / total) : 1;
   }
 
   /** One-shot HUD and stage flash marking the moment a life is lost. */

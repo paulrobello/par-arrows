@@ -427,6 +427,25 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
         );
     }
   }
+  const fragileCells = new Set<string>();
+  for (const cell of level.fragile ?? []) {
+    const key = cellKey(cell);
+    if (!inBounds(cell, level.gridSize))
+      errors.push(`Fragile cell ${key} is out of bounds.`);
+    if (fragileCells.has(key))
+      errors.push(`Fragile cell ${key} is declared more than once.`);
+    fragileCells.add(key);
+    if (arrowCells.has(key))
+      errors.push(`Fragile cell ${key} sits on an arrow's starting cell.`);
+    if (stopCells.has(key))
+      errors.push(`Fragile cell ${key} shares its cell with a stop circle.`);
+    if (spotCells.has(key))
+      errors.push(
+        `Fragile cell ${key} shares its cell with a directional spot.`,
+      );
+    if (holeCells.has(key))
+      errors.push(`Fragile cell ${key} shares its cell with a wormhole end.`);
+  }
   // A fold can only park on a stop circle, so levels without one skip the search.
   if (stopCells.size > 0) {
     const combos = spotStateCombos(level);
@@ -571,6 +590,18 @@ export function probeMove(
   return result;
 }
 
+/** True when a move collapses a fragile cell. */
+function collapsesCell(result: MoveResult): boolean {
+  return (result.members ?? [result]).some(
+    (member) => (member.collapses?.length ?? 0) > 0,
+  );
+}
+
+/**
+ * Drive one arrow through its pauses to an exit. A drive that would collapse
+ * a fragile cell is refused: a hole can turn another arrow's clear exit into
+ * a fall, so the search branches over collapsing moves instead.
+ */
 function driveThrough(
   level: LevelDefinition,
   state: GameState,
@@ -591,6 +622,7 @@ function driveThrough(
       blockedCells,
     );
     if (result.kind !== "exit" && result.kind !== "paused") return undefined;
+    if (collapsesCell(result)) return undefined;
     const next = applyMove(level, current, result);
     if (next === current) return undefined;
     taps.push(target);
@@ -603,7 +635,8 @@ function driveThrough(
 /**
  * Remove every arrow that can currently reach its exit. Removing an arrow only
  * ever frees cells, so clearing greedily can never strand another arrow and
- * needs no backtracking. An exit can also flip a spot; flip cores get the same
+ * needs no backtracking; a drive that collapses a fragile cell is left to the
+ * search. An exit can also flip a spot; flip cores get the same
  * guarantee from enumerating their states (`hasStrandingState`), not from this.
  */
 function clearWhatExits(
@@ -643,7 +676,8 @@ function solveKey(level: LevelDefinition, state: GameState): string {
     .join(",");
   const failures = [...(state.failedPositions ?? [])].sort().join(",");
   const spots = spotStateKey(level, state.spotHeadings);
-  return `${[...state.remainingIds].sort().join("|")}#${parked}#${settled}#${failures}#${spots}`;
+  const holes = [...(state.collapsed ?? [])].sort().join(",");
+  return `${[...state.remainingIds].sort().join("|")}#${parked}#${settled}#${failures}#${spots}#${holes}`;
 }
 
 const SOLVER_NODE_BUDGET = 4000;
@@ -661,6 +695,7 @@ function enumerateStranding(
   limit = 5000,
   tapFilter?: (arrowId: string) => boolean,
   blockedCells?: ReadonlySet<string>,
+  falls = false,
 ): boolean | undefined {
   const states = new Map<string, readonly string[]>();
   const winnableSeeds = new Set<string>();
@@ -686,7 +721,12 @@ function enumerateStranding(
             target.endpoint,
             blockedCells,
           );
-          if (result.kind !== "exit" && result.kind !== "paused") continue;
+          if (
+            result.kind !== "exit" &&
+            result.kind !== "paused" &&
+            !(falls && result.kind === "fall")
+          )
+            continue;
           const settled = applyMove(level, current, result);
           if (settled === current) continue;
           next.push(solveKey(level, settled));
@@ -720,6 +760,28 @@ export function hasStrandingState(
   limit = 5000,
 ): boolean | undefined {
   return enumerateStranding(level, createGameState(level), limit);
+}
+
+/**
+ * Like `hasStrandingState`, but a fall into a collapsed fragile cell counts
+ * as progress: it removes the arrow at the cost of a life. This is the
+ * winnability check for fragile levels, where a wrong crossing order leaves
+ * an arrow that can only fall. Lives are lifted so a fall never ends the
+ * search.
+ */
+export function hasSoftLockState(
+  level: LevelDefinition,
+  limit = 5000,
+): boolean | undefined {
+  const unlimited = { ...level, lives: level.arrows.length + level.lives };
+  return enumerateStranding(
+    unlimited,
+    createGameState(unlimited),
+    limit,
+    undefined,
+    undefined,
+    true,
+  );
 }
 
 /**
@@ -813,7 +875,9 @@ export function flipInterest(
 
 /**
  * Parking an arrow on a stop circle occupies new cells, so unlike clearing it
- * can strand other arrows and has to be explored with backtracking. Reverse
+ * can strand other arrows and has to be explored with backtracking; so can
+ * an exit that collapses a fragile cell, which may turn another arrow's exit
+ * into a fall. A fall is never a solution step. Reverse
  * construction gives generated levels a drive-through certificate, so they
  * finish in the greedy pass and never reach this search.
  */
@@ -843,7 +907,11 @@ function searchSolution(
         target.endpoint,
         blockedCells,
       );
-      if (result.kind !== "paused") continue;
+      if (
+        result.kind !== "paused" &&
+        !(result.kind === "exit" && collapsesCell(result))
+      )
+        continue;
       const parked = applyMove(level, cleared.state, result);
       if (parked === cleared.state) continue;
       const rest = searchSolution(

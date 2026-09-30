@@ -301,7 +301,7 @@ describe("resumable campaign saves", () => {
     const state = exitedState(level);
     expect(save(state, 88)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 14,
+      contentVersion: 15,
       generatorVersion: 10,
       currentLevelId: 42,
       unlockedLevelId: 88,
@@ -396,7 +396,7 @@ describe("resumable campaign saves", () => {
     if (!restored.value) throw new Error("Expected refreshed campaign");
     expect(saveCampaign(restored.value)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 14,
+      contentVersion: 15,
       layout: layoutFingerprint(level),
     });
     expect((await loadCampaign(async () => level)).recovered).toBe(false);
@@ -973,12 +973,144 @@ describe("resumable campaign saves", () => {
     if (!restored.value) throw new Error("Expected refreshed campaign");
     expect(saveCampaign(restored.value)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 14,
+      contentVersion: 15,
       layout: layoutFingerprint(level),
     });
     const again = await loadCampaign(async () => level);
     expect(again.recovered).toBe(false);
     expect(again.contentUpdated).toBe(false);
+  });
+
+  test("a fragile cube round-trips a pending collapse, a collapse and a fall", async () => {
+    const cellAt = (x: number, y: number) => ({ face: "front" as const, x, y });
+    const level: LevelDefinition = {
+      id: 46,
+      title: "Stored fragile",
+      gridSize: 6,
+      lives: 3,
+      fragile: [cellAt(2, 2)],
+      arrows: [
+        { id: "runner", path: [cellAt(0, 2), cellAt(1, 2)] },
+        { id: "faller", path: [cellAt(2, 5), cellAt(2, 4)] },
+      ],
+      stops: [cellAt(3, 2)],
+    };
+    let state = createGameState(level);
+    state = applyMove(level, state, simulateMove(level, state, "runner"));
+    // Parked with its tail on the fragile cell: the collapse is pending.
+    expect(state.offsets).toEqual({ runner: 2 });
+    expect(state.collapsed).toEqual([]);
+    const roundTrips = async (expected: GameState): Promise<void> => {
+      expect(save(expected, 46, level)).toBe(true);
+      const restored = await loadCampaign(async () => level);
+      expect(restored.recovered).toBe(false);
+      expect(restored.value?.state).toEqual(expected);
+    };
+    await roundTrips(state);
+    state = applyMove(level, state, simulateMove(level, state, "runner"));
+    await roundTrips(state);
+    state = applyMove(level, state, simulateMove(level, state, "faller"));
+    await roundTrips(state);
+    expect(state.collapsed).toEqual(["front:2:2"]);
+    expect(state.fallenIds).toEqual(["faller"]);
+    expect(state.lives).toBe(2);
+    expect(state.status).toBe("won");
+  });
+
+  test("rejects forged collapse and fall records", async () => {
+    const cellAt = (x: number, y: number) => ({ face: "front" as const, x, y });
+    const level: LevelDefinition = {
+      id: 46,
+      title: "Bad fragile",
+      gridSize: 6,
+      lives: 3,
+      fragile: [cellAt(2, 2)],
+      arrows: [
+        { id: "a", path: [cellAt(0, 2), cellAt(1, 2)] },
+        { id: "b", path: [cellAt(0, 4), cellAt(1, 4)] },
+      ],
+      stops: [cellAt(3, 2)],
+    };
+    const initial = createGameState(level);
+    const parked = applyMove(level, initial, simulateMove(level, initial, "a"));
+    const forgeries: GameState[] = [
+      // Not an authored fragile cell.
+      { ...initial, collapsed: ["front:4:4"] },
+      // Declared twice.
+      { ...initial, collapsed: ["front:2:2", "front:2:2"] },
+      // A parked body still sits on it: the collapse is only pending.
+      { ...parked, collapsed: ["front:2:2"] },
+      // A fall that no life paid for.
+      {
+        ...initial,
+        remainingIds: ["a"],
+        fallenIds: ["b"],
+        revision: 1,
+      },
+      // A fallen arrow still on the board.
+      { ...initial, fallenIds: ["b"], lives: 2, revision: 1 },
+    ];
+    for (const forged of forgeries) {
+      expect(save(forged, 46, level)).toBe(true);
+      const restored = await loadCampaign(async () => level);
+      expect(restored.recovered).toBe(true);
+      expect(restored.value?.state).toEqual(createGameState(level));
+    }
+    const noFragile: LevelDefinition = { ...level, fragile: [] };
+    const fell = {
+      ...initial,
+      remainingIds: ["a"],
+      fallenIds: ["b"],
+      lives: 2,
+      revision: 1,
+    } as GameState;
+    expect(save(fell, 46, noFragile)).toBe(true);
+    expect((await loadCampaign(async () => noFragile)).recovered).toBe(true);
+  });
+
+  test("a fall that spends the last life saves as lost and restores", async () => {
+    const cellAt = (x: number, y: number) => ({ face: "front" as const, x, y });
+    const level: LevelDefinition = {
+      id: 46,
+      title: "Fatal fall",
+      gridSize: 6,
+      lives: 1,
+      fragile: [cellAt(2, 2)],
+      arrows: [
+        { id: "runner", path: [cellAt(0, 2), cellAt(1, 2)] },
+        { id: "faller", path: [cellAt(2, 5), cellAt(2, 4)] },
+      ],
+    };
+    let state = createGameState(level);
+    state = applyMove(level, state, simulateMove(level, state, "runner"));
+    state = applyMove(level, state, simulateMove(level, state, "faller"));
+    expect(state.status).toBe("lost");
+    expect(state.remainingIds).toEqual([]);
+    expect(save(state, 46, level)).toBe(true);
+    const restored = await loadCampaign(async () => level);
+    expect(restored.recovered).toBe(false);
+    expect(restored.value?.state).toEqual(state);
+  });
+
+  test("a content-14 save on the fragile intro refreshes once and keeps progression", async () => {
+    const level = generateLevel(45);
+    expect(save(exitedState(level), 47, level)).toBe(true);
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({ ...savedJson(), contentVersion: 14 }),
+    );
+    const restored = await loadCampaign(async () => level);
+    expect(restored.recovered).toBe(true);
+    expect(restored.contentUpdated).toBe(true);
+    expect(restored.value).toMatchObject({
+      currentLevelId: 45,
+      unlockedLevelId: 47,
+      state: createGameState(level),
+    });
+    if (!restored.value) throw new Error("Expected refreshed campaign");
+    expect(saveCampaign(restored.value)).toBe(true);
+    expect(savedJson()).toMatchObject({ contentVersion: 15 });
+    expect((await loadCampaign(async () => level)).recovered).toBe(false);
   });
 
   test("never restores two arrows onto one cell, however each is parked", async () => {
@@ -1055,7 +1187,7 @@ describe("resumable campaign saves", () => {
     if (!restored.value) throw new Error("Expected refreshed campaign");
     expect(saveCampaign(restored.value)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 14,
+      contentVersion: 15,
       layout: layoutFingerprint(level),
     });
     expect((await loadCampaign(async () => level)).recovered).toBe(false);
@@ -1139,7 +1271,7 @@ describe("resumable campaign saves", () => {
       if (!restored.value) throw new Error("Expected restored campaign");
       expect(saveCampaign(restored.value)).toBe(true);
       expect(savedJson()).toMatchObject({
-        contentVersion: 14,
+        contentVersion: 15,
         generatorVersion: 10,
       });
     },

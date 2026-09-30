@@ -28,6 +28,8 @@ export function createGameState(level: LevelDefinition): GameState {
     revision: 0,
     offsets: {},
     spotHeadings: {},
+    collapsed: [],
+    fallenIds: [],
   };
 }
 
@@ -59,6 +61,7 @@ export function simulateMove(
     state.offsets,
     state.settledPaths,
     state.spotHeadings,
+    state.collapsed,
   );
 }
 
@@ -72,6 +75,21 @@ function afterFlips(
     for (const flip of member.spotFlips ?? []) {
       const key = cellKey(flip.cell);
       next[key] = advancedSpotHeading(level, flip.cell, next) as Heading;
+    }
+  }
+  return next;
+}
+
+/** Collapsed cells after a successful move; a collision never reaches here. */
+function afterCollapses(
+  state: GameState,
+  result: MoveResult,
+): readonly string[] {
+  const next = [...(state.collapsed ?? [])];
+  for (const member of result.members ?? [result]) {
+    for (const collapse of member.collapses ?? []) {
+      const key = cellKey(collapse.cell);
+      if (!next.includes(key)) next.push(key);
     }
   }
   return next;
@@ -126,6 +144,7 @@ export function applyMove(
           [clicked.id]: result.settledPath,
         },
         spotHeadings: afterFlips(level, state, result),
+        collapsed: afterCollapses(state, result),
         revision: state.revision + 1,
       };
     }
@@ -141,6 +160,7 @@ export function applyMove(
           [clicked.id]: result.settledPath,
         },
         spotHeadings: afterFlips(level, state, result),
+        collapsed: afterCollapses(state, result),
         revision: state.revision + 1,
       };
     }
@@ -156,10 +176,11 @@ export function applyMove(
       ...state,
       offsets,
       spotHeadings: afterFlips(level, state, result),
+      collapsed: afterCollapses(state, result),
       revision: state.revision + 1,
     };
   }
-  if (result.kind === "exit") {
+  if (result.kind === "exit" || result.kind === "fall") {
     const remainingIds = state.remainingIds.filter(
       (id) => !groupIds.includes(id),
     );
@@ -169,13 +190,22 @@ export function applyMove(
       delete offsets[id];
       delete settledPaths[id];
     }
+    // A fall removes the arrow or whole group like an exit and costs one
+    // life, which every fall pays: there is no repeat of a removal.
+    const falls = result.kind === "fall";
+    const lives = falls ? Math.max(0, state.lives - 1) : state.lives;
     return {
       ...state,
       remainingIds,
       offsets,
       settledPaths,
       spotHeadings: afterFlips(level, state, result),
-      status: remainingIds.length === 0 ? "won" : "playing",
+      collapsed: afterCollapses(state, result),
+      ...(falls
+        ? { fallenIds: [...(state.fallenIds ?? []), ...groupIds], lives }
+        : {}),
+      status:
+        lives === 0 ? "lost" : remainingIds.length === 0 ? "won" : "playing",
       revision: state.revision + 1,
     };
   }

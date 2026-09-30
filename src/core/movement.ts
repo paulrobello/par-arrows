@@ -7,6 +7,7 @@ import {
 } from "./topology";
 import type {
   Cell,
+  CellCollapse,
   Endpoint,
   Heading,
   LevelDefinition,
@@ -19,6 +20,7 @@ import {
   isStatefulSpot,
   spotHeadingAt,
 } from "./directionals";
+import { fragileKeys } from "./fragile";
 import { overlappingArrowIds } from "./overlap";
 import { offsetOf, settledPathOf, stopKeys } from "./stops";
 import { advanceWithPortals, pathHeading } from "./wormholes";
@@ -29,6 +31,7 @@ type SettledState = Readonly<{
   offsets: Readonly<Record<string, number>>;
   settledPaths?: Readonly<Record<string, readonly Cell[]>>;
   spotHeadings?: Readonly<Record<string, Heading>>;
+  collapsed?: readonly string[];
 }>;
 
 /** Spot state as a loop-key fragment, independent of insertion order. */
@@ -72,6 +75,7 @@ function simulateSingle(
   stateRevision = 0,
   ignoredIds: ReadonlySet<string> = new Set(),
   stepLimit = Number.POSITIVE_INFINITY,
+  fallAtLimit = false,
 ): MoveResult {
   const arrow = level.arrows.find((candidate) => candidate.id === arrowId);
   const offset = offsetOf(settledState.offsets, arrowId);
@@ -133,24 +137,42 @@ function simulateSingle(
   const route: Cell[] = [initialHead];
   // `body` is the arrow's occupied cells, tail first; `live` is the spot
   // state this move reads, so a spot advanced earlier in the move redirects
-  // a later entry. Levels without flip or rotor spots skip body tracking.
+  // a later entry. Levels without flip or rotor spots or fragile cells skip
+  // body tracking.
   const tracksFlips = hasStatefulSpots(level);
+  const fragile = fragileKeys(level);
+  const tracksBody = tracksFlips || fragile.size > 0;
   let body: Cell[] = [...path];
   const live: Record<string, Heading> = {
     ...(settledState.spotHeadings ?? {}),
   };
+  // Holes read by this move. A cell this move collapses stays out: the
+  // arrow never collides with its own body, and a head re-entering its own
+  // crossing is the same passage.
+  const holes = new Set(settledState.collapsed ?? []);
   const spotFlips: SpotFlip[] = [];
+  const collapses: CellCollapse[] = [];
   const portals: { from: Cell; to: Cell; step: number }[] = [];
   const releaseTail = (step: number): void => {
     const leaving = body[0];
     body = body.slice(1);
-    if (!leaving || !isStatefulSpot(level, leaving)) return;
+    if (!leaving) return;
     const key = cellKey(leaving);
+    const collapsible = fragile.has(key) && !holes.has(key);
+    if (!collapsible && !isStatefulSpot(level, leaving)) return;
     if (body.some((cell) => cellKey(cell) === key)) return;
+    if (collapsible) {
+      if (!collapses.some((entry) => cellKey(entry.cell) === key))
+        collapses.push({ cell: leaving, step });
+      return;
+    }
     live[key] = advancedSpotHeading(level, leaving, live) as Heading;
     spotFlips.push({ cell: leaving, step });
   };
-  const flipResult = () => (spotFlips.length > 0 ? { spotFlips } : {});
+  const flipResult = () => ({
+    ...(spotFlips.length > 0 ? { spotFlips } : {}),
+    ...(collapses.length > 0 ? { collapses } : {}),
+  });
   let current: Cell = initialHead;
   let currentHeading = heading;
   let distance = 0;
@@ -182,7 +204,7 @@ function simulateSingle(
           offset,
           "Continuation edge does not match its cube seam transition.",
         );
-      if (tracksFlips) while (body.length > 0) releaseTail(0);
+      if (tracksBody) while (body.length > 0) releaseTail(0);
       return {
         arrowId,
         endpoint,
@@ -250,9 +272,44 @@ function simulateSingle(
         ...(portals.length > 0 ? { portals } : {}),
       };
     }
-    if (tracksFlips) {
+    // A head entering a collapsed cell turns into the cube and the body
+    // follows it down, so, as for an exit, every cell it covered is cleared.
+    // No arrow ever occupies a hole, so this never masks a collision.
+    if (holes.has(cellKey(next))) {
+      if (tracksBody) while (body.length > 0) releaseTail(step);
+      return {
+        arrowId,
+        endpoint,
+        kind: "fall",
+        distance,
+        route,
+        waypoints: route.map((cell) => ({ cell, phase: "surface" as const })),
+        stateRevision,
+        offset,
+        hole: next,
+        ...flipResult(),
+        ...(portals.length > 0 ? { portals } : {}),
+      };
+    }
+    if (tracksBody) {
       body.push(next);
       releaseTail(step);
+    }
+    // A group member cut short by another member's fall goes down with it.
+    if (fallAtLimit && step >= stepLimit) {
+      if (tracksBody) while (body.length > 0) releaseTail(step);
+      return {
+        arrowId,
+        endpoint,
+        kind: "fall",
+        distance,
+        route,
+        waypoints: route.map((cell) => ({ cell, phase: "surface" as const })),
+        stateRevision,
+        offset,
+        ...flipResult(),
+        ...(portals.length > 0 ? { portals } : {}),
+      };
     }
     if (stops.has(cellKey(next)) || step >= stepLimit) {
       const settledPath = [...path, ...route.slice(1)].slice(-path.length);
@@ -292,9 +349,19 @@ function simulateSingle(
  * group, so they report no event.
  */
 function eventStep(member: MoveResult): number {
-  return member.kind === "blocked" || member.kind === "paused"
+  return member.kind === "blocked" ||
+    member.kind === "paused" ||
+    member.kind === "fall"
     ? member.route.length - 1
     : Number.POSITIVE_INFINITY;
+}
+
+function firstStep(members: readonly MoveResult[], kind: string): number {
+  return Math.min(
+    ...members.map((member) =>
+      member.kind === kind ? eventStep(member) : Number.POSITIVE_INFINITY,
+    ),
+  );
 }
 
 /** Simulate every member of a shared-tail group as one connected move. */
@@ -307,8 +374,14 @@ export function simulateMove(
   offsets: Readonly<Record<string, number>> = {},
   settledPaths: Readonly<Record<string, readonly Cell[]>> = {},
   spotHeadings: Readonly<Record<string, Heading>> = {},
+  collapsed: readonly string[] = [],
 ): MoveResult {
-  const settledState: SettledState = { offsets, settledPaths, spotHeadings };
+  const settledState: SettledState = {
+    offsets,
+    settledPaths,
+    spotHeadings,
+    collapsed,
+  };
   const ids = overlappingArrowIds(level, arrowId).filter((id) =>
     remainingIds.includes(id),
   );
@@ -323,7 +396,10 @@ export function simulateMove(
     );
   }
   const ignored = new Set(ids);
-  const simulateMembers = (stepLimit: number): readonly MoveResult[] =>
+  const simulateMembers = (
+    stepLimit: number,
+    fallAtLimit = false,
+  ): readonly MoveResult[] =>
     ids.map((id) =>
       simulateSingle(
         level,
@@ -334,24 +410,27 @@ export function simulateMove(
         stateRevision,
         ignored,
         stepLimit,
+        fallAtLimit,
       ),
     );
   let members = simulateMembers(Number.POSITIVE_INFINITY);
-  const blockedStep = Math.min(
-    ...members.map((member) =>
-      member.kind === "blocked" ? eventStep(member) : Number.POSITIVE_INFINITY,
-    ),
-  );
-  const pausedStep = Math.min(
-    ...members.map((member) =>
-      member.kind === "paused" ? eventStep(member) : Number.POSITIVE_INFINITY,
-    ),
-  );
-  // A collision on the same step as a stop still costs the group its life.
+  const blockedStep = firstStep(members, "blocked");
+  const fallStep = firstStep(members, "fall");
+  const pausedStep = firstStep(members, "paused");
+  // The earliest event decides the group. On one step a collision outranks a
+  // fall, which outranks a stop: a collision rewinds and keeps the group, so
+  // it is the conservative reading, and a stop never saves a falling group.
+  const groupFalls =
+    Number.isFinite(fallStep) &&
+    fallStep < blockedStep &&
+    fallStep <= pausedStep;
   const groupPauses =
+    !groupFalls &&
     Number.isFinite(pausedStep) &&
     (!Number.isFinite(blockedStep) || pausedStep < blockedStep);
-  if (groupPauses) {
+  if (groupFalls) {
+    members = simulateMembers(fallStep, true);
+  } else if (groupPauses) {
     members = simulateMembers(pausedStep);
   }
   const clicked = members.find((member) => member.arrowId === arrowId);
@@ -366,18 +445,22 @@ export function simulateMove(
     );
   }
   const invalidMember = members.find((member) => member.kind === "invalid");
+  const hole = members.find((member) => member.hole)?.hole;
   const kind: MoveResult["kind"] = invalidMember
     ? "invalid"
-    : groupPauses
-      ? "paused"
-      : members.some((member) => member.kind === "blocked")
-        ? "blocked"
-        : "exit";
+    : groupFalls
+      ? "fall"
+      : groupPauses
+        ? "paused"
+        : members.some((member) => member.kind === "blocked")
+          ? "blocked"
+          : "exit";
   return {
     ...clicked,
     kind,
     ...(invalidMember?.reason ? { reason: invalidMember.reason } : {}),
     ...(kind === "paused" ? { pausedSteps: pausedStep } : {}),
+    ...(kind === "fall" && hole ? { hole } : {}),
     distance:
       kind === "blocked"
         ? Math.min(

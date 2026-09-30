@@ -128,7 +128,7 @@ function normalizedShapeSignature(
 describe("generated double arrows", () => {
   test("uses v10 generation, keeps the authored seeds, and the planned frequency curve", () => {
     expect(GENERATOR_VERSION).toBe(10);
-    expect(AUTHORED_LEVEL_IDS).toEqual([1, 5, 11, 15, 20, 25, 30, 35, 40]);
+    expect(AUTHORED_LEVEL_IDS).toEqual([1, 5, 11, 15, 20, 25, 30, 35, 40, 45]);
     expect(seedForLevel(25)).toBe(
       "par-arrows:runtime:7:level:25:double-intro:1",
     );
@@ -441,7 +441,8 @@ describe("runtime campaign generator", () => {
         id === 25 ||
         id === 30 ||
         id === 35 ||
-        id === 40
+        id === 40 ||
+        id === 45
       ) {
         expect(current).toEqual([1, 0, 0, 0]);
         continue;
@@ -459,7 +460,9 @@ describe("runtime campaign generator", () => {
                   ? 34
                   : id === 41
                     ? 39
-                    : id - 1,
+                    : id === 46
+                      ? 44
+                      : id - 1,
       );
       expect(current[0]).toBe(0.25);
       expect(

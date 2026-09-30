@@ -106,7 +106,7 @@ export async function assertWrapIntro(
       currentLevelId: 10,
       unlockedLevelId: 10,
       tutorialComplete: true,
-      contentVersion: 14,
+      contentVersion: 15,
       generatorVersion: GENERATOR_VERSION,
       seed: seedForLevel(10),
       layout: layoutFingerprint(levelTen),

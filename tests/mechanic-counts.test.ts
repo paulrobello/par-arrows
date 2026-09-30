@@ -3,6 +3,7 @@ import {
   directionalFacePlan,
   doubleArrowFrequency,
   flipCoreFrequency,
+  fragileCorePlanned,
   getStopCount,
   isAuthoredLevel,
   Rng,
@@ -38,6 +39,9 @@ const V9 = {
 // shipped: 31 placed of 31 planned over levels 41-200.
 const ROTOR_CORES = 31 / 31;
 
+// Fragile cores likewise: 76 placed of 77 planned over levels 46-200.
+const FRAGILE_CORES = 76 / 77;
+
 test("mechanic placement ratios stay within 10% of v9", () => {
   const totals = {
     staticPlanned: 0,
@@ -54,6 +58,8 @@ test("mechanic placement ratios stay within 10% of v9", () => {
     doubleLevels: 0,
     rotorPlanned: 0,
     rotorLevels: 0,
+    fragilePlanned: 0,
+    fragileLevels: 0,
   };
   for (let id = 2; id <= 200; id += 1) {
     if (isAuthoredLevel(id)) continue;
@@ -83,6 +89,8 @@ test("mechanic placement ratios stay within 10% of v9", () => {
     if (rotorCorePlanned(id)) totals.rotorPlanned += 1;
     if ((level.directionals ?? []).some((spot) => spot.kind === "rotor"))
       totals.rotorLevels += 1;
+    if (fragileCorePlanned(id)) totals.fragilePlanned += 1;
+    if ((level.fragile?.length ?? 0) > 0) totals.fragileLevels += 1;
   }
   expect(totals.staticPlaced / totals.staticPlanned).toBeGreaterThanOrEqual(
     V9.staticSpots * 0.9,
@@ -103,5 +111,9 @@ test("mechanic placement ratios stay within 10% of v9", () => {
   expect(totals.rotorPlanned).toBeGreaterThan(0);
   expect(totals.rotorLevels / totals.rotorPlanned).toBeGreaterThanOrEqual(
     ROTOR_CORES * 0.9,
+  );
+  expect(totals.fragilePlanned).toBeGreaterThan(0);
+  expect(totals.fragileLevels / totals.fragilePlanned).toBeGreaterThanOrEqual(
+    FRAGILE_CORES * 0.9,
   );
 }, 900_000);

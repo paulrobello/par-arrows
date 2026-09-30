@@ -61,6 +61,8 @@ export interface LevelDefinition {
   readonly directionals?: readonly DirectionalSpotDefinition[];
   /** At most two portal pairs; see src/core/wormholes.ts. */
   readonly wormholes?: readonly WormholeDefinition[];
+  /** Cracked cells that survive one crossing; see src/core/fragile.ts. */
+  readonly fragile?: readonly Cell[];
 }
 
 export type GameStatus = "playing" | "won" | "lost";
@@ -82,6 +84,10 @@ export interface GameState {
   readonly offsets: Readonly<Record<string, number>>;
   /** Current direction of each flip or rotor spot that has advanced, keyed by cell. */
   readonly spotHeadings?: Readonly<Record<string, Heading>>;
+  /** Cell keys of fragile cells that have collapsed into holes. */
+  readonly collapsed?: readonly string[];
+  /** Arrows that fell into a hole; each fall cost one life. */
+  readonly fallenIds?: readonly string[];
 }
 
 export type Endpoint = "head" | "tail";
@@ -91,7 +97,7 @@ export interface MoveTarget {
   readonly endpoint: Endpoint;
 }
 
-export type MoveKind = "exit" | "blocked" | "invalid" | "paused";
+export type MoveKind = "exit" | "blocked" | "invalid" | "paused" | "fall";
 
 /** A renderer-neutral position in a settled attempt trace. */
 export interface MoveWaypoint {
@@ -114,6 +120,12 @@ export interface ContactTrace {
 
 /** A flip or rotor spot advancing during a move, after `step` forward steps. */
 export interface SpotFlip {
+  readonly cell: Cell;
+  readonly step: number;
+}
+
+/** A fragile cell collapsing during a move, after `step` forward steps. */
+export interface CellCollapse {
   readonly cell: Cell;
   readonly step: number;
 }
@@ -142,6 +154,10 @@ export interface MoveResult {
   readonly settledPath?: readonly Cell[];
   /** Flip spots the moving body cleared, in order; rewound on a collision. */
   readonly spotFlips?: readonly SpotFlip[];
+  /** Fragile cells the moving body fully cleared, in order; rewound on a collision. */
+  readonly collapses?: readonly CellCollapse[];
+  /** The collapsed cell a falling head entered, where it turns into the cube. */
+  readonly hole?: Cell;
   /**
    * Portal jumps the head made, in order; `step` is the forward step that
    * landed on `to`. Renderer-only data.

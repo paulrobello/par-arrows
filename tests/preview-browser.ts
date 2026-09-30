@@ -70,7 +70,7 @@ export async function assertLevelPreview(
     unlockedLevelId: 3,
     state: campaignState,
     tutorialComplete: true,
-    contentVersion: 14,
+    contentVersion: 15,
     generatorVersion: GENERATOR_VERSION,
     seed: seedForLevel(2),
     layout: layoutFingerprint(campaign),

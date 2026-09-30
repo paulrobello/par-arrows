@@ -4,6 +4,7 @@ import {
   seedForLevel,
 } from "./content/procedural";
 import { hasStatefulSpots, spotStates } from "./core/directionals";
+import { fragileKeys } from "./core/fragile";
 import { createGameState } from "./core/game-state";
 import { overlappingArrowIds } from "./core/overlap";
 import {
@@ -18,7 +19,7 @@ import type { Cell, GameState, Heading, LevelDefinition } from "./core/types";
 
 const STORAGE_KEY = "par-arrows:campaign:v1";
 const SETTINGS_KEY = "par-arrows:settings:v1";
-const CONTENT_VERSION = 14;
+const CONTENT_VERSION = 15;
 
 export interface CampaignSave {
   readonly currentLevelId: number;
@@ -328,6 +329,49 @@ function hasValidSpotHeadings(value: unknown, level: LevelDefinition): boolean {
   return true;
 }
 
+/**
+ * Collapsed cells must be distinct authored fragile cells that no remaining
+ * arrow sits on: an arrow can never rest over a hole, and a cell under a
+ * parked body is still pending.
+ */
+function hasValidCollapsed(
+  value: unknown,
+  level: LevelDefinition,
+  covered: ReadonlySet<string>,
+): boolean {
+  if (value === undefined) return true;
+  if (!Array.isArray(value) || new Set(value).size !== value.length)
+    return false;
+  const fragile = fragileKeys(level);
+  return value.every(
+    (key) => typeof key === "string" && fragile.has(key) && !covered.has(key),
+  );
+}
+
+/**
+ * Fallen arrows are removed arrows. A shared-tail group falls as one, so its
+ * members are all present or all absent.
+ */
+function hasValidFallenIds(
+  value: unknown,
+  level: LevelDefinition,
+  remainingIds: ReadonlySet<string>,
+): value is readonly string[] {
+  if (value === undefined) return true;
+  if (!Array.isArray(value) || new Set(value).size !== value.length)
+    return false;
+  if (value.length > 0 && !(level.fragile?.length ?? 0)) return false;
+  const fallen = new Set<string>();
+  for (const id of value) {
+    if (typeof id !== "string" || remainingIds.has(id)) return false;
+    if (!level.arrows.some((arrow) => arrow.id === id)) return false;
+    fallen.add(id);
+  }
+  return [...fallen].every((id) =>
+    overlappingArrowIds(level, id).every((member) => fallen.has(member)),
+  );
+}
+
 function hasValidFailedPositions(
   value: unknown,
   level: LevelDefinition,
@@ -399,12 +443,22 @@ function isState(value: unknown, level: LevelDefinition): value is GameState {
     [...overlapGroups.values()].filter(
       (group) => !remainingIds.has(group[0] as string),
     ).length;
+  const fallen = candidate.fallenIds;
+  if (!hasValidFallenIds(fallen, level, remainingIds)) return false;
+  const fallenIds = new Set(fallen ?? []);
+  // Every fall costs one life, counted once per group like a failure.
+  const fallenLogicalCount =
+    [...fallenIds].filter((id) => !groupedIds.has(id)).length +
+    [...overlapGroups.values()].filter((group) =>
+      fallenIds.has(group[0] as string),
+    ).length;
   const failedLogicalCount =
     (failed as string[]).filter((id) => !groupedIds.has(id)).length +
     [...overlapGroups.values()].filter((group) =>
       failedIds.has(group[0] as string),
     ).length +
-    (candidate.failedPositions?.length ?? 0);
+    (candidate.failedPositions?.length ?? 0) +
+    fallenLogicalCount;
   const offsets = candidate.offsets;
   if (!hasValidOffsets(offsets, level, remainingIds, overlapGroups)) {
     return false;
@@ -429,8 +483,28 @@ function isState(value: unknown, level: LevelDefinition): value is GameState {
   if (!hasValidSpotHeadings(candidate.spotHeadings, level)) {
     return false;
   }
+  const covered = new Set<string>();
+  for (const arrow of level.arrows) {
+    if (!remainingIds.has(arrow.id)) continue;
+    for (const cell of settledPathOf(
+      level,
+      { offsets: offsets ?? {}, settledPaths: settledPaths ?? {} },
+      arrow,
+    )) {
+      covered.add(cellKey(cell));
+    }
+  }
+  if (!hasValidCollapsed(candidate.collapsed, level, covered)) return false;
+  // A fall that spends the last life loses even when it empties the board;
+  // otherwise an empty board is won.
   const expectedStatus =
-    remaining?.length === 0 ? "won" : lives === 0 ? "lost" : "playing";
+    lives === 0 && (remaining?.length !== 0 || fallenLogicalCount > 0)
+      ? "lost"
+      : remaining?.length === 0
+        ? "won"
+        : lives === 0
+          ? "lost"
+          : "playing";
   return (
     candidate.levelId === level.id &&
     validIds(remaining) &&
@@ -441,9 +515,10 @@ function isState(value: unknown, level: LevelDefinition): value is GameState {
     lives >= 0 &&
     lives <= level.lives &&
     lives === level.lives - failedLogicalCount &&
-    !(remaining.length === 0 && lives === 0) &&
+    !(remaining.length === 0 && lives === 0 && fallenLogicalCount === 0) &&
     Number.isSafeInteger(revision) &&
-    revision >= removedLogicalCount + failedLogicalCount &&
+    // A fall is one move that both removes and costs, so it counts once.
+    revision >= removedLogicalCount + failedLogicalCount - fallenLogicalCount &&
     candidate.status === expectedStatus
   );
 }
@@ -521,6 +596,8 @@ export async function loadCampaign(
           settledPaths: restored?.settledPaths ?? {},
           failedPositions: restored?.failedPositions ?? [],
           spotHeadings: restored?.spotHeadings ?? {},
+          collapsed: restored?.collapsed ?? [],
+          fallenIds: restored?.fallenIds ?? [],
         },
         tutorialComplete: parsed.tutorialComplete === true,
         layout,

@@ -35,6 +35,7 @@ import type {
 } from "../core/types";
 import {
   flipHeadingProbes,
+  hasSoftLockState,
   hasStrandingState,
   interactionRegion,
   occupancyKeys,
@@ -53,6 +54,7 @@ import { clearShare, closureStats, meetsDepthGate } from "./difficulty";
 import { DIRECTIONAL_INTRO_LEVEL } from "./directional-intro";
 import { DOUBLE_INTRO_LEVEL } from "./double-intro";
 import { FLIP_INTRO_LEVEL } from "./flip-intro";
+import { FRAGILE_INTRO_LEVEL } from "./fragile-intro";
 import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
 import { ROTOR_INTRO_LEVEL } from "./rotor-intro";
 import { STOP_INTRO_LEVEL } from "./stop-intro";
@@ -66,7 +68,7 @@ export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
 
 /** Authored teaching cubes; every other id is generated at runtime. */
 export const AUTHORED_LEVEL_IDS: readonly number[] = [
-  1, 5, 11, 15, 20, 25, 30, 35, 40,
+  1, 5, 11, 15, 20, 25, 30, 35, 40, 45,
 ];
 
 const AUTHORED = new Set(AUTHORED_LEVEL_IDS);
@@ -106,6 +108,7 @@ export function seedForLevel(id: number): string {
   if (id === 30) return "par-arrows:runtime:7:level:30:flip-intro:1";
   if (id === 35) return "par-arrows:runtime:7:level:35:wormhole-intro:1";
   if (id === 40) return "par-arrows:runtime:7:level:40:rotor-intro:1";
+  if (id === 45) return "par-arrows:runtime:7:level:45:fragile-intro:1";
   return `par-arrows:runtime:${GENERATOR_VERSION}:level:${id}`;
 }
 
@@ -293,6 +296,28 @@ export function rotorCorePlanned(id: number): boolean {
   if (rotorCoreFrequency(id) === 0 || flipCorePlanned(id)) return false;
   if (getStopCount(id) < 1) return false;
   return coreStream(id, "rotor-plan", 0).next() < rotorCoreFrequency(id);
+}
+
+/** First generated level that can embed a fragile core. */
+const FIRST_FRAGILE_LEVEL = 46;
+
+/** Probability that a generated level attempts a fragile core. */
+export function fragileCoreFrequency(id: number): number {
+  assertLevelId(id);
+  if (id < FIRST_FRAGILE_LEVEL || isAuthoredLevel(id)) return 0;
+  const progress = Math.min(
+    1,
+    (id - FIRST_FRAGILE_LEVEL) / (90 - FIRST_FRAGILE_LEVEL),
+  );
+  return 0.25 + 0.3 * progress;
+}
+
+/** True when a generated level plans a fragile core, on its own stream. */
+export function fragileCorePlanned(id: number): boolean {
+  return (
+    fragileCoreFrequency(id) > 0 &&
+    coreStream(id, "fragile-plan", 0).next() < fragileCoreFrequency(id)
+  );
 }
 
 /** First generated level that can embed a wormhole core. */
@@ -1911,6 +1936,148 @@ function flipCore(
   return undefined;
 }
 
+/**
+ * The level-45 geometry relative to the fragile cell at (0, 0), rotated per
+ * placement attempt. The crosser runs north over the cell. The double's head
+ * end runs west over it too, and its tail end runs west into the crosser's
+ * body, so the only zero-fall order is the crosser first, collapsing the
+ * cell, then the double's tail. The other order crosses with the double's
+ * head and leaves the crosser nothing but the hole. The double is six cells
+ * and bends, like the generated double core.
+ */
+export const FRAGILE_PATTERN = {
+  crosser: [
+    [0, 2],
+    [0, 1],
+  ],
+  double: [
+    [1, 1],
+    [2, 1],
+    [3, 1],
+    [3, 0],
+    [2, 0],
+    [1, 0],
+  ],
+} as const;
+
+/** Every generated fragile-core arrow id carries this marker. */
+export const FRAGILE_CORE_MARKER = "-fragile-";
+
+interface FragileCore {
+  readonly arrows: readonly ArrowDefinition[];
+  readonly cell: Cell;
+  /** The core's zero-fall solution, which crosses and collapses the cell. */
+  readonly certificate: readonly MoveTarget[];
+  /** Bodies, lanes and the fragile cell, reserved from later placement. */
+  readonly cells: ReadonlySet<string>;
+}
+
+/**
+ * Place a fragile core on its own seeded stream. Every lane the two arrows
+ * can travel (both ends of the double, under every flip and rotor state) and
+ * the fragile cell itself must avoid every reserved cell and the parking
+ * core's and groups' tracks, no lane may enter the cell twice, and no arrow
+ * already placed may reach any core cell, so the core plays alone. On the
+ * core board by itself the solver must find a zero-fall certificate that
+ * collapses the cell, the other order must end in a fall, and no order may
+ * soft-lock. The caller reserves the returned cells and keeps the fragile
+ * cell off every later route.
+ */
+function fragileCore(
+  id: number,
+  level: LevelDefinition,
+  occupied: ReadonlySet<string>,
+  forbiddenTracks: ReadonlySet<string>,
+  restart: number,
+): FragileCore | undefined {
+  const size = level.gridSize;
+  const rng = coreStream(id, "fragile-core", restart);
+  const faces = shuffledFaces(rng);
+  const margin = 4;
+  const inBounds = (cell: Cell): boolean =>
+    cell.x >= 0 && cell.y >= 0 && cell.x < size && cell.y < size;
+  const existing = level.arrows.map((arrow) => occupancyKeys(level, arrow));
+  for (let attempt = 0; attempt < 64; attempt += 1) {
+    const face = faces[attempt % faces.length] as FaceId;
+    const rotation = rng.int(4);
+    const fragile: Cell = {
+      face,
+      x: margin + rng.int(Math.max(1, size - 2 * margin)),
+      y: margin + rng.int(Math.max(1, size - 2 * margin)),
+    };
+    const at = ([dx, dy]: readonly [number, number]): Cell =>
+      patternCell(fragile, dx, dy, rotation);
+    const crosserId = `r${id}${FRAGILE_CORE_MARKER}crosser`;
+    const doubleId = `r${id}${FRAGILE_CORE_MARKER}double`;
+    const arrows: ArrowDefinition[] = [
+      { id: crosserId, path: FRAGILE_PATTERN.crosser.map(at) },
+      { id: doubleId, kind: "double", path: FRAGILE_PATTERN.double.map(at) },
+    ];
+    const bodies = arrows.flatMap((arrow) => arrow.path);
+    if (
+      [...bodies, fragile].some(
+        (cell) => !inBounds(cell) || occupied.has(cellKey(cell)),
+      )
+    )
+      continue;
+    const fragileKey = cellKey(fragile);
+    const cells = new Set<string>([fragileKey, ...bodies.map(cellKey)]);
+    let singlePass = true;
+    for (const probe of flipHeadingProbes(level)) {
+      for (const arrow of arrows) {
+        const ends =
+          arrow.kind === "double"
+            ? [arrow.path, [...arrow.path].reverse()]
+            : [arrow.path];
+        for (const path of ends) {
+          const keys = arrowTrack(probe, { ...arrow, path }).map(cellKey);
+          if (keys.filter((key) => key === fragileKey).length > 1)
+            singlePass = false;
+          for (const key of keys) cells.add(key);
+        }
+      }
+    }
+    if (
+      !singlePass ||
+      [...cells].some((key) => occupied.has(key) || forbiddenTracks.has(key)) ||
+      existing.some((keys) => [...cells].some((key) => keys.has(key)))
+    )
+      continue;
+    const coreLevel: LevelDefinition = {
+      id: level.id,
+      title: level.title,
+      gridSize: level.gridSize,
+      lives: level.lives,
+      ...(level.edgePolicies ? { edgePolicies: level.edgePolicies } : {}),
+      arrows,
+      fragile: [fragile],
+    };
+    if (!validateLevel(coreLevel).valid) continue;
+    const certificate = solveLevelTargets(coreLevel);
+    if (!certificate) continue;
+    // The certificate must actually cross and collapse the cell.
+    let state = createGameState(coreLevel);
+    for (const target of certificate) {
+      state = applyMove(
+        coreLevel,
+        state,
+        simulateGameMove(coreLevel, state, target.arrowId, target.endpoint),
+      );
+    }
+    if (state.status !== "won" || !state.collapsed?.includes(fragileKey))
+      continue;
+    // The wrong order: the double's head crosses first and the crosser falls.
+    const early = createGameState(coreLevel);
+    const wrong = simulateGameMove(coreLevel, early, doubleId, "head");
+    if (wrong.kind !== "exit" || !wrong.collapses?.length) continue;
+    const after = applyMove(coreLevel, early, wrong);
+    if (simulateGameMove(coreLevel, after, crosserId).kind !== "fall") continue;
+    if (hasSoftLockState(coreLevel) !== false) continue;
+    return { arrows, cell: fragile, certificate, cells };
+  }
+  return undefined;
+}
+
 /** A rotor spot frozen at its current heading: the static spot it would be. */
 function frozenSpots(
   spots: readonly DirectionalSpotDefinition[],
@@ -2990,6 +3157,7 @@ function replayCertificate(
   const offsets: Record<string, number> = {};
   const settledPaths: Record<string, readonly Cell[]> = {};
   const spotHeadings: Record<string, Heading> = {};
+  const collapsed: string[] = [];
   const statefulLevel = hasStatefulSpots(level);
   const maximumLegs = level.gridSize * 6 + 2;
   const foldFlips = (result: MoveResult): void => {
@@ -3000,6 +3168,9 @@ function replayCertificate(
           flip.cell,
           spotHeadings,
         ) as Heading;
+      }
+      for (const collapse of member.collapses ?? []) {
+        collapsed.push(cellKey(collapse.cell));
       }
     }
   };
@@ -3031,6 +3202,7 @@ function replayCertificate(
       offsets,
       settledPaths,
       spotHeadings,
+      collapsed,
     );
   for (const entry of certificate) {
     const encoded = typeof entry === "string" ? entry : entry.arrowId;
@@ -3099,6 +3271,7 @@ export function generateLevel(id: number): LevelDefinition {
   if (id === 30) return FLIP_INTRO_LEVEL;
   if (id === 35) return WORMHOLE_INTRO_LEVEL;
   if (id === 40) return ROTOR_INTRO_LEVEL;
+  if (id === 45) return FRAGILE_INTRO_LEVEL;
   const config = getLevelConfig(id);
   const baseSeed = hashSeed(seedForLevel(id));
   const edgePolicies = getWrappingEdgePolicies(id);
@@ -3128,9 +3301,14 @@ export function generateLevel(id: number): LevelDefinition {
   // ordinary passes, so a level that ends without a rotor core is the exact
   // plan-zero construction.
   const rotorPlanned = rotorCorePlanned(id);
+  // A planned fragile core gets its own pass on the certificate tiers: a
+  // copy of the tier's first pass with the core added, ahead of every pass
+  // below. It shares no stream with them, so a level whose fragile pass
+  // gives up is the exact plan-zero construction.
+  const fragilePlanned = fragileCorePlanned(id);
   const wormholeSlots = wormholePlan(id);
   for (const [tierIndex, tier] of tiers.entries()) {
-    const passes = [
+    const basePasses = [
       ...(flipPlanned
         ? [{ spotPlan: plannedSpotPlan, flipPass: true, rotorPass: false }]
         : []),
@@ -3143,8 +3321,19 @@ export function generateLevel(id: number): LevelDefinition {
         flipPass: false,
         rotorPass: false,
       },
+    ].map((pass) => ({ ...pass, fragilePass: false }));
+    const passes = [
+      ...(fragilePlanned && tier.certificate
+        ? [
+            {
+              ...(basePasses[0] as (typeof basePasses)[number]),
+              fragilePass: true,
+            },
+          ]
+        : []),
+      ...basePasses,
     ];
-    for (const { spotPlan, flipPass, rotorPass } of passes) {
+    for (const { spotPlan, flipPass, rotorPass, fragilePass } of passes) {
       // The rotor core's own circle comes out of the circle budget first.
       const parkBudget = getStopCount(id) - (rotorPass ? 1 : 0);
       // Wormhole slots, like the double core, exist only on certificate
@@ -3396,6 +3585,34 @@ export function generateLevel(id: number): LevelDefinition {
           for (const arrow of flip.arrows) arrows.push(arrow);
           for (const key of flip.cells) occupied.add(key);
         }
+        // The fragile core comes after every other core, so their reserved
+        // cells and any stateful-spot region fence it, and its own lanes and
+        // cell are reserved from everything placed after it.
+        const fragile = fragilePass
+          ? fragileCore(
+              id,
+              {
+                ...regionBoard,
+                arrows,
+                directionals: [
+                  ...(regionBoard.directionals ?? []),
+                  ...(flip ? flip.spots : []),
+                ],
+              },
+              occupied,
+              regionTracks,
+              restart,
+            )
+          : undefined;
+        if (fragilePass && !fragile) {
+          skip = "fragile-core";
+          continue construction;
+        }
+        const fragileKey = fragile ? cellKey(fragile.cell) : undefined;
+        if (fragile) {
+          for (const arrow of fragile.arrows) arrows.push(arrow);
+          for (const key of fragile.cells) occupied.add(key);
+        }
         // Straight and wrap starters: graph nodes placed ahead of the fill.
         const starterArrows: ArrowDefinition[] = [];
         for (const [index, length] of [2, 3, 4].entries()) {
@@ -3563,6 +3780,7 @@ export function generateLevel(id: number): LevelDefinition {
             entry.arrows.map((arrow) => arrow.id),
           ),
           ...(flip?.arrows ?? []).map((arrow) => arrow.id),
+          ...(fragile?.arrows ?? []).map((arrow) => arrow.id),
         ]);
         const leadBodies = new Set(
           arrows
@@ -3605,6 +3823,7 @@ export function generateLevel(id: number): LevelDefinition {
           ...(flip?.cells ?? []),
           ...portalKeys,
           ...parkTrackKeys,
+          ...(fragileKey ? [fragileKey] : []),
         ]);
         // Every lead arrow replays while the whole fill is still on the
         // board, so no fill body may sit anywhere a lead can travel: both
@@ -3733,7 +3952,11 @@ export function generateLevel(id: number): LevelDefinition {
                   })),
                 coreFace,
                 groupTracks,
-                new Set([...(flip ? flip.cells : []), ...portalKeys]),
+                new Set([
+                  ...(flip ? flip.cells : []),
+                  ...portalKeys,
+                  ...(fragile ? fragile.cells : []),
+                ]),
               )
             : [];
         // Reversal blockers spend whatever room the plan's faces have left.
@@ -3763,6 +3986,7 @@ export function generateLevel(id: number): LevelDefinition {
                 ...parkTrackKeys,
                 ...(flip ? flip.cells : []),
                 ...portalKeys,
+                ...(fragile ? fragile.cells : []),
               ]),
             )
           : [];
@@ -3802,6 +4026,7 @@ export function generateLevel(id: number): LevelDefinition {
           ...(wormholes.length > 0
             ? { wormholes: wormholes.map((entry) => entry.wormhole) }
             : {}),
+          ...(fragile ? { fragile: [fragile.cell] } : {}),
         });
         let level = assemble(placeStops());
         if (
@@ -3842,6 +4067,20 @@ export function generateLevel(id: number): LevelDefinition {
           skip = "coverage";
           continue;
         }
+        // Only the core crosses its fragile cell: a second lane over it would
+        // be an uncertified fall. Starter rays and spots placed after the
+        // core are the placements its reservation cannot fence.
+        if (
+          fragileKey &&
+          level.arrows.some(
+            (arrow) =>
+              !arrow.id.includes(FRAGILE_CORE_MARKER) &&
+              occupancyKeys(level, arrow).has(fragileKey),
+          )
+        ) {
+          skip = "fragile";
+          continue;
+        }
         // The flip region is proven again on the assembled level: later
         // spots and circles can bend tracks toward it, and nothing outside
         // it may ever reach its cells. Its own solution leads.
@@ -3849,7 +4088,10 @@ export function generateLevel(id: number): LevelDefinition {
         // Leads replay first, each core in the order its own proof uses; the
         // park core unwinds in reverse placement order right after its legs.
         // The graph section follows in removal order.
+        // The fragile core touches no other arrow's reach, so its crossing
+        // certificate may lead wherever it sits.
         const certificate: CertificateEntry[] = [
+          ...(fragile ? fragile.certificate : []),
           ...wormholes.flatMap((entry) => entry.certificate),
           ...(double ? double.certificate : []),
           ...(core ? core.parkLegs : []),
@@ -3890,6 +4132,7 @@ export function generateLevel(id: number): LevelDefinition {
               ...(wormholes.length > 0
                 ? { wormholes: wormholes.map((entry) => entry.wormhole) }
                 : {}),
+              ...(fragile ? { fragile: [fragile.cell] } : {}),
             };
             const trimmedStops = [
               ...(core ? core.stops : []),

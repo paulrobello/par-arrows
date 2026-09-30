@@ -42,6 +42,13 @@ const ROTOR_RING_THICKNESS = 0.07;
 /** Half of each rotor ring arc; the arcs center on the diagonals, so a notch marks each heading. */
 const ROTOR_ARC_HALF_SPAN = (Math.PI / 180) * 34;
 const GRID_LINE_OFFSET = 0.004;
+/** Half the side of a hole's square cavity, and its border frame, per pitch. */
+const HOLE_HALF = 0.34;
+const HOLE_FRAME = 0.1;
+/** How far a hole's floor sits below the face, per pitch. */
+const HOLE_DEPTH = 0.45;
+/** How far a falling head sinks below the face, per pitch, before it vanishes. */
+const FALL_DEPTH = 1.2;
 const CUBE_FACES: readonly FaceId[] = [
   "front",
   "back",
@@ -67,6 +74,10 @@ interface ThemePalette {
   readonly directional: number;
   readonly flip: number;
   readonly rotor: number;
+  /** A fragile cell's crack glyph. */
+  readonly fragile: number;
+  /** A collapsed cell: its border frame and its recessed cavity. */
+  readonly hole: { readonly rim: number; readonly cavity: number };
   readonly wormhole: readonly [number, number];
   /** Side-marker colors, indexed by `wormholeDotColorIndex`. */
   readonly wormholeDots: readonly [number, number, number, number];
@@ -96,6 +107,8 @@ export const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     directional: 0x0f7fa8,
     flip: 0xc0266d,
     rotor: 0x8f6f1a,
+    fragile: 0x6b5b4b,
+    hole: { rim: 0x3b2f2a, cavity: 0x17110e },
     wormhole: [0xe07a10, 0x1f3fbf],
     wormholeDots: [0xe11d48, 0xeab308, 0x0d9488, 0x7c3aed],
     doubleTail: 0x6d28d9,
@@ -115,6 +128,8 @@ export const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     directional: 0x3ac8f0,
     flip: 0xff6fb5,
     rotor: 0xc9a24a,
+    fragile: 0xb8a48c,
+    hole: { rim: 0xe6d5bd, cavity: 0x05080b },
     wormhole: [0xffa040, 0x4f6bff],
     wormholeDots: [0xfb7185, 0xfde047, 0x2dd4bf, 0xa78bfa],
     doubleTail: 0xc084fc,
@@ -848,8 +863,22 @@ export function arrowMotionTrack(
       ),
     });
   }
+  if (result.kind === "fall" && result.hole) {
+    // The head reaches the hole's center, then turns inward along the face
+    // normal and sinks into the cube, the body following it down.
+    const center = cellPoint(result.hole, gridSize);
+    const inward = new THREE.Vector3(...faceNormal(result.hole.face)).negate();
+    const depth = Math.max(
+      bodyLength + (FALL_DEPTH * 2) / gridSize,
+      minimumDistance - (pathLength(track) - bodyLength),
+    );
+    track = concatPaths(track, {
+      points: [center, center.clone().addScaledVector(inward, depth)],
+      segmentFaces: [result.hole.face],
+    });
+  }
   const distance =
-    result.kind === "exit"
+    result.kind === "exit" || result.kind === "fall"
       ? pathLength(track) - bodyLength
       : result.kind === "blocked"
         ? Math.max(0, pathLength(route) - 1 / gridSize)
@@ -974,6 +1003,7 @@ export class PuzzleRenderer {
   private readonly stopCirclesGroup = new THREE.Group();
   private readonly directionalsGroup = new THREE.Group();
   private readonly wormholesGroup = new THREE.Group();
+  private readonly fragileGroup = new THREE.Group();
   /** Settled advance count of each flip or rotor glyph, keyed by cell. */
   private readonly flipTurns = new Map<string, number>();
   private flipMotion = false;
@@ -1000,7 +1030,12 @@ export class PuzzleRenderer {
   private hasFitted = false;
 
   constructor(container: HTMLElement) {
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    // The stencil buffer masks each hole's cavity to its opening.
+    this.renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false,
+      stencil: true,
+    });
     this.raycaster.layers.set(PICK_LAYER);
     this.canvas = this.renderer.domElement;
     this.canvas.className = "game-canvas";
@@ -1020,6 +1055,7 @@ export class PuzzleRenderer {
       this.stopCirclesGroup,
       this.directionalsGroup,
       this.wormholesGroup,
+      this.fragileGroup,
     );
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0xb7d5df, 2.4));
     const key = new THREE.DirectionalLight(0xffffff, 2.1);
@@ -1049,6 +1085,7 @@ export class PuzzleRenderer {
     this.clearStopCircles();
     this.clearDirectionals();
     this.clearWormholes();
+    this.clearFragile();
     this.flipMotion = false;
     this.level = level;
     this.state = state;
@@ -1057,6 +1094,7 @@ export class PuzzleRenderer {
     this.createStopCircles(level);
     this.createDirectionals(level);
     this.createWormholes(level);
+    this.createFragile(level);
     for (const arrow of level.arrows) {
       const visual = this.createArrow(arrow, level.gridSize, level.arrowScale);
       this.visuals.set(arrow.id, visual);
@@ -1072,7 +1110,10 @@ export class PuzzleRenderer {
   updateState(state: GameState): void {
     this.state = state;
     this.refreshSettledPaths(state);
-    if (!this.flipMotion) this.setSpotHeadings(state.spotHeadings);
+    if (!this.flipMotion) {
+      this.setSpotHeadings(state.spotHeadings);
+      this.setCollapsed(state.collapsed);
+    }
     for (const [id, visual] of this.visuals) {
       visual.group.visible = state.remainingIds.includes(id);
     }
@@ -1118,6 +1159,18 @@ export class PuzzleRenderer {
           ? palette.wormhole[mesh.userData.wormholeIndex as 0 | 1]
           : (palette.wormholeDots[dot] as number),
       );
+    });
+    this.fragileGroup.traverse((child) => {
+      const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
+      if (!(mesh.material instanceof THREE.MeshBasicMaterial)) return;
+      const part = mesh.userData.fragilePart as
+        | "crack"
+        | "rim"
+        | "cavity"
+        | undefined;
+      if (part === "crack") mesh.material.color.set(palette.fragile);
+      else if (part === "rim") mesh.material.color.set(palette.hole.rim);
+      else if (part === "cavity") mesh.material.color.set(palette.hole.cavity);
     });
     this.directionalsGroup.traverse((child) => {
       const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
@@ -1491,7 +1544,65 @@ export class PuzzleRenderer {
     }
     this.flipMotion = progress < 1;
     this.animateFlips(result, distance, travel);
+    this.animateCollapses(result, distance, travel);
     this.render();
+  }
+
+  /**
+   * Show each fragile cell as its crack glyph or its hole. `collapse` maps a
+   * cell to how far (0..1) it has sunk; a settled state passes whole holes.
+   */
+  private showFragile(collapse: ReadonlyMap<string, number>): void {
+    for (const child of this.fragileGroup.children) {
+      const key = child.userData.fragile as string;
+      const sunk = collapse.get(key) ?? 0;
+      child.userData.collapse = sunk;
+      const crack = child.userData.crack as THREE.Object3D;
+      const hole = child.userData.hole as THREE.Object3D;
+      crack.visible = sunk < 1;
+      hole.visible = sunk > 0;
+      // The hole opens from the cell's center as the crack gives way.
+      hole.scale.set(sunk, sunk, sunk);
+    }
+  }
+
+  /** Snap every fragile cell to the settled collapse state. */
+  setCollapsed(collapsed: readonly string[] | undefined): void {
+    this.showFragile(new Map((collapsed ?? []).map((key) => [key, 1])));
+  }
+
+  private animateCollapses(
+    result: MoveResult,
+    distance: number,
+    travel: number,
+  ): void {
+    const gridSize = this.level?.gridSize;
+    if (gridSize === undefined || this.fragileGroup.children.length === 0)
+      return;
+    const collapse = new Map<string, number>(
+      (this.state?.collapsed ?? []).map((key) => [key, 1]),
+    );
+    // During a move, `state` already holds the settled result, so cells this
+    // move collapses restart from intact and sink at their share of travel.
+    for (const member of result.members ?? [result]) {
+      for (const entry of member.collapses ?? []) {
+        collapse.set(
+          cellKey(entry.cell),
+          flipTurnProgress(entry.step, gridSize, distance, travel),
+        );
+      }
+    }
+    this.showFragile(collapse);
+  }
+
+  /** How far (0..1) each fragile cell's collapse currently shows, keyed by cell. */
+  fragileCollapseProgress(): Record<string, number> {
+    const shown: Record<string, number> = {};
+    for (const child of this.fragileGroup.children) {
+      shown[child.userData.fragile as string] =
+        (child.userData.collapse as number | undefined) ?? 0;
+    }
+    return shown;
   }
 
   /** Snap every flip and rotor glyph to the settled spot state. */
@@ -1567,6 +1678,7 @@ export class PuzzleRenderer {
   settle(arrowId: string): void {
     this.flipMotion = false;
     this.setSpotHeadings(this.state?.spotHeadings);
+    this.setCollapsed(this.state?.collapsed);
     for (const id of this.level
       ? overlappingArrowIds(this.level, arrowId)
       : [arrowId]) {
@@ -1766,6 +1878,22 @@ export class PuzzleRenderer {
         mesh.position,
         this.camera.position,
       );
+    }
+    for (const child of this.fragileGroup.children) {
+      const facing =
+        stopCircleOpacity(
+          child.userData.normal as THREE.Vector3,
+          child.position,
+          this.camera.position,
+        ) === 1;
+      child.traverse((part) => {
+        const mesh = part as THREE.Mesh<
+          THREE.BufferGeometry,
+          THREE.MeshBasicMaterial
+        >;
+        if (mesh.material instanceof THREE.MeshBasicMaterial)
+          mesh.material.opacity = facing ? 1 : 0.32;
+      });
     }
     for (const visual of this.visuals.values()) {
       const nudged =
@@ -2183,6 +2311,167 @@ export class PuzzleRenderer {
         }
       }
     }
+  }
+
+  /**
+   * Each fragile cell carries two looks, one shown at a time. Intact, a crack
+   * glyph: a jagged fracture across the cell with two short branches, flat on
+   * the face like a spot. Collapsed, a hole: a dark square floor sunk
+   * `HOLE_DEPTH` into the cube, four dark walls from the face down to it, and
+   * a square border frame lying on the face around the opening. A square
+   * frame and an unlit cavity keep it apart from round stop circles and
+   * wormhole rings.
+   */
+  private createFragile(level: LevelDefinition): void {
+    const pitch = 2 / level.gridSize;
+    const material = (color: number, depthTest = true) =>
+      new THREE.MeshBasicMaterial({
+        color,
+        side: THREE.DoubleSide,
+        toneMapped: false,
+        transparent: true,
+        depthWrite: false,
+        depthTest,
+      });
+    const stroke = (
+      points: readonly (readonly [number, number])[],
+      width: number,
+    ): THREE.Shape[] =>
+      points.slice(1).map(([x2, y2], index) => {
+        const [x1, y1] = points[index] as readonly [number, number];
+        const length = Math.hypot(x2 - x1, y2 - y1);
+        const nx = (-(y2 - y1) / length) * (width / 2);
+        const ny = ((x2 - x1) / length) * (width / 2);
+        return new THREE.Shape(
+          [
+            [x1 + nx, y1 + ny],
+            [x2 + nx, y2 + ny],
+            [x2 - nx, y2 - ny],
+            [x1 - nx, y1 - ny],
+          ].map(([x, y]) => new THREE.Vector2(x as number, y as number)),
+        );
+      });
+    for (const cell of level.fragile ?? []) {
+      const normal = new THREE.Vector3(...faceNormal(cell.face));
+      const group = new THREE.Group();
+      group.position
+        .copy(cellPoint(cell, level.gridSize))
+        .addScaledVector(normal, 0.001);
+      group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+      const unit = (x: number, y: number) => [x * pitch, y * pitch] as const;
+      const crack = new THREE.Mesh(
+        new THREE.ShapeGeometry([
+          ...stroke(
+            [
+              unit(-0.38, 0.3),
+              unit(-0.14, 0.1),
+              unit(-0.02, 0.2),
+              unit(0.12, -0.06),
+              unit(0.38, -0.3),
+            ],
+            pitch * 0.07,
+          ),
+          ...stroke([unit(-0.14, 0.1), unit(-0.2, -0.18)], pitch * 0.05),
+          ...stroke([unit(0.12, -0.06), unit(0.3, 0.12)], pitch * 0.05),
+        ]),
+        material(this.palette.fragile),
+      );
+      crack.renderOrder = -1;
+      crack.userData.fragilePart = "crack";
+      const half = pitch * HOLE_HALF;
+      const depth = pitch * HOLE_DEPTH;
+      const hole = new THREE.Group();
+      // The cavity draws only through the opening: a colorless quad in the
+      // opening marks the stencil first, and the floor and walls, which
+      // ignore depth so the translucent face cannot hide them, test it.
+      // Without the mask the walls would show beside the opening through
+      // the face and read as a raised box.
+      const mask = new THREE.Mesh(
+        new THREE.PlaneGeometry(half * 2, half * 2),
+        new THREE.MeshBasicMaterial({
+          colorWrite: false,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+          stencilWrite: true,
+          stencilRef: 1,
+          stencilFunc: THREE.AlwaysStencilFunc,
+          stencilZPass: THREE.ReplaceStencilOp,
+        }),
+      );
+      mask.renderOrder = -1.5;
+      const cavityMaterial = (): THREE.MeshBasicMaterial => {
+        const cavity = material(this.palette.hole.cavity, false);
+        cavity.stencilWrite = true;
+        cavity.stencilRef = 1;
+        cavity.stencilFunc = THREE.EqualStencilFunc;
+        return cavity;
+      };
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(half * 2, half * 2),
+        cavityMaterial(),
+      );
+      floor.position.z = -depth;
+      const walls = [0, 1, 2, 3].map((side) => {
+        const wall = new THREE.Mesh(
+          new THREE.PlaneGeometry(half * 2, depth),
+          cavityMaterial(),
+        );
+        // A plane stands up along z facing the cell's center, one per side.
+        const angle = (side * Math.PI) / 2;
+        wall.position.set(
+          Math.cos(angle) * half,
+          Math.sin(angle) * half,
+          -depth / 2,
+        );
+        wall.rotation.order = "ZXY";
+        wall.rotation.set(Math.PI / 2, 0, angle + Math.PI / 2);
+        return wall;
+      });
+      const outer = half + pitch * HOLE_FRAME;
+      const frameShape = new THREE.Shape(
+        [
+          [-outer, -outer],
+          [outer, -outer],
+          [outer, outer],
+          [-outer, outer],
+        ].map(([x, y]) => new THREE.Vector2(x as number, y as number)),
+      );
+      frameShape.holes.push(
+        new THREE.Path(
+          [
+            [-half, -half],
+            [-half, half],
+            [half, half],
+            [half, -half],
+          ].map(([x, y]) => new THREE.Vector2(x as number, y as number)),
+        ),
+      );
+      const frame = new THREE.Mesh(
+        new THREE.ShapeGeometry(frameShape),
+        material(this.palette.hole.rim),
+      );
+      frame.position.z = 0.001;
+      for (const part of [floor, ...walls]) {
+        part.renderOrder = -1;
+        part.userData.fragilePart = "cavity";
+      }
+      frame.renderOrder = -1;
+      frame.userData.fragilePart = "rim";
+      hole.add(mask, floor, ...walls, frame);
+      hole.visible = false;
+      group.add(crack, hole);
+      group.userData.fragile = cellKey(cell);
+      group.userData.normal = normal;
+      group.userData.crack = crack;
+      group.userData.hole = hole;
+      group.userData.collapse = 0;
+      this.fragileGroup.add(group);
+    }
+  }
+
+  private clearFragile(): void {
+    disposeTree(this.fragileGroup);
+    this.fragileGroup.clear();
   }
 
   private clearWormholes(): void {

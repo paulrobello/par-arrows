@@ -22,7 +22,7 @@ export interface TutorialScript {
 }
 
 export const SCRIPTED_LEVEL_IDS: readonly number[] = [
-  1, 5, 11, 15, 20, 25, 30, 35, 40,
+  1, 5, 11, 15, 20, 25, 30, 35, 40, 45,
 ];
 
 const LEVEL_ONE_SCRIPT: TutorialScript = {
@@ -320,6 +320,36 @@ const ROTOR_INTRO_SCRIPT: TutorialScript = {
   ],
 };
 
+const FRAGILE_INTRO_SCRIPT: TutorialScript = {
+  levelId: 45,
+  title: "Mind the crack.",
+  steps: [
+    {
+      copy: "Cracked cells hold for one crossing, then collapse into a hole. Two lanes share this one. Send this arrow across first.",
+      highlightId: "fragile-intro-crosser",
+      advance: {
+        kind: "move",
+        arrowIds: ["fragile-intro-crosser"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "The crack gave way behind it. A head that runs into the hole falls into the cube and costs a life, so take the violet half the long way round.",
+      highlightId: "fragile-intro-double",
+      advance: {
+        kind: "move",
+        arrowIds: ["fragile-intro-double"],
+        endpoint: "tail",
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "Cross each crack once, in the right order. Clear the remaining arrows.",
+      advance: { kind: "won" },
+    },
+  ],
+};
+
 const SCRIPTS: readonly TutorialScript[] = [
   LEVEL_ONE_SCRIPT,
   STOP_INTRO_SCRIPT,
@@ -330,6 +360,7 @@ const SCRIPTS: readonly TutorialScript[] = [
   FLIP_INTRO_SCRIPT,
   WORMHOLE_INTRO_SCRIPT,
   ROTOR_INTRO_SCRIPT,
+  FRAGILE_INTRO_SCRIPT,
 ];
 
 export function scriptForLevel(levelId: number): TutorialScript | undefined {
