@@ -10,6 +10,7 @@ import {
   createGameState,
   simulateMove as simulateState,
 } from "./game-state";
+import { MAX_LOCKS } from "./locks";
 import { simulateMove } from "./movement";
 import { overlappingArrowIds, sharedDirectedSegment } from "./overlap";
 import { arrowTrack, maximumOffset, settledPathOf, trackKeys } from "./stops";
@@ -139,6 +140,8 @@ interface FoldState {
   /** Settled body in authored order. */
   readonly body: readonly Cell[];
   readonly spots: Readonly<Record<string, Heading>>;
+  /** Locks the arrow has opened on its own earlier legs. */
+  readonly unlocked: readonly string[];
 }
 
 /**
@@ -160,10 +163,11 @@ function foldedStopError(
   const pending: FoldState[] = startSpots.map((spots) => ({
     body: arrow.path,
     spots,
+    unlocked: [],
   }));
   while (pending.length > 0) {
-    const { body, spots } = pending.pop() as FoldState;
-    const key = `${body.map(cellKey).join(">")}#${spotStateKey(level, spots)}`;
+    const { body, spots, unlocked } = pending.pop() as FoldState;
+    const key = `${body.map(cellKey).join(">")}#${spotStateKey(level, spots)}#${[...unlocked].sort().join(",")}`;
     if (seen.has(key)) continue;
     seen.add(key);
     for (const endpoint of endpoints) {
@@ -176,6 +180,8 @@ function foldedStopError(
         {},
         { [arrow.id]: body },
         spots,
+        [],
+        unlocked,
       );
       if (result.kind !== "paused") continue;
       const oriented = endpoint === "head" ? body : [...body].reverse();
@@ -197,6 +203,10 @@ function foldedStopError(
       pending.push({
         body: endpoint === "head" ? parked : [...parked].reverse(),
         spots: next,
+        unlocked: [
+          ...unlocked,
+          ...(result.unlocks ?? []).map((opening) => opening.id),
+        ],
       });
     }
   }
@@ -446,6 +456,49 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
     if (holeCells.has(key))
       errors.push(`Fragile cell ${key} shares its cell with a wormhole end.`);
   }
+  const locks = level.locks ?? [];
+  if (locks.length > MAX_LOCKS)
+    errors.push(`A level may carry at most ${MAX_LOCKS} locks.`);
+  const lockIds = new Set<string>();
+  const lockCells = new Set<string>();
+  for (const lock of locks) {
+    if (!lock.id || lockIds.has(lock.id))
+      errors.push(
+        `Lock ids must be nonempty and unique: ${lock.id || "<empty>"}.`,
+      );
+    lockIds.add(lock.id);
+    for (const [role, cell] of [
+      ["gate", lock.lock],
+      ["key", lock.key],
+    ] as const) {
+      const key = cellKey(cell);
+      if (!inBounds(cell, level.gridSize))
+        errors.push(`Lock ${lock.id} ${role} ${key} is out of bounds.`);
+      if (lockCells.has(key))
+        errors.push(`Lock cell ${key} is declared more than once.`);
+      lockCells.add(key);
+      if (arrowCells.has(key))
+        errors.push(
+          `Lock ${lock.id} ${role} ${key} sits on an arrow's starting cell.`,
+        );
+      if (stopCells.has(key))
+        errors.push(
+          `Lock ${lock.id} ${role} ${key} shares its cell with a stop circle.`,
+        );
+      if (spotCells.has(key))
+        errors.push(
+          `Lock ${lock.id} ${role} ${key} shares its cell with a directional spot.`,
+        );
+      if (holeCells.has(key))
+        errors.push(
+          `Lock ${lock.id} ${role} ${key} shares its cell with a wormhole end.`,
+        );
+      if (fragileCells.has(key))
+        errors.push(
+          `Lock ${lock.id} ${role} ${key} shares its cell with a fragile cell.`,
+        );
+    }
+  }
   // A fold can only park on a stop circle, so levels without one skip the search.
   if (stopCells.size > 0) {
     const combos = spotStateCombos(level);
@@ -677,7 +730,8 @@ function solveKey(level: LevelDefinition, state: GameState): string {
   const failures = [...(state.failedPositions ?? [])].sort().join(",");
   const spots = spotStateKey(level, state.spotHeadings);
   const holes = [...(state.collapsed ?? [])].sort().join(",");
-  return `${[...state.remainingIds].sort().join("|")}#${parked}#${settled}#${failures}#${spots}#${holes}`;
+  const open = [...(state.unlocked ?? [])].sort().join(",");
+  return `${[...state.remainingIds].sort().join("|")}#${parked}#${settled}#${failures}#${spots}#${holes}#${open}`;
 }
 
 const SOLVER_NODE_BUDGET = 4000;

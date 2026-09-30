@@ -11,6 +11,7 @@ import type {
   Endpoint,
   Heading,
   LevelDefinition,
+  LockOpening,
   MoveResult,
   SpotFlip,
 } from "./types";
@@ -21,6 +22,7 @@ import {
   spotHeadingAt,
 } from "./directionals";
 import { fragileKeys } from "./fragile";
+import { gateAt, keyAt } from "./locks";
 import { overlappingArrowIds } from "./overlap";
 import { offsetOf, settledPathOf, stopKeys } from "./stops";
 import { advanceWithPortals, pathHeading } from "./wormholes";
@@ -32,6 +34,7 @@ type SettledState = Readonly<{
   settledPaths?: Readonly<Record<string, readonly Cell[]>>;
   spotHeadings?: Readonly<Record<string, Heading>>;
   collapsed?: readonly string[];
+  unlocked?: readonly string[];
 }>;
 
 /** Spot state as a loop-key fragment, independent of insertion order. */
@@ -150,6 +153,10 @@ function simulateSingle(
   // arrow never collides with its own body, and a head re-entering its own
   // crossing is the same passage.
   const holes = new Set(settledState.collapsed ?? []);
+  // Locks open for this move: those already open plus any whose key the head
+  // has crossed so far in it. A gate opened mid-move lets the same head pass.
+  const opened = new Set(settledState.unlocked ?? []);
+  const unlocks: LockOpening[] = [];
   const spotFlips: SpotFlip[] = [];
   const collapses: CellCollapse[] = [];
   const portals: { from: Cell; to: Cell; step: number }[] = [];
@@ -172,6 +179,7 @@ function simulateSingle(
   const flipResult = () => ({
     ...(spotFlips.length > 0 ? { spotFlips } : {}),
     ...(collapses.length > 0 ? { collapses } : {}),
+    ...(unlocks.length > 0 ? { unlocks } : {}),
   });
   let current: Cell = initialHead;
   let currentHeading = heading;
@@ -272,6 +280,30 @@ function simulateSingle(
         ...(portals.length > 0 ? { portals } : {}),
       };
     }
+    // A closed gate is terrain, not an arrow: the head stops short of it and
+    // the whole attempt rewinds at no cost. No arrow ever rests on a closed
+    // gate, so an arrow collision there is impossible and never masked.
+    const gate = gateAt(level, next);
+    if (gate && !opened.has(gate.id)) {
+      return {
+        arrowId,
+        endpoint,
+        kind: "gated",
+        distance: distance - 0.5,
+        route,
+        waypoints: route.map((cell) => ({ cell, phase: "surface" as const })),
+        stateRevision,
+        offset,
+        gate: next,
+        ...flipResult(),
+        ...(portals.length > 0 ? { portals } : {}),
+      };
+    }
+    const key = keyAt(level, next);
+    if (key && !opened.has(key.id)) {
+      opened.add(key.id);
+      unlocks.push({ id: key.id, cell: key.lock, step });
+    }
     // A head entering a collapsed cell turns into the cube and the body
     // follows it down, so, as for an exit, every cell it covered is cleared.
     // No arrow ever occupies a hole, so this never masks a collision.
@@ -350,6 +382,7 @@ function simulateSingle(
  */
 function eventStep(member: MoveResult): number {
   return member.kind === "blocked" ||
+    member.kind === "gated" ||
     member.kind === "paused" ||
     member.kind === "fall"
     ? member.route.length - 1
@@ -375,12 +408,14 @@ export function simulateMove(
   settledPaths: Readonly<Record<string, readonly Cell[]>> = {},
   spotHeadings: Readonly<Record<string, Heading>> = {},
   collapsed: readonly string[] = [],
+  unlocked: readonly string[] = [],
 ): MoveResult {
   const settledState: SettledState = {
     offsets,
     settledPaths,
     spotHeadings,
     collapsed,
+    unlocked,
   };
   const ids = overlappingArrowIds(level, arrowId).filter((id) =>
     remainingIds.includes(id),
@@ -415,16 +450,27 @@ export function simulateMove(
     );
   let members = simulateMembers(Number.POSITIVE_INFINITY);
   const blockedStep = firstStep(members, "blocked");
+  const gatedStep = firstStep(members, "gated");
   const fallStep = firstStep(members, "fall");
   const pausedStep = firstStep(members, "paused");
   // The earliest event decides the group. On one step a collision outranks a
-  // fall, which outranks a stop: a collision rewinds and keeps the group, so
-  // it is the conservative reading, and a stop never saves a falling group.
+  // closed gate, which outranks a fall, which outranks a stop: a collision
+  // and a gate both rewind and keep the group, the collision is the
+  // conservative reading of the two, and a stop never saves a falling group.
+  // Members read the move-start lock state, so one member crossing a key
+  // opens its gate only for later moves.
+  const groupGated =
+    Number.isFinite(gatedStep) &&
+    gatedStep < blockedStep &&
+    gatedStep <= fallStep &&
+    gatedStep <= pausedStep;
   const groupFalls =
+    !groupGated &&
     Number.isFinite(fallStep) &&
     fallStep < blockedStep &&
     fallStep <= pausedStep;
   const groupPauses =
+    !groupGated &&
     !groupFalls &&
     Number.isFinite(pausedStep) &&
     (!Number.isFinite(blockedStep) || pausedStep < blockedStep);
@@ -446,26 +492,32 @@ export function simulateMove(
   }
   const invalidMember = members.find((member) => member.kind === "invalid");
   const hole = members.find((member) => member.hole)?.hole;
+  const gate = members.find(
+    (member) => member.kind === "gated" && eventStep(member) === gatedStep,
+  )?.gate;
   const kind: MoveResult["kind"] = invalidMember
     ? "invalid"
-    : groupFalls
-      ? "fall"
-      : groupPauses
-        ? "paused"
-        : members.some((member) => member.kind === "blocked")
-          ? "blocked"
-          : "exit";
+    : groupGated
+      ? "gated"
+      : groupFalls
+        ? "fall"
+        : groupPauses
+          ? "paused"
+          : members.some((member) => member.kind === "blocked")
+            ? "blocked"
+            : "exit";
   return {
     ...clicked,
     kind,
     ...(invalidMember?.reason ? { reason: invalidMember.reason } : {}),
     ...(kind === "paused" ? { pausedSteps: pausedStep } : {}),
     ...(kind === "fall" && hole ? { hole } : {}),
+    ...(kind === "gated" && gate ? { gate } : {}),
     distance:
-      kind === "blocked"
+      kind === "blocked" || kind === "gated"
         ? Math.min(
             ...members
-              .filter((member) => member.kind === "blocked")
+              .filter((member) => member.kind === kind)
               .map((member) => member.distance),
           )
         : Math.max(...members.map((member) => member.distance)),

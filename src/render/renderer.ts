@@ -49,6 +49,11 @@ const HOLE_FRAME = 0.1;
 const HOLE_DEPTH = 0.45;
 /** How far a falling head sinks below the face, per pitch, before it vanishes. */
 const FALL_DEPTH = 1.2;
+/** A gate's frame half-width and its bar and frame stroke, in cell pitch. */
+const GATE_HALF = 0.36;
+const GATE_STROKE = 0.07;
+/** An open gate keeps its frame at this opacity and drops its bars. */
+const GATE_OPEN_OPACITY = 0.35;
 const CUBE_FACES: readonly FaceId[] = [
   "front",
   "back",
@@ -79,6 +84,8 @@ interface ThemePalette {
   /** A collapsed cell: its border frame and its recessed cavity. */
   readonly hole: { readonly rim: number; readonly cavity: number };
   readonly wormhole: readonly [number, number];
+  /** One color per lock, shared by its gate and its key. */
+  readonly lock: readonly [number, number];
   /** Side-marker colors, indexed by `wormholeDotColorIndex`. */
   readonly wormholeDots: readonly [number, number, number, number];
   readonly doubleTail: number;
@@ -110,6 +117,7 @@ export const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     fragile: 0x6b5b4b,
     hole: { rim: 0x3b2f2a, cavity: 0x17110e },
     wormhole: [0xe07a10, 0x1f3fbf],
+    lock: [0x15803d, 0x1e3a8a],
     wormholeDots: [0xe11d48, 0xeab308, 0x0d9488, 0x7c3aed],
     doubleTail: 0x6d28d9,
     doubleHead: 0x4d7c0f,
@@ -131,6 +139,7 @@ export const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     fragile: 0xb8a48c,
     hole: { rim: 0xe6d5bd, cavity: 0x05080b },
     wormhole: [0xffa040, 0x4f6bff],
+    lock: [0x86efac, 0x93c5fd],
     wormholeDots: [0xfb7185, 0xfde047, 0x2dd4bf, 0xa78bfa],
     doubleTail: 0xc084fc,
     doubleHead: 0xa3e635,
@@ -880,7 +889,7 @@ export function arrowMotionTrack(
   const distance =
     result.kind === "exit" || result.kind === "fall"
       ? pathLength(track) - bodyLength
-      : result.kind === "blocked"
+      : result.kind === "blocked" || result.kind === "gated"
         ? Math.max(0, pathLength(route) - 1 / gridSize)
         : // A pause travels the whole route and stays parked on the circle.
           result.kind === "paused"
@@ -899,7 +908,7 @@ export function arrowMotionDuration(
   reducedMotion = false,
 ): number {
   if (reducedMotion) return REDUCED_MOTION_DURATION;
-  const outboundAndReturn = kind === "blocked" ? 2 : 1;
+  const outboundAndReturn = kind === "blocked" || kind === "gated" ? 2 : 1;
   const travel = (distance * outboundAndReturn * 1000) / NORMAL_ARROW_SPEED;
   // Cells are small on a dense cube, so a one-step park would otherwise finish
   // inside a frame and read as a jump rather than as stopping at the circle.
@@ -1004,6 +1013,7 @@ export class PuzzleRenderer {
   private readonly directionalsGroup = new THREE.Group();
   private readonly wormholesGroup = new THREE.Group();
   private readonly fragileGroup = new THREE.Group();
+  private readonly lockGroup = new THREE.Group();
   /** Settled advance count of each flip or rotor glyph, keyed by cell. */
   private readonly flipTurns = new Map<string, number>();
   private flipMotion = false;
@@ -1056,6 +1066,7 @@ export class PuzzleRenderer {
       this.directionalsGroup,
       this.wormholesGroup,
       this.fragileGroup,
+      this.lockGroup,
     );
     this.scene.add(new THREE.HemisphereLight(0xffffff, 0xb7d5df, 2.4));
     const key = new THREE.DirectionalLight(0xffffff, 2.1);
@@ -1086,6 +1097,7 @@ export class PuzzleRenderer {
     this.clearDirectionals();
     this.clearWormholes();
     this.clearFragile();
+    this.clearLocks();
     this.flipMotion = false;
     this.level = level;
     this.state = state;
@@ -1095,6 +1107,7 @@ export class PuzzleRenderer {
     this.createDirectionals(level);
     this.createWormholes(level);
     this.createFragile(level);
+    this.createLocks(level);
     for (const arrow of level.arrows) {
       const visual = this.createArrow(arrow, level.gridSize, level.arrowScale);
       this.visuals.set(arrow.id, visual);
@@ -1113,6 +1126,7 @@ export class PuzzleRenderer {
     if (!this.flipMotion) {
       this.setSpotHeadings(state.spotHeadings);
       this.setCollapsed(state.collapsed);
+      this.setUnlocked(state.unlocked);
     }
     for (const [id, visual] of this.visuals) {
       visual.group.visible = state.remainingIds.includes(id);
@@ -1171,6 +1185,12 @@ export class PuzzleRenderer {
       if (part === "crack") mesh.material.color.set(palette.fragile);
       else if (part === "rim") mesh.material.color.set(palette.hole.rim);
       else if (part === "cavity") mesh.material.color.set(palette.hole.cavity);
+    });
+    this.lockGroup.traverse((child) => {
+      const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
+      if (!(mesh.material instanceof THREE.MeshBasicMaterial)) return;
+      const index = mesh.userData.lockIndex as 0 | 1 | undefined;
+      if (index !== undefined) mesh.material.color.set(palette.lock[index]);
     });
     this.directionalsGroup.traverse((child) => {
       const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
@@ -1514,7 +1534,7 @@ export class PuzzleRenderer {
       return;
     }
     const travel =
-      result.kind === "blocked"
+      result.kind === "blocked" || result.kind === "gated"
         ? progress < 0.5
           ? progress * 2
           : (1 - progress) * 2
@@ -1545,7 +1565,70 @@ export class PuzzleRenderer {
     this.flipMotion = progress < 1;
     this.animateFlips(result, distance, travel);
     this.animateCollapses(result, distance, travel);
+    this.animateUnlocks(result, distance, travel);
     this.render();
+  }
+
+  /**
+   * Show each gate open (1) or barred (0), or partway for a gate opening
+   * mid-move, keyed by lock id.
+   */
+  private showLocks(open: ReadonlyMap<string, number>): void {
+    for (const child of this.lockGroup.children) {
+      const id = child.userData.lockId as string | undefined;
+      if (child.userData.lockPart !== "gate" || id === undefined) continue;
+      const opened = open.get(id) ?? 0;
+      child.userData.open = opened;
+      const bars = child.userData.bars as THREE.Object3D;
+      // The bars slide up out of the frame as the gate opens.
+      bars.visible = opened < 1;
+      bars.scale.set(1, 1 - opened, 1);
+      const frame = child.userData.frame as THREE.Mesh<
+        THREE.BufferGeometry,
+        THREE.MeshBasicMaterial
+      >;
+      frame.material.opacity = 1 - (1 - GATE_OPEN_OPACITY) * opened;
+    }
+  }
+
+  /** Snap every gate to the settled lock state. */
+  setUnlocked(unlocked: readonly string[] | undefined): void {
+    this.showLocks(new Map((unlocked ?? []).map((id) => [id, 1])));
+  }
+
+  private animateUnlocks(
+    result: MoveResult,
+    distance: number,
+    travel: number,
+  ): void {
+    const gridSize = this.level?.gridSize;
+    if (gridSize === undefined || this.lockGroup.children.length === 0) return;
+    const open = new Map<string, number>(
+      (this.state?.unlocked ?? []).map((id) => [id, 1]),
+    );
+    // During a move, `state` already holds the settled result, so gates this
+    // move opens restart barred and open at their share of travel; a gate a
+    // failed move opened closes again on the way back.
+    for (const member of result.members ?? [result]) {
+      for (const entry of member.unlocks ?? []) {
+        open.set(
+          entry.id,
+          flipTurnProgress(entry.step, gridSize, distance, travel),
+        );
+      }
+    }
+    this.showLocks(open);
+  }
+
+  /** How far (0..1) each gate currently shows open, keyed by lock id. */
+  lockOpenProgress(): Record<string, number> {
+    const shown: Record<string, number> = {};
+    for (const child of this.lockGroup.children) {
+      if (child.userData.lockPart !== "gate") continue;
+      shown[child.userData.lockId as string] =
+        (child.userData.open as number | undefined) ?? 0;
+    }
+    return shown;
   }
 
   /**
@@ -1806,16 +1889,14 @@ export class PuzzleRenderer {
 
   motionDistance(arrowId: string, result: MoveResult): number {
     if (result.members) {
-      const members =
-        result.kind === "blocked"
-          ? result.members.filter((member) => member.kind === "blocked")
-          : result.members;
+      const rebounds = result.kind === "blocked" || result.kind === "gated";
+      const members = rebounds
+        ? result.members.filter((member) => member.kind === result.kind)
+        : result.members;
       const distances = members.map((member) =>
         this.motionDistance(member.arrowId, member),
       );
-      return result.kind === "blocked"
-        ? Math.min(...distances)
-        : Math.max(...distances);
+      return rebounds ? Math.min(...distances) : Math.max(...distances);
     }
     const visual = this.visuals.get(arrowId);
     if (!visual || !this.level) return 0;
@@ -2467,6 +2548,123 @@ export class PuzzleRenderer {
       group.userData.collapse = 0;
       this.fragileGroup.add(group);
     }
+  }
+
+  /**
+   * Each lock draws two glyphs in one color unique to it on the level. The
+   * gate is a square frame with three vertical bars across the cell; opening
+   * slides the bars away and fades the frame. The key is a ring bow with a
+   * shaft and two teeth, lying flat on its cell. Square framing and straight
+   * bars keep the gate apart from round stop circles, wormhole rings and a
+   * collapsed hole's solid frame.
+   */
+  private createLocks(level: LevelDefinition): void {
+    const pitch = 2 / level.gridSize;
+    const material = (index: number) =>
+      new THREE.MeshBasicMaterial({
+        color: this.palette.lock[index as 0 | 1],
+        side: THREE.DoubleSide,
+        toneMapped: false,
+        transparent: true,
+        depthWrite: false,
+      });
+    const rect = (
+      x: number,
+      y: number,
+      width: number,
+      height: number,
+    ): THREE.Shape =>
+      new THREE.Shape(
+        [
+          [x - width / 2, y - height / 2],
+          [x + width / 2, y - height / 2],
+          [x + width / 2, y + height / 2],
+          [x - width / 2, y + height / 2],
+        ].map(([px, py]) => new THREE.Vector2(px as number, py as number)),
+      );
+    const place = (group: THREE.Object3D, cell: Cell): void => {
+      const normal = new THREE.Vector3(...faceNormal(cell.face));
+      group.position
+        .copy(cellPoint(cell, level.gridSize))
+        .addScaledVector(normal, 0.002);
+      group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+    };
+    for (const [index, lock] of (level.locks ?? []).entries()) {
+      const half = pitch * GATE_HALF;
+      const stroke = pitch * GATE_STROKE;
+      const frameShape = rect(0, 0, half * 2, half * 2);
+      frameShape.holes.push(
+        new THREE.Path(
+          [
+            [-half + stroke, -half + stroke],
+            [-half + stroke, half - stroke],
+            [half - stroke, half - stroke],
+            [half - stroke, -half + stroke],
+          ].map(([x, y]) => new THREE.Vector2(x as number, y as number)),
+        ),
+      );
+      const frame = new THREE.Mesh(
+        new THREE.ShapeGeometry(frameShape),
+        material(index),
+      );
+      // The bars hang from the frame's top edge so a vertical scale lifts
+      // them out of the lane.
+      const barsPivot = new THREE.Group();
+      barsPivot.position.y = half;
+      const bars = new THREE.Mesh(
+        new THREE.ShapeGeometry(
+          [-0.5, 0, 0.5].map((offset) =>
+            rect(offset * half, -half, stroke, half * 2 - stroke),
+          ),
+        ),
+        material(index),
+      );
+      barsPivot.add(bars);
+      for (const part of [frame, bars]) {
+        part.renderOrder = -1;
+        part.userData.lockIndex = index;
+      }
+      const gate = new THREE.Group();
+      place(gate, lock.lock);
+      gate.add(frame, barsPivot);
+      gate.userData.lockPart = "gate";
+      gate.userData.lockId = lock.id;
+      gate.userData.frame = frame;
+      gate.userData.bars = barsPivot;
+      gate.userData.open = 0;
+      this.lockGroup.add(gate);
+
+      const bowOuter = pitch * 0.17;
+      const bowInner = pitch * 0.09;
+      const bow = new THREE.Mesh(
+        new THREE.RingGeometry(bowInner, bowOuter, 24),
+        material(index),
+      );
+      bow.position.x = -pitch * 0.2;
+      const blade = new THREE.Mesh(
+        new THREE.ShapeGeometry([
+          rect(pitch * 0.1, 0, pitch * 0.42, stroke),
+          rect(pitch * 0.2, -pitch * 0.07, stroke, pitch * 0.12),
+          rect(pitch * 0.3, -pitch * 0.07, stroke, pitch * 0.12),
+        ]),
+        material(index),
+      );
+      for (const part of [bow, blade]) {
+        part.renderOrder = -1;
+        part.userData.lockIndex = index;
+      }
+      const key = new THREE.Group();
+      place(key, lock.key);
+      key.add(bow, blade);
+      key.userData.lockPart = "key";
+      key.userData.lockId = lock.id;
+      this.lockGroup.add(key);
+    }
+  }
+
+  private clearLocks(): void {
+    disposeTree(this.lockGroup);
+    this.lockGroup.clear();
   }
 
   private clearFragile(): void {

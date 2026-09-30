@@ -22,7 +22,7 @@ export interface TutorialScript {
 }
 
 export const SCRIPTED_LEVEL_IDS: readonly number[] = [
-  1, 5, 11, 15, 20, 25, 30, 35, 40, 45,
+  1, 5, 11, 15, 20, 25, 30, 35, 40, 45, 50,
 ];
 
 const LEVEL_ONE_SCRIPT: TutorialScript = {
@@ -350,6 +350,35 @@ const FRAGILE_INTRO_SCRIPT: TutorialScript = {
   ],
 };
 
+const LOCK_INTRO_SCRIPT: TutorialScript = {
+  levelId: 50,
+  title: "Find the key.",
+  steps: [
+    {
+      copy: "A barred gate blocks the short lane, but running into it costs nothing. The long arrow crosses its key. Send it first.",
+      highlightId: "lock-intro-key",
+      advance: {
+        kind: "move",
+        arrowIds: ["lock-intro-key"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "Crossing a key opens its gate for good. The lane is clear now.",
+      highlightId: "lock-intro-opener",
+      advance: {
+        kind: "move",
+        arrowIds: ["lock-intro-opener"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "Look for the key when a gate bars the way. Clear the remaining arrows.",
+      advance: { kind: "won" },
+    },
+  ],
+};
+
 const SCRIPTS: readonly TutorialScript[] = [
   LEVEL_ONE_SCRIPT,
   STOP_INTRO_SCRIPT,
@@ -361,6 +390,7 @@ const SCRIPTS: readonly TutorialScript[] = [
   WORMHOLE_INTRO_SCRIPT,
   ROTOR_INTRO_SCRIPT,
   FRAGILE_INTRO_SCRIPT,
+  LOCK_INTRO_SCRIPT,
 ];
 
 export function scriptForLevel(levelId: number): TutorialScript | undefined {

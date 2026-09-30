@@ -426,6 +426,17 @@ export class ParArrowsApp {
       ],
       fragileGlyphCollapse: this.renderer.fragileCollapseProgress(),
       fallenIds: this.displayedState.fallenIds ?? [],
+      // Each lock's gate and key and whether it is open; `lockGlyphOpen` is
+      // how far each gate currently shows open.
+      locks: (this.level.locks ?? []).map((lock, color) => ({
+        id: lock.id,
+        key: cellKey(lock.key),
+        lock: cellKey(lock.lock),
+        open: (this.displayedState.unlocked ?? []).includes(lock.id),
+        color,
+      })),
+      unlockedIds: this.displayedState.unlocked ?? [],
+      lockGlyphOpen: this.renderer.lockOpenProgress(),
       parkedOffsets: Object.fromEntries(
         Object.entries(this.displayedState.offsets).filter(
           ([, offset]) => offset > 0,

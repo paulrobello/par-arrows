@@ -32,11 +32,11 @@ const LAST_ID = 200;
 // fixture regeneration that shipped fragile cores changed exactly these ids
 // and no other; every other id's fixture entry is the untouched pre-fragile
 // value, so an id without a fragile core matching the fixture is plan-zero
-// parity. Over 46-200, 76 of 77 planned cores place: id 137 gives its plan
-// up and comes out as the plan-zero construction.
+// parity. Over 46-200, 75 of 76 planned cores place: id 137 gives its plan
+// up and comes out as the plan-zero construction. Level 50 left this list
+// when it became the authored lock cube.
 const PRE_FRAGILE: Readonly<Record<number, string>> = {
   49: "426686e762c97464",
-  50: "9497a985a8d09d33",
   52: "70fba173988c2e66",
   54: "7d986db806fa49ee",
   63: "81910dde0792aad7",

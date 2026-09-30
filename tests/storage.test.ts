@@ -301,7 +301,7 @@ describe("resumable campaign saves", () => {
     const state = exitedState(level);
     expect(save(state, 88)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 15,
+      contentVersion: 16,
       generatorVersion: 10,
       currentLevelId: 42,
       unlockedLevelId: 88,
@@ -396,7 +396,7 @@ describe("resumable campaign saves", () => {
     if (!restored.value) throw new Error("Expected refreshed campaign");
     expect(saveCampaign(restored.value)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 15,
+      contentVersion: 16,
       layout: layoutFingerprint(level),
     });
     expect((await loadCampaign(async () => level)).recovered).toBe(false);
@@ -973,7 +973,7 @@ describe("resumable campaign saves", () => {
     if (!restored.value) throw new Error("Expected refreshed campaign");
     expect(saveCampaign(restored.value)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 15,
+      contentVersion: 16,
       layout: layoutFingerprint(level),
     });
     const again = await loadCampaign(async () => level);
@@ -1109,7 +1109,112 @@ describe("resumable campaign saves", () => {
     });
     if (!restored.value) throw new Error("Expected refreshed campaign");
     expect(saveCampaign(restored.value)).toBe(true);
-    expect(savedJson()).toMatchObject({ contentVersion: 15 });
+    expect(savedJson()).toMatchObject({ contentVersion: 16 });
+    expect((await loadCampaign(async () => level)).recovered).toBe(false);
+  });
+
+  test("a lock cube round-trips an opened gate and a parked body over it", async () => {
+    const cellAt = (x: number, y: number) => ({ face: "front" as const, x, y });
+    const level: LevelDefinition = {
+      id: 51,
+      title: "Stored lock",
+      gridSize: 6,
+      lives: 3,
+      locks: [{ id: "lock-a", key: cellAt(2, 2), lock: cellAt(3, 2) }],
+      arrows: [
+        { id: "runner", path: [cellAt(0, 2), cellAt(1, 2)] },
+        { id: "other", path: [cellAt(5, 5), cellAt(5, 4)] },
+      ],
+      stops: [cellAt(4, 2)],
+    };
+    let state = createGameState(level);
+    // The runner crosses the key, passes its gate and parks on the circle
+    // with its tail over the open gate.
+    state = applyMove(level, state, simulateMove(level, state, "runner"));
+    expect(state.unlocked).toEqual(["lock-a"]);
+    expect(state.offsets).toEqual({ runner: 3 });
+    const roundTrips = async (expected: GameState): Promise<void> => {
+      expect(save(expected, 51, level)).toBe(true);
+      const restored = await loadCampaign(async () => level);
+      expect(restored.recovered).toBe(false);
+      expect(restored.value?.state).toEqual(expected);
+    };
+    await roundTrips(state);
+    state = applyMove(level, state, simulateMove(level, state, "runner"));
+    await roundTrips(state);
+    expect(state.lives).toBe(3);
+  });
+
+  test("rejects forged unlocks and a body resting on a closed gate", async () => {
+    const cellAt = (x: number, y: number) => ({ face: "front" as const, x, y });
+    const level: LevelDefinition = {
+      id: 51,
+      title: "Bad lock",
+      gridSize: 6,
+      lives: 3,
+      locks: [{ id: "lock-a", key: cellAt(2, 2), lock: cellAt(3, 2) }],
+      arrows: [{ id: "runner", path: [cellAt(0, 2), cellAt(1, 2)] }],
+      stops: [cellAt(4, 2)],
+    };
+    const initial = createGameState(level);
+    const parked = applyMove(
+      level,
+      initial,
+      simulateMove(level, initial, "runner"),
+    );
+    const forgeries: GameState[] = [
+      // Not an authored lock id.
+      { ...initial, unlocked: ["lock-z"] },
+      // Declared twice.
+      { ...initial, unlocked: ["lock-a", "lock-a"] },
+      // A parked body over a gate that was never opened.
+      { ...parked, unlocked: [] },
+    ];
+    for (const forged of forgeries) {
+      expect(save(forged, 51, level)).toBe(true);
+      const restored = await loadCampaign(async () => level);
+      expect(restored.recovered).toBe(true);
+      expect(restored.value?.state).toEqual(createGameState(level));
+    }
+    const noLocks: LevelDefinition = { ...level, locks: [] };
+    expect(save({ ...initial, unlocked: ["lock-a"] }, 51, noLocks)).toBe(true);
+    expect((await loadCampaign(async () => noLocks)).recovered).toBe(true);
+  });
+
+  test("an unlock costs no life, so a gated rewind leaves the save's lives whole", async () => {
+    const level = generateLevel(50);
+    const initial = createGameState(level);
+    const gated = applyMove(
+      level,
+      initial,
+      simulateMove(level, initial, "lock-intro-opener"),
+    );
+    expect(gated.lives).toBe(level.lives);
+    expect(gated.revision).toBe(1);
+    expect(save(gated, 50, level)).toBe(true);
+    const restored = await loadCampaign(async () => level);
+    expect(restored.recovered).toBe(false);
+    expect(restored.value?.state).toEqual(gated);
+  });
+
+  test("a content-15 save on the lock intro refreshes once and keeps progression", async () => {
+    const level = generateLevel(50);
+    expect(save(exitedState(level), 52, level)).toBe(true);
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({ ...savedJson(), contentVersion: 15 }),
+    );
+    const restored = await loadCampaign(async () => level);
+    expect(restored.recovered).toBe(true);
+    expect(restored.contentUpdated).toBe(true);
+    expect(restored.value).toMatchObject({
+      currentLevelId: 50,
+      unlockedLevelId: 52,
+      state: createGameState(level),
+    });
+    if (!restored.value) throw new Error("Expected refreshed campaign");
+    expect(saveCampaign(restored.value)).toBe(true);
+    expect(savedJson()).toMatchObject({ contentVersion: 16 });
     expect((await loadCampaign(async () => level)).recovered).toBe(false);
   });
 
@@ -1187,7 +1292,7 @@ describe("resumable campaign saves", () => {
     if (!restored.value) throw new Error("Expected refreshed campaign");
     expect(saveCampaign(restored.value)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 15,
+      contentVersion: 16,
       layout: layoutFingerprint(level),
     });
     expect((await loadCampaign(async () => level)).recovered).toBe(false);
@@ -1271,7 +1376,7 @@ describe("resumable campaign saves", () => {
       if (!restored.value) throw new Error("Expected restored campaign");
       expect(saveCampaign(restored.value)).toBe(true);
       expect(savedJson()).toMatchObject({
-        contentVersion: 15,
+        contentVersion: 16,
         generatorVersion: 10,
       });
     },

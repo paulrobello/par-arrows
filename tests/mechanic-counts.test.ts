@@ -5,6 +5,7 @@ import {
   flipCoreFrequency,
   fragileCorePlanned,
   getStopCount,
+  lockCorePlanned,
   isAuthoredLevel,
   Rng,
   rotorCorePlanned,
@@ -39,8 +40,12 @@ const V9 = {
 // shipped: 31 placed of 31 planned over levels 41-200.
 const ROTOR_CORES = 31 / 31;
 
-// Fragile cores likewise: 76 placed of 77 planned over levels 46-200.
+// Fragile cores likewise: 76 placed of 77 planned over levels 46-200 when
+// they shipped (75 of 76 once level 50 became the authored lock cube).
 const FRAGILE_CORES = 76 / 77;
+
+// Lock cores likewise: 78 placed of 79 planned over levels 51-200.
+const LOCK_CORES = 78 / 79;
 
 test("mechanic placement ratios stay within 10% of v9", () => {
   const totals = {
@@ -60,6 +65,8 @@ test("mechanic placement ratios stay within 10% of v9", () => {
     rotorLevels: 0,
     fragilePlanned: 0,
     fragileLevels: 0,
+    lockPlanned: 0,
+    lockLevels: 0,
   };
   for (let id = 2; id <= 200; id += 1) {
     if (isAuthoredLevel(id)) continue;
@@ -91,6 +98,8 @@ test("mechanic placement ratios stay within 10% of v9", () => {
       totals.rotorLevels += 1;
     if (fragileCorePlanned(id)) totals.fragilePlanned += 1;
     if ((level.fragile?.length ?? 0) > 0) totals.fragileLevels += 1;
+    if (lockCorePlanned(id)) totals.lockPlanned += 1;
+    if ((level.locks?.length ?? 0) > 0) totals.lockLevels += 1;
   }
   expect(totals.staticPlaced / totals.staticPlanned).toBeGreaterThanOrEqual(
     V9.staticSpots * 0.9,
@@ -115,5 +124,9 @@ test("mechanic placement ratios stay within 10% of v9", () => {
   expect(totals.fragilePlanned).toBeGreaterThan(0);
   expect(totals.fragileLevels / totals.fragilePlanned).toBeGreaterThanOrEqual(
     FRAGILE_CORES * 0.9,
+  );
+  expect(totals.lockPlanned).toBeGreaterThan(0);
+  expect(totals.lockLevels / totals.lockPlanned).toBeGreaterThanOrEqual(
+    LOCK_CORES * 0.9,
   );
 }, 900_000);

@@ -30,6 +30,7 @@ export function createGameState(level: LevelDefinition): GameState {
     spotHeadings: {},
     collapsed: [],
     fallenIds: [],
+    unlocked: [],
   };
 }
 
@@ -62,6 +63,7 @@ export function simulateMove(
     state.settledPaths,
     state.spotHeadings,
     state.collapsed,
+    state.unlocked,
   );
 }
 
@@ -90,6 +92,17 @@ function afterCollapses(
     for (const collapse of member.collapses ?? []) {
       const key = cellKey(collapse.cell);
       if (!next.includes(key)) next.push(key);
+    }
+  }
+  return next;
+}
+
+/** Opened locks after a successful move; a collision or a gate never reaches here. */
+function afterUnlocks(state: GameState, result: MoveResult): readonly string[] {
+  const next = [...(state.unlocked ?? [])];
+  for (const member of result.members ?? [result]) {
+    for (const opening of member.unlocks ?? []) {
+      if (!next.includes(opening.id)) next.push(opening.id);
     }
   }
   return next;
@@ -145,6 +158,7 @@ export function applyMove(
         },
         spotHeadings: afterFlips(level, state, result),
         collapsed: afterCollapses(state, result),
+        unlocked: afterUnlocks(state, result),
         revision: state.revision + 1,
       };
     }
@@ -161,6 +175,7 @@ export function applyMove(
         },
         spotHeadings: afterFlips(level, state, result),
         collapsed: afterCollapses(state, result),
+        unlocked: afterUnlocks(state, result),
         revision: state.revision + 1,
       };
     }
@@ -177,6 +192,7 @@ export function applyMove(
       offsets,
       spotHeadings: afterFlips(level, state, result),
       collapsed: afterCollapses(state, result),
+      unlocked: afterUnlocks(state, result),
       revision: state.revision + 1,
     };
   }
@@ -201,6 +217,7 @@ export function applyMove(
       settledPaths,
       spotHeadings: afterFlips(level, state, result),
       collapsed: afterCollapses(state, result),
+      unlocked: afterUnlocks(state, result),
       ...(falls
         ? { fallenIds: [...(state.fallenIds ?? []), ...groupIds], lives }
         : {}),
@@ -208,6 +225,12 @@ export function applyMove(
         lives === 0 ? "lost" : remainingIds.length === 0 ? "won" : "playing",
       revision: state.revision + 1,
     };
+  }
+  // A closed gate is terrain: the arrow rewinds with no life, no red mark
+  // and every unlock and spot change of the attempt undone. The revision
+  // still advances so the rewind is an accepted, animated outcome.
+  if (result.kind === "gated") {
+    return { ...state, revision: state.revision + 1 };
   }
   const clicked = level.arrows.find(
     (candidate) => candidate.id === result.arrowId,

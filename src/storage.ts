@@ -5,6 +5,7 @@ import {
 } from "./content/procedural";
 import { hasStatefulSpots, spotStates } from "./core/directionals";
 import { fragileKeys } from "./core/fragile";
+import { closedGateKeys } from "./core/locks";
 import { createGameState } from "./core/game-state";
 import { overlappingArrowIds } from "./core/overlap";
 import {
@@ -19,7 +20,7 @@ import type { Cell, GameState, Heading, LevelDefinition } from "./core/types";
 
 const STORAGE_KEY = "par-arrows:campaign:v1";
 const SETTINGS_KEY = "par-arrows:settings:v1";
-const CONTENT_VERSION = 15;
+const CONTENT_VERSION = 16;
 
 export interface CampaignSave {
   readonly currentLevelId: number;
@@ -372,6 +373,18 @@ function hasValidFallenIds(
   );
 }
 
+/**
+ * Opened locks must be distinct authored lock ids. An unlock never costs a
+ * life, so it takes no part in the lives check.
+ */
+function hasValidUnlocked(value: unknown, level: LevelDefinition): boolean {
+  if (value === undefined) return true;
+  if (!Array.isArray(value) || new Set(value).size !== value.length)
+    return false;
+  const ids = new Set((level.locks ?? []).map((lock) => lock.id));
+  return value.every((id) => typeof id === "string" && ids.has(id));
+}
+
 function hasValidFailedPositions(
   value: unknown,
   level: LevelDefinition,
@@ -495,6 +508,12 @@ function isState(value: unknown, level: LevelDefinition): value is GameState {
     }
   }
   if (!hasValidCollapsed(candidate.collapsed, level, covered)) return false;
+  if (!hasValidUnlocked(candidate.unlocked, level)) return false;
+  // No arrow ever rests on a closed gate: a head only reaches one after its
+  // key has opened it.
+  for (const key of closedGateKeys(level, candidate.unlocked)) {
+    if (covered.has(key)) return false;
+  }
   // A fall that spends the last life loses even when it empties the board;
   // otherwise an empty board is won.
   const expectedStatus =
@@ -598,6 +617,7 @@ export async function loadCampaign(
           spotHeadings: restored?.spotHeadings ?? {},
           collapsed: restored?.collapsed ?? [],
           fallenIds: restored?.fallenIds ?? [],
+          unlocked: restored?.unlocked ?? [],
         },
         tutorialComplete: parsed.tutorialComplete === true,
         layout,

@@ -45,6 +45,16 @@ export interface WormholeDefinition {
   readonly b: Cell;
 }
 
+/**
+ * A barred gate and the key cell elsewhere on the cube that opens it. A head
+ * crossing the key opens the gate for the rest of the level.
+ */
+export interface LockDefinition {
+  readonly id: string;
+  readonly key: Cell;
+  readonly lock: Cell;
+}
+
 /** Cube-only level data with ordinary exits and optional continuation edges. */
 export interface LevelDefinition {
   readonly id: number;
@@ -63,6 +73,8 @@ export interface LevelDefinition {
   readonly wormholes?: readonly WormholeDefinition[];
   /** Cracked cells that survive one crossing; see src/core/fragile.ts. */
   readonly fragile?: readonly Cell[];
+  /** At most two key and gate pairs; see src/core/locks.ts. */
+  readonly locks?: readonly LockDefinition[];
 }
 
 export type GameStatus = "playing" | "won" | "lost";
@@ -88,6 +100,8 @@ export interface GameState {
   readonly collapsed?: readonly string[];
   /** Arrows that fell into a hole; each fall cost one life. */
   readonly fallenIds?: readonly string[];
+  /** Ids of locks a head has opened by crossing their key. */
+  readonly unlocked?: readonly string[];
 }
 
 export type Endpoint = "head" | "tail";
@@ -97,7 +111,13 @@ export interface MoveTarget {
   readonly endpoint: Endpoint;
 }
 
-export type MoveKind = "exit" | "blocked" | "invalid" | "paused" | "fall";
+export type MoveKind =
+  | "exit"
+  | "blocked"
+  | "invalid"
+  | "paused"
+  | "fall"
+  | "gated";
 
 /** A renderer-neutral position in a settled attempt trace. */
 export interface MoveWaypoint {
@@ -130,6 +150,14 @@ export interface CellCollapse {
   readonly step: number;
 }
 
+/** A lock opening during a move: its head crossed the key after `step` steps. */
+export interface LockOpening {
+  readonly id: string;
+  /** The gate cell that opens. */
+  readonly cell: Cell;
+  readonly step: number;
+}
+
 /**
  * A complete deterministic move result. `route` ends at the first blocker for
  * rebounds, at the stop circle for pauses, and at the last surface cell for exits.  Flight happens only
@@ -158,6 +186,10 @@ export interface MoveResult {
   readonly collapses?: readonly CellCollapse[];
   /** The collapsed cell a falling head entered, where it turns into the cube. */
   readonly hole?: Cell;
+  /** Locks whose key the head crossed, in order; rewound on a collision or a gate. */
+  readonly unlocks?: readonly LockOpening[];
+  /** The closed gate a head ran into; the arrow rewinds at no cost. */
+  readonly gate?: Cell;
   /**
    * Portal jumps the head made, in order; `step` is the forward step that
    * landed on `to`. Renderer-only data.

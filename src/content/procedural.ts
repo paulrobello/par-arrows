@@ -29,6 +29,7 @@ import type {
   FaceId,
   Heading,
   LevelDefinition,
+  LockDefinition,
   MoveResult,
   MoveTarget,
   WormholeDefinition,
@@ -55,6 +56,7 @@ import { DIRECTIONAL_INTRO_LEVEL } from "./directional-intro";
 import { DOUBLE_INTRO_LEVEL } from "./double-intro";
 import { FLIP_INTRO_LEVEL } from "./flip-intro";
 import { FRAGILE_INTRO_LEVEL } from "./fragile-intro";
+import { LOCK_INTRO_LEVEL } from "./lock-intro";
 import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
 import { ROTOR_INTRO_LEVEL } from "./rotor-intro";
 import { STOP_INTRO_LEVEL } from "./stop-intro";
@@ -68,7 +70,7 @@ export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
 
 /** Authored teaching cubes; every other id is generated at runtime. */
 export const AUTHORED_LEVEL_IDS: readonly number[] = [
-  1, 5, 11, 15, 20, 25, 30, 35, 40, 45,
+  1, 5, 11, 15, 20, 25, 30, 35, 40, 45, 50,
 ];
 
 const AUTHORED = new Set(AUTHORED_LEVEL_IDS);
@@ -109,6 +111,7 @@ export function seedForLevel(id: number): string {
   if (id === 35) return "par-arrows:runtime:7:level:35:wormhole-intro:1";
   if (id === 40) return "par-arrows:runtime:7:level:40:rotor-intro:1";
   if (id === 45) return "par-arrows:runtime:7:level:45:fragile-intro:1";
+  if (id === 50) return "par-arrows:runtime:7:level:50:lock-intro:1";
   return `par-arrows:runtime:${GENERATOR_VERSION}:level:${id}`;
 }
 
@@ -317,6 +320,28 @@ export function fragileCorePlanned(id: number): boolean {
   return (
     fragileCoreFrequency(id) > 0 &&
     coreStream(id, "fragile-plan", 0).next() < fragileCoreFrequency(id)
+  );
+}
+
+/** First generated level that can embed a lock core. */
+const FIRST_LOCK_LEVEL = 51;
+
+/** Probability that a generated level attempts a lock core. */
+export function lockCoreFrequency(id: number): number {
+  assertLevelId(id);
+  if (id < FIRST_LOCK_LEVEL || isAuthoredLevel(id)) return 0;
+  const progress = Math.min(
+    1,
+    (id - FIRST_LOCK_LEVEL) / (90 - FIRST_LOCK_LEVEL),
+  );
+  return 0.25 + 0.3 * progress;
+}
+
+/** True when a generated level plans a lock core, on its own stream. */
+export function lockCorePlanned(id: number): boolean {
+  return (
+    lockCoreFrequency(id) > 0 &&
+    coreStream(id, "lock-plan", 0).next() < lockCoreFrequency(id)
   );
 }
 
@@ -2078,6 +2103,154 @@ function fragileCore(
   return undefined;
 }
 
+/**
+ * The level-50 geometry relative to the gate at (0, 0), rotated per
+ * placement attempt. The opener's lane runs east straight into the gate.
+ * The key arrow bends up and runs north over the key at (1, -2), crossing
+ * the opener's lane one cell past the gate, so the only order is the key
+ * arrow first, then the opener through the open gate.
+ */
+export const LOCK_PATTERN = {
+  opener: [
+    [-2, 0],
+    [-1, 0],
+  ],
+  key: [
+    [-1, 2],
+    [0, 2],
+    [1, 2],
+    [1, 1],
+  ],
+  keyCell: [1, -2],
+} as const;
+
+/** Every generated lock-core arrow id carries this marker. */
+export const LOCK_CORE_MARKER = "-lock-";
+
+interface LockCore {
+  readonly arrows: readonly ArrowDefinition[];
+  readonly lock: LockDefinition;
+  /** The core's solution: the key arrow, then the opener. */
+  readonly certificate: readonly MoveTarget[];
+  /** Bodies, lanes, the gate and the key, reserved from later placement. */
+  readonly cells: ReadonlySet<string>;
+}
+
+/**
+ * Place a lock core on its own seeded stream. Every lane the two arrows can
+ * travel (under every flip and rotor state), the gate and the key must avoid
+ * every reserved cell and the parking core's and groups' tracks, and no
+ * arrow already placed may reach any core cell, so the core plays alone.
+ * The key arrow's lane must cross the key and never the gate, and the
+ * opener's lane must reach the gate and never the key. On the core board by
+ * itself the opener's first tap must meet the closed gate, the same board
+ * with the lock stripped must let the opener leave first, the solver's
+ * certificate must send the key arrow before the opener, and no order may
+ * strand or soft-lock it.
+ */
+function lockCore(
+  id: number,
+  level: LevelDefinition,
+  occupied: ReadonlySet<string>,
+  forbiddenTracks: ReadonlySet<string>,
+  restart: number,
+): LockCore | undefined {
+  const size = level.gridSize;
+  const rng = coreStream(id, "lock-core", restart);
+  const faces = shuffledFaces(rng);
+  const margin = 4;
+  const inBounds = (cell: Cell): boolean =>
+    cell.x >= 0 && cell.y >= 0 && cell.x < size && cell.y < size;
+  const existing = level.arrows.map((arrow) => occupancyKeys(level, arrow));
+  for (let attempt = 0; attempt < 64; attempt += 1) {
+    const face = faces[attempt % faces.length] as FaceId;
+    const rotation = rng.int(4);
+    const gate: Cell = {
+      face,
+      x: margin + rng.int(Math.max(1, size - 2 * margin)),
+      y: margin + rng.int(Math.max(1, size - 2 * margin)),
+    };
+    const at = ([dx, dy]: readonly [number, number]): Cell =>
+      patternCell(gate, dx, dy, rotation);
+    const key = at(LOCK_PATTERN.keyCell);
+    const openerId = `r${id}${LOCK_CORE_MARKER}opener`;
+    const keyId = `r${id}${LOCK_CORE_MARKER}key`;
+    const arrows: ArrowDefinition[] = [
+      { id: openerId, path: LOCK_PATTERN.opener.map(at) },
+      { id: keyId, path: LOCK_PATTERN.key.map(at) },
+    ];
+    const bodies = arrows.flatMap((arrow) => arrow.path);
+    if (
+      [...bodies, gate, key].some(
+        (cell) => !inBounds(cell) || occupied.has(cellKey(cell)),
+      )
+    )
+      continue;
+    const gateKey = cellKey(gate);
+    const keyKey = cellKey(key);
+    const cells = new Set<string>([gateKey, keyKey, ...bodies.map(cellKey)]);
+    let lanesFit = true;
+    for (const probe of flipHeadingProbes(level)) {
+      for (const arrow of arrows) {
+        const keys = arrowTrack(probe, arrow).map(cellKey);
+        const [wanted, banned] =
+          arrow.id === keyId ? [keyKey, gateKey] : [gateKey, keyKey];
+        if (!keys.includes(wanted) || keys.includes(banned)) lanesFit = false;
+        for (const entry of keys) cells.add(entry);
+      }
+    }
+    if (
+      !lanesFit ||
+      [...cells].some(
+        (entry) => occupied.has(entry) || forbiddenTracks.has(entry),
+      ) ||
+      existing.some((keys) => [...cells].some((entry) => keys.has(entry)))
+    )
+      continue;
+    const lock: LockDefinition = { id: `r${id}-lock`, key, lock: gate };
+    const coreLevel: LevelDefinition = {
+      id: level.id,
+      title: level.title,
+      gridSize: level.gridSize,
+      lives: level.lives,
+      ...(level.edgePolicies ? { edgePolicies: level.edgePolicies } : {}),
+      arrows,
+      locks: [lock],
+    };
+    if (!validateLevel(coreLevel).valid) continue;
+    const initial = createGameState(coreLevel);
+    if (simulateGameMove(coreLevel, initial, openerId).kind !== "gated")
+      continue;
+    const stripped: LevelDefinition = { ...coreLevel, locks: [] };
+    if (
+      simulateGameMove(stripped, createGameState(stripped), openerId).kind !==
+      "exit"
+    )
+      continue;
+    const certificate = solveLevelTargets(coreLevel);
+    if (!certificate) continue;
+    const order = certificate.map((target) => target.arrowId);
+    if (
+      order.indexOf(keyId) < 0 ||
+      order.indexOf(keyId) > order.indexOf(openerId)
+    )
+      continue;
+    let state = initial;
+    for (const target of certificate) {
+      state = applyMove(
+        coreLevel,
+        state,
+        simulateGameMove(coreLevel, state, target.arrowId, target.endpoint),
+      );
+    }
+    if (state.status !== "won" || !state.unlocked?.includes(lock.id)) continue;
+    if (hasStrandingState(coreLevel) !== false) continue;
+    if (hasSoftLockState(coreLevel) !== false) continue;
+    return { arrows, lock, certificate, cells };
+  }
+  return undefined;
+}
+
 /** A rotor spot frozen at its current heading: the static spot it would be. */
 function frozenSpots(
   spots: readonly DirectionalSpotDefinition[],
@@ -3158,6 +3331,7 @@ function replayCertificate(
   const settledPaths: Record<string, readonly Cell[]> = {};
   const spotHeadings: Record<string, Heading> = {};
   const collapsed: string[] = [];
+  const unlocked: string[] = [];
   const statefulLevel = hasStatefulSpots(level);
   const maximumLegs = level.gridSize * 6 + 2;
   const foldFlips = (result: MoveResult): void => {
@@ -3171,6 +3345,9 @@ function replayCertificate(
       }
       for (const collapse of member.collapses ?? []) {
         collapsed.push(cellKey(collapse.cell));
+      }
+      for (const opening of member.unlocks ?? []) {
+        if (!unlocked.includes(opening.id)) unlocked.push(opening.id);
       }
     }
   };
@@ -3203,6 +3380,7 @@ function replayCertificate(
       settledPaths,
       spotHeadings,
       collapsed,
+      unlocked,
     );
   for (const entry of certificate) {
     const encoded = typeof entry === "string" ? entry : entry.arrowId;
@@ -3272,6 +3450,7 @@ export function generateLevel(id: number): LevelDefinition {
   if (id === 35) return WORMHOLE_INTRO_LEVEL;
   if (id === 40) return ROTOR_INTRO_LEVEL;
   if (id === 45) return FRAGILE_INTRO_LEVEL;
+  if (id === 50) return LOCK_INTRO_LEVEL;
   const config = getLevelConfig(id);
   const baseSeed = hashSeed(seedForLevel(id));
   const edgePolicies = getWrappingEdgePolicies(id);
@@ -3306,6 +3485,11 @@ export function generateLevel(id: number): LevelDefinition {
   // below. It shares no stream with them, so a level whose fragile pass
   // gives up is the exact plan-zero construction.
   const fragilePlanned = fragileCorePlanned(id);
+  // A planned lock core gets its own pass the same way, a copy of whatever
+  // pass would otherwise run first (so on a fragile-planned id it carries the
+  // fragile core too, and a fragile give-up drops the lock with it); a level
+  // whose lock pass gives up is the exact plan-zero construction.
+  const lockPlanned = lockCorePlanned(id);
   const wormholeSlots = wormholePlan(id);
   for (const [tierIndex, tier] of tiers.entries()) {
     const basePasses = [
@@ -3321,8 +3505,8 @@ export function generateLevel(id: number): LevelDefinition {
         flipPass: false,
         rotorPass: false,
       },
-    ].map((pass) => ({ ...pass, fragilePass: false }));
-    const passes = [
+    ].map((pass) => ({ ...pass, fragilePass: false, lockPass: false }));
+    const fragilePasses = [
       ...(fragilePlanned && tier.certificate
         ? [
             {
@@ -3333,7 +3517,24 @@ export function generateLevel(id: number): LevelDefinition {
         : []),
       ...basePasses,
     ];
-    for (const { spotPlan, flipPass, rotorPass, fragilePass } of passes) {
+    const passes = [
+      ...(lockPlanned && tier.certificate
+        ? [
+            {
+              ...(fragilePasses[0] as (typeof fragilePasses)[number]),
+              lockPass: true,
+            },
+          ]
+        : []),
+      ...fragilePasses,
+    ];
+    for (const {
+      spotPlan,
+      flipPass,
+      rotorPass,
+      fragilePass,
+      lockPass,
+    } of passes) {
       // The rotor core's own circle comes out of the circle budget first.
       const parkBudget = getStopCount(id) - (rotorPass ? 1 : 0);
       // Wormhole slots, like the double core, exist only on certificate
@@ -3613,6 +3814,34 @@ export function generateLevel(id: number): LevelDefinition {
           for (const arrow of fragile.arrows) arrows.push(arrow);
           for (const key of fragile.cells) occupied.add(key);
         }
+        // The lock core comes last of all, fenced the same way.
+        const lock = lockPass
+          ? lockCore(
+              id,
+              {
+                ...regionBoard,
+                arrows,
+                directionals: [
+                  ...(regionBoard.directionals ?? []),
+                  ...(flip ? flip.spots : []),
+                ],
+              },
+              occupied,
+              regionTracks,
+              restart,
+            )
+          : undefined;
+        if (lockPass && !lock) {
+          skip = "lock-core";
+          continue construction;
+        }
+        if (lock) {
+          for (const arrow of lock.arrows) arrows.push(arrow);
+          for (const key of lock.cells) occupied.add(key);
+        }
+        const lockKeys = lock
+          ? [cellKey(lock.lock.lock), cellKey(lock.lock.key)]
+          : [];
         // Straight and wrap starters: graph nodes placed ahead of the fill.
         const starterArrows: ArrowDefinition[] = [];
         for (const [index, length] of [2, 3, 4].entries()) {
@@ -3781,6 +4010,7 @@ export function generateLevel(id: number): LevelDefinition {
           ),
           ...(flip?.arrows ?? []).map((arrow) => arrow.id),
           ...(fragile?.arrows ?? []).map((arrow) => arrow.id),
+          ...(lock?.arrows ?? []).map((arrow) => arrow.id),
         ]);
         const leadBodies = new Set(
           arrows
@@ -3824,6 +4054,9 @@ export function generateLevel(id: number): LevelDefinition {
           ...portalKeys,
           ...parkTrackKeys,
           ...(fragileKey ? [fragileKey] : []),
+          // A gate stops a route while locked, and a key would open it for
+          // an arrow the core's proof never saw.
+          ...lockKeys,
         ]);
         // Every lead arrow replays while the whole fill is still on the
         // board, so no fill body may sit anywhere a lead can travel: both
@@ -3956,6 +4189,7 @@ export function generateLevel(id: number): LevelDefinition {
                   ...(flip ? flip.cells : []),
                   ...portalKeys,
                   ...(fragile ? fragile.cells : []),
+                  ...(lock ? lock.cells : []),
                 ]),
               )
             : [];
@@ -3987,6 +4221,7 @@ export function generateLevel(id: number): LevelDefinition {
                 ...(flip ? flip.cells : []),
                 ...portalKeys,
                 ...(fragile ? fragile.cells : []),
+                ...(lock ? lock.cells : []),
               ]),
             )
           : [];
@@ -4027,6 +4262,7 @@ export function generateLevel(id: number): LevelDefinition {
             ? { wormholes: wormholes.map((entry) => entry.wormhole) }
             : {}),
           ...(fragile ? { fragile: [fragile.cell] } : {}),
+          ...(lock ? { locks: [lock.lock] } : {}),
         });
         let level = assemble(placeStops());
         if (
@@ -4081,6 +4317,20 @@ export function generateLevel(id: number): LevelDefinition {
           skip = "fragile";
           continue;
         }
+        // Only the core reaches its gate and key: an outside arrow over the
+        // key would open the gate outside the core's proof. Starter rays and
+        // spots placed after the core are what its reservation cannot fence.
+        if (
+          lockKeys.length > 0 &&
+          level.arrows.some((arrow) => {
+            if (arrow.id.includes(LOCK_CORE_MARKER)) return false;
+            const reach = occupancyKeys(level, arrow);
+            return lockKeys.some((key) => reach.has(key));
+          })
+        ) {
+          skip = "lock";
+          continue;
+        }
         // The flip region is proven again on the assembled level: later
         // spots and circles can bend tracks toward it, and nothing outside
         // it may ever reach its cells. Its own solution leads.
@@ -4092,6 +4342,7 @@ export function generateLevel(id: number): LevelDefinition {
         // certificate may lead wherever it sits.
         const certificate: CertificateEntry[] = [
           ...(fragile ? fragile.certificate : []),
+          ...(lock ? lock.certificate : []),
           ...wormholes.flatMap((entry) => entry.certificate),
           ...(double ? double.certificate : []),
           ...(core ? core.parkLegs : []),
@@ -4133,6 +4384,7 @@ export function generateLevel(id: number): LevelDefinition {
                 ? { wormholes: wormholes.map((entry) => entry.wormhole) }
                 : {}),
               ...(fragile ? { fragile: [fragile.cell] } : {}),
+              ...(lock ? { locks: [lock.lock] } : {}),
             };
             const trimmedStops = [
               ...(core ? core.stops : []),
