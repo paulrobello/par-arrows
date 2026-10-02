@@ -3,7 +3,11 @@ import {
   parseLevelPreview,
   resolveLevelPreview,
 } from "../src/content/level-preview";
-import { MAX_LEVEL_ID } from "../src/content/procedural";
+import {
+  MAX_LEVEL_ID,
+  hasDirectionalCore,
+  AUTHORED_LEVEL_IDS,
+} from "../src/content/procedural";
 import type { EdgePolicyDefinition } from "../src/core/types";
 
 function policies(count: number): readonly EdgePolicyDefinition[] {
@@ -142,6 +146,25 @@ describe("test-level URL previews", () => {
       resolveLevelPreview(parseLevelPreview("?level=15&feature=wrap"), 15)
         .resolvedLevelId,
     ).toBeGreaterThan(15);
+  });
+
+  test("directional searches read authored cubes, not their seed streams", () => {
+    // Level 25 carries an authored spot, so the search may land on it.
+    expect(
+      resolveLevelPreview(
+        parseLevelPreview("?feature=directional&level=25"),
+        25,
+      ).resolvedLevelId,
+    ).toBe(25);
+    // Level 35 carries no spot of any kind, so the search must skip past it
+    // instead of trusting a stream the authored cube never consumes.
+    const resolved = resolveLevelPreview(
+      parseLevelPreview("?feature=directional&level=35"),
+      35,
+    ).resolvedLevelId;
+    expect(resolved).toBeDefined();
+    expect(AUTHORED_LEVEL_IDS).not.toContain(resolved);
+    expect(hasDirectionalCore(resolved as number)).toBe(true);
   });
 
   test("bounds filtered searches to 1000 ids and stays within MAX_LEVEL_ID", () => {

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  AUTHORED_LEVEL_IDS,
   directionalFaceCount,
   generateLevel,
   hasDirectionalCore,
@@ -164,6 +165,16 @@ describe("directional spot level content", () => {
     expect(hasDirectionalCore(20)).toBe(true);
     const level = generateLevel(19);
     expect(level.directionals ?? []).toEqual([]);
+  });
+
+  test("the spot plan reads the authored cubes, not their seed streams", () => {
+    for (const id of AUTHORED_LEVEL_IDS) {
+      const level = generateLevel(id);
+      expect(hasDirectionalCore(id)).toBe(
+        (level.directionals?.length ?? 0) > 0,
+      );
+    }
+    expect(hasDirectionalCore(25)).toBe(true);
   });
 
   test("directional cores draw varied layouts instead of one stamped shape", () => {

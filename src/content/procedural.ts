@@ -82,6 +82,31 @@ export function isAuthoredLevel(id: number): boolean {
   return AUTHORED.has(id);
 }
 
+/**
+ * The authored teaching cubes, indexed by id. Every authored-aware plan
+ * helper reads its cube through this table so the plan and the actual cube
+ * can never disagree; generated ids roll their own seeded streams instead.
+ */
+const AUTHORED_LEVELS: ReadonlyMap<number, LevelDefinition> = new Map([
+  [1, LEVEL_ONE],
+  [5, STOP_INTRO_LEVEL],
+  [11, WRAP_INTRO_LEVEL],
+  [15, OVERLAP_INTRO_LEVEL],
+  [20, DIRECTIONAL_INTRO_LEVEL],
+  [25, DOUBLE_INTRO_LEVEL],
+  [30, FLIP_INTRO_LEVEL],
+  [35, WORMHOLE_INTRO_LEVEL],
+  [40, ROTOR_INTRO_LEVEL],
+  [45, FRAGILE_INTRO_LEVEL],
+  [50, LOCK_INTRO_LEVEL],
+]);
+
+/** The hand-authored cube for an authored id, or undefined for generated ids. */
+export function authoredLevel(id: number): LevelDefinition | undefined {
+  assertLevelId(id);
+  return AUTHORED_LEVELS.get(id);
+}
+
 const FACES: readonly FaceId[] = [
   "front",
   "back",
@@ -2754,13 +2779,17 @@ export function chainDepthLimit(id: number): 1 | 2 | 3 {
 }
 
 /**
- * How many faces of a generated cube carry directional spots: the authored
- * intro carries exactly one spot-bearing face; from the level after it, every
- * cube draws zero through four on its own seeded stream (uniform), so the
- * split is stable across sessions.
+ * How many faces of a cube carry directional spots. Authored cubes answer
+ * from their own content, so a preview search over them never rolls a stream
+ * the cube never consumes; generated cubes draw zero through four on their
+ * own seeded stream (uniform), so the split is stable across sessions.
  */
 export function directionalFaceCount(id: number): number {
-  if (id === DIRECTIONAL_INTRO_LEVEL.id) return 1;
+  const authored = authoredLevel(id);
+  if (authored) {
+    return new Set((authored.directionals ?? []).map((spot) => spot.cell.face))
+      .size;
+  }
   if (id < FIRST_DIRECTIONAL_LEVEL) return 0;
   const roll = new Rng(hashSeed(`${seedForLevel(id)}:dir-plan`)).next();
   return Math.min(4, Math.floor(roll * 5));
@@ -3517,17 +3546,8 @@ function validateGenerated(
  */
 export function generateLevel(id: number): LevelDefinition {
   assertLevelId(id);
-  if (id === 1) return LEVEL_ONE;
-  if (id === 5) return STOP_INTRO_LEVEL;
-  if (id === 11) return WRAP_INTRO_LEVEL;
-  if (id === 15) return OVERLAP_INTRO_LEVEL;
-  if (id === 20) return DIRECTIONAL_INTRO_LEVEL;
-  if (id === 25) return DOUBLE_INTRO_LEVEL;
-  if (id === 30) return FLIP_INTRO_LEVEL;
-  if (id === 35) return WORMHOLE_INTRO_LEVEL;
-  if (id === 40) return ROTOR_INTRO_LEVEL;
-  if (id === 45) return FRAGILE_INTRO_LEVEL;
-  if (id === 50) return LOCK_INTRO_LEVEL;
+  const authored = authoredLevel(id);
+  if (authored) return authored;
   const config = getLevelConfig(id);
   const baseSeed = hashSeed(seedForLevel(id));
   const edgePolicies = getWrappingEdgePolicies(id);
