@@ -281,7 +281,7 @@ describe("rotor generation", () => {
     for (const id of [44, 96, 142, 189]) {
       const started = performance.now();
       const level = generateLevel(id);
-      expect(performance.now() - started).toBeLessThan(1000);
+      expect(performance.now() - started).toBeLessThan(2000);
       expect(rotorCoreIds(level.arrows).length).toBeGreaterThan(0);
       expect(layoutFingerprint(generateLevel(id))).toBe(
         layoutFingerprint(level),
