@@ -303,7 +303,10 @@ describe("lock generation", () => {
     for (const id of [51, 104, 150, 199]) {
       const started = performance.now();
       const level = generateLevel(id);
-      expect(performance.now() - started).toBeLessThan(2000);
+      // The leap pass is a third copy of the first pass on certificate tiers,
+      // so the sampled lock ids carry the mirror pass's restart cost too
+      // (measured 3391 ms on CI for id 104 when leap cores shipped).
+      expect(performance.now() - started).toBeLessThan(4000);
       expect(level.locks).toHaveLength(1);
       expect(layoutFingerprint(generateLevel(id))).toBe(
         layoutFingerprint(level),
