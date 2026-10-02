@@ -408,6 +408,34 @@ const MIRROR_INTRO_SCRIPT: TutorialScript = {
   ],
 };
 
+const LEAP_INTRO_SCRIPT: TutorialScript = {
+  levelId: 60,
+  title: "Leap the barrier.",
+  steps: [
+    {
+      copy: "A leap pad skips the next cell in your heading: nothing on it ever triggers, not even a closed gate. This lane is barred, and the ring just past the barred cell is the gate's key. Tap the arrow to leap the gate.",
+      highlightId: "leap-intro-leaper",
+      advance: {
+        kind: "move",
+        arrowIds: ["leap-intro-leaper"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "The key opened the gate for everyone. Send the barred arrow through.",
+      highlightId: "leap-intro-barred",
+      advance: {
+        kind: "move",
+        arrowIds: ["leap-intro-barred"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "One cell skipped, a barrier behind you. Clear the rest.",
+      advance: { kind: "won" },
+    },
+  ],
+};
 const SCRIPTS: readonly TutorialScript[] = [
   LEVEL_ONE_SCRIPT,
   STOP_INTRO_SCRIPT,
@@ -421,6 +449,7 @@ const SCRIPTS: readonly TutorialScript[] = [
   FRAGILE_INTRO_SCRIPT,
   LOCK_INTRO_SCRIPT,
   MIRROR_INTRO_SCRIPT,
+  LEAP_INTRO_SCRIPT,
 ];
 
 export function scriptForLevel(levelId: number): TutorialScript | undefined {

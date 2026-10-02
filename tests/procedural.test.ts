@@ -129,7 +129,7 @@ describe("generated double arrows", () => {
   test("uses v10 generation, keeps the authored seeds, and the planned frequency curve", () => {
     expect(GENERATOR_VERSION).toBe(10);
     expect(AUTHORED_LEVEL_IDS).toEqual([
-      1, 5, 11, 15, 20, 25, 30, 35, 40, 45, 50, 55,
+      1, 5, 11, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60,
     ]);
     expect(seedForLevel(25)).toBe(
       "par-arrows:runtime:7:level:25:double-intro:1",
@@ -446,7 +446,8 @@ describe("runtime campaign generator", () => {
         id === 40 ||
         id === 45 ||
         id === 50 ||
-        id === 55
+        id === 55 ||
+        id === 60
       ) {
         expect(current).toEqual([1, 0, 0, 0]);
         continue;
@@ -470,7 +471,9 @@ describe("runtime campaign generator", () => {
                         ? 49
                         : id === 56
                           ? 54
-                          : id - 1,
+                          : id === 61
+                            ? 59
+                            : id - 1,
       );
       expect(current[0]).toBe(0.25);
       expect(

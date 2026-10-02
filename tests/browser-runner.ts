@@ -33,6 +33,7 @@ import { assertDoubleIntro } from "./double-browser";
 import { assertFlipIntro } from "./flip-browser";
 import { assertFragileIntro } from "./fragile-browser";
 import { assertLockIntro } from "./lock-browser";
+import { assertLeapIntro } from "./leap-browser";
 import { assertMirrorIntro } from "./mirror-browser";
 import { assertRotorIntro } from "./rotor-browser";
 import { assertWormholeIntro } from "./wormhole-browser";
@@ -117,6 +118,7 @@ const FLIP_ONLY_COMPLETE = Symbol("flip-only-complete");
 const ROTOR_ONLY_COMPLETE = Symbol("rotor-only-complete");
 const FRAGILE_ONLY_COMPLETE = Symbol("fragile-only-complete");
 const LOCK_ONLY_COMPLETE = Symbol("lock-only-complete");
+const LEAP_ONLY_COMPLETE = Symbol("leap-only-complete");
 const MIRROR_ONLY_COMPLETE = Symbol("mirror-only-complete");
 const WORMHOLE_ONLY_COMPLETE = Symbol("wormhole-only-complete");
 const PWA_ONLY_COMPLETE = Symbol("pwa-only-complete");
@@ -1161,6 +1163,20 @@ try {
     throw LOCK_ONLY_COMPLETE;
   }
 
+  if (process.env.LEAP_ONLY === "1") {
+    await assertLeapIntro(browser, url, output);
+    assert.deepEqual(failures, [], "Browser must not report uncaught errors");
+    await Bun.write(
+      `${output}/leap-summary.json`,
+      JSON.stringify(
+        { passed: true, browser: engine.name(), physicalDevice: false },
+        null,
+        2,
+      ),
+    );
+    throw LEAP_ONLY_COMPLETE;
+  }
+
   if (process.env.MIRROR_ONLY === "1") {
     await assertMirrorIntro(browser, url, output);
     assert.deepEqual(failures, [], "Browser must not report uncaught errors");
@@ -1652,6 +1668,7 @@ try {
   await assertFragileIntro(browser, url, output);
   await assertLockIntro(browser, url, output);
   await assertMirrorIntro(browser, url, output);
+  await assertLeapIntro(browser, url, output);
   await assertPwaPrompt(browser, url, output);
   await assertTutorialFlow(browser, url, output);
   await assertConsistentMotion(browser, url, output);
@@ -1697,6 +1714,7 @@ try {
     error !== ROTOR_ONLY_COMPLETE &&
     error !== FRAGILE_ONLY_COMPLETE &&
     error !== LOCK_ONLY_COMPLETE &&
+    error !== LEAP_ONLY_COMPLETE &&
     error !== MIRROR_ONLY_COMPLETE &&
     error !== WORMHOLE_ONLY_COMPLETE &&
     error !== PWA_ONLY_COMPLETE &&

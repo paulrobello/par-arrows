@@ -1,9 +1,10 @@
 import { advanceHead, cellsEqual, headingForPath } from "./topology";
+import { isLeapPad, leapLinkHeading } from "./leaps";
 import type { Cell, ForwardInfo, Heading, LevelDefinition } from "./types";
 
 export type PortalSource = Pick<
   LevelDefinition,
-  "gridSize" | "edgePolicies" | "wormholes"
+  "gridSize" | "edgePolicies" | "wormholes" | "leaps"
 >;
 
 export const MAX_WORMHOLES = 2;
@@ -35,12 +36,18 @@ export function advanceWithPortals(
 
 const HEADINGS: readonly Heading[] = ["east", "west", "south", "north"];
 
-/** The heading a head arrives at `to` with, through an adjacent link or a portal jump. */
+/** The heading a head arrives at `to` with, through an adjacent link, a portal jump, or a leap. */
 export function linkHeading(
   level: PortalSource,
   from: Cell,
   to: Cell,
 ): Heading | undefined {
+  // A head on a leap pad skips its next cell, so its link to the landing
+  // resolves through the leap — never through an adjacency or a portal on
+  // the skipped cell.
+  if (isLeapPad(level, from)) {
+    return leapLinkHeading(level, from, to);
+  }
   const adjacent = headingForPath([from, to], level.gridSize);
   if (adjacent && !wormholePartner(level, to)) return adjacent;
   for (const heading of HEADINGS) {

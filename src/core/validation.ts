@@ -11,6 +11,7 @@ import {
   simulateMove as simulateState,
 } from "./game-state";
 import { MAX_LOCKS } from "./locks";
+import { isLeapPad, leapForward, MAX_LEAP_PADS } from "./leaps";
 import { MAX_MIRRORS, mirrorHeadingAt, mirrorAt } from "./mirrors";
 import { simulateMove } from "./movement";
 import { overlappingArrowIds, sharedDirectedSegment } from "./overlap";
@@ -75,7 +76,9 @@ function loopError(
       return `Arrow ${arrow.id} has a nonterminating continuation loop from its ${endpoint} endpoint.`;
     }
     visited.add(stateKey);
-    const forward = advanceWithPortals(level, head, currentHeading);
+    const forward = isLeapPad(level, head)
+      ? leapForward(level, head, currentHeading)
+      : advanceWithPortals(level, head, currentHeading);
     if (forward.exits) {
       return undefined;
     }
@@ -135,7 +138,9 @@ export function selfPassageError(
     // loop's repeated cells are never read as body crossings.
     if (visited.has(stateKey)) break;
     visited.add(stateKey);
-    const forward = advanceWithPortals(level, head, currentHeading);
+    const forward = isLeapPad(level, head)
+      ? leapForward(level, head, currentHeading)
+      : advanceWithPortals(level, head, currentHeading);
     if (forward.exits) break;
     const next = forward.next;
     if (!next) break;
@@ -614,6 +619,32 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
     if (lockCells.has(key))
       errors.push(`Mirror ${key} shares its cell with a lock cell.`);
   }
+  const leapPads = level.leaps ?? [];
+  if (leapPads.length > MAX_LEAP_PADS)
+    errors.push(`A level may carry at most ${MAX_LEAP_PADS} leap pads.`);
+  const padCells = new Set<string>();
+  for (const pad of leapPads) {
+    const key = cellKey(pad);
+    if (!inBounds(pad, level.gridSize))
+      errors.push(`Leap pad ${key} is out of bounds.`);
+    if (padCells.has(key))
+      errors.push(`Leap pad ${key} is declared more than once.`);
+    padCells.add(key);
+    if (arrowCells.has(key))
+      errors.push(`Leap pad ${key} sits on an arrow's starting cell.`);
+    if (stopCells.has(key))
+      errors.push(`Leap pad ${key} shares its cell with a stop circle.`);
+    if (spotCells.has(key))
+      errors.push(`Leap pad ${key} shares its cell with a directional spot.`);
+    if (holeCells.has(key))
+      errors.push(`Leap pad ${key} shares its cell with a wormhole end.`);
+    if (fragileCells.has(key))
+      errors.push(`Leap pad ${key} shares its cell with a fragile cell.`);
+    if (lockCells.has(key))
+      errors.push(`Leap pad ${key} shares its cell with a lock cell.`);
+    if (mirrorCells.has(key))
+      errors.push(`Leap pad ${key} shares its cell with a mirror.`);
+  }
   // A fold can only park on a stop circle, so levels without one skip the search.
   if (stopCells.size > 0) {
     const combos = spotStateCombos(level);
@@ -671,6 +702,19 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
     ) {
       errors.push(
         `Shared-tail group ${groupKey} has a member route through a mirror.`,
+      );
+    }
+    // A pad changes the track shape itself, so a group member whose track
+    // enters one would leap on the shared offset; the same soundness rule
+    // keeps groups off pads.
+    if (
+      padCells.size > 0 &&
+      members.some((member) =>
+        arrowTrack(level, member).some((cell) => padCells.has(cellKey(cell))),
+      )
+    ) {
+      errors.push(
+        `Shared-tail group ${groupKey} has a member route through a leap pad.`,
       );
     }
     // Members share one offset and the group stops advancing as soon as any

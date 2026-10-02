@@ -4,6 +4,7 @@ import {
   edgePoint,
   faceHeadingVector,
   isContinuationEdge,
+  oppositeHeading,
 } from "./topology";
 import type {
   Cell,
@@ -23,6 +24,7 @@ import {
 } from "./directionals";
 import { fragileKeys } from "./fragile";
 import { gateAt, keyAt } from "./locks";
+import { isLeapPad, leapForward, type StepForward } from "./leaps";
 import { mirrorHeadingAt } from "./mirrors";
 import { overlappingArrowIds } from "./overlap";
 import { offsetOf, settledPathOf, stopKeys } from "./stops";
@@ -161,6 +163,7 @@ function simulateSingle(
   const spotFlips: SpotFlip[] = [];
   const collapses: CellCollapse[] = [];
   const portals: { from: Cell; to: Cell; step: number }[] = [];
+  const leaps: { from: Cell; over: Cell; to: Cell; step: number }[] = [];
   const releaseTail = (step: number): void => {
     const leaving = body[0];
     body = body.slice(1);
@@ -203,9 +206,16 @@ function simulateSingle(
       );
     }
     visited.add(stateKey);
-    const forward = advanceWithPortals(level, current, currentHeading);
+    // A head on a leap pad skips its next cell: one step, two cells of
+    // travel, and nothing on the skipped cell triggers because the head
+    // never enters it.
+    const forward: StepForward = isLeapPad(level, current)
+      ? leapForward(level, current, currentHeading)
+      : advanceWithPortals(level, current, currentHeading);
     if (forward.exits) {
-      if (isContinuationEdge(level, current, currentHeading))
+      const exitCell = forward.over ?? current;
+      const exitHeading = forward.over ? forward.heading : currentHeading;
+      if (isContinuationEdge(level, exitCell, exitHeading))
         return invalid(
           arrowId,
           endpoint,
@@ -224,11 +234,12 @@ function simulateSingle(
         stateRevision,
         offset,
         exit: {
-          edgePoint: edgePoint(current, currentHeading, level.gridSize),
-          tangent: faceHeadingVector(current.face, currentHeading),
+          edgePoint: edgePoint(exitCell, exitHeading, level.gridSize),
+          tangent: faceHeadingVector(exitCell.face, exitHeading),
         },
         ...flipResult(),
         ...(portals.length > 0 ? { portals } : {}),
+        ...(leaps.length > 0 ? { leaps } : {}),
       };
     }
     const next = forward.next;
@@ -241,13 +252,27 @@ function simulateSingle(
         "Topology returned neither a next cell nor an exit.",
       );
     }
-    distance += 1;
+    distance += forward.pad ? 2 : 1;
     route.push(next);
     if (forward.portal) {
       portals.push({ from: forward.portal, to: next, step });
     }
+    if (forward.pad && forward.over) {
+      // A leap landing on a portal end reports the physical landing cell in
+      // `to`: the portal fires on entry, so `next` is already the partner.
+      leaps.push({
+        from: forward.pad,
+        over: forward.over,
+        to: forward.portal ?? next,
+        step,
+      });
+    }
     const blockerId = occupied.get(cellKey(next));
     if (blockerId) {
+      // A leap lands on the cell past the skipped one, so the head meets a
+      // blocker there halfway across that last hop; `over` is set whenever
+      // `pad` is, per leapForward's contract.
+      const contactFrom = forward.over ?? current;
       return {
         arrowId,
         endpoint,
@@ -262,16 +287,24 @@ function simulateSingle(
           cell: next,
           point: forward.portal
             ? cellToWorld(next, level.gridSize)
-            : current.face !== next.face
-              ? edgePoint(current, currentHeading, level.gridSize)
+            : contactFrom.face !== next.face
+              ? forward.pad
+                ? // A leap landing across a wrap meets the blocker at the
+                  // seam, measured from the landing cell's edge.
+                  edgePoint(
+                    next,
+                    oppositeHeading(forward.heading),
+                    level.gridSize,
+                  )
+                : edgePoint(contactFrom, currentHeading, level.gridSize)
               : [
-                  (cellToWorld(current, level.gridSize)[0] +
+                  (cellToWorld(contactFrom, level.gridSize)[0] +
                     cellToWorld(next, level.gridSize)[0]) /
                     2,
-                  (cellToWorld(current, level.gridSize)[1] +
+                  (cellToWorld(contactFrom, level.gridSize)[1] +
                     cellToWorld(next, level.gridSize)[1]) /
                     2,
-                  (cellToWorld(current, level.gridSize)[2] +
+                  (cellToWorld(contactFrom, level.gridSize)[2] +
                     cellToWorld(next, level.gridSize)[2]) /
                     2,
                 ],
@@ -279,6 +312,7 @@ function simulateSingle(
         },
         ...flipResult(),
         ...(portals.length > 0 ? { portals } : {}),
+        ...(leaps.length > 0 ? { leaps } : {}),
       };
     }
     // A closed gate is terrain, not an arrow: the head stops short of it and
@@ -298,6 +332,7 @@ function simulateSingle(
         gate: next,
         ...flipResult(),
         ...(portals.length > 0 ? { portals } : {}),
+        ...(leaps.length > 0 ? { leaps } : {}),
       };
     }
     const key = keyAt(level, next);
@@ -322,6 +357,7 @@ function simulateSingle(
         hole: next,
         ...flipResult(),
         ...(portals.length > 0 ? { portals } : {}),
+        ...(leaps.length > 0 ? { leaps } : {}),
       };
     }
     if (tracksBody) {
@@ -342,6 +378,7 @@ function simulateSingle(
         offset,
         ...flipResult(),
         ...(portals.length > 0 ? { portals } : {}),
+        ...(leaps.length > 0 ? { leaps } : {}),
       };
     }
     if (stops.has(cellKey(next)) || step >= stepLimit) {
@@ -363,6 +400,7 @@ function simulateSingle(
           : {}),
         ...flipResult(),
         ...(portals.length > 0 ? { portals } : {}),
+        ...(leaps.length > 0 ? { leaps } : {}),
       };
     }
     current = next;

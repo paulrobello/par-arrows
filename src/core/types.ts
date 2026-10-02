@@ -88,6 +88,8 @@ export interface LevelDefinition {
   readonly locks?: readonly LockDefinition[];
   /** Reflecting floor fixtures; see src/core/mirrors.ts. */
   readonly mirrors?: readonly MirrorDefinition[];
+  /** Leap pads that skip the next cell; see src/core/leaps.ts. */
+  readonly leaps?: readonly Cell[];
 }
 
 export type GameStatus = "playing" | "won" | "lost";
@@ -209,6 +211,17 @@ export interface MoveResult {
    */
   readonly portals?: readonly {
     readonly from: Cell;
+    readonly to: Cell;
+    readonly step: number;
+  }[];
+  /**
+   * Leap-pad hops the head made, in order; `step` is the forward step that
+   * landed on `to`, and `over` is the skipped cell nothing on it triggered.
+   * Renderer-only data.
+   */
+  readonly leaps?: readonly {
+    readonly from: Cell;
+    readonly over: Cell;
     readonly to: Cell;
     readonly step: number;
   }[];

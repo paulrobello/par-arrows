@@ -5,6 +5,7 @@ import {
   MAX_LEVEL_ID,
 } from "./procedural";
 import { FRAGILE_INTRO_LEVEL } from "./fragile-intro";
+import { LEAP_INTRO_LEVEL } from "./leap-intro";
 import { LOCK_INTRO_LEVEL } from "./lock-intro";
 import { MIRROR_INTRO_LEVEL } from "./mirror-intro";
 import { ROTOR_INTRO_LEVEL } from "./rotor-intro";
@@ -23,7 +24,8 @@ export interface LevelPreview {
     | "rotor"
     | "fragile"
     | "lock"
-    | "mirror";
+    | "mirror"
+    | "leap";
   readonly wraps?: number;
   readonly resolvedLevelId?: number;
   readonly error?: string;
@@ -77,6 +79,7 @@ export function parseLevelPreview(search: string): LevelPreview {
     | "fragile"
     | "lock"
     | "mirror"
+    | "leap"
     | undefined;
   if (rawFeature !== null) {
     const normalized = rawFeature.toLowerCase();
@@ -102,6 +105,8 @@ export function parseLevelPreview(search: string): LevelPreview {
       feature = "lock";
     } else if (["mirror", "mirrors"].includes(normalized)) {
       feature = "mirror";
+    } else if (["leap", "leaps", "leappad"].includes(normalized)) {
+      feature = "leap";
     } else {
       return { active: true, error: `Unknown test feature: ${rawFeature}.` };
     }
@@ -178,6 +183,9 @@ export function resolveLevelPreview(
   }
   if (preview.feature === "mirror") {
     return { ...preview, resolvedLevelId: MIRROR_INTRO_LEVEL.id };
+  }
+  if (preview.feature === "leap") {
+    return { ...preview, resolvedLevelId: LEAP_INTRO_LEVEL.id };
   }
   const startLevelId =
     preview.feature === "overlap"

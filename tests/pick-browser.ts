@@ -219,24 +219,31 @@ export async function assertWidePickTargets(
         `Level ${levelId} press aimed at ${contested.id} must keep it`,
       );
 
-      // The same widened zone must carry through to a real activation.
+      // The same widened zone must carry through to a real activation. The
+      // first listed point can be an edge-on seam arrow whose 7px ring is
+      // contested by neighbours on a reshuffled layout, so the scan takes the
+      // first point the ring actually reaches — the pin is the activation,
+      // not that specific arrow.
       await loadLevel(page, levelId);
-      const target = points[0];
-      assert.ok(target);
       let offset: (typeof RING)[number] | undefined;
-      for (const candidate of RING) {
-        const selected = await pressOnly(
-          target.x + bounds.x + candidate[0] * OFFSET_PX,
-          target.y + bounds.y + candidate[1] * OFFSET_PX,
-        );
-        if (selected === target.id) {
-          offset = candidate;
-          break;
+      let target: { id: string; x: number; y: number } | undefined;
+      for (const candidatePoint of points) {
+        target = candidatePoint;
+        for (const candidate of RING) {
+          const selected = await pressOnly(
+            candidatePoint.x + bounds.x + candidate[0] * OFFSET_PX,
+            candidatePoint.y + bounds.y + candidate[1] * OFFSET_PX,
+          );
+          if (selected === candidatePoint.id) {
+            offset = candidate;
+            break;
+          }
         }
+        if (offset) break;
       }
       assert.ok(
-        offset,
-        `Level ${levelId} arrow ${target.id} was unreachable ${OFFSET_PX}px off centre`,
+        offset && target,
+        `Level ${levelId} no listed arrow was reachable ${OFFSET_PX}px off centre`,
       );
       const expected = simulateMove(level, initial, target.id);
       const x = target.x + bounds.x + offset[0] * OFFSET_PX;

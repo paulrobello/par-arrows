@@ -448,6 +448,7 @@ export class ParArrowsApp {
         cell: cellKey(mirror.cell),
         orientation: mirror.orientation,
       })),
+      leaps: (this.level.leaps ?? []).map((pad) => cellKey(pad)),
       parkedOffsets: Object.fromEntries(
         Object.entries(this.displayedState.offsets).filter(
           ([, offset]) => offset > 0,

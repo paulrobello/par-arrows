@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
 import { spotStates } from "../core/directionals";
+import { isLeapPad } from "../core/leaps";
 import { overlappingArrowIds } from "../core/overlap";
 import {
   advanceWithPortals,
@@ -84,6 +85,8 @@ interface ThemePalette {
   readonly rotor: number;
   /** A mirror cell's silver diagonal slash. */
   readonly mirror: number;
+  /** A leap pad's amber arch. */
+  readonly leap: number;
   /** A fragile cell's crack glyph. */
   readonly fragile: number;
   /** A collapsed cell: its border frame and its recessed cavity. */
@@ -120,6 +123,7 @@ export const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     flip: 0xc0266d,
     rotor: 0x8f6f1a,
     mirror: 0x7d8790,
+    leap: 0xc2571a,
     fragile: 0x6b5b4b,
     hole: { rim: 0x3b2f2a, cavity: 0x17110e },
     wormhole: [0xe07a10, 0x1f3fbf],
@@ -143,6 +147,7 @@ export const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     flip: 0xff6fb5,
     rotor: 0xc9a24a,
     mirror: 0xc3ccd6,
+    leap: 0xffb21a,
     fragile: 0xb8a48c,
     hole: { rim: 0xe6d5bd, cavity: 0x05080b },
     wormhole: [0xffa040, 0x4f6bff],
@@ -995,6 +1000,23 @@ export function expandedPoints(
       gaps.push(false, true);
       continue;
     }
+    if (level && isLeapPad(level, previous)) {
+      // A leap link spans the skipped cell, so the ribbon splits and the
+      // head jumps the gap like a portal; the pad's glyph marks the hop.
+      if (previous.face !== current.face) {
+        points.push(
+          seamPoint(previousPoint, currentPoint, previous.face, current.face),
+          currentPoint,
+        );
+        segmentFaces.push(previous.face, current.face);
+        gaps.push(false, true);
+      } else {
+        segmentFaces.push(previous.face);
+        gaps.push(true);
+        points.push(currentPoint);
+      }
+      continue;
+    }
     if (previous.face !== current.face) {
       points.push(
         seamPoint(previousPoint, currentPoint, previous.face, current.face),
@@ -1058,6 +1080,7 @@ export class PuzzleRenderer {
   private readonly stopCirclesGroup = new THREE.Group();
   private readonly directionalsGroup = new THREE.Group();
   private readonly mirrorsGroup = new THREE.Group();
+  private readonly leapsGroup = new THREE.Group();
   private readonly wormholesGroup = new THREE.Group();
   private readonly fragileGroup = new THREE.Group();
   private readonly lockGroup = new THREE.Group();
@@ -1113,6 +1136,7 @@ export class PuzzleRenderer {
       this.stopCirclesGroup,
       this.directionalsGroup,
       this.mirrorsGroup,
+      this.leapsGroup,
       this.wormholesGroup,
       this.fragileGroup,
       this.lockGroup,
@@ -1145,6 +1169,7 @@ export class PuzzleRenderer {
     this.clearStopCircles();
     this.clearDirectionals();
     this.clearMirrors();
+    this.clearLeapPads();
     this.clearWormholes();
     this.clearFragile();
     this.clearLocks();
@@ -1156,6 +1181,7 @@ export class PuzzleRenderer {
     this.createStopCircles(level);
     this.createDirectionals(level);
     this.createMirrors(level);
+    this.createLeapPads(level);
     this.createWormholes(level);
     this.createFragile(level);
     this.createLocks(level);
@@ -1247,6 +1273,12 @@ export class PuzzleRenderer {
       const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
       if (mesh.material instanceof THREE.MeshBasicMaterial) {
         mesh.material.color.set(palette.mirror);
+      }
+    });
+    this.leapsGroup.traverse((child) => {
+      const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
+      if (mesh.material instanceof THREE.MeshBasicMaterial) {
+        mesh.material.color.set(palette.leap);
       }
     });
     this.directionalsGroup.traverse((child) => {
@@ -2420,6 +2452,45 @@ export class PuzzleRenderer {
     }
   }
 
+  /**
+   * Each leap pad draws as a small arch over its cell: a half torus standing
+   * on the face, orientation-free because the leap follows the entry heading.
+   */
+  private createLeapPads(level: LevelDefinition): void {
+    const pitch = 2 / level.gridSize;
+    for (const pad of level.leaps ?? []) {
+      const [nx, ny, nz] = faceNormal(pad.face);
+      const normal = new THREE.Vector3(nx, ny, nz);
+      const quaternion = new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        normal,
+      );
+      const arch = new THREE.Mesh(
+        new THREE.TorusGeometry(pitch * 0.34, pitch * 0.07, 8, 24, Math.PI),
+        new THREE.MeshBasicMaterial({
+          color: this.palette.leap,
+          toneMapped: false,
+          transparent: true,
+          depthWrite: false,
+        }),
+      );
+      arch.position
+        .copy(cellPoint(pad, level.gridSize))
+        .addScaledVector(normal, pitch * 0.02);
+      arch.quaternion
+        .copy(quaternion)
+        .multiply(
+          new THREE.Quaternion().setFromAxisAngle(
+            new THREE.Vector3(1, 0, 0),
+            Math.PI / 2,
+          ),
+        );
+      arch.renderOrder = -1;
+      arch.userData.leap = cellKey(pad);
+      this.leapsGroup.add(arch);
+    }
+  }
+
   private createWormholes(level: LevelDefinition): void {
     const pitch = 2 / level.gridSize;
     for (const [index, hole] of (level.wormholes ?? []).entries()) {
@@ -2780,6 +2851,11 @@ export class PuzzleRenderer {
   private clearMirrors(): void {
     disposeTree(this.mirrorsGroup);
     this.mirrorsGroup.clear();
+  }
+
+  private clearLeapPads(): void {
+    disposeTree(this.leapsGroup);
+    this.leapsGroup.clear();
   }
 
   private clearDirectionals(): void {

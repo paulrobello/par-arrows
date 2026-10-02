@@ -1,4 +1,5 @@
 import { spotHeadingAt } from "./directionals";
+import { isLeapPad, leapForward, type StepForward } from "./leaps";
 import { mirrorHeadingAt } from "./mirrors";
 import { cellKey } from "./topology";
 import { advanceWithPortals, pathHeading } from "./wormholes";
@@ -15,7 +16,12 @@ import type {
  */
 type TrackSource = Pick<
   LevelDefinition,
-  "gridSize" | "edgePolicies" | "directionals" | "wormholes" | "mirrors"
+  | "gridSize"
+  | "edgePolicies"
+  | "directionals"
+  | "wormholes"
+  | "mirrors"
+  | "leaps"
 >;
 
 /** Cell keys of every stop circle declared by a level. */
@@ -45,10 +51,15 @@ export function arrowTrack(
     const stateKey = `${cellKey(current)}:${currentHeading}`;
     if (visited.has(stateKey)) return track;
     visited.add(stateKey);
-    const forward = advanceWithPortals(level, current, currentHeading);
-    if (forward.exits || !forward.next) return track;
-    track.push(forward.next);
-    current = forward.next;
+    // A head on a leap pad skips its next cell, so the track continues on
+    // the landing two cells on.
+    const forward: StepForward = isLeapPad(level, current)
+      ? leapForward(level, current, currentHeading)
+      : advanceWithPortals(level, current, currentHeading);
+    const landing = forward.next;
+    if (forward.exits || !landing) return track;
+    track.push(landing);
+    current = landing;
     currentHeading =
       spotHeadingAt(level, current) ??
       mirrorHeadingAt(level, current, forward.heading) ??

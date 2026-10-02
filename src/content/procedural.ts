@@ -59,6 +59,7 @@ import { DOUBLE_INTRO_LEVEL } from "./double-intro";
 import { FLIP_INTRO_LEVEL } from "./flip-intro";
 import { FRAGILE_INTRO_LEVEL } from "./fragile-intro";
 import { LOCK_INTRO_LEVEL } from "./lock-intro";
+import { LEAP_INTRO_LEVEL } from "./leap-intro";
 import { MIRROR_INTRO_LEVEL } from "./mirror-intro";
 import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
 import { ROTOR_INTRO_LEVEL } from "./rotor-intro";
@@ -73,7 +74,7 @@ export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
 
 /** Authored teaching cubes; every other id is generated at runtime. */
 export const AUTHORED_LEVEL_IDS: readonly number[] = [
-  1, 5, 11, 15, 20, 25, 30, 35, 40, 45, 50, 55,
+  1, 5, 11, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60,
 ];
 
 const AUTHORED = new Set(AUTHORED_LEVEL_IDS);
@@ -102,6 +103,7 @@ const AUTHORED_LEVELS: ReadonlyMap<number, LevelDefinition> = new Map([
   [45, FRAGILE_INTRO_LEVEL],
   [50, LOCK_INTRO_LEVEL],
   [55, MIRROR_INTRO_LEVEL],
+  [60, LEAP_INTRO_LEVEL],
 ]);
 
 /** The hand-authored cube for an authored id, or undefined for generated ids. */
@@ -142,6 +144,7 @@ export function seedForLevel(id: number): string {
   if (id === 45) return "par-arrows:runtime:7:level:45:fragile-intro:1";
   if (id === 50) return "par-arrows:runtime:7:level:50:lock-intro:1";
   if (id === 55) return "par-arrows:runtime:7:level:55:mirror-intro:1";
+  if (id === 60) return "par-arrows:runtime:7:level:60:leap-intro:1";
   return `par-arrows:runtime:${GENERATOR_VERSION}:level:${id}`;
 }
 
@@ -394,6 +397,28 @@ export function mirrorCorePlanned(id: number): boolean {
   return (
     mirrorCoreFrequency(id) > 0 &&
     coreStream(id, "mirror-plan", 0).next() < mirrorCoreFrequency(id)
+  );
+}
+
+/** First generated level that can embed a leap core. */
+const FIRST_LEAP_LEVEL = 61;
+
+/** Probability that a generated level attempts a leap core. */
+export function leapCoreFrequency(id: number): number {
+  assertLevelId(id);
+  if (id < FIRST_LEAP_LEVEL || isAuthoredLevel(id)) return 0;
+  const progress = Math.min(
+    1,
+    (id - FIRST_LEAP_LEVEL) / (90 - FIRST_LEAP_LEVEL),
+  );
+  return 0.25 + 0.3 * progress;
+}
+
+/** True when a generated level plans a leap core, on its own stream. */
+export function leapCorePlanned(id: number): boolean {
+  return (
+    leapCoreFrequency(id) > 0 &&
+    coreStream(id, "leap-plan", 0).next() < leapCoreFrequency(id)
   );
 }
 
@@ -2452,6 +2477,154 @@ function mirrorCore(
 }
 
 /**
+ * The leap-core geometry relative to the pad at (0, 0), rotated per placement
+ * attempt. The leaper faces a bent blocker: the blocker's body covers the
+ * pad's skip cell, and its head points back at the leaper's head, so each
+ * lane ends on the other's body. The pad alone breaks the deadlock: the
+ * leaper leaps over the blocker's body and exits past it, and the blocker
+ * then leaps the same pad in the other direction over the vacated cells.
+ */
+export const LEAP_PATTERN = {
+  leaper: [
+    [-2, 0],
+    [-1, 0],
+  ],
+  blocker: [
+    [1, 0],
+    [1, -1],
+    [0, -1],
+    [0, -2],
+    [-1, -2],
+    [-1, -1],
+  ],
+} as const;
+
+/** Every generated leap-core arrow id carries this marker. */
+export const LEAP_CORE_MARKER = "-leap-";
+
+interface LeapCore {
+  readonly arrows: readonly ArrowDefinition[];
+  readonly pad: Cell;
+  /** The core's solution: the leaper, then the blocker. */
+  readonly certificate: readonly MoveTarget[];
+  /** Bodies, the pad, and both lanes, reserved from later placement. */
+  readonly cells: ReadonlySet<string>;
+}
+
+/**
+ * Place a leap core on its own seeded stream, modeled on `mirrorCore`. Every
+ * lane the two arrows can travel (under every flip and rotor state), plus the
+ * pad, must avoid every reserved cell and the parking core's and groups'
+ * tracks, and no arrow already placed may reach any core cell, so the core
+ * plays alone. On the core board by itself the solver must clear it, the same
+ * board with the pad stripped must be deadlocked, and no order may strand or
+ * soft-lock it, with the leaper leaving before the blocker. Only the
+ * leaper's lane crosses the pad; the blocker's lane is the plain run it
+ * drives once the leaper has vacated its head cell.
+ */
+function leapCore(
+  id: number,
+  level: LevelDefinition,
+  occupied: ReadonlySet<string>,
+  forbiddenTracks: ReadonlySet<string>,
+  restart: number,
+): LeapCore | undefined {
+  const size = level.gridSize;
+  const rng = coreStream(id, "leap-core", restart);
+  const faces = shuffledFaces(rng);
+  const margin = 3;
+  const inBounds = (cell: Cell): boolean =>
+    cell.x >= 0 && cell.y >= 0 && cell.x < size && cell.y < size;
+  // The leap certificate leads the whole replay, so already-placed cores move
+  // only after the leaper and blocker have fully exited and only their bodies
+  // can block them; their tracks crossing a lane are harmless. Everything
+  // placed later keeps off the core's cells and lanes through the shared
+  // reservations.
+  const existing = level.arrows.map((arrow) => arrow.path.map(cellKey));
+  for (let attempt = 0; attempt < 64; attempt += 1) {
+    const face = faces[attempt % faces.length] as FaceId;
+    const rotation = rng.int(4);
+    const padCell: Cell = {
+      face,
+      x: margin + rng.int(Math.max(1, size - 2 * margin)),
+      y: margin + rng.int(Math.max(1, size - 2 * margin)),
+    };
+    const at = ([dx, dy]: readonly [number, number]): Cell =>
+      patternCell(padCell, dx, dy, rotation);
+    const leaperId = `r${id}${LEAP_CORE_MARKER}leaper`;
+    const blockerId = `r${id}${LEAP_CORE_MARKER}blocker`;
+    const arrows: ArrowDefinition[] = [
+      { id: leaperId, path: LEAP_PATTERN.leaper.map(at) },
+      { id: blockerId, path: LEAP_PATTERN.blocker.map(at) },
+    ];
+    const bodies = arrows.flatMap((arrow) => arrow.path);
+    if (
+      [...bodies, padCell].some(
+        (cell) => !inBounds(cell) || occupied.has(cellKey(cell)),
+      )
+    )
+      continue;
+    const padKey = cellKey(padCell);
+    const cells = new Set<string>([padKey, ...bodies.map(cellKey)]);
+    // The lanes must be the POST-mechanic routes: the pad's skip remaps the
+    // leaper's lane, so the reservation traces on a board that carries the
+    // pad.
+    let lanesFit = true;
+    for (const probe of flipHeadingProbes(level)) {
+      const leapBoard = { ...probe, leaps: [padCell] };
+      for (const arrow of arrows) {
+        const keys = arrowTrack(leapBoard, arrow).map(cellKey);
+        if (arrow.id === leaperId && !keys.includes(padKey)) lanesFit = false;
+        for (const entry of keys) cells.add(entry);
+      }
+    }
+    if (
+      !lanesFit ||
+      [...cells].some(
+        (entry) => occupied.has(entry) || forbiddenTracks.has(entry),
+      ) ||
+      existing.some((keys) =>
+        [...cells].some((entry) => (keys as readonly string[]).includes(entry)),
+      )
+    )
+      continue;
+    const coreLevel: LevelDefinition = {
+      id: level.id,
+      title: level.title,
+      gridSize: level.gridSize,
+      lives: level.lives,
+      ...(level.edgePolicies ? { edgePolicies: level.edgePolicies } : {}),
+      arrows,
+      leaps: [padCell],
+    };
+    if (!validateLevel(coreLevel).valid) continue;
+    const stripped = { ...coreLevel, leaps: [] };
+    if (solveLevelTargets(stripped) !== undefined) continue;
+    const certificate = solveLevelTargets(coreLevel);
+    if (!certificate) continue;
+    let state = createGameState(coreLevel);
+    for (const target of certificate) {
+      state = applyMove(
+        coreLevel,
+        state,
+        simulateGameMove(coreLevel, state, target.arrowId, target.endpoint),
+      );
+    }
+    if (state.status !== "won") continue;
+    if (hasStrandingState(coreLevel) !== false) continue;
+    if (hasSoftLockState(coreLevel) !== false) continue;
+    const order = certificate.map((target) => target.arrowId);
+    if (
+      order.indexOf(leaperId) < 0 ||
+      order.indexOf(leaperId) > order.indexOf(blockerId)
+    )
+      continue;
+    return { arrows, pad: padCell, certificate, cells };
+  }
+  return undefined;
+}
+
+/**
  * Place a rotor core on its own seeded stream and prove its interaction
  * region, modeled on `flipCore`. The pattern rotates about its rotor, which
  * keeps a six-cell margin from every face edge so each rotation fits. Every
@@ -3757,6 +3930,11 @@ export function generateLevel(id: number): LevelDefinition {
   // cores too); a level whose mirror pass gives up is the exact plan-zero
   // construction.
   const mirrorPlanned = mirrorCorePlanned(id);
+  // A planned leap core gets its own pass after the mirror's, a copy of the
+  // pass ahead of it (so on a mirror-planned id it carries the mirror, lock
+  // and fragile cores too); a level whose leap pass gives up is the exact
+  // plan-zero construction.
+  const leapPlanned = leapCorePlanned(id);
   const wormholeSlots = wormholePlan(id);
   for (const [tierIndex, tier] of tiers.entries()) {
     const basePasses = [
@@ -3777,6 +3955,7 @@ export function generateLevel(id: number): LevelDefinition {
       fragilePass: false,
       lockPass: false,
       mirrorPass: false,
+      leapPass: false,
     }));
     const fragilePasses = [
       ...(fragilePlanned && tier.certificate
@@ -3800,7 +3979,7 @@ export function generateLevel(id: number): LevelDefinition {
         : []),
       ...fragilePasses,
     ];
-    const passes = [
+    const mirrorPasses = [
       ...(mirrorPlanned && tier.certificate
         ? [
             {
@@ -3811,6 +3990,17 @@ export function generateLevel(id: number): LevelDefinition {
         : []),
       ...lockPasses,
     ];
+    const passes = [
+      ...(leapPlanned && tier.certificate
+        ? [
+            {
+              ...(mirrorPasses[0] as (typeof mirrorPasses)[number]),
+              leapPass: true,
+            },
+          ]
+        : []),
+      ...mirrorPasses,
+    ];
     for (const {
       spotPlan,
       flipPass,
@@ -3818,6 +4008,7 @@ export function generateLevel(id: number): LevelDefinition {
       fragilePass,
       lockPass,
       mirrorPass,
+      leapPass,
     } of passes) {
       // The rotor core's own circle comes out of the circle budget first.
       const parkBudget = getStopCount(id) - (rotorPass ? 1 : 0);
@@ -4162,10 +4353,36 @@ export function generateLevel(id: number): LevelDefinition {
           for (const arrow of mirror.arrows) arrows.push(arrow);
           for (const key of mirror.cells) occupied.add(key);
         }
+        // The leap core comes after the mirror core, fenced the same way.
+        const leap = leapPass
+          ? leapCore(
+              id,
+              {
+                ...regionBoard,
+                arrows,
+                directionals: [
+                  ...(regionBoard.directionals ?? []),
+                  ...(flip ? flip.spots : []),
+                ],
+              },
+              occupied,
+              regionTracks,
+              restart,
+            )
+          : undefined;
+        if (leapPass && !leap) {
+          skip = "leap-core";
+          continue construction;
+        }
+        if (leap) {
+          for (const arrow of leap.arrows) arrows.push(arrow);
+          for (const key of leap.cells) occupied.add(key);
+        }
         const lockKeys = lock
           ? [cellKey(lock.lock.lock), cellKey(lock.lock.key)]
           : [];
         const mirrorKeys = mirror ? [cellKey(mirror.mirror.cell)] : [];
+        const leapKeys = leap ? [cellKey(leap.pad)] : [];
         // Straight and wrap starters: graph nodes placed ahead of the fill.
         const starterArrows: ArrowDefinition[] = [];
         for (const [index, length] of [2, 3, 4].entries()) {
@@ -4340,6 +4557,7 @@ export function generateLevel(id: number): LevelDefinition {
           ...(fragile?.arrows ?? []).map((arrow) => arrow.id),
           ...(lock?.arrows ?? []).map((arrow) => arrow.id),
           ...(mirror?.arrows ?? []).map((arrow) => arrow.id),
+          ...(leap?.arrows ?? []).map((arrow) => arrow.id),
         ]);
         const leadBodies = new Set(
           arrows
@@ -4389,6 +4607,8 @@ export function generateLevel(id: number): LevelDefinition {
           // A mirror bends a route off its authored line, so no fill route
           // may cross it.
           ...mirrorKeys,
+          // A pad skips a route's next cell, so no fill route may cross it.
+          ...leapKeys,
         ]);
         // Every lead arrow replays while the whole fill is still on the
         // board, so no fill body may sit anywhere a lead can travel: both
@@ -4596,6 +4816,7 @@ export function generateLevel(id: number): LevelDefinition {
           ...(fragile ? { fragile: [fragile.cell] } : {}),
           ...(lock ? { locks: [lock.lock] } : {}),
           ...(mirror ? { mirrors: [mirror.mirror] } : {}),
+          ...(leap ? { leaps: [leap.pad] } : {}),
         });
         let level = assemble(placeStops());
         if (
@@ -4678,6 +4899,20 @@ export function generateLevel(id: number): LevelDefinition {
           skip = "mirror";
           continue;
         }
+        // Only the core reaches its pad: an outside arrow entering it would
+        // leap outside the core's proof. Starter rays and spots placed after
+        // the core are what its reservation cannot fence.
+        if (
+          leapKeys.length > 0 &&
+          level.arrows.some((arrow) => {
+            if (arrow.id.includes(LEAP_CORE_MARKER)) return false;
+            const reach = occupancyKeys(level, arrow);
+            return leapKeys.some((key) => reach.has(key));
+          })
+        ) {
+          skip = "leap";
+          continue;
+        }
         // The flip region is proven again on the assembled level: later
         // spots and circles can bend tracks toward it, and nothing outside
         // it may ever reach its cells. Its own solution leads.
@@ -4691,6 +4926,7 @@ export function generateLevel(id: number): LevelDefinition {
           ...(fragile ? fragile.certificate : []),
           ...(lock ? lock.certificate : []),
           ...(mirror ? mirror.certificate : []),
+          ...(leap ? leap.certificate : []),
           ...wormholes.flatMap((entry) => entry.certificate),
           ...(double ? double.certificate : []),
           ...(core ? core.parkLegs : []),
@@ -4734,6 +4970,7 @@ export function generateLevel(id: number): LevelDefinition {
               ...(fragile ? { fragile: [fragile.cell] } : {}),
               ...(lock ? { locks: [lock.lock] } : {}),
               ...(mirror ? { mirrors: [mirror.mirror] } : {}),
+              ...(leap ? { leaps: [leap.pad] } : {}),
             };
             const trimmedStops = [
               ...(core ? core.stops : []),
