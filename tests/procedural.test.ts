@@ -640,8 +640,10 @@ describe("runtime campaign generator", () => {
 
   test("park cores vary in shape across the campaign", () => {
     const shapes = new Set<string>();
-    // Re-rolled for generator v10: the first twin core lands on level 75.
-    for (let id = 6; id <= 75; id += 1) {
+    // The self-passage rule rebuilds boards where a lone park arrow folded
+    // over its own body, so the first twin core moved from level 75 to 77;
+    // the sweep reaches past it.
+    for (let id = 6; id <= 77; id += 1) {
       const level = generateLevel(id);
       if ((level.stops ?? []).length === 0) continue;
       const parkArrows = level.arrows.filter((arrow) =>

@@ -55,7 +55,6 @@ const PRE_ROTOR: Readonly<Record<number, string>> = {
   133: "615b7509b38d3357",
   134: "49fec61d6f20b29b",
   136: "1513eb0159e4d279",
-  137: "362200e1c5cdfa16",
   142: "7871b58bda2cc769",
   143: "966b243fe9e3135d",
   150: "5a030515e5873940",

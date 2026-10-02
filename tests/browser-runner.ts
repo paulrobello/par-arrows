@@ -1650,13 +1650,13 @@ try {
     // would count as seam yellow). The movement fixture needs a
     // wrap-crossing arrow that exits on the full board and one that is
     // blocked; level 81 lost its exiting crossing when v10 rebuilt the
-    // board, leaving only short blocked crossings whose half-cell contact
-    // animation never shows the fold, so movement and rebound moved to
-    // level 37, where r37-14 exits across the seam and r37-wrap-0 is
-    // blocked one cell past it.
+    // board, and level 37 lost it when the self-passage rule rebuilt its
+    // board, so movement and rebound moved to level 42, where r42-dir-a
+    // exits through its wrapping corridor and r42-34 is blocked one cell
+    // past it.
     dimmingLevelId: 81,
-    movementLevelId: 37,
-    reboundLevelId: 37,
+    movementLevelId: 42,
+    reboundLevelId: 42,
   });
   await assertVersionReload(page);
   await assertThemeBootstrap(browser);

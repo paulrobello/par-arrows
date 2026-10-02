@@ -444,7 +444,14 @@ describe("settled game results", () => {
     expect(
       simulatePath(level, ["wrapped-contact"], "wrapped-contact").kind,
     ).toBe("exit");
-    expect(validateLevel(level).valid).toBe(true);
+    // The engine lets the head pass over its own body, but the placement
+    // rule rejects a layout that requires the fold without a head-on spot
+    // bounce to explain it.
+    expect(
+      validateLevel(level).errors.some((error) =>
+        error.includes("folds over its own body"),
+      ),
+    ).toBe(true);
 
     const vacatedTailLevel = {
       ...level,
@@ -454,7 +461,13 @@ describe("settled game results", () => {
       simulatePath(vacatedTailLevel, ["wrapped-contact"], "wrapped-contact")
         .kind,
     ).toBe("exit");
-    expect(validateLevel(vacatedTailLevel).valid).toBe(true);
+    // The wrapped route still slides over the right-face body cells, so the
+    // placement rule rejects this layout as well.
+    expect(
+      validateLevel(vacatedTailLevel).errors.some((error) =>
+        error.includes("folds over its own body"),
+      ),
+    ).toBe(true);
   });
 
   test("rejects malformed continuation contracts", () => {

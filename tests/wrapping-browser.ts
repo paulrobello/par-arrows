@@ -205,7 +205,7 @@ export async function assertWrappingEdges(
     await waitForReady(page);
 
     const movementLevel = generateLevel(fixtures.movementLevelId);
-    const movementArrow = crossingArrow(fixtures.movementLevelId);
+    const movementArrow = crossingArrow(fixtures.movementLevelId, "exit");
     await loadLevel(page, fixtures.movementLevelId);
     await assertEdgeDimming(
       page,

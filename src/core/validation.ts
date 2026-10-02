@@ -14,7 +14,7 @@ import { MAX_LOCKS } from "./locks";
 import { simulateMove } from "./movement";
 import { overlappingArrowIds, sharedDirectedSegment } from "./overlap";
 import { arrowTrack, maximumOffset, settledPathOf, trackKeys } from "./stops";
-import { cellKey, linkKey, seamTransition } from "./topology";
+import { cellKey, linkKey, oppositeHeading, seamTransition } from "./topology";
 import {
   MAX_WORMHOLES,
   advanceWithPortals,
@@ -87,6 +87,87 @@ function loopError(
       spotHeadingAt(level, head, spotHeadings) ?? forward.heading;
   }
   return `Arrow ${arrow.id} has a nonterminating continuation loop from its ${endpoint} endpoint.`;
+}
+
+/**
+ * Report an arrow placed so its route folds over its own body on the way to
+ * an exit. A head may pass through its own body only as the visible bounce of
+ * a head-on reversal off a spot; any other crossing — a spot bend pointing the
+ * route back across the body, or a wrapping path sliding into the body — reads
+ * to a player as a collision that failed to register, so a level may not
+ * require one. A crossing counts as sanctioned when, since some earlier
+ * head-on reversal at route index `j`, every entry heading has equalled the
+ * reversal spot's direction — the arrow has been running the reversal's
+ * straight retrace, which portals carry symmetrically. Checked under the
+ * authored spot headings; a flip or rotor
+ * state reached in play redirects routes by a live mechanic, so it is not a
+ * placement property. Shared by validation and the spot placers.
+ */
+export function selfPassageError(
+  arrow: ArrowDefinition,
+  level: LevelDefinition,
+  endpoint: Endpoint,
+  spotHeadings: Readonly<Record<string, Heading>> = {},
+): string | undefined {
+  const path = orientedPath(arrow, endpoint);
+  const initialHead = path[path.length - 1];
+  if (!initialHead) {
+    return `Arrow ${arrow.id} has no head cell.`;
+  }
+  const heading = pathHeading(level, path);
+  if (!heading) {
+    return undefined;
+  }
+  const bodyKeys = new Set(path.map(cellKey));
+  const route: Cell[] = [];
+  const entryHeadings: Heading[] = [];
+  const reversals: number[] = [];
+  let head: Cell = initialHead;
+  let currentHeading = heading;
+  const visited = new Set<string>();
+  const maximumSteps = 6 * level.gridSize * level.gridSize * 4;
+  for (let step = 1; step <= maximumSteps; step += 1) {
+    const stateKey = `${cellKey(head)}:${currentHeading}`;
+    // A continuation loop is loopError's report; stop tracing here so a
+    // loop's repeated cells are never read as body crossings.
+    if (visited.has(stateKey)) break;
+    visited.add(stateKey);
+    const forward = advanceWithPortals(level, head, currentHeading);
+    if (forward.exits) break;
+    const next = forward.next;
+    if (!next) break;
+    route.push(next);
+    entryHeadings.push(currentHeading);
+    head = next;
+    const spotHeading = spotHeadingAt(level, head, spotHeadings);
+    if (spotHeading && currentHeading === oppositeHeading(spotHeading)) {
+      reversals.push(route.length - 1);
+    }
+    currentHeading = spotHeading ?? forward.heading;
+  }
+  const sanctioned = (k: number): boolean => {
+    for (let r = reversals.length - 1; r >= 0; r -= 1) {
+      const j = reversals[r] as number;
+      if (j >= k) continue;
+      const retrace = spotHeadingAt(level, route[j] as Cell, spotHeadings);
+      if (!retrace) continue;
+      let straight = true;
+      for (let i = j + 1; i <= k; i += 1) {
+        if (entryHeadings[i] !== retrace) {
+          straight = false;
+          break;
+        }
+      }
+      if (straight) return true;
+    }
+    return false;
+  };
+  for (let k = 0; k < route.length; k += 1) {
+    if (!bodyKeys.has(cellKey(route[k] as Cell))) continue;
+    if (sanctioned(k)) continue;
+    return `Arrow ${arrow.id} folds over its own body on its ${endpoint} route without a head-on spot reversal.`;
+  }
+  return undefined;
 }
 
 /** Flip and rotor spots in declaration order: the spots whose direction changes. */
@@ -359,6 +440,10 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
         if (loopProblem && !errors.includes(loopProblem)) {
           errors.push(loopProblem);
         }
+      }
+      const passageProblem = selfPassageError(arrow, level, endpoint);
+      if (passageProblem && !errors.includes(passageProblem)) {
+        errors.push(passageProblem);
       }
     }
   }

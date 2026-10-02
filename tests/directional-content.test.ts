@@ -12,11 +12,13 @@ import {
   simulateMove,
 } from "../src/core/game-state";
 import { cellKey } from "../src/core/topology";
+import type { Cell } from "../src/core/types";
 import {
   solveLevel,
   solveLevelTargets,
   validateLevel,
 } from "../src/core/validation";
+import { cachedLevel } from "./generated-levels";
 
 const EAST = "dir-intro-east";
 const FREED = "dir-intro-freed";
@@ -163,4 +165,49 @@ describe("directional spot level content", () => {
     const level = generateLevel(19);
     expect(level.directionals ?? []).toEqual([]);
   });
+
+  test("directional cores draw varied layouts instead of one stamped shape", () => {
+    const shapes = new Set<string>();
+    let carriers = 0;
+    let requiredUseChecked = 0;
+    for (let id = 21; id <= 200; id += 1) {
+      if (isAuthoredLevel(id) || !hasDirectionalCore(id)) continue;
+      const level = cachedLevel(id);
+      const coreA = level.arrows.find((arrow) => arrow.id === `r${id}-dir-a`);
+      const coreB = level.arrows.find((arrow) => arrow.id === `r${id}-dir-b`);
+      if (!coreA || !coreB) continue;
+      carriers += 1;
+      const bent = (path: readonly Cell[]): boolean => {
+        for (let index = 2; index < path.length; index += 1) {
+          const stepIn = {
+            x: (path[index - 1] as Cell).x - (path[index - 2] as Cell).x,
+            y: (path[index - 1] as Cell).y - (path[index - 2] as Cell).y,
+          };
+          const stepOut = {
+            x: (path[index] as Cell).x - (path[index - 1] as Cell).x,
+            y: (path[index] as Cell).y - (path[index - 1] as Cell).y,
+          };
+          if (stepIn.x !== stepOut.x || stepIn.y !== stepOut.y) return true;
+        }
+        return false;
+      };
+      shapes.add(
+        `${coreA.path.length}:${coreB.path.length}:${bent(coreA.path)}:${bent(coreB.path)}`,
+      );
+      // Every fifth carrier also proves required use: the cube is unsolvable
+      // with the static spots stripped, so the variant is never decorative.
+      if (
+        id % 5 === 0 &&
+        !level.arrows.some((arrow) => arrow.kind === "double")
+      ) {
+        expect(
+          solveLevelTargets({ ...level, directionals: [] }),
+        ).toBeUndefined();
+        requiredUseChecked += 1;
+      }
+    }
+    expect(carriers).toBeGreaterThan(50);
+    expect(shapes.size).toBeGreaterThanOrEqual(4);
+    expect(requiredUseChecked).toBeGreaterThan(3);
+  }, 180_000);
 });

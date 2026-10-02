@@ -41,6 +41,7 @@ import {
   interactionRegion,
   occupancyKeys,
   proveRegion,
+  selfPassageError,
   solveLevel,
   solveLevelTargets,
   validateLevel,
@@ -2793,7 +2794,11 @@ interface DirectionalCore {
  * runs into the other's head cell, so neither can ever move; with it, each
  * bends into the corridor and leaves. The corridor must exit and stay clear of
  * everything placed before the core; everything placed after rejects these
- * cells, which keeps the certificate replay infallible. Undefined means no
+ * cells, which keeps the certificate replay infallible. Each placement draws
+ * a variant from the stream: each flanker's tail distance from the spot (2-4),
+ * the head-to-spot gap (1-2), and which tails bend off the lane. Variants are
+ * cosmetic to the contract; the corridor reservation and mutual deadlock proof
+ * are unchanged. Undefined means no
  * placement fit and the level falls back to a layout without directionals.
  */
 function directionalCore(
@@ -2815,29 +2820,88 @@ function directionalCore(
     const face = faces[attempt % faces.length] as FaceId;
     const lane = HEADINGS[rng.int(HEADINGS.length)] as Heading;
     const turn = PERPENDICULAR[lane][rng.int(2)] as Heading;
+    // Seeded variant: each flanker's reach (tail distance from the spot), the
+    // gap between its head and the spot, and which tails bend off the lane.
+    // Every draw keeps the required-use contract — two heads on one lane
+    // facing the spot, so each stripped track runs into the other's head cell
+    // and the spot bends each into the perpendicular corridor.
+    const approachTail = 2 + rng.int(3);
+    const opposingTail = 2 + rng.int(3);
+    const approachGap = 1 + rng.int(Math.min(2, approachTail - 1));
+    const opposingGap = 1 + rng.int(Math.min(2, opposingTail - 1));
+    const approachBend = rng.int(2) === 1 && approachTail - approachGap >= 2;
+    const opposingBend = rng.int(2) === 1 && opposingTail - opposingGap >= 2;
+    const approachLegSide = PERPENDICULAR[lane][rng.int(2)] as Heading;
+    const opposingLegSide = PERPENDICULAR[lane][rng.int(2)] as Heading;
     const vector = HEADING_VECTORS[lane];
     const spotCell: Cell = {
       face,
       x: 2 + rng.int(Math.max(1, size - 4)),
       y: 2 + rng.int(Math.max(1, size - 4)),
     };
-    const approachingPath: readonly Cell[] = [
-      {
+    const flanker = (
+      side: 1 | -1,
+      gap: number,
+      tail: number,
+      bend: boolean,
+      legSide: Heading,
+    ): readonly Cell[] => {
+      const cells: Cell[] = [];
+      const laneTail = bend ? tail - 1 : tail;
+      for (let distance = laneTail; distance >= gap; distance -= 1) {
+        cells.push({
+          face,
+          x: spotCell.x + side * distance * vector.dx,
+          y: spotCell.y + side * distance * vector.dy,
+        });
+      }
+      if (bend) {
+        cells.unshift({
+          face,
+          x:
+            spotCell.x +
+            side * (tail - 1) * vector.dx +
+            HEADING_VECTORS[legSide].dx,
+          y:
+            spotCell.y +
+            side * (tail - 1) * vector.dy +
+            HEADING_VECTORS[legSide].dy,
+        });
+      }
+      return cells;
+    };
+    const approachingPath = flanker(
+      -1,
+      approachGap,
+      approachTail,
+      approachBend,
+      approachLegSide,
+    );
+    const opposingPath = flanker(
+      1,
+      opposingGap,
+      opposingTail,
+      opposingBend,
+      opposingLegSide,
+    );
+    // A head resting two cells from the spot keeps the cell between them on
+    // both deadlocked routes, so it must hold empty like the spot itself.
+    const gapCells: Cell[] = [];
+    for (let distance = 1; distance < approachGap; distance += 1) {
+      gapCells.push({
         face,
-        x: spotCell.x - 2 * vector.dx,
-        y: spotCell.y - 2 * vector.dy,
-      },
-      { face, x: spotCell.x - vector.dx, y: spotCell.y - vector.dy },
-    ];
-    const opposingPath: readonly Cell[] = [
-      {
+        x: spotCell.x - distance * vector.dx,
+        y: spotCell.y - distance * vector.dy,
+      });
+    }
+    for (let distance = 1; distance < opposingGap; distance += 1) {
+      gapCells.push({
         face,
-        x: spotCell.x + 2 * vector.dx,
-        y: spotCell.y + 2 * vector.dy,
-      },
-      { face, x: spotCell.x + vector.dx, y: spotCell.y + vector.dy },
-    ];
-    const cells = [...approachingPath, ...opposingPath, spotCell];
+        x: spotCell.x + distance * vector.dx,
+        y: spotCell.y + distance * vector.dy,
+      });
+    }
+    const cells = [...approachingPath, ...opposingPath, ...gapCells, spotCell];
     if (spotForbidden.has(cellKey(spotCell))) continue;
     const patternKeys = new Set(cells.map(cellKey));
     const taken = (cell: Cell): boolean =>
@@ -3037,6 +3101,19 @@ function extraDirectionalSpots(
               arrows[traverser]!!.id,
             );
             if (alone.kind !== "exit") {
+              fits = false;
+              break;
+            }
+            // The bend must never fold a traverser back over its own body:
+            // self-passage is legal only as a head-on bounce off a spot, so a
+            // candidate whose bent route slides into the body is rejected here
+            // and by the matching validation rule.
+            const passage = selfPassageError(
+              arrows[traverser]!!,
+              trial,
+              "head",
+            );
+            if (passage) {
               fits = false;
               break;
             }
@@ -3619,8 +3696,12 @@ export function generateLevel(id: number): LevelDefinition {
         };
         if (core) {
           for (const arrow of core.arrows) {
-            if (!validateLevel({ ...parkBoard, arrows: [arrow] }).valid)
-              throw new Error("Seeded parking-core arrow was invalid.");
+            if (!validateLevel({ ...parkBoard, arrows: [arrow] }).valid) {
+              // A lone core arrow can wrap-fold over its own body, which the
+              // self-passage rule rejects; rebuild instead of crashing.
+              skip = "park-core";
+              continue construction;
+            }
             for (const cell of arrow.path) occupied.add(cellKey(cell));
             arrows.push(arrow);
           }
@@ -3661,8 +3742,18 @@ export function generateLevel(id: number): LevelDefinition {
         const dirCells = new Set<string>();
         if (directionalSpot) {
           for (const arrow of directionalSpot.arrows) {
-            if (!validateLevel({ ...candidateLevel, arrows: [arrow] }).valid)
-              throw new Error("Seeded directional-core arrow was invalid.");
+            if (
+              !validateLevel({
+                ...candidateLevel,
+                directionals: [directionalSpot.spot],
+                arrows: [arrow],
+              }).valid
+            ) {
+              // A lone core arrow can wrap-fold over its own body, which the
+              // self-passage rule rejects; rebuild instead of crashing.
+              skip = "dir-core";
+              continue construction;
+            }
             for (const cell of arrow.path) occupied.add(cellKey(cell));
             arrows.push(arrow);
           }
@@ -3922,8 +4013,12 @@ export function generateLevel(id: number): LevelDefinition {
             id: `r${id}-straight-${length}`,
             path,
           };
-          if (!validateLevel({ ...candidateLevel, arrows: [arrow] }).valid)
-            throw new Error("Seeded straight-arrow starter was invalid.");
+          if (!validateLevel({ ...candidateLevel, arrows: [arrow] }).valid) {
+            // A lone starter can wrap-fold over its own body, which the
+            // self-passage rule rejects; rebuild instead of crashing.
+            skip = "starter";
+            continue construction;
+          }
           for (const cell of path) occupied.add(cellKey(cell));
           arrows.push(arrow);
           starterArrows.push(arrow);
