@@ -1,4 +1,5 @@
 import { spotHeadingAt } from "./directionals";
+import { mirrorHeadingAt } from "./mirrors";
 import { cellKey } from "./topology";
 import { advanceWithPortals, pathHeading } from "./wormholes";
 import type {
@@ -14,7 +15,7 @@ import type {
  */
 type TrackSource = Pick<
   LevelDefinition,
-  "gridSize" | "edgePolicies" | "directionals" | "wormholes"
+  "gridSize" | "edgePolicies" | "directionals" | "wormholes" | "mirrors"
 >;
 
 /** Cell keys of every stop circle declared by a level. */
@@ -48,7 +49,10 @@ export function arrowTrack(
     if (forward.exits || !forward.next) return track;
     track.push(forward.next);
     current = forward.next;
-    currentHeading = spotHeadingAt(level, current) ?? forward.heading;
+    currentHeading =
+      spotHeadingAt(level, current) ??
+      mirrorHeadingAt(level, current, forward.heading) ??
+      forward.heading;
   }
   return track;
 }

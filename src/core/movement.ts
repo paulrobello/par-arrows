@@ -23,6 +23,7 @@ import {
 } from "./directionals";
 import { fragileKeys } from "./fragile";
 import { gateAt, keyAt } from "./locks";
+import { mirrorHeadingAt } from "./mirrors";
 import { overlappingArrowIds } from "./overlap";
 import { offsetOf, settledPathOf, stopKeys } from "./stops";
 import { advanceWithPortals, pathHeading } from "./wormholes";
@@ -365,7 +366,10 @@ function simulateSingle(
       };
     }
     current = next;
-    currentHeading = spotHeadingAt(level, next, live) ?? forward.heading;
+    currentHeading =
+      spotHeadingAt(level, next, live) ??
+      mirrorHeadingAt(level, next, forward.heading) ??
+      forward.heading;
   }
   return invalid(
     arrowId,

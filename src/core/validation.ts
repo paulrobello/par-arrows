@@ -11,6 +11,7 @@ import {
   simulateMove as simulateState,
 } from "./game-state";
 import { MAX_LOCKS } from "./locks";
+import { MAX_MIRRORS, mirrorHeadingAt, mirrorAt } from "./mirrors";
 import { simulateMove } from "./movement";
 import { overlappingArrowIds, sharedDirectedSegment } from "./overlap";
 import { arrowTrack, maximumOffset, settledPathOf, trackKeys } from "./stops";
@@ -84,7 +85,9 @@ function loopError(
     }
     head = next;
     currentHeading =
-      spotHeadingAt(level, head, spotHeadings) ?? forward.heading;
+      spotHeadingAt(level, head, spotHeadings) ??
+      mirrorHeadingAt(level, head, forward.heading) ??
+      forward.heading;
   }
   return `Arrow ${arrow.id} has a nonterminating continuation loop from its ${endpoint} endpoint.`;
 }
@@ -143,7 +146,10 @@ export function selfPassageError(
     if (spotHeading && currentHeading === oppositeHeading(spotHeading)) {
       reversals.push(route.length - 1);
     }
-    currentHeading = spotHeading ?? forward.heading;
+    currentHeading =
+      spotHeading ??
+      mirrorHeadingAt(level, head, forward.heading) ??
+      forward.heading;
   }
   const sanctioned = (k: number): boolean => {
     for (let r = reversals.length - 1; r >= 0; r -= 1) {
@@ -584,6 +590,30 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
         );
     }
   }
+  const mirrors = level.mirrors ?? [];
+  if (mirrors.length > MAX_MIRRORS)
+    errors.push(`A level may carry at most ${MAX_MIRRORS} mirrors.`);
+  const mirrorCells = new Set<string>();
+  for (const mirror of mirrors) {
+    const key = cellKey(mirror.cell);
+    if (!inBounds(mirror.cell, level.gridSize))
+      errors.push(`Mirror ${key} is out of bounds.`);
+    if (mirrorCells.has(key))
+      errors.push(`Mirror ${key} is declared more than once.`);
+    mirrorCells.add(key);
+    if (arrowCells.has(key))
+      errors.push(`Mirror ${key} sits on an arrow's starting cell.`);
+    if (stopCells.has(key))
+      errors.push(`Mirror ${key} shares its cell with a stop circle.`);
+    if (spotCells.has(key))
+      errors.push(`Mirror ${key} shares its cell with a directional spot.`);
+    if (holeCells.has(key))
+      errors.push(`Mirror ${key} shares its cell with a wormhole end.`);
+    if (fragileCells.has(key))
+      errors.push(`Mirror ${key} shares its cell with a fragile cell.`);
+    if (lockCells.has(key))
+      errors.push(`Mirror ${key} shares its cell with a lock cell.`);
+  }
   // A fold can only park on a stop circle, so levels without one skip the search.
   if (stopCells.size > 0) {
     const combos = spotStateCombos(level);
@@ -627,6 +657,20 @@ export function validateLevel(level: LevelDefinition): ValidationResult {
     ) {
       errors.push(
         `Shared-tail group ${groupKey} has a member route through a directional spot.`,
+      );
+    }
+    // Mirrors are stateless, but for the same shared-offset soundness a group
+    // keeps off them, matching the spot rule.
+    if (
+      mirrorCells.size > 0 &&
+      members.some((member) =>
+        arrowTrack(level, member).some((cell) =>
+          mirrorCells.has(cellKey(cell)),
+        ),
+      )
+    ) {
+      errors.push(
+        `Shared-tail group ${groupKey} has a member route through a mirror.`,
       );
     }
     // Members share one offset and the group stops advancing as soon as any

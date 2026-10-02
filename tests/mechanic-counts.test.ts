@@ -6,6 +6,7 @@ import {
   fragileCorePlanned,
   getStopCount,
   lockCorePlanned,
+  mirrorCorePlanned,
   isAuthoredLevel,
   Rng,
   rotorCorePlanned,
@@ -47,6 +48,9 @@ const FRAGILE_CORES = 76 / 77;
 // Lock cores likewise: 78 placed of 79 planned over levels 51-200.
 const LOCK_CORES = 78 / 79;
 
+// Mirror cores likewise: 73 placed of 83 planned over levels 56-200.
+const MIRROR_CORES = 73 / 83;
+
 test("mechanic placement ratios stay within 10% of v9", () => {
   const totals = {
     staticPlanned: 0,
@@ -67,6 +71,8 @@ test("mechanic placement ratios stay within 10% of v9", () => {
     fragileLevels: 0,
     lockPlanned: 0,
     lockLevels: 0,
+    mirrorPlanned: 0,
+    mirrorLevels: 0,
   };
   for (let id = 2; id <= 200; id += 1) {
     if (isAuthoredLevel(id)) continue;
@@ -100,6 +106,8 @@ test("mechanic placement ratios stay within 10% of v9", () => {
     if ((level.fragile?.length ?? 0) > 0) totals.fragileLevels += 1;
     if (lockCorePlanned(id)) totals.lockPlanned += 1;
     if ((level.locks?.length ?? 0) > 0) totals.lockLevels += 1;
+    if (mirrorCorePlanned(id)) totals.mirrorPlanned += 1;
+    if ((level.mirrors?.length ?? 0) > 0) totals.mirrorLevels += 1;
   }
   expect(totals.staticPlaced / totals.staticPlanned).toBeGreaterThanOrEqual(
     V9.staticSpots * 0.9,
@@ -128,5 +136,9 @@ test("mechanic placement ratios stay within 10% of v9", () => {
   expect(totals.lockPlanned).toBeGreaterThan(0);
   expect(totals.lockLevels / totals.lockPlanned).toBeGreaterThanOrEqual(
     LOCK_CORES * 0.9,
+  );
+  expect(totals.mirrorPlanned).toBeGreaterThan(0);
+  expect(totals.mirrorLevels / totals.mirrorPlanned).toBeGreaterThanOrEqual(
+    MIRROR_CORES * 0.9,
   );
 }, 900_000);

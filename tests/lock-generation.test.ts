@@ -39,7 +39,6 @@ const LAST_ID = 200;
 // and 137 comes out as the plan-zero construction.
 const PRE_LOCK: Readonly<Record<number, string>> = {
   51: "ba172fc4d1c52319",
-  55: "ceeab3f0bae5cd56",
   56: "1e2610f97292f990",
   58: "293349744176a8f1",
   63: "3456ce3717ede8bc",

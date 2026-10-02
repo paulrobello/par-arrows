@@ -444,6 +444,10 @@ export class ParArrowsApp {
       })),
       unlockedIds: this.displayedState.unlocked ?? [],
       lockGlyphOpen: this.renderer.lockOpenProgress(),
+      mirrors: (this.level.mirrors ?? []).map((mirror) => ({
+        cell: cellKey(mirror.cell),
+        orientation: mirror.orientation,
+      })),
       parkedOffsets: Object.fromEntries(
         Object.entries(this.displayedState.offsets).filter(
           ([, offset]) => offset > 0,

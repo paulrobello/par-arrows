@@ -46,6 +46,17 @@ export interface WormholeDefinition {
 }
 
 /**
+ * A floor fixture that reflects an entering head across its diagonal axis:
+ * the outgoing heading depends on the heading it arrived with, so one mirror
+ * routes two arrows to two destinations. See src/core/mirrors.ts.
+ */
+export interface MirrorDefinition {
+  readonly cell: Cell;
+  /** "/" runs from the cell's south-west corner to its north-east corner. */
+  readonly orientation: "/" | "\\";
+}
+
+/**
  * A barred gate and the key cell elsewhere on the cube that opens it. A head
  * crossing the key opens the gate for the rest of the level.
  */
@@ -75,6 +86,8 @@ export interface LevelDefinition {
   readonly fragile?: readonly Cell[];
   /** At most two key and gate pairs; see src/core/locks.ts. */
   readonly locks?: readonly LockDefinition[];
+  /** Reflecting floor fixtures; see src/core/mirrors.ts. */
+  readonly mirrors?: readonly MirrorDefinition[];
 }
 
 export type GameStatus = "playing" | "won" | "lost";

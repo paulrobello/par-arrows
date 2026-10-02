@@ -30,6 +30,7 @@ import type {
   Heading,
   LevelDefinition,
   LockDefinition,
+  MirrorDefinition,
   MoveResult,
   MoveTarget,
   WormholeDefinition,
@@ -58,6 +59,7 @@ import { DOUBLE_INTRO_LEVEL } from "./double-intro";
 import { FLIP_INTRO_LEVEL } from "./flip-intro";
 import { FRAGILE_INTRO_LEVEL } from "./fragile-intro";
 import { LOCK_INTRO_LEVEL } from "./lock-intro";
+import { MIRROR_INTRO_LEVEL } from "./mirror-intro";
 import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
 import { ROTOR_INTRO_LEVEL } from "./rotor-intro";
 import { STOP_INTRO_LEVEL } from "./stop-intro";
@@ -71,7 +73,7 @@ export const MAX_LEVEL_ID = Number.MAX_SAFE_INTEGER - 1;
 
 /** Authored teaching cubes; every other id is generated at runtime. */
 export const AUTHORED_LEVEL_IDS: readonly number[] = [
-  1, 5, 11, 15, 20, 25, 30, 35, 40, 45, 50,
+  1, 5, 11, 15, 20, 25, 30, 35, 40, 45, 50, 55,
 ];
 
 const AUTHORED = new Set(AUTHORED_LEVEL_IDS);
@@ -99,6 +101,7 @@ const AUTHORED_LEVELS: ReadonlyMap<number, LevelDefinition> = new Map([
   [40, ROTOR_INTRO_LEVEL],
   [45, FRAGILE_INTRO_LEVEL],
   [50, LOCK_INTRO_LEVEL],
+  [55, MIRROR_INTRO_LEVEL],
 ]);
 
 /** The hand-authored cube for an authored id, or undefined for generated ids. */
@@ -138,6 +141,7 @@ export function seedForLevel(id: number): string {
   if (id === 40) return "par-arrows:runtime:7:level:40:rotor-intro:1";
   if (id === 45) return "par-arrows:runtime:7:level:45:fragile-intro:1";
   if (id === 50) return "par-arrows:runtime:7:level:50:lock-intro:1";
+  if (id === 55) return "par-arrows:runtime:7:level:55:mirror-intro:1";
   return `par-arrows:runtime:${GENERATOR_VERSION}:level:${id}`;
 }
 
@@ -368,6 +372,28 @@ export function lockCorePlanned(id: number): boolean {
   return (
     lockCoreFrequency(id) > 0 &&
     coreStream(id, "lock-plan", 0).next() < lockCoreFrequency(id)
+  );
+}
+
+/** First generated level that can embed a mirror core. */
+const FIRST_MIRROR_LEVEL = 56;
+
+/** Probability that a generated level attempts a mirror core. */
+export function mirrorCoreFrequency(id: number): number {
+  assertLevelId(id);
+  if (id < FIRST_MIRROR_LEVEL || isAuthoredLevel(id)) return 0;
+  const progress = Math.min(
+    1,
+    (id - FIRST_MIRROR_LEVEL) / (90 - FIRST_MIRROR_LEVEL),
+  );
+  return 0.25 + 0.3 * progress;
+}
+
+/** True when a generated level plans a mirror core, on its own stream. */
+export function mirrorCorePlanned(id: number): boolean {
+  return (
+    mirrorCoreFrequency(id) > 0 &&
+    coreStream(id, "mirror-plan", 0).next() < mirrorCoreFrequency(id)
   );
 }
 
@@ -2277,6 +2303,36 @@ function lockCore(
   return undefined;
 }
 
+/**
+ * The mirror-core geometry relative to the mirror cell at (0, 0), rotated per
+ * placement attempt. Two arrows face off along one lane through the mirror,
+ * each straight lane ending on the other's head, so the stripped board is
+ * deadlocked; the reflection sends the two approaches along the perpendicular
+ * corridor to opposite sides, so the mirror is required.
+ */
+export const MIRROR_PATTERN = {
+  north: [
+    [0, 2],
+    [0, 1],
+  ],
+  south: [
+    [0, -2],
+    [0, -1],
+  ],
+} as const;
+
+/** Every generated mirror-core arrow id carries this marker. */
+export const MIRROR_CORE_MARKER = "-mirror-";
+
+interface MirrorCore {
+  readonly arrows: readonly ArrowDefinition[];
+  readonly mirror: MirrorDefinition;
+  /** The core's solution: the two face-off arrows through the mirror. */
+  readonly certificate: readonly MoveTarget[];
+  /** Bodies, lanes and the mirror cell, reserved from later placement. */
+  readonly cells: ReadonlySet<string>;
+}
+
 /** A rotor spot frozen at its current heading: the static spot it would be. */
 function frozenSpots(
   spots: readonly DirectionalSpotDefinition[],
@@ -2284,6 +2340,115 @@ function frozenSpots(
   return spots.map((spot) =>
     spot.kind === "rotor" ? { cell: spot.cell, heading: spot.heading } : spot,
   );
+}
+
+/**
+ * Place a mirror core on its own seeded stream, modeled on `lockCore`. Every
+ * lane the two face-off arrows can travel (under every flip and rotor state),
+ * plus the mirror cell, must avoid every reserved cell and the parking core's
+ * and groups' tracks, and no arrow already placed may reach any core cell, so
+ * the core plays alone. On the core board by itself the solver must clear it,
+ * the same board with the mirror stripped must be deadlocked, and no order
+ * may strand or soft-lock it.
+ */
+function mirrorCore(
+  id: number,
+  level: LevelDefinition,
+  occupied: ReadonlySet<string>,
+  forbiddenTracks: ReadonlySet<string>,
+  restart: number,
+): MirrorCore | undefined {
+  const size = level.gridSize;
+  const rng = coreStream(id, "mirror-core", restart);
+  const faces = shuffledFaces(rng);
+  const margin = 4;
+  const inBounds = (cell: Cell): boolean =>
+    cell.x >= 0 && cell.y >= 0 && cell.x < size && cell.y < size;
+  // The mirror certificate leads the whole replay, so already-placed cores
+  // move only after the face-off pair has fully exited and only their bodies
+  // can block it; their tracks crossing a corridor are harmless. Everything
+  // placed later keeps off the core's cells and lanes through the shared
+  // reservations instead.
+  const existing = level.arrows.map((arrow) => arrow.path.map(cellKey));
+  for (let attempt = 0; attempt < 64; attempt += 1) {
+    const face = faces[attempt % faces.length] as FaceId;
+    const rotation = rng.int(4);
+    const mirrorCell: Cell = {
+      face,
+      x: margin + rng.int(Math.max(1, size - 2 * margin)),
+      y: margin + rng.int(Math.max(1, size - 2 * margin)),
+    };
+    const at = ([dx, dy]: readonly [number, number]): Cell =>
+      patternCell(mirrorCell, dx, dy, rotation);
+    const northId = `r${id}${MIRROR_CORE_MARKER}north`;
+    const southId = `r${id}${MIRROR_CORE_MARKER}south`;
+    const arrows: ArrowDefinition[] = [
+      { id: northId, path: MIRROR_PATTERN.north.map(at) },
+      { id: southId, path: MIRROR_PATTERN.south.map(at) },
+    ];
+    const bodies = arrows.flatMap((arrow) => arrow.path);
+    if (
+      [...bodies, mirrorCell].some(
+        (cell) => !inBounds(cell) || occupied.has(cellKey(cell)),
+      )
+    )
+      continue;
+    const mirrorKey = cellKey(mirrorCell);
+    const cells = new Set<string>([mirrorKey, ...bodies.map(cellKey)]);
+    // The lanes must be the POST-mechanic routes: a mirror bends its arrows
+    // off their straight tracks, so unlike the lock and fragile cores the
+    // reservation traces on a board that carries the mirror.
+    let lanesFit = true;
+    for (const probe of flipHeadingProbes(level)) {
+      const mirrorBoard = {
+        ...probe,
+        mirrors: [{ cell: mirrorCell, orientation: "/" as const }],
+      };
+      for (const arrow of arrows) {
+        const keys = arrowTrack(mirrorBoard, arrow).map(cellKey);
+        if (!keys.includes(mirrorKey)) lanesFit = false;
+        for (const entry of keys) cells.add(entry);
+      }
+    }
+    if (
+      !lanesFit ||
+      [...cells].some(
+        (entry) => occupied.has(entry) || forbiddenTracks.has(entry),
+      ) ||
+      existing.some((keys) =>
+        [...cells].some((entry) => (keys as readonly string[]).includes(entry)),
+      )
+    )
+      continue;
+    const mirror: MirrorDefinition = { cell: mirrorCell, orientation: "/" };
+    const coreLevel: LevelDefinition = {
+      id: level.id,
+      title: level.title,
+      gridSize: level.gridSize,
+      lives: level.lives,
+      ...(level.edgePolicies ? { edgePolicies: level.edgePolicies } : {}),
+      arrows,
+      mirrors: [mirror],
+    };
+    if (!validateLevel(coreLevel).valid) continue;
+    const stripped = { ...coreLevel, mirrors: [] };
+    if (solveLevelTargets(stripped) !== undefined) continue;
+    const certificate = solveLevelTargets(coreLevel);
+    if (!certificate) continue;
+    let state = createGameState(coreLevel);
+    for (const target of certificate) {
+      state = applyMove(
+        coreLevel,
+        state,
+        simulateGameMove(coreLevel, state, target.arrowId, target.endpoint),
+      );
+    }
+    if (state.status !== "won") continue;
+    if (hasStrandingState(coreLevel) !== false) continue;
+    if (hasSoftLockState(coreLevel) !== false) continue;
+    return { arrows, mirror, certificate, cells };
+  }
+  return undefined;
 }
 
 /**
@@ -3587,6 +3752,11 @@ export function generateLevel(id: number): LevelDefinition {
   // fragile core too, and a fragile give-up drops the lock with it); a level
   // whose lock pass gives up is the exact plan-zero construction.
   const lockPlanned = lockCorePlanned(id);
+  // A planned mirror core gets its own pass after the lock's, a copy of the
+  // pass ahead of it (so on a lock-planned id it carries the lock and fragile
+  // cores too); a level whose mirror pass gives up is the exact plan-zero
+  // construction.
+  const mirrorPlanned = mirrorCorePlanned(id);
   const wormholeSlots = wormholePlan(id);
   for (const [tierIndex, tier] of tiers.entries()) {
     const basePasses = [
@@ -3602,7 +3772,12 @@ export function generateLevel(id: number): LevelDefinition {
         flipPass: false,
         rotorPass: false,
       },
-    ].map((pass) => ({ ...pass, fragilePass: false, lockPass: false }));
+    ].map((pass) => ({
+      ...pass,
+      fragilePass: false,
+      lockPass: false,
+      mirrorPass: false,
+    }));
     const fragilePasses = [
       ...(fragilePlanned && tier.certificate
         ? [
@@ -3614,7 +3789,7 @@ export function generateLevel(id: number): LevelDefinition {
         : []),
       ...basePasses,
     ];
-    const passes = [
+    const lockPasses = [
       ...(lockPlanned && tier.certificate
         ? [
             {
@@ -3625,12 +3800,24 @@ export function generateLevel(id: number): LevelDefinition {
         : []),
       ...fragilePasses,
     ];
+    const passes = [
+      ...(mirrorPlanned && tier.certificate
+        ? [
+            {
+              ...(lockPasses[0] as (typeof lockPasses)[number]),
+              mirrorPass: true,
+            },
+          ]
+        : []),
+      ...lockPasses,
+    ];
     for (const {
       spotPlan,
       flipPass,
       rotorPass,
       fragilePass,
       lockPass,
+      mirrorPass,
     } of passes) {
       // The rotor core's own circle comes out of the circle budget first.
       const parkBudget = getStopCount(id) - (rotorPass ? 1 : 0);
@@ -3950,9 +4137,35 @@ export function generateLevel(id: number): LevelDefinition {
           for (const arrow of lock.arrows) arrows.push(arrow);
           for (const key of lock.cells) occupied.add(key);
         }
+        // The mirror core comes after the lock core, fenced the same way.
+        const mirror = mirrorPass
+          ? mirrorCore(
+              id,
+              {
+                ...regionBoard,
+                arrows,
+                directionals: [
+                  ...(regionBoard.directionals ?? []),
+                  ...(flip ? flip.spots : []),
+                ],
+              },
+              occupied,
+              regionTracks,
+              restart,
+            )
+          : undefined;
+        if (mirrorPass && !mirror) {
+          skip = "mirror-core";
+          continue construction;
+        }
+        if (mirror) {
+          for (const arrow of mirror.arrows) arrows.push(arrow);
+          for (const key of mirror.cells) occupied.add(key);
+        }
         const lockKeys = lock
           ? [cellKey(lock.lock.lock), cellKey(lock.lock.key)]
           : [];
+        const mirrorKeys = mirror ? [cellKey(mirror.mirror.cell)] : [];
         // Straight and wrap starters: graph nodes placed ahead of the fill.
         const starterArrows: ArrowDefinition[] = [];
         for (const [index, length] of [2, 3, 4].entries()) {
@@ -4126,6 +4339,7 @@ export function generateLevel(id: number): LevelDefinition {
           ...(flip?.arrows ?? []).map((arrow) => arrow.id),
           ...(fragile?.arrows ?? []).map((arrow) => arrow.id),
           ...(lock?.arrows ?? []).map((arrow) => arrow.id),
+          ...(mirror?.arrows ?? []).map((arrow) => arrow.id),
         ]);
         const leadBodies = new Set(
           arrows
@@ -4172,6 +4386,9 @@ export function generateLevel(id: number): LevelDefinition {
           // A gate stops a route while locked, and a key would open it for
           // an arrow the core's proof never saw.
           ...lockKeys,
+          // A mirror bends a route off its authored line, so no fill route
+          // may cross it.
+          ...mirrorKeys,
         ]);
         // Every lead arrow replays while the whole fill is still on the
         // board, so no fill body may sit anywhere a lead can travel: both
@@ -4378,6 +4595,7 @@ export function generateLevel(id: number): LevelDefinition {
             : {}),
           ...(fragile ? { fragile: [fragile.cell] } : {}),
           ...(lock ? { locks: [lock.lock] } : {}),
+          ...(mirror ? { mirrors: [mirror.mirror] } : {}),
         });
         let level = assemble(placeStops());
         if (
@@ -4446,6 +4664,20 @@ export function generateLevel(id: number): LevelDefinition {
           skip = "lock";
           continue;
         }
+        // Only the core reaches its mirror: an outside arrow bending through
+        // it would route outside the core's proof. Starter rays and spots
+        // placed after the core are what its reservation cannot fence.
+        if (
+          mirrorKeys.length > 0 &&
+          level.arrows.some((arrow) => {
+            if (arrow.id.includes(MIRROR_CORE_MARKER)) return false;
+            const reach = occupancyKeys(level, arrow);
+            return mirrorKeys.some((key) => reach.has(key));
+          })
+        ) {
+          skip = "mirror";
+          continue;
+        }
         // The flip region is proven again on the assembled level: later
         // spots and circles can bend tracks toward it, and nothing outside
         // it may ever reach its cells. Its own solution leads.
@@ -4458,6 +4690,7 @@ export function generateLevel(id: number): LevelDefinition {
         const certificate: CertificateEntry[] = [
           ...(fragile ? fragile.certificate : []),
           ...(lock ? lock.certificate : []),
+          ...(mirror ? mirror.certificate : []),
           ...wormholes.flatMap((entry) => entry.certificate),
           ...(double ? double.certificate : []),
           ...(core ? core.parkLegs : []),
@@ -4500,6 +4733,7 @@ export function generateLevel(id: number): LevelDefinition {
                 : {}),
               ...(fragile ? { fragile: [fragile.cell] } : {}),
               ...(lock ? { locks: [lock.lock] } : {}),
+              ...(mirror ? { mirrors: [mirror.mirror] } : {}),
             };
             const trimmedStops = [
               ...(core ? core.stops : []),

@@ -24,6 +24,7 @@ import type {
   FaceId,
   Heading,
   LevelDefinition,
+  MirrorDefinition,
   MoveResult,
   MoveTarget,
 } from "../core/types";
@@ -81,6 +82,8 @@ interface ThemePalette {
   readonly directional: number;
   readonly flip: number;
   readonly rotor: number;
+  /** A mirror cell's silver diagonal slash. */
+  readonly mirror: number;
   /** A fragile cell's crack glyph. */
   readonly fragile: number;
   /** A collapsed cell: its border frame and its recessed cavity. */
@@ -116,6 +119,7 @@ export const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     directional: 0x0f7fa8,
     flip: 0xc0266d,
     rotor: 0x8f6f1a,
+    mirror: 0x7d8790,
     fragile: 0x6b5b4b,
     hole: { rim: 0x3b2f2a, cavity: 0x17110e },
     wormhole: [0xe07a10, 0x1f3fbf],
@@ -138,6 +142,7 @@ export const THEME_PALETTES: Readonly<Record<Theme, ThemePalette>> = {
     directional: 0x3ac8f0,
     flip: 0xff6fb5,
     rotor: 0xc9a24a,
+    mirror: 0xc3ccd6,
     fragile: 0xb8a48c,
     hole: { rim: 0xe6d5bd, cavity: 0x05080b },
     wormhole: [0xffa040, 0x4f6bff],
@@ -335,6 +340,29 @@ export function stopCircleOpacity(
   cameraPosition: THREE.Vector3,
 ): number {
   return faceNormal.dot(cameraPosition.clone().sub(position)) > 0 ? 1 : 0.32;
+}
+
+/**
+ * The in-plane rotation aiming a mirror slash along its diagonal: "/" runs
+ * toward east + north and "\\" toward east + south in face-local terms.
+ */
+function mirrorSlashAngle(
+  face: FaceId,
+  orientation: MirrorDefinition["orientation"],
+  quaternion: THREE.Quaternion,
+): number {
+  const localUp = new THREE.Vector3(0, 1, 0).applyQuaternion(quaternion);
+  const [ex, ey, ez] = faceHeadingVector(face, "east");
+  const [tx, ty, tz] = faceHeadingVector(
+    face,
+    orientation === "/" ? "north" : "south",
+  );
+  const diagonal = new THREE.Vector3(ex + tx, ey + ty, ez + tz).normalize();
+  const normal = new THREE.Vector3(...faceNormal(face));
+  return Math.atan2(
+    normal.dot(new THREE.Vector3().crossVectors(localUp, diagonal)),
+    localUp.dot(diagonal),
+  );
 }
 
 /**
@@ -1029,6 +1057,7 @@ export class PuzzleRenderer {
   private readonly wrappingEdgesGroup = new THREE.Group();
   private readonly stopCirclesGroup = new THREE.Group();
   private readonly directionalsGroup = new THREE.Group();
+  private readonly mirrorsGroup = new THREE.Group();
   private readonly wormholesGroup = new THREE.Group();
   private readonly fragileGroup = new THREE.Group();
   private readonly lockGroup = new THREE.Group();
@@ -1083,6 +1112,7 @@ export class PuzzleRenderer {
       this.wrappingEdgesGroup,
       this.stopCirclesGroup,
       this.directionalsGroup,
+      this.mirrorsGroup,
       this.wormholesGroup,
       this.fragileGroup,
       this.lockGroup,
@@ -1114,6 +1144,7 @@ export class PuzzleRenderer {
     this.clearWrappingEdges();
     this.clearStopCircles();
     this.clearDirectionals();
+    this.clearMirrors();
     this.clearWormholes();
     this.clearFragile();
     this.clearLocks();
@@ -1124,6 +1155,7 @@ export class PuzzleRenderer {
     this.createWrappingEdges(level);
     this.createStopCircles(level);
     this.createDirectionals(level);
+    this.createMirrors(level);
     this.createWormholes(level);
     this.createFragile(level);
     this.createLocks(level);
@@ -1210,6 +1242,12 @@ export class PuzzleRenderer {
       if (!(mesh.material instanceof THREE.MeshBasicMaterial)) return;
       const index = mesh.userData.lockIndex as 0 | 1 | undefined;
       if (index !== undefined) mesh.material.color.set(palette.lock[index]);
+    });
+    this.mirrorsGroup.traverse((child) => {
+      const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
+      if (mesh.material instanceof THREE.MeshBasicMaterial) {
+        mesh.material.color.set(palette.mirror);
+      }
     });
     this.directionalsGroup.traverse((child) => {
       const mesh = child as THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
@@ -2346,6 +2384,42 @@ export class PuzzleRenderer {
     }
   }
 
+  private createMirrors(level: LevelDefinition): void {
+    const pitch = 2 / level.gridSize;
+    for (const mirror of level.mirrors ?? []) {
+      const [nx, ny, nz] = faceNormal(mirror.cell.face);
+      const normal = new THREE.Vector3(nx, ny, nz);
+      const quaternion = new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        normal,
+      );
+      const slash = new THREE.Mesh(
+        new THREE.PlaneGeometry(pitch * 0.16, pitch * 0.72),
+        new THREE.MeshBasicMaterial({
+          color: this.palette.mirror,
+          side: THREE.DoubleSide,
+          toneMapped: false,
+          transparent: true,
+          depthWrite: false,
+        }),
+      );
+      slash.position
+        .copy(cellPoint(mirror.cell, level.gridSize))
+        .addScaledVector(normal, 0.001);
+      slash.quaternion
+        .copy(quaternion)
+        .multiply(
+          new THREE.Quaternion().setFromAxisAngle(
+            new THREE.Vector3(0, 0, 1),
+            mirrorSlashAngle(mirror.cell.face, mirror.orientation, quaternion),
+          ),
+        );
+      slash.renderOrder = -1;
+      slash.userData.mirror = cellKey(mirror.cell);
+      this.mirrorsGroup.add(slash);
+    }
+  }
+
   private createWormholes(level: LevelDefinition): void {
     const pitch = 2 / level.gridSize;
     for (const [index, hole] of (level.wormholes ?? []).entries()) {
@@ -2701,6 +2775,11 @@ export class PuzzleRenderer {
   private clearWormholes(): void {
     disposeTree(this.wormholesGroup);
     this.wormholesGroup.clear();
+  }
+
+  private clearMirrors(): void {
+    disposeTree(this.mirrorsGroup);
+    this.mirrorsGroup.clear();
   }
 
   private clearDirectionals(): void {

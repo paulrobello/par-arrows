@@ -6,6 +6,7 @@ import {
 } from "./procedural";
 import { FRAGILE_INTRO_LEVEL } from "./fragile-intro";
 import { LOCK_INTRO_LEVEL } from "./lock-intro";
+import { MIRROR_INTRO_LEVEL } from "./mirror-intro";
 import { ROTOR_INTRO_LEVEL } from "./rotor-intro";
 
 export interface LevelPreview {
@@ -21,7 +22,8 @@ export interface LevelPreview {
     | "wormhole"
     | "rotor"
     | "fragile"
-    | "lock";
+    | "lock"
+    | "mirror";
   readonly wraps?: number;
   readonly resolvedLevelId?: number;
   readonly error?: string;
@@ -74,6 +76,7 @@ export function parseLevelPreview(search: string): LevelPreview {
     | "rotor"
     | "fragile"
     | "lock"
+    | "mirror"
     | undefined;
   if (rawFeature !== null) {
     const normalized = rawFeature.toLowerCase();
@@ -97,6 +100,8 @@ export function parseLevelPreview(search: string): LevelPreview {
       feature = "fragile";
     } else if (["lock", "locks", "keylock"].includes(normalized)) {
       feature = "lock";
+    } else if (["mirror", "mirrors"].includes(normalized)) {
+      feature = "mirror";
     } else {
       return { active: true, error: `Unknown test feature: ${rawFeature}.` };
     }
@@ -170,6 +175,9 @@ export function resolveLevelPreview(
   }
   if (preview.feature === "lock") {
     return { ...preview, resolvedLevelId: LOCK_INTRO_LEVEL.id };
+  }
+  if (preview.feature === "mirror") {
+    return { ...preview, resolvedLevelId: MIRROR_INTRO_LEVEL.id };
   }
   const startLevelId =
     preview.feature === "overlap"

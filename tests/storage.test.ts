@@ -301,7 +301,7 @@ describe("resumable campaign saves", () => {
     const state = exitedState(level);
     expect(save(state, 88)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 16,
+      contentVersion: 17,
       generatorVersion: 10,
       currentLevelId: 42,
       unlockedLevelId: 88,
@@ -396,7 +396,7 @@ describe("resumable campaign saves", () => {
     if (!restored.value) throw new Error("Expected refreshed campaign");
     expect(saveCampaign(restored.value)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 16,
+      contentVersion: 17,
       layout: layoutFingerprint(level),
     });
     expect((await loadCampaign(async () => level)).recovered).toBe(false);
@@ -973,7 +973,7 @@ describe("resumable campaign saves", () => {
     if (!restored.value) throw new Error("Expected refreshed campaign");
     expect(saveCampaign(restored.value)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 16,
+      contentVersion: 17,
       layout: layoutFingerprint(level),
     });
     const again = await loadCampaign(async () => level);
@@ -1109,7 +1109,7 @@ describe("resumable campaign saves", () => {
     });
     if (!restored.value) throw new Error("Expected refreshed campaign");
     expect(saveCampaign(restored.value)).toBe(true);
-    expect(savedJson()).toMatchObject({ contentVersion: 16 });
+    expect(savedJson()).toMatchObject({ contentVersion: 17 });
     expect((await loadCampaign(async () => level)).recovered).toBe(false);
   });
 
@@ -1214,7 +1214,28 @@ describe("resumable campaign saves", () => {
     });
     if (!restored.value) throw new Error("Expected refreshed campaign");
     expect(saveCampaign(restored.value)).toBe(true);
-    expect(savedJson()).toMatchObject({ contentVersion: 16 });
+    expect(savedJson()).toMatchObject({ contentVersion: 17 });
+    expect((await loadCampaign(async () => level)).recovered).toBe(false);
+  });
+
+  test("a content-16 save on the mirror intro refreshes once and keeps progression", async () => {
+    const level = generateLevel(55);
+    expect(save(exitedState(level), 57, level)).toBe(true);
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({ ...savedJson(), contentVersion: 16 }),
+    );
+    const restored = await loadCampaign(async () => level);
+    expect(restored.recovered).toBe(true);
+    expect(restored.contentUpdated).toBe(true);
+    expect(restored.value).toMatchObject({
+      currentLevelId: 55,
+      unlockedLevelId: 57,
+      state: createGameState(level),
+    });
+    if (!restored.value) throw new Error("Expected refreshed campaign");
+    expect(saveCampaign(restored.value)).toBe(true);
+    expect(savedJson()).toMatchObject({ contentVersion: 17 });
     expect((await loadCampaign(async () => level)).recovered).toBe(false);
   });
 
@@ -1292,7 +1313,7 @@ describe("resumable campaign saves", () => {
     if (!restored.value) throw new Error("Expected refreshed campaign");
     expect(saveCampaign(restored.value)).toBe(true);
     expect(savedJson()).toMatchObject({
-      contentVersion: 16,
+      contentVersion: 17,
       layout: layoutFingerprint(level),
     });
     expect((await loadCampaign(async () => level)).recovered).toBe(false);
@@ -1376,7 +1397,7 @@ describe("resumable campaign saves", () => {
       if (!restored.value) throw new Error("Expected restored campaign");
       expect(saveCampaign(restored.value)).toBe(true);
       expect(savedJson()).toMatchObject({
-        contentVersion: 16,
+        contentVersion: 17,
         generatorVersion: 10,
       });
     },

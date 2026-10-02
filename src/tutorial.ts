@@ -379,6 +379,35 @@ const LOCK_INTRO_SCRIPT: TutorialScript = {
   ],
 };
 
+const MIRROR_INTRO_SCRIPT: TutorialScript = {
+  levelId: 55,
+  title: "Use the mirror.",
+  steps: [
+    {
+      copy: "A silver mirror reflects whatever runs into it: the same mirror sends a northbound arrow east and a southbound arrow west. This arrow's lane ends on its partner, so the mirror is the only way out. Tap it.",
+      highlightId: "mirror-intro-north",
+      advance: {
+        kind: "move",
+        arrowIds: ["mirror-intro-north"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "Same mirror, different approach, different exit. Send the other one through.",
+      highlightId: "mirror-intro-south",
+      advance: {
+        kind: "move",
+        arrowIds: ["mirror-intro-south"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "One mirror, two destinations — let its reflection clear the rest.",
+      advance: { kind: "won" },
+    },
+  ],
+};
+
 const SCRIPTS: readonly TutorialScript[] = [
   LEVEL_ONE_SCRIPT,
   STOP_INTRO_SCRIPT,
@@ -391,6 +420,7 @@ const SCRIPTS: readonly TutorialScript[] = [
   ROTOR_INTRO_SCRIPT,
   FRAGILE_INTRO_SCRIPT,
   LOCK_INTRO_SCRIPT,
+  MIRROR_INTRO_SCRIPT,
 ];
 
 export function scriptForLevel(levelId: number): TutorialScript | undefined {

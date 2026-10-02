@@ -20,7 +20,7 @@ import type { Cell, GameState, Heading, LevelDefinition } from "./core/types";
 
 const STORAGE_KEY = "par-arrows:campaign:v1";
 const SETTINGS_KEY = "par-arrows:settings:v1";
-const CONTENT_VERSION = 16;
+const CONTENT_VERSION = 17;
 
 export interface CampaignSave {
   readonly currentLevelId: number;

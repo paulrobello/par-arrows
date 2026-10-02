@@ -373,7 +373,7 @@ async function assertCampaignSave(
     currentLevelId: previousLevel.id,
     unlockedLevelId: previousLevel.id,
     tutorialComplete: true,
-    contentVersion: 16,
+    contentVersion: 17,
     generatorVersion: GENERATOR_VERSION,
     seed: seedForLevel(previousLevel.id),
     layout: layoutFingerprint(previousLevel),
