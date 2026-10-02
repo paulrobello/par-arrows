@@ -65,6 +65,8 @@ const CUBE_FACES: readonly FaceId[] = [
 
 export type Theme = "light" | "dark";
 
+export type GridAlignment = "lane" | "line";
+
 interface ThemePalette {
   readonly background: number;
   readonly cube: number;
@@ -1000,6 +1002,22 @@ function disposeTree(object: THREE.Object3D): void {
   });
 }
 
+/**
+ * Pitch offsets of a face's interior grid lines along one axis. Lane
+ * alignment draws them on the cell boundaries, so arrows travel between
+ * lines; line alignment draws one through every row and column of cell
+ * centers, so arrows travel on lines.
+ */
+export function gridLineOffsets(
+  gridSize: number,
+  alignment: GridAlignment,
+): number[] {
+  const first = alignment === "line" ? 0.5 : 1;
+  const offsets: number[] = [];
+  for (let offset = first; offset < gridSize; offset += 1) offsets.push(offset);
+  return offsets;
+}
+
 export class PuzzleRenderer {
   readonly canvas: HTMLCanvasElement;
 
@@ -1026,6 +1044,7 @@ export class PuzzleRenderer {
   private edgeMaterial: THREE.LineBasicMaterial | undefined;
   private gridLineMaterial: THREE.LineBasicMaterial | undefined;
   private gridLinesEnabled = false;
+  private gridAlignment: GridAlignment = "lane";
   private theme: Theme = "light";
   private level: LevelDefinition | undefined;
   private state: GameState | undefined;
@@ -1213,6 +1232,13 @@ export class PuzzleRenderer {
   setGridLines(enabled: boolean): void {
     this.gridLinesEnabled = enabled;
     this.gridLinesGroup.visible = enabled;
+    this.render();
+  }
+
+  setGridAlignment(alignment: GridAlignment): void {
+    if (alignment === this.gridAlignment) return;
+    this.gridAlignment = alignment;
+    if (this.level) this.createGridLines(this.level.gridSize);
     this.render();
   }
 
@@ -2125,17 +2151,17 @@ export class PuzzleRenderer {
         .addScaledVector(south, -0.5)
         .addScaledVector(normal, GRID_LINE_OFFSET);
       const vertices: THREE.Vector3[] = [];
-      for (let index = 1; index < gridSize; index += 1) {
+      for (const offset of gridLineOffsets(gridSize, this.gridAlignment)) {
         vertices.push(
-          corner.clone().addScaledVector(east, index),
+          corner.clone().addScaledVector(east, offset),
           corner
             .clone()
-            .addScaledVector(east, index)
+            .addScaledVector(east, offset)
             .addScaledVector(south, gridSize),
-          corner.clone().addScaledVector(south, index),
+          corner.clone().addScaledVector(south, offset),
           corner
             .clone()
-            .addScaledVector(south, index)
+            .addScaledVector(south, offset)
             .addScaledVector(east, gridSize),
         );
       }

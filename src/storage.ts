@@ -38,6 +38,8 @@ export interface LoadedCampaign extends CampaignSave {
 
 export interface PlayerSettings {
   readonly gridLines: boolean;
+  /** Where interior grid lines sit: between cells (lane) or through centers (line). */
+  readonly gridAlignment: "lane" | "line";
   readonly reducedMotion: boolean;
   readonly theme: "system" | "light" | "dark";
   /** Intro levels whose interactive walkthrough has already been shown. */
@@ -60,6 +62,7 @@ type StoredCampaign = Omit<Partial<CampaignSave>, "layout"> & {
 
 const DEFAULT_SETTINGS: PlayerSettings = {
   gridLines: true,
+  gridAlignment: "lane",
   reducedMotion: false,
   theme: "system",
   tutorialSeenLevels: [],
@@ -713,6 +716,7 @@ export function loadSettings(): PlayerSettings {
         tutorialSeenLevels.push(levelId);
     return {
       gridLines: parsed?.gridLines !== false,
+      gridAlignment: parsed?.gridAlignment === "line" ? "line" : "lane",
       reducedMotion: parsed?.reducedMotion === true,
       theme:
         theme === "light" || theme === "dark" || theme === "system"

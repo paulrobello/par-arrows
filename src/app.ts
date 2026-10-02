@@ -108,6 +108,7 @@ export class ParArrowsApp {
   private readonly hintButton: HTMLButtonElement;
   private readonly hintStatus: HTMLElement;
   private readonly gridLines: HTMLInputElement;
+  private readonly gridAlignmentSelect: HTMLSelectElement;
   private readonly reducedMotion: HTMLInputElement;
   private readonly themeSelect: HTMLSelectElement;
   private readonly celebrationLayer: HTMLElement;
@@ -200,6 +201,7 @@ export class ParArrowsApp {
         </nav>
         <aside class="settings-panel" id="settings-panel" hidden>
           <label><input id="grid-lines" type="checkbox" /> Show grid lines</label>
+          <label>Grid alignment<select id="grid-alignment"><option value="lane">Lanes</option><option value="line">Lines</option></select></label>
           <label><input id="reduced-motion" type="checkbox" /> Reduce movement</label>
           <label>Theme<select id="theme-select"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
           <button id="install-help-button" type="button">How to install</button>
@@ -242,6 +244,9 @@ export class ParArrowsApp {
     this.hintButton = this.requireElement("hint-button") as HTMLButtonElement;
     this.hintStatus = this.requireElement("hint-status");
     this.gridLines = this.requireElement("grid-lines") as HTMLInputElement;
+    this.gridAlignmentSelect = this.requireElement(
+      "grid-alignment",
+    ) as HTMLSelectElement;
     this.reducedMotion = this.requireElement(
       "reduced-motion",
     ) as HTMLInputElement;
@@ -252,10 +257,12 @@ export class ParArrowsApp {
     this.previewStatus = this.requireElement("preview-status");
     this.previewExit = this.requireElement("preview-exit") as HTMLAnchorElement;
     this.gridLines.checked = this.settings.gridLines;
+    this.gridAlignmentSelect.value = this.settings.gridAlignment;
     this.reducedMotion.checked = this.settings.reducedMotion;
     this.themeSelect.value = this.settings.theme;
     this.renderer = new PuzzleRenderer(this.stage);
     this.renderer.setGridLines(this.settings.gridLines);
+    this.renderer.setGridAlignment(this.settings.gridAlignment);
     this.applyTheme();
     this.input = new PointerInput<MoveTarget>(this.renderer.canvas, {
       pick: (x, y, pointerType) =>
@@ -503,6 +510,7 @@ export class ParArrowsApp {
       },
       gridLines: {
         enabled: this.settings.gridLines,
+        alignment: this.settings.gridAlignment,
         visibleSegments: this.renderer.visibleGridLineCount(),
       },
       version: {
@@ -1107,6 +1115,16 @@ export class ParArrowsApp {
       };
       saveSettings(this.settings);
       this.renderer.setGridLines(this.settings.gridLines);
+    });
+    this.gridAlignmentSelect.addEventListener("change", () => {
+      const value = this.gridAlignmentSelect.value;
+      if (value !== "lane" && value !== "line") {
+        this.gridAlignmentSelect.value = this.settings.gridAlignment;
+        return;
+      }
+      this.settings = { ...this.settings, gridAlignment: value };
+      saveSettings(this.settings);
+      this.renderer.setGridAlignment(value);
     });
     this.reducedMotion.addEventListener("change", () => {
       this.settings = {

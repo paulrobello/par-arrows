@@ -1606,6 +1606,7 @@ describe("player settings", () => {
   test("defaults to system theme and full motion", () => {
     expect(loadSettings()).toEqual({
       gridLines: true,
+      gridAlignment: "lane",
       reducedMotion: false,
       theme: "system",
       tutorialSeenLevels: [],
@@ -1619,6 +1620,7 @@ describe("player settings", () => {
     );
     expect(loadSettings()).toEqual({
       gridLines: true,
+      gridAlignment: "lane",
       reducedMotion: true,
       theme: "system",
       tutorialSeenLevels: [],
@@ -1629,6 +1631,7 @@ describe("player settings", () => {
     entries.set("par-arrows:settings:v1", "{broken");
     expect(loadSettings()).toEqual({
       gridLines: true,
+      gridAlignment: "lane",
       reducedMotion: false,
       theme: "system",
       tutorialSeenLevels: [],
@@ -1639,16 +1642,18 @@ describe("player settings", () => {
     );
     expect(loadSettings()).toEqual({
       gridLines: true,
+      gridAlignment: "lane",
       reducedMotion: true,
       theme: "system",
       tutorialSeenLevels: [],
     });
   });
 
-  test("persists theme, grid lines, and reduced motion", () => {
+  test("persists theme, grid lines, alignment, and reduced motion", () => {
     expect(
       saveSettings({
         gridLines: true,
+        gridAlignment: "line",
         reducedMotion: true,
         theme: "dark",
         tutorialSeenLevels: [],
@@ -1656,6 +1661,7 @@ describe("player settings", () => {
     ).toBe(true);
     expect(loadSettings()).toEqual({
       gridLines: true,
+      gridAlignment: "line",
       reducedMotion: true,
       theme: "dark",
       tutorialSeenLevels: [],
@@ -1666,6 +1672,7 @@ describe("player settings", () => {
     expect(
       saveSettings({
         gridLines: true,
+        gridAlignment: "lane",
         reducedMotion: false,
         theme: "system",
         tutorialSeenLevels: [],
@@ -1684,6 +1691,7 @@ describe("player settings", () => {
     expect(
       saveSettings({
         gridLines: false,
+        gridAlignment: "lane",
         reducedMotion: false,
         theme: "system",
         tutorialSeenLevels: [1, 5],

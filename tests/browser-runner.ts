@@ -62,6 +62,7 @@ interface Snapshot {
   };
   gridLines: {
     enabled: boolean;
+    alignment: "lane" | "line";
     visibleSegments: number;
   };
   version: {
@@ -431,6 +432,14 @@ async function assertThemes(page: Page, mobile = false): Promise<void> {
     const grid = JSON.parse(raw).gridLines;
     return grid.enabled === true && grid.visibleSegments > 0;
   });
+  await page.locator("#grid-alignment").selectOption("line");
+  await page.waitForFunction(() => {
+    const raw = window.render_game_to_text?.();
+    if (!raw) return false;
+    const grid = JSON.parse(raw).gridLines;
+    return grid.alignment === "line" && grid.visibleSegments > 0;
+  });
+  await page.screenshot({ path: `${output}/grid-${prefix}-dark-line.png` });
   await page.screenshot({ path: `${output}/grid-${prefix}-dark.png` });
   await page.locator("#settings-button").click();
   await assertArrowheadPicking(page, 2, mobile);
@@ -497,6 +506,9 @@ async function assertThemes(page: Page, mobile = false): Promise<void> {
   await page.locator("#settings-button").click();
   assert.equal(await page.getByLabel("Reduce movement").isChecked(), true);
   assert.equal(await page.getByLabel("Show grid lines").isChecked(), true);
+  assert.equal(await page.locator("#grid-alignment").inputValue(), "line");
+  assert.equal((await snapshot(page)).gridLines.alignment, "line");
+  await page.locator("#grid-alignment").selectOption("lane");
   assert.ok((await snapshot(page)).gridLines.visibleSegments > 0);
   await page.getByLabel("Reduce movement").uncheck();
   await page.screenshot({
