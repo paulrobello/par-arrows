@@ -162,27 +162,8 @@ export async function assertFirstRunWalkthrough(
   assert.deepEqual(step2.gate, ["l1-front-blocked"]);
 
   await clickArrow(page, "l1-front-blocked");
-  const step3 = await tutorialState(page);
-  assert.ok(step3.active && step3.stepIndex === 3);
-  assert.equal(step3.highlightId, undefined);
-  assert.equal(step3.gate, undefined);
-
-  // The remaining arrows span the hidden faces, so clear them through the
-  // scripted path the celebration suite uses instead of screen coordinates.
-  for (const arrowId of [
-    "l1-back",
-    "l1-right",
-    "l1-left",
-    "l1-top",
-    "l1-bottom",
-  ]) {
-    await page.evaluate((id) => {
-      window.__PAR_ARROWS_TEST__?.activate(id);
-      const moving = JSON.parse(window.render_game_to_text?.() ?? "{}").moving;
-      if (moving)
-        window.advanceTime?.(Math.max(0, moving.duration - moving.elapsed) + 1);
-    }, arrowId);
-  }
+  // The stripped pair empties the cube on this tap, so the walkthrough
+  // finishes straight away instead of lingering on its free-play step.
   const won = await state(page);
   assert.deepEqual(won.remainingIds, []);
   assert.equal(

@@ -11,8 +11,7 @@ function cell(face: FaceId, x: number, y: number): Cell {
  * it, so the other lane now ends in a hole. The double's tail end is the way
  * round, but it runs west into the crosser's body, so the crosser must go
  * first; sending the double's head across first leaves the crosser nothing
- * but the hole and costs a life. One filler arrow per remaining face, off
- * both lanes.
+ * but the hole and costs a life.
  */
 export const FRAGILE_INTRO_LEVEL: LevelDefinition = {
   id: 45,
@@ -35,19 +34,6 @@ export const FRAGILE_INTRO_LEVEL: LevelDefinition = {
         cell("front", 3, 1),
         cell("front", 2, 1),
       ],
-    },
-    {
-      id: "fragile-intro-back",
-      path: [cell("back", 1, 1), cell("back", 2, 1)],
-    },
-    {
-      id: "fragile-intro-left",
-      path: [cell("left", 1, 2), cell("left", 2, 2)],
-    },
-    { id: "fragile-intro-top", path: [cell("top", 1, 1), cell("top", 2, 1)] },
-    {
-      id: "fragile-intro-bottom",
-      path: [cell("bottom", 1, 2), cell("bottom", 2, 2)],
     },
   ],
 };

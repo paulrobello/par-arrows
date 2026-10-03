@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { DIRECTIONAL_INTRO_LEVEL } from "../src/content/directional-intro";
 import {
   AUTHORED_LEVEL_IDS,
   directionalFaceCount,
@@ -6,7 +7,6 @@ import {
   hasDirectionalCore,
   isAuthoredLevel,
 } from "../src/content/procedural";
-import { DIRECTIONAL_INTRO_LEVEL } from "../src/content/directional-intro";
 import {
   applyMove,
   createGameState,
@@ -30,7 +30,7 @@ describe("directional spot level content", () => {
     expect(DIRECTIONAL_INTRO_LEVEL.id).toBe(20);
     expect(DIRECTIONAL_INTRO_LEVEL.gridSize).toBe(4);
     expect(DIRECTIONAL_INTRO_LEVEL.lives).toBe(5);
-    expect(DIRECTIONAL_INTRO_LEVEL.arrows).toHaveLength(6);
+    expect(DIRECTIONAL_INTRO_LEVEL.arrows).toHaveLength(3);
     expect(DIRECTIONAL_INTRO_LEVEL.directionals).toEqual([
       { cell: { face: "front", x: 2, y: 1 }, heading: "north" },
     ]);
@@ -93,14 +93,7 @@ describe("directional spot level content", () => {
 
   test("its scripted solution clears the cube without losing a life", () => {
     let state = createGameState(DIRECTIONAL_INTRO_LEVEL);
-    for (const arrowId of [
-      EAST,
-      FREED,
-      BLOCKER,
-      "dir-intro-back",
-      "dir-intro-right",
-      "dir-intro-top",
-    ]) {
+    for (const arrowId of [EAST, FREED, BLOCKER]) {
       const result = simulateMove(DIRECTIONAL_INTRO_LEVEL, state, arrowId);
       expect(result.kind).toBe("exit");
       state = applyMove(DIRECTIONAL_INTRO_LEVEL, state, result);

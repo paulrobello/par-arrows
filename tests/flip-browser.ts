@@ -426,15 +426,6 @@ async function assertScriptedWalkthrough(
     assert.equal(current.lives, 5);
     await page.screenshot({ path: `${output}/flip/04-after-runner.png` });
 
-    for (const arrowId of [
-      "flip-intro-back",
-      "flip-intro-right",
-      "flip-intro-left",
-      "flip-intro-top",
-      "flip-intro-bottom",
-    ]) {
-      await activate(page, arrowId);
-    }
     current = await state(page);
     assert.deepEqual(current.remainingIds, [], "Free play clears the cube");
     assert.equal(current.lives, 5);

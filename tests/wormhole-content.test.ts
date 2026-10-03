@@ -1,5 +1,4 @@
 import { describe, expect, test } from "bun:test";
-import { WORMHOLE_INTRO_LEVEL } from "../src/content/wormhole-intro";
 import {
   parseLevelPreview,
   resolveLevelPreview,
@@ -9,6 +8,7 @@ import {
   isAuthoredLevel,
   seedForLevel,
 } from "../src/content/procedural";
+import { WORMHOLE_INTRO_LEVEL } from "../src/content/wormhole-intro";
 import {
   applyMove,
   createGameState,
@@ -39,12 +39,17 @@ describe("wormhole introduction", () => {
     ).toBeUndefined();
   });
 
-  test("the portal arrow goes first, then the gate", () => {
+  test("the far blocker leaves first, then the portal, then the gate", () => {
     const level = WORMHOLE_INTRO_LEVEL;
     let state = createGameState(level);
-    expect(simulateMove(level, state, "wormhole-intro-gate").kind).toBe(
+    // The far blocker's body stands in the corridor past end B, so the
+    // portal collides there until it has gone.
+    expect(simulateMove(level, state, "wormhole-intro-portal").kind).toBe(
       "blocked",
     );
+    const far = simulateMove(level, state, "wormhole-intro-far");
+    expect(far.kind).toBe("exit");
+    state = applyMove(level, state, far);
     const portal = simulateMove(level, state, "wormhole-intro-portal");
     expect(portal.kind).toBe("exit");
     expect(portal.portals?.length).toBe(1);
@@ -52,9 +57,9 @@ describe("wormhole introduction", () => {
     expect(simulateMove(level, state, "wormhole-intro-gate").kind).toBe("exit");
   });
 
-  test("the walkthrough gates the portal arrow first", () => {
+  test("the walkthrough gates the far blocker first", () => {
     const script = scriptForLevel(35);
-    expect(script?.steps[0]?.highlightId).toBe("wormhole-intro-portal");
+    expect(script?.steps[0]?.highlightId).toBe("wormhole-intro-far");
   });
 
   test.each(["wormhole", "portal", "wormholes"])(

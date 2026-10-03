@@ -36,11 +36,5 @@ export const STOP_INTRO_LEVEL: LevelDefinition = {
         cell("front", 1, 2),
       ],
     },
-    { id: "stop-intro-back", path: [cell("back", 2, 0), cell("back", 3, 0)] },
-    {
-      id: "stop-intro-right",
-      path: [cell("right", 2, 0), cell("right", 3, 0)],
-    },
-    { id: "stop-intro-top", path: [cell("top", 2, 0), cell("top", 3, 0)] },
   ],
 };

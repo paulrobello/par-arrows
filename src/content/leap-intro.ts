@@ -38,21 +38,5 @@ export const LEAP_INTRO_LEVEL: LevelDefinition = {
       id: "leap-intro-barred",
       path: [cell("front", 0, 3), cell("front", 0, 2)],
     },
-    {
-      id: "leap-intro-a",
-      path: [cell("back", 1, 1), cell("back", 1, 2)],
-    },
-    {
-      id: "leap-intro-b",
-      path: [cell("right", 1, 1), cell("right", 2, 1)],
-    },
-    {
-      id: "leap-intro-c",
-      path: [cell("left", 1, 1), cell("left", 2, 1)],
-    },
-    {
-      id: "leap-intro-d",
-      path: [cell("bottom", 1, 1), cell("bottom", 2, 1)],
-    },
   ],
 };

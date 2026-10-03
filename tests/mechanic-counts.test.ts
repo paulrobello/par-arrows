@@ -5,10 +5,10 @@ import {
   flipCoreFrequency,
   fragileCorePlanned,
   getStopCount,
+  isAuthoredLevel,
+  leapCorePlanned,
   lockCorePlanned,
   mirrorCorePlanned,
-  leapCorePlanned,
-  isAuthoredLevel,
   Rng,
   rotorCorePlanned,
   seedForLevel,
@@ -120,8 +120,11 @@ test("mechanic placement ratios stay within 10% of v9", () => {
   expect(totals.staticPlaced / totals.staticPlanned).toBeGreaterThanOrEqual(
     V9.staticSpots * 0.9,
   );
+  // The far-side blocker shipped with every wormhole core (2026-10) needs a
+  // free perpendicular wing beside end B's corridor, which costs about four
+  // placements over the sweep, so this floor sits at 0.8x of v9.
   expect(totals.holesPlaced / totals.holesPlanned).toBeGreaterThanOrEqual(
-    V9.wormholes * 0.9,
+    V9.wormholes * 0.8,
   );
   expect(totals.stops).toBe(totals.stopBudget);
   expect(totals.groups).toBe(totals.groupEligible);

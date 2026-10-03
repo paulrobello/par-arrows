@@ -31,8 +31,5 @@ export const DIRECTIONAL_INTRO_LEVEL: LevelDefinition = {
         cell("front", 1, 2),
       ],
     },
-    { id: "dir-intro-back", path: [cell("back", 1, 1), cell("back", 2, 1)] },
-    { id: "dir-intro-right", path: [cell("right", 1, 1), cell("right", 2, 1)] },
-    { id: "dir-intro-top", path: [cell("top", 1, 1), cell("top", 2, 1)] },
   ],
 };

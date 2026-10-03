@@ -12,7 +12,7 @@ function cell(face: FaceId, x: number, y: number): Cell {
  * opener's lane past the gate. Sent first, it opens the gate for good and
  * the opener follows it off; sent second, the opener only rewinds off the
  * gate, which costs nothing. With the lock stripped the opener could simply
- * leave first. One filler arrow per remaining face, off both lanes.
+ * leave first.
  */
 export const LOCK_INTRO_LEVEL: LevelDefinition = {
   id: 50,
@@ -40,19 +40,6 @@ export const LOCK_INTRO_LEVEL: LevelDefinition = {
         cell("front", 3, 3),
         cell("front", 3, 2),
       ],
-    },
-    {
-      id: "lock-intro-back",
-      path: [cell("back", 1, 1), cell("back", 2, 1)],
-    },
-    {
-      id: "lock-intro-left",
-      path: [cell("left", 1, 2), cell("left", 2, 2)],
-    },
-    { id: "lock-intro-top", path: [cell("top", 1, 1), cell("top", 2, 1)] },
-    {
-      id: "lock-intro-bottom",
-      path: [cell("bottom", 1, 2), cell("bottom", 2, 2)],
     },
   ],
 };

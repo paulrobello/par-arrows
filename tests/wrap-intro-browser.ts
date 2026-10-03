@@ -160,7 +160,7 @@ export async function assertWrapIntro(
     assert.equal(
       (await page.evaluate(() => window.__PAR_ARROWS_TEST__?.getLevel()))
         ?.arrows.length,
-      6,
+      2,
     );
     const introDefinition = await page.evaluate(() =>
       window.__PAR_ARROWS_TEST__?.getLevel(),
@@ -199,26 +199,16 @@ export async function assertWrapIntro(
     await page.evaluate((id) => {
       window.__PAR_ARROWS_TEST__?.activate(id);
       window.advanceTime?.(5000);
-    }, "wrap-intro-back");
-    assert.equal((await state(page)).remainingIds.length, 5);
+    }, "wrap-intro-left");
+    assert.deepEqual((await state(page)).remainingIds, ["wrap-intro-front"]);
     await page.reload();
     await waitForReady(page);
-    assert.deepEqual((await state(page)).remainingIds, [
-      "wrap-intro-front",
-      "wrap-intro-left",
-      "wrap-intro-right",
-      "wrap-intro-top",
-      "wrap-intro-bottom",
-    ]);
+    assert.deepEqual((await state(page)).remainingIds, ["wrap-intro-front"]);
     assert.equal(await instruction.isVisible(), true);
     await page.locator('[data-action="retry"]').click();
     assert.deepEqual((await state(page)).remainingIds, [
       "wrap-intro-front",
       "wrap-intro-left",
-      "wrap-intro-back",
-      "wrap-intro-right",
-      "wrap-intro-top",
-      "wrap-intro-bottom",
     ]);
     assert.equal((await state(page)).lives, 5);
 
@@ -286,7 +276,7 @@ export async function assertWrapIntro(
     await page.reload();
     await waitForReady(page);
     assert.equal((await state(page)).level.id, 11);
-    assert.equal((await state(page)).remainingIds.length, 6);
+    assert.equal((await state(page)).remainingIds.length, 2);
     assert.equal((await state(page)).lives, 5);
     assert.equal(await page.locator("#level-input").getAttribute("max"), "27");
     assert.equal(await instruction.isVisible(), true);

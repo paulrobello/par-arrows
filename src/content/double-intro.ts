@@ -22,21 +22,5 @@ export const DOUBLE_INTRO_LEVEL: LevelDefinition = {
       id: "double-intro-blocker",
       path: [cell("front", 3, 1), cell("front", 3, 2), cell("front", 2, 2)],
     },
-    {
-      id: "double-intro-back",
-      path: [cell("back", 1, 1), cell("back", 2, 1)],
-    },
-    {
-      id: "double-intro-right",
-      path: [cell("right", 1, 1), cell("right", 2, 1)],
-    },
-    {
-      id: "double-intro-top",
-      path: [cell("top", 1, 1), cell("top", 2, 1)],
-    },
-    {
-      id: "double-intro-left",
-      path: [cell("left", 1, 1), cell("left", 2, 1)],
-    },
   ],
 };

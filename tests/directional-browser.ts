@@ -138,12 +138,12 @@ async function assertScriptedWalkthrough(
     let current = await state(page);
     assert.equal(current.lives, DIRECTIONAL_INTRO_LEVEL.lives);
     assert.deepEqual(current.failedIds, []);
-    assert.equal(current.remainingIds.length, 6);
+    assert.equal(current.remainingIds.length, 3);
 
     // The chevron bends the east arrow north and off the cube.
     await clickArrow(page, EAST);
     current = await state(page);
-    assert.equal(current.remainingIds.length, 5);
+    assert.equal(current.remainingIds.length, 2);
     assert.ok(
       !current.remainingIds.includes(EAST),
       "The bent arrow must leave the cube",
@@ -157,26 +157,13 @@ async function assertScriptedWalkthrough(
 
     await clickArrow(page, FREED);
     current = await state(page);
-    assert.equal(current.remainingIds.length, 4);
+    assert.equal(current.remainingIds.length, 1);
 
     // Gating has ended once the scripted taps are consumed.
     await clickArrow(page, BLOCKER);
     current = await state(page);
-    assert.equal(current.remainingIds.length, 3);
+    assert.equal(current.remainingIds.length, 0);
 
-    // The remaining faces sit away from the default camera, so finish through
-    // the attempt hook rather than screen clicks.
-    for (const arrowId of [
-      "dir-intro-back",
-      "dir-intro-right",
-      "dir-intro-top",
-    ]) {
-      await page.evaluate(
-        (id) => window.__PAR_ARROWS_TEST__?.activate(id),
-        arrowId,
-      );
-      await finishMotion(page);
-    }
     current = await state(page);
     assert.deepEqual(
       current.remainingIds,

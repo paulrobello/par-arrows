@@ -6,8 +6,8 @@ function cell(face: FaceId, x: number, y: number): Cell {
 
 /**
  * First cube doubles as the interactive tutorial: the front face holds a
- * deliberately blocked pair (the walkthrough taps the blocked arrow first to
- * teach collisions), while every other face carries one clear arrow.
+ * deliberately blocked pair, the walkthrough taps the blocked arrow first to
+ * teach collisions, and the pair is the whole cube.
  */
 export const LEVEL_ONE: LevelDefinition = {
   id: 1,
@@ -23,11 +23,6 @@ export const LEVEL_ONE: LevelDefinition = {
       id: "l1-front-blocker",
       path: [cell("front", 2, 1), cell("front", 3, 1)],
     },
-    { id: "l1-back", path: [cell("back", 2, 0), cell("back", 3, 0)] },
-    { id: "l1-right", path: [cell("right", 2, 0), cell("right", 3, 0)] },
-    { id: "l1-left", path: [cell("left", 2, 0), cell("left", 3, 0)] },
-    { id: "l1-top", path: [cell("top", 2, 0), cell("top", 3, 0)] },
-    { id: "l1-bottom", path: [cell("bottom", 2, 0), cell("bottom", 3, 0)] },
   ],
 };
 
@@ -58,15 +53,5 @@ export const WRAP_INTRO_LEVEL: LevelDefinition = {
       path: [cell("front", 1, 1), cell("front", 0, 1)],
     },
     { id: "wrap-intro-left", path: [cell("left", 2, 2), cell("left", 3, 2)] },
-    { id: "wrap-intro-back", path: [cell("back", 2, 0), cell("back", 3, 0)] },
-    {
-      id: "wrap-intro-right",
-      path: [cell("right", 2, 0), cell("right", 3, 0)],
-    },
-    { id: "wrap-intro-top", path: [cell("top", 2, 0), cell("top", 3, 0)] },
-    {
-      id: "wrap-intro-bottom",
-      path: [cell("bottom", 2, 0), cell("bottom", 3, 0)],
-    },
   ],
 };

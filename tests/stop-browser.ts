@@ -100,7 +100,7 @@ export async function assertStopIntro(
     let current = await state(page);
     assert.equal(current.lives, STOP_INTRO_LEVEL.lives - 1);
     assert.deepEqual(current.failedIds, [FREED]);
-    assert.equal(current.remainingIds.length, 6);
+    assert.equal(current.remainingIds.length, 3);
 
     // Parking moves the arrow forward without costing a life.
     await clickArrow(page, PARKER);
@@ -111,7 +111,7 @@ export async function assertStopIntro(
       "Tapping an arrow onto a circle parks it there",
     );
     assert.equal(current.lives, STOP_INTRO_LEVEL.lives - 1);
-    assert.equal(current.remainingIds.length, 6);
+    assert.equal(current.remainingIds.length, 3);
     const parkedX = await headPoint(page, PARKER);
     assert.ok(
       Math.abs(parkedX - startX) > 4,
@@ -170,8 +170,8 @@ export async function assertStopIntro(
       "Removing a parked arrow clears its offset",
     );
     assert.deepEqual(
-      current.remainingIds.sort(),
-      ["stop-intro-back", "stop-intro-right", "stop-intro-top"].sort(),
+      current.remainingIds,
+      [],
       "The front-face deadlock resolves once the parker has parked",
     );
     await page.screenshot({ path: `${output}/stop/03-cleared.png` });

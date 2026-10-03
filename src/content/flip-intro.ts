@@ -31,16 +31,5 @@ export const FLIP_INTRO_LEVEL: LevelDefinition = {
       id: "flip-intro-runner",
       path: [cell("front", 3, 1), cell("front", 2, 1)],
     },
-    { id: "flip-intro-back", path: [cell("back", 1, 1), cell("back", 2, 1)] },
-    {
-      id: "flip-intro-right",
-      path: [cell("right", 1, 1), cell("right", 2, 1)],
-    },
-    { id: "flip-intro-left", path: [cell("left", 1, 2), cell("left", 2, 2)] },
-    { id: "flip-intro-top", path: [cell("top", 1, 1), cell("top", 2, 1)] },
-    {
-      id: "flip-intro-bottom",
-      path: [cell("bottom", 1, 2), cell("bottom", 2, 2)],
-    },
   ],
 };

@@ -582,14 +582,6 @@ async function assertScriptedWalkthrough(
     assert.deepEqual(current.fallenIds, []);
     assert.equal(current.lives, FRAGILE_INTRO_LEVEL.lives);
 
-    for (const arrowId of [
-      "fragile-intro-back",
-      "fragile-intro-left",
-      "fragile-intro-top",
-      "fragile-intro-bottom",
-    ]) {
-      await activate(page, arrowId);
-    }
     current = await state(page);
     assert.deepEqual(current.remainingIds, [], "Free play clears the cube");
     assert.equal(current.lives, FRAGILE_INTRO_LEVEL.lives);

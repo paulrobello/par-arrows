@@ -500,14 +500,6 @@ async function assertScriptedWalkthrough(
     current = await state(page);
     assert.ok(!current.remainingIds.includes(OPENER), "The opener leaves");
     assert.equal(current.lives, LOCK_INTRO_LEVEL.lives);
-    for (const arrowId of [
-      "lock-intro-back",
-      "lock-intro-left",
-      "lock-intro-top",
-      "lock-intro-bottom",
-    ]) {
-      await activate(page, arrowId);
-    }
     current = await state(page);
     assert.deepEqual(current.remainingIds, [], "Free play clears the cube");
     assert.equal(current.lives, LOCK_INTRO_LEVEL.lives);

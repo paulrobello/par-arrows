@@ -29,21 +29,5 @@ export const MIRROR_INTRO_LEVEL: LevelDefinition = {
         cell("front", 1, 0),
       ],
     },
-    {
-      id: "mirror-intro-a",
-      path: [cell("back", 1, 1), cell("back", 1, 2)],
-    },
-    {
-      id: "mirror-intro-b",
-      path: [cell("right", 1, 1), cell("right", 2, 1)],
-    },
-    {
-      id: "mirror-intro-c",
-      path: [cell("left", 1, 1), cell("left", 2, 1)],
-    },
-    {
-      id: "mirror-intro-d",
-      path: [cell("bottom", 1, 1), cell("bottom", 2, 1)],
-    },
   ],
 };

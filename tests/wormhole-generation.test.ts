@@ -53,6 +53,21 @@ describe("wormhole generation", () => {
         continue;
       }
       withHoles += 1;
+      // Every hole ships with its far-side blocker: a core arrow whose body
+      // stands on the corridor cell adjacent to end B, so the far end starts
+      // blocked like the near one.
+      for (const hole of holes) {
+        const far = level.arrows.find(
+          (arrow) =>
+            arrow.id.includes("wormhole-far") &&
+            arrow.path.some(
+              (cell) =>
+                cell.face === hole.b.face &&
+                Math.abs(cell.x - hole.b.x) + Math.abs(cell.y - hole.b.y) === 1,
+            ),
+        );
+        expect(far).toBeDefined();
+      }
       const ends = new Set(
         holes.flatMap((hole) => [cellKey(hole.a), cellKey(hole.b)]),
       );

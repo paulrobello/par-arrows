@@ -12,9 +12,9 @@ function cell(face: FaceId, x: number, y: number): Cell {
  * deadlock: the portal's lane ends on the gate's body at front(3, 2), the
  * gate's lane on the portal at front(1, 2). Through the rings, the portal
  * enters A, leaves B heading east and flies off; that vacates front(1, 2),
- * so the gate runs south and exits too. End B sits on the right face's empty
- * top row, clear of the gate's own tail at right(0, 2). One filler arrow per
- * remaining face, off both routes.
+ * so the gate runs south and exits too. End B sits on the right face's top
+ * row; the far blocker stands in the corridor cell east of B and leaves
+ * north first, so the far end starts blocked like the near one.
  */
 export const WORMHOLE_INTRO_LEVEL: LevelDefinition = {
   id: 35,
@@ -41,17 +41,8 @@ export const WORMHOLE_INTRO_LEVEL: LevelDefinition = {
       ],
     },
     {
-      id: "wormhole-intro-back",
-      path: [cell("back", 1, 1), cell("back", 2, 1)],
-    },
-    {
-      id: "wormhole-intro-left",
-      path: [cell("left", 1, 2), cell("left", 2, 2)],
-    },
-    { id: "wormhole-intro-top", path: [cell("top", 1, 1), cell("top", 2, 1)] },
-    {
-      id: "wormhole-intro-bottom",
-      path: [cell("bottom", 1, 2), cell("bottom", 2, 2)],
+      id: "wormhole-intro-far",
+      path: [cell("right", 3, 1), cell("right", 3, 0)],
     },
   ],
 };

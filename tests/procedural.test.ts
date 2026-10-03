@@ -2,22 +2,21 @@ import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "../src/content/intro";
 import { OVERLAP_INTRO_LEVEL } from "../src/content/overlap-intro";
-import { STOP_INTRO_LEVEL } from "../src/content/stop-intro";
 import {
   AUTHORED_LEVEL_IDS,
   doubleArrowFrequency,
   GENERATOR_VERSION,
-  MAX_GENERATED_ARROWS,
   generateLevel,
   getLevelConfig,
   getStopCount,
   getWrappingEdgePolicies,
   getWrappingEdgeWeights,
   isAuthoredLevel,
+  MAX_GENERATED_ARROWS,
   MAX_LEVEL_ID,
   seedForLevel,
 } from "../src/content/procedural";
-import { cachedLevel } from "./generated-levels";
+import { STOP_INTRO_LEVEL } from "../src/content/stop-intro";
 import {
   applyMove,
   createGameState,
@@ -38,6 +37,7 @@ import {
   solveLevelTargets,
   validateLevel,
 } from "../src/core/validation";
+import { cachedLevel } from "./generated-levels";
 
 function geometryHash(level: LevelDefinition): string {
   return createHash("sha256")
@@ -501,12 +501,12 @@ describe("runtime campaign generator", () => {
       lives: 5,
       arrowScale: 1,
     });
-    expect(level.arrows).toHaveLength(6);
+    expect(level.arrows).toHaveLength(2);
     expect(
       new Set(
         level.arrows.flatMap((arrow) => arrow.path.map((cell) => cell.face)),
       ),
-    ).toEqual(new Set(["front", "back", "right", "left", "top", "bottom"]));
+    ).toEqual(new Set(["front", "left"]));
     expect(seedForLevel(11)).toBe("par-arrows:runtime:2:level:11:wrap-intro:1");
     expect(generateLevel(11)).toBe(WRAP_INTRO_LEVEL);
     expect(getWrappingEdgePolicies(11)).toEqual([

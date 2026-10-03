@@ -11,8 +11,7 @@ function cell(face: FaceId, x: number, y: number): Cell {
  * enters the front face across the right seam heading west; with the rotor
  * pointing west it would run straight on into the turner, and with the rotor
  * turned it bends north and exits. Without the rotor the two face each other
- * across its cell and deadlock. One filler arrow per remaining face, off both
- * routes.
+ * across its cell and deadlock.
  */
 export const ROTOR_INTRO_LEVEL: LevelDefinition = {
   id: 40,
@@ -29,13 +28,6 @@ export const ROTOR_INTRO_LEVEL: LevelDefinition = {
     {
       id: "rotor-intro-bender",
       path: [cell("right", 1, 1), cell("right", 0, 1), cell("front", 3, 1)],
-    },
-    { id: "rotor-intro-back", path: [cell("back", 1, 1), cell("back", 2, 1)] },
-    { id: "rotor-intro-left", path: [cell("left", 1, 2), cell("left", 2, 2)] },
-    { id: "rotor-intro-top", path: [cell("top", 1, 1), cell("top", 2, 1)] },
-    {
-      id: "rotor-intro-bottom",
-      path: [cell("bottom", 1, 2), cell("bottom", 2, 2)],
     },
   ],
 };

@@ -124,15 +124,10 @@ describe("curated campaign", () => {
         );
     }
   });
-  test("contains ten valid, face-spanning levels with the configured life curve", () => {
+  test("contains ten valid levels with the configured life curve", () => {
     expect(LEVELS).toHaveLength(10);
     for (const level of LEVELS) {
       expect(validateLevel(level)).toEqual({ valid: true, errors: [] });
-      expect(
-        new Set(
-          level.arrows.flatMap((arrow) => arrow.path.map((cell) => cell.face)),
-        ).size,
-      ).toBe(6);
       expect(level.lives).toBe(level.id <= 3 ? 5 : level.id <= 6 ? 4 : 3);
     }
   });
@@ -277,18 +272,11 @@ describe("onboarding fixture", () => {
 });
 
 describe("level one tutorial cube", () => {
-  test("pairs a blocked arrow with its blocker on an otherwise open cube", () => {
-    expect(LEVEL_ONE.arrows).toHaveLength(7);
+  test("pairs a blocked arrow with its blocker and nothing else", () => {
+    expect(LEVEL_ONE.arrows).toHaveLength(2);
     expect(LEVEL_ONE.stops).toBeUndefined();
     expect(LEVEL_ONE.edgePolicies).toBeUndefined();
     expect(validateLevel(LEVEL_ONE)).toEqual({ valid: true, errors: [] });
-    expect(
-      new Set(
-        LEVEL_ONE.arrows.flatMap((arrow) =>
-          arrow.path.map((cell) => cell.face),
-        ),
-      ).size,
-    ).toBe(6);
   });
 
   test("costs a life on the blocked arrow until its blocker clears", () => {

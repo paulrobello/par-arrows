@@ -33,7 +33,7 @@ const LAST_ID = 200;
 // already authored. The fixture regeneration that shipped lock cores changed
 // exactly these ids and no other; every other id's fixture entry is the
 // untouched pre-lock value, so an id without a lock core matching the fixture
-// is plan-zero parity. Over 51-200, 78 of 79 planned cores place. Id 137 is
+// is plan-zero parity. Over 51-200, 76 of 79 planned cores place; the wormhole far-side blocker (2026-10) costs two lock placements (133 and 144). Id 137 is
 // also fragile-planned, so its lock pass carries the fragile core too, and
 // that core never fits there: the pass gives up before the lock is tried,
 // and 137 comes out as the plan-zero construction.
@@ -79,7 +79,6 @@ const PRE_LOCK: Readonly<Record<number, string>> = {
   129: "264c17c5f15c30d1",
   130: "e3adfa80331967da",
   131: "48ee3a4cc10ee0c6",
-  133: "c0a91fa7b3ec26b5",
   134: "40f39c459f0a4c2d",
   135: "e251bd8a3e8d9bb9",
   136: "44f39a1c33d35eab",
@@ -87,7 +86,6 @@ const PRE_LOCK: Readonly<Record<number, string>> = {
   141: "22feb14a3182b494",
   142: "cde8d085d4a76a49",
   143: "1dd8cedb9b2ed298",
-  144: "ca63508da4034e42",
   146: "a9e8b39ae466cc16",
   147: "80399d600cfa940c",
   149: "ad8517c01985e6ef",

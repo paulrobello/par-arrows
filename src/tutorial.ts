@@ -267,6 +267,15 @@ const WORMHOLE_INTRO_SCRIPT: TutorialScript = {
   title: "Use the rings.",
   steps: [
     {
+      copy: "The far ring's lane has an arrow standing in it, so a head leaving the far ring would collide there. Clear the far lane first.",
+      highlightId: "wormhole-intro-far",
+      advance: {
+        kind: "move",
+        arrowIds: ["wormhole-intro-far"],
+        outcomes: ["exit"],
+      },
+    },
+    {
       copy: "Paired rings join two faces: a head entering one comes out of the matching ring, still heading the same way. Tap this arrow to ride it.",
       highlightId: "wormhole-intro-portal",
       advance: {

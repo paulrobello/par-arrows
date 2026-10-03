@@ -80,7 +80,7 @@ describe("stop-circle level content", () => {
     expect(STOP_INTRO_LEVEL.id).toBe(5);
     expect(STOP_INTRO_LEVEL.gridSize).toBe(4);
     expect(STOP_INTRO_LEVEL.lives).toBe(5);
-    expect(STOP_INTRO_LEVEL.arrows).toHaveLength(6);
+    expect(STOP_INTRO_LEVEL.arrows).toHaveLength(3);
     expect(STOP_INTRO_LEVEL.stops).toHaveLength(1);
     expect(STOP_INTRO_LEVEL.edgePolicies ?? []).toEqual([]);
     expect(validateLevel(STOP_INTRO_LEVEL)).toEqual({
@@ -116,11 +116,7 @@ describe("stop-circle level content", () => {
       expect(result.kind).toBe("exit");
       state = applyMove(STOP_INTRO_LEVEL, state, result);
     }
-    expect(state.remainingIds).toEqual([
-      "stop-intro-back",
-      "stop-intro-right",
-      "stop-intro-top",
-    ]);
+    expect(state.remainingIds).toEqual([]);
     expect(state.lives).toBe(5);
     expect(state.failedIds).toEqual([]);
   });

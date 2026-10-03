@@ -47,7 +47,6 @@ import {
   solveLevelTargets,
   validateLevel,
 } from "../core/validation";
-import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "./intro";
 import {
   dependencyFill,
   type FillNode,
@@ -58,8 +57,9 @@ import { DIRECTIONAL_INTRO_LEVEL } from "./directional-intro";
 import { DOUBLE_INTRO_LEVEL } from "./double-intro";
 import { FLIP_INTRO_LEVEL } from "./flip-intro";
 import { FRAGILE_INTRO_LEVEL } from "./fragile-intro";
-import { LOCK_INTRO_LEVEL } from "./lock-intro";
+import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "./intro";
 import { LEAP_INTRO_LEVEL } from "./leap-intro";
+import { LOCK_INTRO_LEVEL } from "./lock-intro";
 import { MIRROR_INTRO_LEVEL } from "./mirror-intro";
 import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
 import { ROTOR_INTRO_LEVEL } from "./rotor-intro";
@@ -1484,10 +1484,11 @@ const WORMHOLE_PATTERN = {
 
 /**
  * Place a required-use wormhole core on its own seeded stream, modeled on
- * `doubleCore`. The level-35 pattern rotates about end A on a candidate
- * face; end B lands on a random other face, and the corridor ahead of B
- * must run straight off that face through a non-wrapping edge, clear of
- * every reserved cell. The core proves required use on the core board alone
+ * `doubleCore`. The level-35 pattern — portal, gate and a far-side blocker —
+ * rotates about end A on a candidate face; end B lands on a random other
+ * face, and the corridor ahead of B must run straight off that face through
+ * a non-wrapping edge, clear of every reserved cell, with the blocker's body
+ * on its first cell. The core proves required use on the core board alone
  * (solvable with the wormhole, deadlocked without it), every arrow already
  * on board keeps its route off both ends so only the portal ever jumps, and
  * no earlier body may sit on a core track, so the core's certificate
@@ -1560,6 +1561,53 @@ function wormholeCore(
       cursor = next;
     }
     if (!corridorExits) continue;
+    // A far-side blocker occupies the corridor's first cell, so the far end
+    // starts blocked like the near one. Its own exit runs perpendicular to
+    // the corridor and must leave the face clear of every placed body, so
+    // it always leaves before the portal runs.
+    const first = corridor[0];
+    if (!first) continue;
+    const northSide = rotateHeading("north", rotation);
+    let farBlocker: ArrowDefinition | undefined;
+    for (const side of [oppositeHeading(northSide), northSide]) {
+      const step = HEADING_VECTORS[side];
+      const tail = { face: b.face, x: first.x + step.dx, y: first.y + step.dy };
+      if (!inBounds(tail) || occupied.has(cellKey(tail))) continue;
+      let clear = true;
+      let exited = false;
+      const visited = new Set([cellKey(tail), cellKey(first)]);
+      let cursor = first;
+      for (let walk = 0; walk < size; walk += 1) {
+        const forward = advanceHead(level, cursor, oppositeHeading(side));
+        if (forward.exits) {
+          exited = true;
+          break;
+        }
+        const next = forward.next;
+        if (
+          !next ||
+          next.face !== b.face ||
+          visited.has(cellKey(next)) ||
+          occupied.has(cellKey(next)) ||
+          cellKey(next) === cellKey(a) ||
+          cellKey(next) === cellKey(b)
+        ) {
+          clear = false;
+          break;
+        }
+        visited.add(cellKey(next));
+        cursor = next;
+      }
+      if (clear && exited) {
+        farBlocker = {
+          id: `r${id}-wormhole-far${suffix}`,
+          path: [tail, first],
+        };
+        break;
+      }
+    }
+    if (!farBlocker) continue;
+    arrows.push(farBlocker);
     const wormhole: WormholeDefinition = {
       id: suffix ? "w2" : "w1",
       a,
@@ -3464,8 +3512,8 @@ function extraDirectionalSpots(
           for (const traverser of traversers) {
             const alone = simulateMove(
               trial,
-              [arrows[traverser]!!.id],
-              arrows[traverser]!!.id,
+              [arrows[traverser]!.id],
+              arrows[traverser]!.id,
             );
             if (alone.kind !== "exit") {
               fits = false;
@@ -3475,11 +3523,7 @@ function extraDirectionalSpots(
             // self-passage is legal only as a head-on bounce off a spot, so a
             // candidate whose bent route slides into the body is rejected here
             // and by the matching validation rule.
-            const passage = selfPassageError(
-              arrows[traverser]!!,
-              trial,
-              "head",
-            );
+            const passage = selfPassageError(arrows[traverser]!, trial, "head");
             if (passage) {
               fits = false;
               break;
@@ -3488,13 +3532,13 @@ function extraDirectionalSpots(
               (routeCell) =>
                 parkTrackKeys.has(cellKey(routeCell)) ||
                 trackForbidden.has(cellKey(routeCell)) ||
-                cellsBefore[traverser]!!.has(cellKey(routeCell)),
+                cellsBefore[traverser]!.has(cellKey(routeCell)),
             );
             if (blocked) {
               fits = false;
               break;
             }
-            const totalBends = arrowTrack(trial, arrows[traverser]!!).filter(
+            const totalBends = arrowTrack(trial, arrows[traverser]!).filter(
               (routeCell) => trialSpots.has(cellKey(routeCell)),
             ).length;
             if (totalBends > limit) {
@@ -4061,7 +4105,7 @@ export function generateLevel(id: number): LevelDefinition {
             !validateLevel({ ...candidateLevel, arrows: group }).valid
           ) {
             skip = "overlap";
-            continue construction;
+            continue;
           }
           groupArrows = group;
           for (const arrow of group) {
@@ -4135,7 +4179,7 @@ export function generateLevel(id: number): LevelDefinition {
         // always carries the required head-on core as well.
         if (parkSpots.length > 0 && !directionalSpot) {
           skip = "park-spot";
-          continue construction;
+          continue;
         }
         const dirCells = new Set<string>();
         if (directionalSpot) {
@@ -4265,11 +4309,11 @@ export function generateLevel(id: number): LevelDefinition {
             : undefined;
         if (flipPass && !flip) {
           skip = "flip-core";
-          continue construction;
+          continue;
         }
         if (rotorPass && !flip) {
           skip = "rotor-core";
-          continue construction;
+          continue;
         }
         if (flip) {
           for (const arrow of flip.arrows) arrows.push(arrow);
@@ -4296,7 +4340,7 @@ export function generateLevel(id: number): LevelDefinition {
           : undefined;
         if (fragilePass && !fragile) {
           skip = "fragile-core";
-          continue construction;
+          continue;
         }
         const fragileKey = fragile ? cellKey(fragile.cell) : undefined;
         if (fragile) {
@@ -4322,7 +4366,7 @@ export function generateLevel(id: number): LevelDefinition {
           : undefined;
         if (lockPass && !lock) {
           skip = "lock-core";
-          continue construction;
+          continue;
         }
         if (lock) {
           for (const arrow of lock.arrows) arrows.push(arrow);
@@ -4347,7 +4391,7 @@ export function generateLevel(id: number): LevelDefinition {
           : undefined;
         if (mirrorPass && !mirror) {
           skip = "mirror-core";
-          continue construction;
+          continue;
         }
         if (mirror) {
           for (const arrow of mirror.arrows) arrows.push(arrow);
@@ -4372,7 +4416,7 @@ export function generateLevel(id: number): LevelDefinition {
           : undefined;
         if (leapPass && !leap) {
           skip = "leap-core";
-          continue construction;
+          continue;
         }
         if (leap) {
           for (const arrow of leap.arrows) arrows.push(arrow);
@@ -4636,7 +4680,7 @@ export function generateLevel(id: number): LevelDefinition {
           )
         ) {
           skip = "park-track";
-          continue construction;
+          continue;
         }
         const nodeRoute = (arrow: ArrowDefinition): readonly string[] =>
           arrowTrack(nodeBoard, arrow).slice(arrow.path.length).map(cellKey);
@@ -4691,7 +4735,7 @@ export function generateLevel(id: number): LevelDefinition {
           )
             throw error;
           skip = "fill-cycle";
-          continue construction;
+          continue;
         }
         if (fill.placed < config.arrowCount - prefilled) {
           skip = "count";
@@ -4818,7 +4862,7 @@ export function generateLevel(id: number): LevelDefinition {
           ...(mirror ? { mirrors: [mirror.mirror] } : {}),
           ...(leap ? { leaps: [leap.pad] } : {}),
         });
-        let level = assemble(placeStops());
+        const level = assemble(placeStops());
         if (
           directional &&
           !level.arrows.some(

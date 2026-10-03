@@ -173,6 +173,12 @@ export async function assertWormholeIntro(
     );
     await page.screenshot({ path: `${output}/wormhole/01-gate-blocked.png` });
 
+    // The far blocker clears the corridor past B before the portal can ride.
+    await activate(page, "wormhole-intro-far");
+    await finishMotion(page);
+    current = await state(page);
+    assert.ok(!current.remainingIds.includes("wormhole-intro-far"));
+
     const introHole = WORMHOLE_INTRO_LEVEL.wormholes?.[0];
     assert.ok(introHole);
     const { a, b } = introHole;
@@ -264,6 +270,8 @@ export async function assertWormholeIntro(
         active: false,
       };
     assert.equal((await state(campaignPage)).mode, "campaign");
+    assert.equal((await tutorial()).highlightId, "wormhole-intro-far");
+    await activate(campaignPage, "wormhole-intro-far");
     assert.equal((await tutorial()).highlightId, "wormhole-intro-portal");
     await activate(campaignPage, "wormhole-intro-portal");
     assert.equal((await tutorial()).highlightId, "wormhole-intro-gate");
