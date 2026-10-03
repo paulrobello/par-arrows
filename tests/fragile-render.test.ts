@@ -112,8 +112,8 @@ describe("fall motion", () => {
 
   test("a fall travels once, like an exit, not out and back like a rebound", () => {
     expect(arrowMotionDuration(1, "fall")).toBe(arrowMotionDuration(1, "exit"));
-    expect(arrowMotionDuration(1, "blocked")).toBe(
-      2 * arrowMotionDuration(1, "exit"),
+    expect(arrowMotionDuration(1, "blocked")).toBeCloseTo(
+      (2 * arrowMotionDuration(1, "exit")) / 0.75,
     );
   });
 });

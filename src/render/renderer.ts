@@ -3,13 +3,6 @@ import * as THREE from "three";
 import { spotStates } from "../core/directionals";
 import { isLeapPad } from "../core/leaps";
 import { overlappingArrowIds } from "../core/overlap";
-import {
-  advanceWithPortals,
-  isPortalLink,
-  type PortalSource,
-} from "../core/wormholes";
-import type { PickCandidate } from "../pick";
-import { splitExpandedPath } from "./ribbon-geometry";
 import { failurePositionKey, settledPathOf } from "../core/stops";
 import {
   cellKey,
@@ -21,14 +14,21 @@ import type {
   ArrowDefinition,
   Cell,
   DirectionalSpotDefinition,
-  GameState,
   FaceId,
+  GameState,
   Heading,
   LevelDefinition,
   MirrorDefinition,
   MoveResult,
   MoveTarget,
 } from "../core/types";
+import {
+  advanceWithPortals,
+  isPortalLink,
+  type PortalSource,
+} from "../core/wormholes";
+import type { PickCandidate } from "../pick";
+import { splitExpandedPath } from "./ribbon-geometry";
 
 const PICK_RADIUS = 0.14;
 const PICK_LAYER = 1;
@@ -936,6 +936,8 @@ export function arrowMotionTrack(
 const NORMAL_ARROW_SPEED = 5;
 const REDUCED_MOTION_DURATION = 110 / 1.5625;
 const PAUSE_MINIMUM_DURATION = 160;
+/** A doomed attempt plays at this fraction of time until its rewind lands. */
+const DOOMED_TIME_SCALE = 0.75;
 
 export function arrowMotionDuration(
   distance: number,
@@ -947,7 +949,9 @@ export function arrowMotionDuration(
   const travel = (distance * outboundAndReturn * 1000) / NORMAL_ARROW_SPEED;
   // Cells are small on a dense cube, so a one-step park would otherwise finish
   // inside a frame and read as a jump rather than as stopping at the circle.
-  return kind === "paused" ? Math.max(travel, PAUSE_MINIMUM_DURATION) : travel;
+  const base =
+    kind === "paused" ? Math.max(travel, PAUSE_MINIMUM_DURATION) : travel;
+  return kind === "blocked" ? base / DOOMED_TIME_SCALE : base;
 }
 
 function arrowFace(arrow: ArrowDefinition): Cell["face"] {
@@ -2072,6 +2076,31 @@ export class PuzzleRenderer {
           mesh.material.opacity = facing ? 1 : 0.32;
       });
     }
+    for (const child of this.wormholesGroup.children) {
+      const normal = child.userData.normal as THREE.Vector3 | undefined;
+      if (!normal) continue;
+      const opacity = stopCircleOpacity(
+        normal,
+        child.position,
+        this.camera.position,
+      );
+      if (child instanceof THREE.Group) {
+        child.traverse((part) => {
+          const mesh = part as THREE.Mesh<
+            THREE.BufferGeometry,
+            THREE.MeshBasicMaterial
+          >;
+          if (mesh.material instanceof THREE.MeshBasicMaterial)
+            mesh.material.opacity = opacity;
+        });
+      } else {
+        const mesh = child as THREE.Mesh<
+          THREE.BufferGeometry,
+          THREE.MeshBasicMaterial
+        >;
+        mesh.material.opacity = opacity;
+      }
+    }
     for (const visual of this.visuals.values()) {
       const nudged =
         this.tutorialNudge && tutorialIds.includes(visual.arrow.id);
@@ -2559,6 +2588,7 @@ export class PuzzleRenderer {
           dot.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
           dot.renderOrder = -1;
           dot.userData.dotIndex = dotIndex;
+          dot.userData.normal = normal;
           this.wormholesGroup.add(dot);
         }
       }

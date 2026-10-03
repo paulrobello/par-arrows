@@ -68,11 +68,16 @@ describe("gate motion", () => {
   test("a gated attempt travels out and back like a rebound", () => {
     expect(gated.kind).toBe("gated");
     expect(arrowMotionDuration(1, "gated")).toBe(
-      arrowMotionDuration(1, "blocked"),
-    );
-    expect(arrowMotionDuration(1, "gated")).toBe(
       2 * arrowMotionDuration(1, "exit"),
     );
+  });
+
+  test("a doomed attempt plays at three quarters time", () => {
+    expect(arrowMotionDuration(1, "blocked")).toBeCloseTo(
+      arrowMotionDuration(1, "gated") / 0.75,
+    );
+    // Gates are terrain, not collisions: the free rewind stays full speed.
+    expect(arrowMotionDuration(1, "fall")).toBe(arrowMotionDuration(1, "exit"));
   });
 
   test("the head stops half a cell short of the gate", () => {

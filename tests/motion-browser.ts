@@ -156,9 +156,12 @@ export async function assertConsistentMotion(
       );
       const after = await sample(page);
       const speed = measuredSpeed(before, after, delta);
+      // A doomed attempt runs at three quarters time, so its rendered speed
+      // is 3.75 units/s instead of the plain 5.
+      const expectedSpeed = fixture.blocked ? 3.75 : 5;
       assert.ok(
-        Math.abs(speed - 5) < 0.005,
-        `${fixture.name} rendered speed was ${speed}, expected 5 units/s`,
+        Math.abs(speed - expectedSpeed) < 0.005,
+        `${fixture.name} rendered speed was ${speed}, expected ${expectedSpeed} units/s`,
       );
       let returnSpeed: number | undefined;
       if (fixture.blocked) {
@@ -173,7 +176,7 @@ export async function assertConsistentMotion(
         );
         returnSpeed = measuredSpeed(returning, await sample(page), delta);
         assert.ok(
-          Math.abs(returnSpeed - 5) < 0.005,
+          Math.abs(returnSpeed - expectedSpeed) < 0.005,
           `Rebound speed was ${returnSpeed}`,
         );
       }

@@ -10,7 +10,6 @@ import {
   stepAcrossSeam,
 } from "../src/core/topology";
 import type { Cell, FaceId, Heading, MoveResult } from "../src/core/types";
-import { splitExpandedPath } from "../src/render/ribbon-geometry";
 import {
   arrowMotionDuration,
   arrowMotionTrack,
@@ -24,6 +23,7 @@ import {
   wrappingEdgeOpacity,
   wrappingEdgeSegments,
 } from "../src/render/renderer";
+import { splitExpandedPath } from "../src/render/ribbon-geometry";
 
 function vertices(values: Float32Array): readonly THREE.Vector3[] {
   return Array.from(
@@ -426,7 +426,9 @@ describe("flat ribbon geometry", () => {
     const duration = arrowMotionDuration(motion.distance, "blocked");
     expect(motion.distance).toBeCloseTo(polylineLength(route.points) - 0.25, 7);
     expect(motion.distance).toBeCloseTo(blockedResult.distance * (2 / 4), 7);
-    expect(motion.distance / (duration / 2000)).toBeCloseTo(5, 8);
+    // A doomed attempt runs at three quarters time, so its effective speed
+    // is 5 × 0.75 cells per second.
+    expect(motion.distance / (duration / 2000)).toBeCloseTo(3.75, 8);
     expect(arrowMotionDuration(motion.distance, "blocked", true)).toBeCloseTo(
       70.4,
       8,
