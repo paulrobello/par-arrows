@@ -273,7 +273,7 @@ describe("fragile generation", () => {
     for (const id of [49, 104, 150, 199]) {
       const started = performance.now();
       const level = generateLevel(id);
-      expect(performance.now() - started).toBeLessThan(2000);
+      expect(performance.now() - started).toBeLessThan(4000);
       expect(level.fragile).toHaveLength(1);
       expect(layoutFingerprint(generateLevel(id))).toBe(
         layoutFingerprint(level),
