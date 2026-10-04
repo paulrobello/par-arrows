@@ -14,6 +14,7 @@ import {
   seedForLevel,
   wormholePlan,
 } from "../src/content/procedural";
+import { solveLevel } from "../src/core/validation";
 import { cachedLevel } from "./generated-levels";
 
 // FNV-1a exactly as `hashSeed` in src/content/procedural.ts, which is not
@@ -94,6 +95,12 @@ test("mechanic placement ratios stay within 10% of v9", () => {
     totals.holesPlaced += level.wormholes?.length ?? 0;
     totals.stopBudget += getStopCount(id);
     totals.stops += level.stops?.length ?? 0;
+    if ((level.stops?.length ?? 0) > 0) {
+      expect(
+        solveLevel({ ...level, stops: [] }),
+        `level ${id} keeps circles it does not need`,
+      ).toBeUndefined();
+    }
     if (id >= 16) totals.groupEligible += 1;
     if (level.arrows.some((arrow) => arrow.id.includes("-overlap-")))
       totals.groups += 1;
@@ -126,7 +133,9 @@ test("mechanic placement ratios stay within 10% of v9", () => {
   expect(totals.holesPlaced / totals.holesPlanned).toBeGreaterThanOrEqual(
     V9.wormholes * 0.8,
   );
-  expect(totals.stops).toBe(totals.stopBudget);
+  // Decorative circles are gone: a circle only ships on a proven
+  // required-use core, so the budget is a ceiling, not a quota.
+  expect(totals.stops).toBeLessThanOrEqual(totals.stopBudget);
   expect(totals.groups).toBe(totals.groupEligible);
   expect(totals.flipPlanned).toBeGreaterThan(0);
   expect(totals.flipLevels / totals.flipPlanned).toBeGreaterThanOrEqual(

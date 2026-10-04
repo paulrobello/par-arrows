@@ -612,7 +612,8 @@ describe("runtime campaign generator", () => {
     for (const id of [6, 7, 12, 16, 55]) {
       const level = generateLevel(id);
       const stops = level.stops ?? [];
-      expect(stops).toHaveLength(getStopCount(id));
+      // Circles ride required-use cores only, so the budget is a ceiling.
+      expect(stops.length).toBeLessThanOrEqual(getStopCount(id));
       const bodies = new Set(
         level.arrows.flatMap((arrow) => arrow.path.map(cellKey)),
       );
@@ -632,7 +633,7 @@ describe("runtime campaign generator", () => {
     for (const id of [6, 7, 10, 12, 14, 16, 55, 100]) {
       const level = generateLevel(id);
       const stops = level.stops ?? [];
-      expect(stops).toHaveLength(getStopCount(id));
+      expect(stops.length).toBeLessThanOrEqual(getStopCount(id));
       if (stops.length === 0) continue;
       const stripped = { ...level, stops: [] };
       // A double arrow provides its own alternate solve path, so the

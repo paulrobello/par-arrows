@@ -3753,56 +3753,6 @@ function strandSafeCircle(
 }
 
 /**
- * Choose decorative circles on cells some arrow's head actually travels
- * through, so a circle is always reachable rather than decorative. The
- * load-bearing circle arrives with the parking core; the extras must pass
- * `strandSafeCircle`, and a level places fewer of them when too few cells do.
- */
-function chooseStops(
-  id: number,
-  level: Pick<LevelDefinition, "gridSize" | "edgePolicies" | "directionals">,
-  arrows: readonly ArrowDefinition[],
-  occupied: ReadonlySet<string>,
-  decorativeCount: number,
-  coreIds: ReadonlySet<string>,
-): readonly Cell[] {
-  if (decorativeCount <= 0) return [];
-  const candidates: Cell[] = [];
-  const seen = new Set<string>();
-  const bent = (level.directionals?.length ?? 0) > 0;
-  for (const arrow of arrows) {
-    // On spot cubes the rays are bent by the spots, so circles must come from
-    // the tracks arrows actually travel; spot-free levels keep the straight
-    // rays, which are identical there and preserve those layouts.
-    const swept = bent
-      ? arrowTrack(level, arrow).slice(arrow.path.length)
-      : (() => {
-          const head = arrow.path[arrow.path.length - 1];
-          const heading = headingForPath(arrow.path, level.gridSize);
-          return !head || !heading
-            ? []
-            : exitRay(level, head, heading).slice(1);
-        })();
-    for (const cell of swept) {
-      const key = cellKey(cell);
-      if (occupied.has(key) || seen.has(key)) continue;
-      seen.add(key);
-      candidates.push(cell);
-    }
-  }
-  const rng = new Rng(hashSeed(`${seedForLevel(id)}:stop-cells`));
-  for (let index = candidates.length - 1; index > 0; index -= 1) {
-    const replacement = rng.int(index + 1);
-    const current = candidates[index] as Cell;
-    candidates[index] = candidates[replacement] as Cell;
-    candidates[replacement] = current;
-  }
-  return candidates
-    .filter(strandSafeCircle(level, arrows, coreIds, "decorative"))
-    .slice(0, decorativeCount);
-}
-
-/**
  * Replay a construction certificate. A park entry advances the named arrow to
  * its next circle and leaves it parked there; every other entry is driven
  * through its pauses until it exits before the next arrow is tried. Flip and
@@ -4301,7 +4251,10 @@ export function generateLevel(id: number): LevelDefinition {
               regionBoard,
               occupied,
               regionTracks,
-              getStopCount(id) - (core ? core.stops.length : 0),
+              // The region circle is only worth proving when the level also
+              // carries its parking core: every circle must sit on a
+              // required-use structure, so a park-core-less level plans none.
+              core ? getStopCount(id) - core.stops.length : 0,
               restart,
             )
           : rotorPass
@@ -4833,22 +4786,14 @@ export function generateLevel(id: number): LevelDefinition {
           ...candidateLevel,
           ...(spots.length > 0 ? { directionals: spots } : {}),
         };
-        // Circles the flip region was proven with come out of the decorative
-        // budget, so the level still carries exactly `getStopCount(id)`.
+        // Circles the flip region was proven with; the rotor's own
+        // load-bearing circle arrives the same way. Only proven cores carry
+        // circles now, so a level with no required parking places none.
         const regionStops = flip ? flip.stops : [];
-        const placeStops = (): readonly Cell[] => {
-          const decorative = chooseStops(
-            id,
-            stopBoard,
-            arrows,
-            occupied,
-            getStopCount(id) -
-              (core ? core.stops.length : 0) -
-              regionStops.length,
-            coreIds,
-          );
-          return [...(core ? core.stops : []), ...regionStops, ...decorative];
-        };
+        const placeStops = (): readonly Cell[] => [
+          ...(core ? core.stops : []),
+          ...regionStops,
+        ];
         const assemble = (stops: readonly Cell[]): LevelDefinition => ({
           ...candidateLevel,
           arrows,
@@ -5016,20 +4961,7 @@ export function generateLevel(id: number): LevelDefinition {
               ...(mirror ? { mirrors: [mirror.mirror] } : {}),
               ...(leap ? { leaps: [leap.pad] } : {}),
             };
-            const trimmedStops = [
-              ...(core ? core.stops : []),
-              ...regionStops,
-              ...chooseStops(
-                id,
-                trimmedBoard,
-                arrows,
-                occupied,
-                getStopCount(id) -
-                  (core ? core.stops.length : 0) -
-                  regionStops.length,
-                coreIds,
-              ),
-            ];
+            const trimmedStops = [...(core ? core.stops : []), ...regionStops];
             const trimmed: LevelDefinition = {
               ...trimmedBoard,
               arrows,
