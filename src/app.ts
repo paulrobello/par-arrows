@@ -300,10 +300,12 @@ export class ParArrowsApp {
       },
       onOrbit: (x, y) => {
         this.cancelHint();
+        this.renderer.cancelFlightFollow();
         this.renderer.orbit(x, y);
       },
       onZoom: (amount) => {
         this.cancelHint();
+        this.renderer.cancelFlightFollow();
         this.renderer.zoom(amount);
       },
     });
@@ -538,6 +540,7 @@ export class ParArrowsApp {
         updateAvailable: this.updateAvailable !== undefined,
       },
       camera: this.renderer.cameraDiagnostics(),
+      keyFlights: this.renderer.keyFlightDiagnostics(),
       visibleProjectedArrowPositions: this.renderer
         .projectedArrows()
         .filter((arrow) => arrow.visible),
@@ -677,6 +680,7 @@ export class ParArrowsApp {
     if (this.motion) {
       this.motion.elapsed += delta;
       const progress = Math.min(1, this.motion.elapsed / this.motion.duration);
+      this.renderer.advanceFlights(delta, progress);
       this.renderer.animate(
         this.motion.result.arrowId,
         this.motion.result,
@@ -712,6 +716,9 @@ export class ParArrowsApp {
     if (this.hint) {
       this.updateHint(delta);
       return;
+    }
+    if (this.renderer.hasKeyFlights()) {
+      this.renderer.advanceFlights(delta);
     }
   }
 
@@ -754,6 +761,9 @@ export class ParArrowsApp {
   private attempt(target: MoveTarget): void {
     const { arrowId, endpoint } = target;
     this.cancelHint();
+    // A new move must never begin while a gate still shows its padlock to
+    // arrows that may legally pass it.
+    this.renderer.snapKeyFlights();
     if (this.loading || this.loadingError || this.motion) {
       return;
     }
@@ -790,6 +800,9 @@ export class ParArrowsApp {
     // nothing new, so it rides the animate pass instead of paying its own.
     this.renderer.setSelected(undefined, false);
     this.renderer.animate(arrowId, result, 0);
+    if (!this.settings.reducedMotion) {
+      this.renderer.beginKeyFlights(result, this.motion.duration);
+    }
   }
 
   private finishMotion(arrowId: string): void {

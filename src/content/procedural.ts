@@ -1,4 +1,8 @@
-import { advancedSpotHeading, hasStatefulSpots } from "../core/directionals";
+import {
+  advancedSpotHeading,
+  hasStatefulSpots,
+  rotatedHeading,
+} from "../core/directionals";
 import {
   applyMove,
   createGameState,
@@ -2271,7 +2275,9 @@ interface LockCore {
  * itself the opener's first tap must meet the closed gate, the same board
  * with the lock stripped must let the opener leave first, the solver's
  * certificate must send the key arrow before the opener, and no order may
- * strand or soft-lock it.
+ * strand or soft-lock it. A seeded coin prefers the cross-face variant, which
+ * routes the key lane across a seam so the key cell lands on a neighboring
+ * face; a cross aspirant that cannot fit falls back to the same-face pattern.
  */
 function lockCore(
   id: number,
@@ -2287,6 +2293,60 @@ function lockCore(
   const inBounds = (cell: Cell): boolean =>
     cell.x >= 0 && cell.y >= 0 && cell.x < size && cell.y < size;
   const existing = level.arrows.map((arrow) => occupancyKeys(level, arrow));
+  const openerId = `r${id}${LOCK_CORE_MARKER}opener`;
+  const keyId = `r${id}${LOCK_CORE_MARKER}key`;
+  // A seeded coin on its own stream PREFERS the cross-face variant: each
+  // attempt evaluates the cross geometry first and falls back to the
+  // same-face pattern through the full validation chain, so placement never
+  // regresses and only ids that actually place cross-face change fingerprint.
+  const crossRng = coreStream(id, "lock-core-cross", restart);
+  const crossFace = crossRng.int(2) === 0;
+  const axis = HEADINGS[crossRng.int(4)]!;
+  const side = rotatedHeading(axis);
+  /** Build one variant's geometry for this attempt's face, gate, rotation. */
+  const buildVariant = (
+    cross: boolean,
+    face: FaceId,
+    gate: Cell,
+    at: (delta: readonly [number, number]) => Cell,
+  ): { arrows: readonly ArrowDefinition[]; key: Cell } | undefined => {
+    if (!cross) {
+      return {
+        arrows: [
+          { id: openerId, path: LOCK_PATTERN.opener.map(at) },
+          { id: keyId, path: LOCK_PATTERN.key.map(at) },
+        ],
+        key: at(LOCK_PATTERN.keyCell),
+      };
+    }
+    // The key lane runs from the gate's side across a seam, putting the key
+    // cell on the neighbor face two cells past the seam; the opener sits
+    // opposite the lane, aimed at the gate.
+    const laneBase = stepSurface(gate, side, size);
+    let edge = laneBase;
+    let depth = 0;
+    while (depth < size) {
+      if (stepSurface(edge, axis, size).face !== edge.face) break;
+      edge = stepSurface(edge, axis, size);
+      depth += 1;
+    }
+    if (depth < 3) return undefined;
+    const lane: Cell[] = [edge];
+    for (let back = 0; back < 3; back += 1) {
+      lane.unshift(stepSurface(lane[0]!, oppositeHeading(axis), size));
+    }
+    const keyCandidate = stepSurface(stepSurface(edge, axis, size), axis, size);
+    const o1 = stepSurface(gate, oppositeHeading(side), size);
+    const o2 = stepSurface(o1, oppositeHeading(side), size);
+    if (o2.face !== face || keyCandidate.face === face) return undefined;
+    return {
+      arrows: [
+        { id: openerId, path: [o2, o1] },
+        { id: keyId, path: lane },
+      ],
+      key: keyCandidate,
+    };
+  };
   for (let attempt = 0; attempt < 64; attempt += 1) {
     const face = faces[attempt % faces.length] as FaceId;
     const rotation = rng.int(4);
@@ -2297,81 +2357,85 @@ function lockCore(
     };
     const at = ([dx, dy]: readonly [number, number]): Cell =>
       patternCell(gate, dx, dy, rotation);
-    const key = at(LOCK_PATTERN.keyCell);
-    const openerId = `r${id}${LOCK_CORE_MARKER}opener`;
-    const keyId = `r${id}${LOCK_CORE_MARKER}key`;
-    const arrows: ArrowDefinition[] = [
-      { id: openerId, path: LOCK_PATTERN.opener.map(at) },
-      { id: keyId, path: LOCK_PATTERN.key.map(at) },
-    ];
-    const bodies = arrows.flatMap((arrow) => arrow.path);
-    if (
-      [...bodies, gate, key].some(
-        (cell) => !inBounds(cell) || occupied.has(cellKey(cell)),
+    const variants: {
+      arrows: readonly ArrowDefinition[];
+      key: Cell;
+    }[] = [];
+    const cross = buildVariant(true, face, gate, at);
+    if (cross) variants.push(cross);
+    const same = buildVariant(false, face, gate, at);
+    if (same) variants.push(same);
+    for (const { arrows, key } of variants) {
+      const bodies = arrows.flatMap((arrow) => arrow.path);
+      if (
+        [...bodies, gate, key].some(
+          (cell) => !inBounds(cell) || occupied.has(cellKey(cell)),
+        )
       )
-    )
-      continue;
-    const gateKey = cellKey(gate);
-    const keyKey = cellKey(key);
-    const cells = new Set<string>([gateKey, keyKey, ...bodies.map(cellKey)]);
-    let lanesFit = true;
-    for (const probe of flipHeadingProbes(level)) {
-      for (const arrow of arrows) {
-        const keys = arrowTrack(probe, arrow).map(cellKey);
-        const [wanted, banned] =
-          arrow.id === keyId ? [keyKey, gateKey] : [gateKey, keyKey];
-        if (!keys.includes(wanted) || keys.includes(banned)) lanesFit = false;
-        for (const entry of keys) cells.add(entry);
+        continue;
+      const gateKey = cellKey(gate);
+      const keyKey = cellKey(key);
+      const cells = new Set<string>([gateKey, keyKey, ...bodies.map(cellKey)]);
+      let lanesFit = true;
+      for (const probe of flipHeadingProbes(level)) {
+        for (const arrow of arrows) {
+          const keys = arrowTrack(probe, arrow).map(cellKey);
+          const [wanted, banned] =
+            arrow.id === keyId ? [keyKey, gateKey] : [gateKey, keyKey];
+          if (!keys.includes(wanted) || keys.includes(banned)) lanesFit = false;
+          for (const entry of keys) cells.add(entry);
+        }
       }
+      if (
+        !lanesFit ||
+        [...cells].some(
+          (entry) => occupied.has(entry) || forbiddenTracks.has(entry),
+        ) ||
+        existing.some((keys) => [...cells].some((entry) => keys.has(entry)))
+      )
+        continue;
+      const lock: LockDefinition = { id: `r${id}-lock`, key, lock: gate };
+      const coreLevel: LevelDefinition = {
+        id: level.id,
+        title: level.title,
+        gridSize: level.gridSize,
+        lives: level.lives,
+        ...(level.edgePolicies ? { edgePolicies: level.edgePolicies } : {}),
+        arrows,
+        locks: [lock],
+      };
+      if (!validateLevel(coreLevel).valid) continue;
+      const initial = createGameState(coreLevel);
+      if (simulateGameMove(coreLevel, initial, openerId).kind !== "gated")
+        continue;
+      const stripped: LevelDefinition = { ...coreLevel, locks: [] };
+      if (
+        simulateGameMove(stripped, createGameState(stripped), openerId).kind !==
+        "exit"
+      )
+        continue;
+      const certificate = solveLevelTargets(coreLevel);
+      if (!certificate) continue;
+      const order = certificate.map((target) => target.arrowId);
+      if (
+        order.indexOf(keyId) < 0 ||
+        order.indexOf(keyId) > order.indexOf(openerId)
+      )
+        continue;
+      let state = initial;
+      for (const target of certificate) {
+        state = applyMove(
+          coreLevel,
+          state,
+          simulateGameMove(coreLevel, state, target.arrowId, target.endpoint),
+        );
+      }
+      if (state.status !== "won" || !state.unlocked?.includes(lock.id))
+        continue;
+      if (hasStrandingState(coreLevel) !== false) continue;
+      if (hasSoftLockState(coreLevel) !== false) continue;
+      return { arrows, lock, certificate, cells };
     }
-    if (
-      !lanesFit ||
-      [...cells].some(
-        (entry) => occupied.has(entry) || forbiddenTracks.has(entry),
-      ) ||
-      existing.some((keys) => [...cells].some((entry) => keys.has(entry)))
-    )
-      continue;
-    const lock: LockDefinition = { id: `r${id}-lock`, key, lock: gate };
-    const coreLevel: LevelDefinition = {
-      id: level.id,
-      title: level.title,
-      gridSize: level.gridSize,
-      lives: level.lives,
-      ...(level.edgePolicies ? { edgePolicies: level.edgePolicies } : {}),
-      arrows,
-      locks: [lock],
-    };
-    if (!validateLevel(coreLevel).valid) continue;
-    const initial = createGameState(coreLevel);
-    if (simulateGameMove(coreLevel, initial, openerId).kind !== "gated")
-      continue;
-    const stripped: LevelDefinition = { ...coreLevel, locks: [] };
-    if (
-      simulateGameMove(stripped, createGameState(stripped), openerId).kind !==
-      "exit"
-    )
-      continue;
-    const certificate = solveLevelTargets(coreLevel);
-    if (!certificate) continue;
-    const order = certificate.map((target) => target.arrowId);
-    if (
-      order.indexOf(keyId) < 0 ||
-      order.indexOf(keyId) > order.indexOf(openerId)
-    )
-      continue;
-    let state = initial;
-    for (const target of certificate) {
-      state = applyMove(
-        coreLevel,
-        state,
-        simulateGameMove(coreLevel, state, target.arrowId, target.endpoint),
-      );
-    }
-    if (state.status !== "won" || !state.unlocked?.includes(lock.id)) continue;
-    if (hasStrandingState(coreLevel) !== false) continue;
-    if (hasSoftLockState(coreLevel) !== false) continue;
-    return { arrows, lock, certificate, cells };
   }
   return undefined;
 }

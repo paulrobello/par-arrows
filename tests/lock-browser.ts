@@ -39,6 +39,7 @@ interface State {
   locks: LockText[];
   unlockedIds: string[];
   lockGlyphOpen: Record<string, number>;
+  keyFlights: { lockId: string; progress: number }[];
   moving: {
     kind: string;
     duration: number;
@@ -319,6 +320,7 @@ export async function assertLockIntro(
   await assertScriptedWalkthrough(browser, url, output);
   await assertUnlockAcrossReload(browser, url, output);
   await assertGeneratedCore(browser, url, output);
+  await assertCrossFaceFlight(browser, url, output);
 }
 
 /**
@@ -684,6 +686,80 @@ async function assertGeneratedCore(
     });
     console.log(`lock: level ${id} core cleared in certified order`);
     assert.deepEqual(errors, [], `No page errors during the level ${id} core`);
+  } finally {
+    await context.close();
+  }
+}
+
+/** The first generated id whose lock core placed cross-face, if any. */
+function firstCrossFaceLockLevel(): number | undefined {
+  for (let id = 51; id <= 200; id += 1) {
+    if (!lockCorePlanned(id)) continue;
+    const lock = generateLevel(id).locks?.[0];
+    if (lock && lock.key.face !== lock.lock.face) return id;
+  }
+  return undefined;
+}
+
+/**
+ * The first cross-face core plays its key flight: the flight diagnostic
+ * reports the key airborne, the padlock stays present while it flies, and
+ * the padlock reads removed once the key lands - with the key and gate on
+ * different faces.
+ */
+async function assertCrossFaceFlight(
+  browser: Browser,
+  url: string,
+  output: string,
+): Promise<void> {
+  const id = firstCrossFaceLockLevel();
+  assert.ok(id, "A cross-face lock core exists over 51-200");
+  const level = generateLevel(id);
+  const lock = level.locks?.[0];
+  assert.ok(lock);
+  assert.notEqual(lock.key.face, lock.lock.face);
+  const keyArrow = `r${id}${LOCK_CORE_MARKER}key`;
+  const context = await browser.newContext({
+    viewport: { width: 1100, height: 760 },
+    colorScheme: "light",
+  });
+  const page = await context.newPage();
+  const errors = watchErrors(page);
+  try {
+    await page.goto(url);
+    await waitForReady(page);
+    await openCampaignLevel(page, id);
+    let current = await state(page);
+    assert.deepEqual(current.lockGlyphOpen, { [lock.id]: 0 });
+    // Activate without fast-forwarding the move, so the flight is sampled
+    // airborne during the key arrow's travel.
+    await page.evaluate((arrow) => {
+      window.__PAR_ARROWS_TEST__?.activate(arrow, "head");
+    }, keyArrow);
+    current = await state(page);
+    assert.ok(current.moving, "The key arrow is moving");
+    let sawFlight = false;
+    let sawPresentWhileFlying = false;
+    let sawRemoved = false;
+    for (let step = 0; step < 24 && !sawRemoved; step += 1) {
+      await page.evaluate(() => window.advanceTime?.(120));
+      current = await state(page);
+      const flight = current.keyFlights[0];
+      if (flight) {
+        sawFlight = true;
+        if (current.lockGlyphOpen[lock.id] === 0) sawPresentWhileFlying = true;
+      }
+      if (!flight && sawFlight && current.lockGlyphOpen[lock.id] === 1)
+        sawRemoved = true;
+    }
+    assert.ok(sawFlight, "The key flies across the faces");
+    assert.ok(
+      sawPresentWhileFlying,
+      "The padlock stays present while the key flies",
+    );
+    assert.ok(sawRemoved, "The padlock reads removed once the key lands");
+    console.log(`lock: cross-face flight verified on level ${id}`);
+    assert.deepEqual(errors, [], "No page errors during the flight");
   } finally {
     await context.close();
   }

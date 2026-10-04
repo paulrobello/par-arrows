@@ -23,7 +23,7 @@ const BASES: Readonly<Record<FaceId, FaceBasis>> = {
   bottom: { normal: [0, -1, 0], east: [1, 0, 0], south: [0, 0, -1] },
 };
 
-const HEADINGS: readonly Heading[] = ["east", "west", "south", "north"];
+export const HEADINGS: readonly Heading[] = ["east", "west", "south", "north"];
 
 function add(a: Vector3, b: Vector3): Vector3 {
   return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];

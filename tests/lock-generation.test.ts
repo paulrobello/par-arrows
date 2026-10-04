@@ -115,6 +115,15 @@ const PRE_LOCK: Readonly<Record<number, string>> = {
   200: "710b93c506d44096",
 };
 
+/**
+ * Ids whose lock core placed the cross-face variant: the key cell sits on a
+ * neighboring face across a seam from its gate, so the key's flight crosses
+ * faces. The seeded coin prefers cross on every lock id; a cross aspirant
+ * whose geometry cannot fit falls back to the same-face pattern, so this set
+ * is the measured share of the 78 placed cores that fit cross-face.
+ */
+const CROSS_FACE: ReadonlySet<number> = new Set([95, 131, 150, 195]);
+
 /** The core's two arrows and its lock, alone on the level's cube. */
 function coreBoard(level: LevelDefinition): LevelDefinition {
   const {
@@ -241,6 +250,7 @@ describe("lock generation", () => {
       expect(locks).toHaveLength(1);
       expect(layoutFingerprint(level)).not.toBe(PRE_LOCK[id]);
       const lock = locks[0] as (typeof locks)[number];
+      expect(lock.key.face !== lock.lock.face).toBe(CROSS_FACE.has(id));
       const keys = [cellKey(lock.lock), cellKey(lock.key)];
       for (const arrow of level.arrows) {
         if (arrow.id.includes(LOCK_CORE_MARKER)) continue;

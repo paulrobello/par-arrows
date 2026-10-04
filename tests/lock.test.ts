@@ -4,8 +4,15 @@ import {
   createGameState,
   simulateMove,
 } from "../src/core/game-state";
-import { closedGateKeys, gateAt, hasLocks, keyAt } from "../src/core/locks";
-import { cellKey } from "../src/core/topology";
+import {
+  closedGateKeys,
+  gateAt,
+  hasLocks,
+  keyAt,
+  keyFlightRoute,
+} from "../src/core/locks";
+import { cellKey, headingBetween } from "../src/core/topology";
+import { LOCK_INTRO_LEVEL } from "../src/content/lock-intro";
 import type {
   ArrowDefinition,
   Cell,
@@ -463,5 +470,58 @@ describe("solver", () => {
   test("lock levels enumerate with no stranded or soft-locked state", () => {
     expect(hasStrandingState(gateLevel)).toBe(false);
     expect(hasSoftLockState(gateLevel)).toBe(false);
+  });
+});
+
+describe("key flight route", () => {
+  test("a same-face pair routes directly across the face", () => {
+    const route = keyFlightRoute(
+      LOCK_INTRO_LEVEL,
+      LOCK_INTRO_LEVEL.locks![0]!.id,
+    );
+    const start = LOCK_INTRO_LEVEL.locks![0]!.key;
+    const goal = LOCK_INTRO_LEVEL.locks![0]!.lock;
+    expect(route[0]).toEqual(start);
+    expect(route[route.length - 1]).toEqual(goal);
+    // front(3,0) to front(2,1): BFS with the fixed heading order gives a
+    // shortest surface route of two steps.
+    expect(route.length).toBe(3);
+    for (let index = 1; index < route.length; index += 1) {
+      expect(
+        headingBetween(
+          route[index - 1]!,
+          route[index]!,
+          LOCK_INTRO_LEVEL.gridSize,
+        ),
+      ).toBeDefined();
+    }
+  });
+
+  test("a cross-face pair routes across the seam and stays on the surface", () => {
+    const level: LevelDefinition = {
+      ...LOCK_INTRO_LEVEL,
+      locks: [
+        {
+          id: "x",
+          key: { face: "front", x: 0, y: 0 },
+          lock: { face: "back", x: 3, y: 3 },
+        },
+      ],
+    };
+    const route = keyFlightRoute(level, "x");
+    expect(route[0]).toEqual({ face: "front", x: 0, y: 0 });
+    expect(route[route.length - 1]).toEqual({ face: "back", x: 3, y: 3 });
+    // Every consecutive pair is one surface step; front(0,0) to back(3,3) on
+    // a 4x4 cube crosses two seams by way of an adjacent face.
+    expect(route.length).toBeGreaterThanOrEqual(3);
+    for (let index = 1; index < route.length; index += 1) {
+      expect(
+        headingBetween(route[index - 1]!, route[index]!, level.gridSize),
+      ).toBeDefined();
+    }
+  });
+
+  test("an unknown lock id routes nowhere", () => {
+    expect(keyFlightRoute(LOCK_INTRO_LEVEL, "missing")).toEqual([]);
   });
 });

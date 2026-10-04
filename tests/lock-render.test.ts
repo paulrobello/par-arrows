@@ -94,16 +94,15 @@ describe("gate motion", () => {
 });
 
 describe("lock far-side dim", () => {
-  test("the open-gate fade composes with the far-side dim", () => {
-    const closed = 1;
-    const open = 0.35;
+  test("the padlock fades out as the key's arrival removes it", () => {
     const facing = 1;
     const dimmed = 0.32;
-    expect(lockGlyphOpacity(0, facing)).toBe(closed);
-    expect(lockGlyphOpacity(1, facing)).toBe(open);
-    // A gate seen through the cube dims like every other mechanic instead of
-    // drawing at the facing gate's strength.
+    // Fully present while closed, gone once the padlock is removed.
+    expect(lockGlyphOpacity(0, facing)).toBe(1);
+    expect(lockGlyphOpacity(1, facing)).toBe(0);
+    // A padlock seen through the cube dims like every other mechanic and
+    // fades to nothing as its key arrives.
     expect(lockGlyphOpacity(0, dimmed)).toBeCloseTo(0.32);
-    expect(lockGlyphOpacity(1, dimmed)).toBeCloseTo(0.32 * 0.35);
+    expect(lockGlyphOpacity(1, dimmed)).toBe(0);
   });
 });

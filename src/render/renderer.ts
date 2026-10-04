@@ -2,6 +2,7 @@ import * as THREE from "three";
 
 import { spotStates } from "../core/directionals";
 import { isLeapPad } from "../core/leaps";
+import { keyFlightRoute } from "../core/locks";
 import { overlappingArrowIds } from "../core/overlap";
 import { failurePositionKey, settledPathOf } from "../core/stops";
 import {
@@ -54,16 +55,25 @@ const FALL_DEPTH = 1.2;
 /** A gate's frame half-width and its bar and frame stroke, in cell pitch. */
 const GATE_HALF = 0.36;
 const GATE_STROKE = 0.07;
-/** An open gate keeps its frame at this opacity and drops its bars. */
-const GATE_OPEN_OPACITY = 0.35;
+/**
+ * How long a landed key takes to pop its padlock off the gate, and how fast
+ * a key glyph crosses the surface (cells per second, three times an arrow).
+ */
+const PADLOCK_POP_MS = 150;
+const KEY_FLIGHT_SPEED = 15;
+const KEY_FLIGHT_MIN_MS = 80;
+/** A flying key hovers this fraction of a cell above the surface. */
+const KEY_FLIGHT_HOVER = 0.12;
+/** Camera follow turns this fraction of the remaining angle per second. */
+const KEY_FLIGHT_FOLLOW_RATE = 3;
 
 /**
- * A gate frame's drawn opacity: the open-gate fade composed with the same
- * far-side dim every mechanic takes, so a gate seen through the cube dims
- * instead of snapping back to full strength.
+ * A padlock's drawn opacity: it is fully present while closed and fades out
+ * as the key's arrival removes it, composed with the same far-side dim every
+ * mechanic takes.
  */
 export function lockGlyphOpacity(open: number, dim: number): number {
-  return (1 - (1 - GATE_OPEN_OPACITY) * open) * dim;
+  return (1 - open) * dim;
 }
 const CUBE_FACES: readonly FaceId[] = [
   "front",
@@ -263,6 +273,21 @@ export interface ProjectedArrow {
   readonly x: number;
   readonly y: number;
   readonly visible: boolean;
+}
+
+/** A key glyph flying from its cell to pop its padlock off the gate. */
+interface KeyFlight {
+  readonly lockId: string;
+  /** Surface route as world points, one face-normal per segment. */
+  readonly path: ExpandedPath;
+  readonly worldLength: number;
+  /** Flight time budget: compressed when the same move's head races it. */
+  duration: number;
+  elapsed: number;
+  /** Move-travel share at which the head crosses the key; undefined = airborne. */
+  pendingStart: number | undefined;
+  followCancelled: boolean;
+  landed: boolean;
 }
 
 export interface CameraDiagnostics {
@@ -1097,6 +1122,8 @@ export class PuzzleRenderer {
   private readonly wormholesGroup = new THREE.Group();
   private readonly fragileGroup = new THREE.Group();
   private readonly lockGroup = new THREE.Group();
+  /** A flying key per lock id, from crossing its cell to popping its padlock. */
+  private readonly keyFlights = new Map<string, KeyFlight>();
   /** Settled advance count of each flip or rotor glyph, keyed by cell. */
   private readonly flipTurns = new Map<string, number>();
   private flipMotion = false;
@@ -1674,56 +1701,209 @@ export class PuzzleRenderer {
     this.flipMotion = progress < 1;
     this.animateFlips(result, distance, travel);
     this.animateCollapses(result, distance, travel);
-    this.animateUnlocks(result, distance, travel);
     this.render();
   }
 
   /**
-   * Show each gate open (1) or barred (0), or partway for a gate opening
-   * mid-move, keyed by lock id.
+   * Show each gate as its padlock present (0) or removed (1), or partway for
+   * the pop-off that plays when a key lands, keyed by lock id.
    */
   private showLocks(open: ReadonlyMap<string, number>): void {
     for (const child of this.lockGroup.children) {
       const id = child.userData.lockId as string | undefined;
       if (child.userData.lockPart !== "gate" || id === undefined) continue;
-      const opened = open.get(id) ?? 0;
-      child.userData.open = opened;
-      const bars = child.userData.bars as THREE.Object3D;
-      // The bars slide up out of the frame as the gate opens; render() derives
-      // the frame's drawn opacity from `userData.open`, composing the
-      // open-gate fade with the far-side dim.
-      bars.visible = opened < 1;
-      bars.scale.set(1, 1 - opened, 1);
+      const removed = open.get(id) ?? 0;
+      child.userData.open = removed;
+      const padlock = child.userData.padlock as THREE.Object3D | undefined;
+      if (!padlock) continue;
+      padlock.visible = removed < 1;
+      padlock.scale.setScalar(Math.max(0.001, 1 - removed));
     }
   }
 
-  /** Snap every gate to the settled lock state. */
+  /**
+   * Snap every gate to the settled lock state. A lock whose key is still in
+   * flight is skipped: the flight owns that padlock's removal timing.
+   */
   setUnlocked(unlocked: readonly string[] | undefined): void {
-    this.showLocks(new Map((unlocked ?? []).map((id) => [id, 1])));
+    const snap = new Map((unlocked ?? []).map((id) => [id, 1]));
+    for (const id of this.keyFlights.keys()) snap.delete(id);
+    this.showLocks(snap);
   }
 
-  private animateUnlocks(
-    result: MoveResult,
-    distance: number,
-    travel: number,
-  ): void {
-    const gridSize = this.level?.gridSize;
-    if (gridSize === undefined || this.lockGroup.children.length === 0) return;
-    const open = new Map<string, number>(
-      (this.state?.unlocked ?? []).map((id) => [id, 1]),
-    );
-    // During a move, `state` already holds the settled result, so gates this
-    // move opens restart barred and open at their share of travel; a gate a
-    // failed move opened closes again on the way back.
+  /**
+   * Schedule a key flight for every fresh unlock a committed move reports.
+   * `duration` is the move's animation length; a flight starts when the head
+   * crosses its key (the unlock's share of travel) and lands after crossing
+   * the surface route at three times arrow speed, compressed so it always
+   * lands before the same move's head reaches the gate.
+   */
+  beginKeyFlights(result: MoveResult, duration: number): void {
+    if (!this.level) return;
+    if (result.kind === "blocked" || result.kind === "gated") return;
+    const distance = this.motionDistance(result.arrowId, result);
+    const gridSize = this.level.gridSize;
     for (const member of result.members ?? [result]) {
       for (const entry of member.unlocks ?? []) {
-        open.set(
-          entry.id,
-          flipTurnProgress(entry.step, gridSize, distance, travel),
+        // The renderer's state is the settled pre-move state, so a lock it
+        // already lists was open before this move — only re-crossings are
+        // skipped; fresh unlocks start their flight.
+        if (this.keyFlights.has(entry.id)) continue;
+        if ((this.state?.unlocked ?? []).includes(entry.id)) continue;
+        const route = keyFlightRoute(this.level, entry.id);
+        if (route.length < 2) continue;
+        const path = expandedPoints(route, gridSize, this.level);
+        const worldLength = path.points.reduce(
+          (total, point, index) =>
+            index === 0 ? 0 : total + point.distanceTo(path.points[index - 1]!),
+          0,
         );
+        const natural =
+          (worldLength / (2 / gridSize)) * (1000 / KEY_FLIGHT_SPEED);
+        const shareAt = (step: number): number =>
+          Math.min(1, (step * 2) / gridSize / distance);
+        const gateIndex = member.route.findIndex(
+          (cell) => cellKey(cell) === cellKey(entry.cell),
+        );
+        let compressed = natural;
+        if (gateIndex >= 0) {
+          const budget =
+            (shareAt(gateIndex + 1) - shareAt(entry.step)) * duration;
+          if (budget < natural)
+            compressed = Math.max(KEY_FLIGHT_MIN_MS, budget);
+        }
+        this.keyFlights.set(entry.id, {
+          lockId: entry.id,
+          path,
+          worldLength,
+          duration: compressed,
+          elapsed: 0,
+          pendingStart: shareAt(entry.step),
+          followCancelled: false,
+          landed: false,
+        });
       }
     }
-    this.showLocks(open);
+  }
+
+  /** Advance in-flight keys and the padlock pops they trigger. */
+  advanceFlights(delta: number, moveProgress?: number): void {
+    if (this.keyFlights.size === 0) return;
+    for (const flight of [...this.keyFlights.values()]) {
+      if (flight.pendingStart !== undefined) {
+        // With no move running, the move that unlocked this key has settled:
+        // the unlock committed, so the key flies now.
+        if (moveProgress !== undefined && moveProgress < flight.pendingStart)
+          continue;
+        flight.pendingStart = undefined;
+      }
+      flight.elapsed += delta;
+      if (flight.elapsed >= flight.duration && !flight.landed) {
+        flight.landed = true;
+        this.removeKeyGlyph(flight.lockId);
+      }
+      if (flight.landed) {
+        const pop = Math.min(
+          1,
+          (flight.elapsed - flight.duration) / PADLOCK_POP_MS,
+        );
+        this.showLocks(new Map([[flight.lockId, pop]]));
+        if (pop >= 1) this.keyFlights.delete(flight.lockId);
+      }
+    }
+    this.followFlights(delta);
+    this.render();
+  }
+
+  /** Any flight still carrying a key. */
+  hasKeyFlights(): boolean {
+    return this.keyFlights.size > 0;
+  }
+
+  /**
+   * Complete every flight and padlock pop immediately: a new move must never
+   * begin while a gate still shows closed to arrows that may legally pass.
+   */
+  snapKeyFlights(): void {
+    for (const flight of [...this.keyFlights.values()]) {
+      this.keyFlights.delete(flight.lockId);
+      this.removeKeyGlyph(flight.lockId);
+      this.showLocks(new Map([[flight.lockId, 1]]));
+    }
+  }
+
+  /** User orbit or zoom takes the camera back for the active flights. */
+  cancelFlightFollow(): void {
+    for (const flight of this.keyFlights.values())
+      flight.followCancelled = true;
+  }
+
+  /** ids and travel fractions of the flights, for diagnostics and tests. */
+  keyFlightDiagnostics(): { lockId: string; progress: number }[] {
+    return [...this.keyFlights.values()].map((flight) => ({
+      lockId: flight.lockId,
+      progress: flight.elapsed / Math.max(flight.duration, Number.EPSILON),
+    }));
+  }
+
+  private removeKeyGlyph(lockId: string): void {
+    const key = this.lockGroup.children.find(
+      (child) =>
+        child.userData.lockPart === "key" && child.userData.lockId === lockId,
+    );
+    if (key) key.visible = false;
+  }
+
+  /** Turn the camera toward the in-flight keys the user has not taken over. */
+  private followFlights(delta: number): void {
+    const followed = [...this.keyFlights.values()].filter(
+      (flight) => !flight.followCancelled && !flight.landed,
+    );
+    if (followed.length === 0 || !this.level) return;
+    const placement = this.flightPlacement(followed[0]!);
+    if (!placement) return;
+    const view = new THREE.Vector3(0, 0, 1).applyQuaternion(this.orientation);
+    const target = placement.position.clone().normalize();
+    const axis = new THREE.Vector3().crossVectors(view, target);
+    if (axis.lengthSq() < 1e-12) return;
+    const remaining = view.angleTo(target);
+    const step =
+      remaining * (1 - Math.exp(-KEY_FLIGHT_FOLLOW_RATE * (delta / 1000)));
+    this.orientation
+      .premultiply(
+        new THREE.Quaternion().setFromAxisAngle(
+          axis.normalize(),
+          Math.min(remaining, step),
+        ),
+      )
+      .normalize();
+  }
+
+  /** World placement of a flight's key glyph at its current travel share. */
+  private flightPlacement(
+    flight: KeyFlight,
+  ): { position: THREE.Vector3; segmentIndex: number } | undefined {
+    const { points, segmentFaces } = flight.path;
+    if (points.length < 2) return undefined;
+    const share = Math.min(1, flight.elapsed / flight.duration);
+    const target = share * flight.worldLength;
+    let consumed = 0;
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const span = points[index]!.distanceTo(points[index + 1]!);
+      if (consumed + span >= target || index === points.length - 2) {
+        const local = span === 0 ? 0 : (target - consumed) / span;
+        return {
+          position: new THREE.Vector3().lerpVectors(
+            points[index]!,
+            points[index + 1]!,
+            local,
+          ),
+          segmentIndex: index,
+        };
+      }
+      consumed += span;
+    }
+    return undefined;
   }
 
   /** How far (0..1) each gate currently shows open, keyed by lock id. */
@@ -2153,6 +2333,32 @@ export class PuzzleRenderer {
         if (mesh.material instanceof THREE.MeshBasicMaterial)
           mesh.material.opacity = factor;
       });
+    }
+    for (const flight of this.keyFlights.values()) {
+      if (flight.landed) continue;
+      const key = this.lockGroup.children.find(
+        (child) =>
+          child.userData.lockPart === "key" &&
+          child.userData.lockId === flight.lockId,
+      );
+      if (!key) continue;
+      const placement = this.flightPlacement(flight);
+      if (!placement) continue;
+      const [nx, ny, nz] = faceNormal(
+        flight.path.segmentFaces[placement.segmentIndex] ??
+          flight.path.segmentFaces[0]!,
+      );
+      key.position
+        .copy(placement.position)
+        .addScaledVector(
+          new THREE.Vector3(nx, ny, nz),
+          (KEY_FLIGHT_HOVER * 2) / (this.level?.gridSize ?? 10),
+        );
+      key.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        new THREE.Vector3(nx, ny, nz),
+      );
+      key.scale.setScalar(1.25);
     }
     for (const visual of this.visuals.values()) {
       // Exited arrows hide from picking and drawing; their colors and
@@ -2811,11 +3017,12 @@ export class PuzzleRenderer {
 
   /**
    * Each lock draws two glyphs in one color unique to it on the level. The
-   * gate is a square frame with three vertical bars across the cell; opening
-   * slides the bars away and fades the frame. The key is a ring bow with a
-   * shaft and two teeth, lying flat on its cell. Square framing and straight
-   * bars keep the gate apart from round stop circles, wormhole rings and a
-   * collapsed hole's solid frame.
+   * gate is a padlock — a solid keyed body under an arched shackle — and the
+   * key's arrival pops it off the cell for good. The key is a ring bow with
+   * a shaft and two teeth, lying flat on its cell until it lifts and flies
+   * the surface route to its padlock. A padlock's silhouette keeps the gate
+   * apart from round stop circles, wormhole rings and a collapsed hole's
+   * solid frame.
    */
   private createLocks(level: LevelDefinition): void {
     const pitch = 2 / level.gridSize;
@@ -2850,47 +3057,43 @@ export class PuzzleRenderer {
       group.userData.normal = normal;
     };
     for (const [index, lock] of (level.locks ?? []).entries()) {
-      const half = pitch * GATE_HALF;
-      const stroke = pitch * GATE_STROKE;
-      const frameShape = rect(0, 0, half * 2, half * 2);
-      frameShape.holes.push(
-        new THREE.Path(
-          [
-            [-half + stroke, -half + stroke],
-            [-half + stroke, half - stroke],
-            [half - stroke, half - stroke],
-            [half - stroke, -half + stroke],
-          ].map(([x, y]) => new THREE.Vector2(x as number, y as number)),
+      const bodyHalf = pitch * 0.24;
+      const shackleR = pitch * 0.13;
+      const tube = pitch * 0.028;
+      // A solid body with a keyhole and an arched shackle reads as locked at
+      // a glance; the key's arrival pops it off the gate cell.
+      const bodyShape = rect(0, -pitch * 0.06, bodyHalf * 2, bodyHalf * 2);
+      bodyShape.holes.push(
+        new THREE.Path().absarc(
+          0,
+          pitch * 0.02,
+          pitch * 0.045,
+          0,
+          Math.PI * 2,
+          true,
         ),
       );
-      const frame = new THREE.Mesh(
-        new THREE.ShapeGeometry(frameShape),
+      const body = new THREE.Mesh(
+        new THREE.ShapeGeometry(bodyShape),
         material(index),
       );
-      // The bars hang from the frame's top edge so a vertical scale lifts
-      // them out of the lane.
-      const barsPivot = new THREE.Group();
-      barsPivot.position.y = half;
-      const bars = new THREE.Mesh(
-        new THREE.ShapeGeometry(
-          [-0.5, 0, 0.5].map((offset) =>
-            rect(offset * half, -half, stroke, half * 2 - stroke),
-          ),
-        ),
+      const shackle = new THREE.Mesh(
+        new THREE.TorusGeometry(shackleR, tube, 8, 24, Math.PI),
         material(index),
       );
-      barsPivot.add(bars);
-      for (const part of [frame, bars]) {
+      shackle.position.y = bodyHalf - pitch * 0.06;
+      for (const part of [body, shackle]) {
         part.renderOrder = -1;
         part.userData.lockIndex = index;
       }
+      const padlock = new THREE.Group();
+      padlock.add(body, shackle);
       const gate = new THREE.Group();
       place(gate, lock.lock);
-      gate.add(frame, barsPivot);
+      gate.add(padlock);
       gate.userData.lockPart = "gate";
       gate.userData.lockId = lock.id;
-      gate.userData.frame = frame;
-      gate.userData.bars = barsPivot;
+      gate.userData.padlock = padlock;
       gate.userData.open = 0;
       this.lockGroup.add(gate);
 
@@ -2901,6 +3104,7 @@ export class PuzzleRenderer {
         material(index),
       );
       bow.position.x = -pitch * 0.2;
+      const stroke = pitch * GATE_STROKE;
       const blade = new THREE.Mesh(
         new THREE.ShapeGeometry([
           rect(pitch * 0.1, 0, pitch * 0.42, stroke),
@@ -2925,6 +3129,7 @@ export class PuzzleRenderer {
   private clearLocks(): void {
     disposeTree(this.lockGroup);
     this.lockGroup.clear();
+    this.keyFlights.clear();
   }
 
   private clearFragile(): void {
