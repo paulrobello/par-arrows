@@ -56,6 +56,15 @@ const GATE_HALF = 0.36;
 const GATE_STROKE = 0.07;
 /** An open gate keeps its frame at this opacity and drops its bars. */
 const GATE_OPEN_OPACITY = 0.35;
+
+/**
+ * A gate frame's drawn opacity: the open-gate fade composed with the same
+ * far-side dim every mechanic takes, so a gate seen through the cube dims
+ * instead of snapping back to full strength.
+ */
+export function lockGlyphOpacity(open: number, dim: number): number {
+  return (1 - (1 - GATE_OPEN_OPACITY) * open) * dim;
+}
 const CUBE_FACES: readonly FaceId[] = [
   "front",
   "back",
@@ -1201,7 +1210,7 @@ export class PuzzleRenderer {
     this.render();
   }
 
-  updateState(state: GameState): void {
+  updateState(state: GameState, render = true): void {
     this.state = state;
     this.refreshSettledPaths(state);
     if (!this.flipMotion) {
@@ -1212,12 +1221,12 @@ export class PuzzleRenderer {
     for (const [id, visual] of this.visuals) {
       visual.group.visible = state.remainingIds.includes(id);
     }
-    this.render();
+    if (render) this.render();
   }
 
-  setSelected(target: MoveTarget | undefined): void {
+  setSelected(target: MoveTarget | undefined, render = true): void {
     this.selectedTarget = target;
-    this.render();
+    if (render) this.render();
   }
 
   setTheme(theme: Theme): void {
@@ -1680,14 +1689,11 @@ export class PuzzleRenderer {
       const opened = open.get(id) ?? 0;
       child.userData.open = opened;
       const bars = child.userData.bars as THREE.Object3D;
-      // The bars slide up out of the frame as the gate opens.
+      // The bars slide up out of the frame as the gate opens; render() derives
+      // the frame's drawn opacity from `userData.open`, composing the
+      // open-gate fade with the far-side dim.
       bars.visible = opened < 1;
       bars.scale.set(1, 1 - opened, 1);
-      const frame = child.userData.frame as THREE.Mesh<
-        THREE.BufferGeometry,
-        THREE.MeshBasicMaterial
-      >;
-      frame.material.opacity = 1 - (1 - GATE_OPEN_OPACITY) * opened;
     }
   }
 
@@ -2101,7 +2107,57 @@ export class PuzzleRenderer {
         mesh.material.opacity = opacity;
       }
     }
+    for (const child of this.mirrorsGroup.children) {
+      const mesh = child as THREE.Mesh<
+        THREE.BufferGeometry,
+        THREE.MeshBasicMaterial
+      >;
+      const normal = mesh.userData.normal as THREE.Vector3 | undefined;
+      if (!normal) continue;
+      mesh.material.opacity = stopCircleOpacity(
+        normal,
+        mesh.position,
+        this.camera.position,
+      );
+    }
+    for (const child of this.leapsGroup.children) {
+      const mesh = child as THREE.Mesh<
+        THREE.BufferGeometry,
+        THREE.MeshBasicMaterial
+      >;
+      const normal = mesh.userData.normal as THREE.Vector3 | undefined;
+      if (!normal) continue;
+      mesh.material.opacity = stopCircleOpacity(
+        normal,
+        mesh.position,
+        this.camera.position,
+      );
+    }
+    for (const child of this.lockGroup.children) {
+      const normal = child.userData.normal as THREE.Vector3 | undefined;
+      if (!normal) continue;
+      const dim = stopCircleOpacity(
+        normal,
+        child.position,
+        this.camera.position,
+      );
+      const factor =
+        child.userData.lockPart === "gate"
+          ? lockGlyphOpacity(child.userData.open ?? 0, dim)
+          : dim;
+      child.traverse((part) => {
+        const mesh = part as THREE.Mesh<
+          THREE.BufferGeometry,
+          THREE.MeshBasicMaterial
+        >;
+        if (mesh.material instanceof THREE.MeshBasicMaterial)
+          mesh.material.opacity = factor;
+      });
+    }
     for (const visual of this.visuals.values()) {
+      // Exited arrows hide from picking and drawing; their colors and
+      // opacities are frozen at their last facing state, so skip the pass.
+      if (!visual.group.visible) continue;
       const nudged =
         this.tutorialNudge && tutorialIds.includes(visual.arrow.id);
       const doubleFailed =
@@ -2477,6 +2533,7 @@ export class PuzzleRenderer {
         );
       slash.renderOrder = -1;
       slash.userData.mirror = cellKey(mirror.cell);
+      slash.userData.normal = normal;
       this.mirrorsGroup.add(slash);
     }
   }
@@ -2516,6 +2573,7 @@ export class PuzzleRenderer {
         );
       arch.renderOrder = -1;
       arch.userData.leap = cellKey(pad);
+      arch.userData.normal = normal;
       this.leapsGroup.add(arch);
     }
   }
@@ -2789,6 +2847,7 @@ export class PuzzleRenderer {
         .copy(cellPoint(cell, level.gridSize))
         .addScaledVector(normal, 0.002);
       group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal);
+      group.userData.normal = normal;
     };
     for (const [index, lock] of (level.locks ?? []).entries()) {
       const half = pitch * GATE_HALF;

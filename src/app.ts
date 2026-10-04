@@ -786,13 +786,17 @@ export class ParArrowsApp {
       ),
     };
     this.hintButton.disabled = true;
-    this.renderer.setSelected(undefined);
+    // One render launches the move: clearing the selection alone draws
+    // nothing new, so it rides the animate pass instead of paying its own.
+    this.renderer.setSelected(undefined, false);
     this.renderer.animate(arrowId, result, 0);
   }
 
   private finishMotion(arrowId: string): void {
     this.motion = undefined;
-    this.renderer.updateState(this.state);
+    // One render lands the move: updateState applies the settled state and
+    // settle re-lays the moved arrow, so the render rides settle's pass.
+    this.renderer.updateState(this.state, false);
     this.renderer.settle(arrowId);
     this.displayedState = this.state;
     const move = this.tutorialMove;

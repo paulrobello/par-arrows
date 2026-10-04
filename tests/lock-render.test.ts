@@ -5,6 +5,7 @@ import {
   arrowMotionDuration,
   arrowMotionTrack,
   expandedPoints,
+  lockGlyphOpacity,
   THEME_PALETTES,
 } from "../src/render/renderer";
 
@@ -89,5 +90,20 @@ describe("gate motion", () => {
     expect(
       arrowMotionTrack(body, gated, level.gridSize).distance,
     ).toBeGreaterThan(0);
+  });
+});
+
+describe("lock far-side dim", () => {
+  test("the open-gate fade composes with the far-side dim", () => {
+    const closed = 1;
+    const open = 0.35;
+    const facing = 1;
+    const dimmed = 0.32;
+    expect(lockGlyphOpacity(0, facing)).toBe(closed);
+    expect(lockGlyphOpacity(1, facing)).toBe(open);
+    // A gate seen through the cube dims like every other mechanic instead of
+    // drawing at the facing gate's strength.
+    expect(lockGlyphOpacity(0, dimmed)).toBeCloseTo(0.32);
+    expect(lockGlyphOpacity(1, dimmed)).toBeCloseTo(0.32 * 0.35);
   });
 });
