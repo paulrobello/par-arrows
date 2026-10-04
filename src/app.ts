@@ -41,6 +41,7 @@ import {
   type LoadedCampaign,
   layoutFingerprint,
   loadCampaign,
+  campaignUnlockedLevelId,
   loadSettings,
   type PlayerSettings,
   type StorageResult,
@@ -48,6 +49,7 @@ import {
   saveSettings,
 } from "./storage";
 import { TutorialRunner, scriptForLevel } from "./tutorial";
+import { encounteredMechanics, MECHANIC_HELP, mechanicImagePath } from "./help";
 import {
   APP_VERSION,
   markVersionReloaded,
@@ -205,6 +207,13 @@ export class ParArrowsApp {
           <label><input id="reduced-motion" type="checkbox" /> Reduce movement</label>
           <label>Theme<select id="theme-select"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
           <button id="install-help-button" type="button">How to install</button>
+          <div class="mechanics-help">
+            <h3>How mechanics work</h3>
+            <ul id="mechanics-list"></ul>
+            <p id="mechanics-more" hidden>
+              Clear more cubes to meet new mechanics.
+            </p>
+          </div>
         </aside>
         <dialog class="install-dialog" id="install-dialog" aria-labelledby="install-title">
           <h2 id="install-title">Play full screen</h2>
@@ -1112,6 +1121,7 @@ export class ParArrowsApp {
       const panel = this.requireElement("settings-panel");
       panel.hidden = !panel.hidden;
       this.settingsButton.setAttribute("aria-expanded", String(!panel.hidden));
+      if (!panel.hidden) this.renderMechanicsHelp();
     });
     this.gridLines.addEventListener("change", () => {
       this.settings = {
@@ -1371,6 +1381,34 @@ export class ParArrowsApp {
   private updateInstallPrompt(available: boolean): void {
     this.installAvailable = available;
     this.installNow.hidden = !available;
+  }
+
+  /**
+   * Fills the settings guide with the mechanics whose intro cubes the
+   * campaign has reached, thumbnail and one-line rule each.
+   */
+  private renderMechanicsHelp(): void {
+    const list = this.requireElement("mechanics-list");
+    const encountered = encounteredMechanics(campaignUnlockedLevelId());
+    const items = encountered.map((mechanic) => {
+      const item = document.createElement("li");
+      const image = document.createElement("img");
+      image.src = mechanicImagePath(mechanic.id);
+      image.alt = `${mechanic.title} on its introduction cube`;
+      image.loading = "lazy";
+      const copy = document.createElement("div");
+      copy.className = "mechanics-copy";
+      const title = document.createElement("strong");
+      title.textContent = mechanic.title;
+      const text = document.createElement("p");
+      text.textContent = mechanic.description;
+      copy.append(title, text);
+      item.append(image, copy);
+      return item;
+    });
+    list.replaceChildren(...items);
+    this.requireElement("mechanics-more").hidden =
+      encountered.length === MECHANIC_HELP.length;
   }
 
   private openInstallDialog(): void {

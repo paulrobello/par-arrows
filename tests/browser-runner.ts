@@ -38,6 +38,7 @@ import { assertMirrorIntro } from "./mirror-browser";
 import { assertRotorIntro } from "./rotor-browser";
 import { assertWormholeIntro } from "./wormhole-browser";
 import { assertPwaPrompt } from "./pwa-browser";
+import { assertMechanicsGuide } from "./help-browser";
 import { assertReliableTaps } from "./tap-browser";
 import {
   assertFirstRunWalkthrough,
@@ -122,6 +123,7 @@ const LEAP_ONLY_COMPLETE = Symbol("leap-only-complete");
 const MIRROR_ONLY_COMPLETE = Symbol("mirror-only-complete");
 const WORMHOLE_ONLY_COMPLETE = Symbol("wormhole-only-complete");
 const PWA_ONLY_COMPLETE = Symbol("pwa-only-complete");
+const HELP_ONLY_COMPLETE = Symbol("help-only-complete");
 const RESIZE_ONLY_COMPLETE = Symbol("resize-only-complete");
 // The full v8 sweep measured 176 s on 2026-09-24, too close to the former
 // 180 s limit for a headed run to pass reliably. Adding the wormhole suite
@@ -1107,6 +1109,12 @@ try {
     throw PWA_ONLY_COMPLETE;
   }
 
+  if (process.env.HELP_ONLY === "1") {
+    await assertMechanicsGuide(browser, url, output);
+    assert.deepEqual(failures, [], "Browser must not report uncaught errors");
+    throw HELP_ONLY_COMPLETE;
+  }
+
   if (process.env.FLIP_ONLY === "1") {
     await assertFlipIntro(browser, url, output);
     assert.deepEqual(failures, [], "Browser must not report uncaught errors");
@@ -1670,6 +1678,7 @@ try {
   await assertMirrorIntro(browser, url, output);
   await assertLeapIntro(browser, url, output);
   await assertPwaPrompt(browser, url, output);
+  await assertMechanicsGuide(browser, url, output);
   await assertTutorialFlow(browser, url, output);
   await assertConsistentMotion(browser, url, output);
   await assertReliableTaps(browser, url, output);
@@ -1717,6 +1726,7 @@ try {
     error !== MIRROR_ONLY_COMPLETE &&
     error !== WORMHOLE_ONLY_COMPLETE &&
     error !== PWA_ONLY_COMPLETE &&
+    error !== HELP_ONLY_COMPLETE &&
     error !== RESIZE_ONLY_COMPLETE &&
     error !== CONTEXT_ONLY_COMPLETE &&
     error !== TUTORIAL_ONLY_COMPLETE

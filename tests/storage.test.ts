@@ -18,6 +18,7 @@ import type { GameState, LevelDefinition } from "../src/core/types";
 import {
   clearCampaign,
   layoutFingerprint,
+  campaignUnlockedLevelId,
   loadCampaign,
   loadSettings,
   saveCampaign,
@@ -1751,5 +1752,30 @@ describe("player settings", () => {
       }),
     );
     expect(loadSettings().tutorialSeenLevels).toEqual([1, 11]);
+  });
+});
+
+describe("campaign unlocked accessor", () => {
+  test("reads the furthest unlocked cube from a consistent save", () => {
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({
+        contentVersion: 18,
+        currentLevelId: 12,
+        unlockedLevelId: 36,
+      }),
+    );
+    expect(campaignUnlockedLevelId()).toBe(36);
+  });
+
+  test("falls back to cube one without a consistent save", () => {
+    expect(campaignUnlockedLevelId()).toBe(1);
+    entries.set(CAMPAIGN_KEY, "{not json");
+    expect(campaignUnlockedLevelId()).toBe(1);
+    entries.set(
+      CAMPAIGN_KEY,
+      JSON.stringify({ currentLevelId: 12, unlockedLevelId: 5 }),
+    );
+    expect(campaignUnlockedLevelId()).toBe(1);
   });
 });

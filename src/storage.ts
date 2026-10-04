@@ -554,6 +554,41 @@ function removeStoredCampaign(store: Storage): void {
 }
 
 /**
+ * The saved campaign's furthest unlocked cube, or 1 when no consistent save
+ * exists. Reads the metadata only — the state, layout and seed are not
+ * validated here, because the settings guide only needs the unlock to pick
+ * which mechanics have been met, and a save that fails this cheap check is
+ * the same one loadCampaign would recover to a fresh start.
+ */
+export function campaignUnlockedLevelId(): number {
+  const store = getStore();
+  if (!store) return 1;
+  try {
+    const raw = store.getItem(STORAGE_KEY);
+    if (!raw) return 1;
+    const decoded: unknown = JSON.parse(raw);
+    if (!decoded || typeof decoded !== "object" || Array.isArray(decoded)) {
+      return 1;
+    }
+    const parsed = decoded as {
+      currentLevelId?: unknown;
+      unlockedLevelId?: unknown;
+    };
+    const { currentLevelId, unlockedLevelId } = parsed;
+    if (
+      !isLevelId(currentLevelId) ||
+      !isLevelId(unlockedLevelId) ||
+      unlockedLevelId < currentLevelId
+    ) {
+      return 1;
+    }
+    return unlockedLevelId;
+  } catch {
+    return 1;
+  }
+}
+
+/**
  * Restores persisted metadata then resolves the level. This does not write after
  * awaiting the resolver, so callers can discard stale results before persisting.
  */

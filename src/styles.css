@@ -895,3 +895,57 @@ input:focus-visible {
     animation-name: life-lost-chip;
   }
 }
+
+.mechanics-help {
+  margin-top: 0.9rem;
+  border-top: 1px solid var(--divider);
+  padding-top: 0.55rem;
+}
+.mechanics-help h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-text);
+}
+.mechanics-help ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+  max-height: 17rem;
+  overflow-y: auto;
+}
+.mechanics-help li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+.mechanics-help img {
+  width: 4.4rem;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  border: 1px solid var(--divider);
+  flex: none;
+}
+.mechanics-copy {
+  min-width: 0;
+}
+.mechanics-copy strong {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+.mechanics-copy p {
+  margin: 0.15rem 0 0;
+  color: var(--muted-text);
+  line-height: 1.45;
+}
+.mechanics-help p#mechanics-more {
+  margin: 0.6rem 0 0;
+  color: var(--muted-text);
+  font-style: italic;
+}
