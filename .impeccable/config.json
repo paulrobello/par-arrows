@@ -1,0 +1,15 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": ["src/app.ts"],
+        "createdAt": "2026-10-04T01:59:31.244Z",
+        "reason": "Dialog image src is assigned in openMechanicsDialog before showModal; the closed dialog never renders a broken image (par-arrows session 2026-10-03)"
+      }
+    ]
+  }
+}

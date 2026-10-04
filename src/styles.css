@@ -949,3 +949,44 @@ input:focus-visible {
   color: var(--muted-text);
   font-style: italic;
 }
+.mechanics-help li {
+  cursor: pointer;
+}
+.mechanics-dialog {
+  width: min(30rem, calc(100vw - 2.4rem));
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 1rem;
+  background: var(--panel-background-solid);
+  color: var(--page-text);
+  box-shadow: 0 1.2rem 3rem var(--panel-shadow);
+}
+.mechanics-dialog::backdrop {
+  background: rgb(8 16 22 / 45%);
+}
+.mechanics-dialog img {
+  display: block;
+  width: 100%;
+  border-radius: 0.6rem;
+  border: 1px solid var(--divider);
+}
+.mechanics-dialog h3 {
+  margin: 0.7rem 0 0.2rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+.mechanics-dialog p {
+  margin: 0;
+  color: var(--muted-text);
+  line-height: 1.5;
+}
+.mechanics-dialog button {
+  width: 100%;
+  margin-top: 0.8rem;
+  border: 0;
+  border-radius: 0.55rem;
+  padding: 0.55rem;
+  background: var(--accent);
+  color: var(--accent-on);
+  font-weight: 800;
+}

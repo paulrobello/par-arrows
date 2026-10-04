@@ -224,6 +224,12 @@ export class ParArrowsApp {
             <button id="install-close" type="button">Not now</button>
           </div>
         </dialog>
+        <dialog class="mechanics-dialog" id="mechanics-dialog" aria-labelledby="mechanics-dialog-title">
+          <img id="mechanics-dialog-image" alt="" />
+          <h3 id="mechanics-dialog-title"></h3>
+          <p id="mechanics-dialog-copy"></p>
+          <button id="mechanics-dialog-close" type="button">Close</button>
+        </dialog>
         <p class="gesture-help">Drag to orbit · <span class="zoom-help-mouse">Mouse wheel to zoom</span><span class="zoom-help-touch">Pinch to zoom</span> · press an exposed arrow to move it</p>
         <p class="screenreader-status" id="hint-status" aria-live="polite"></p>
         <div class="storage-note" id="storage-note" role="status"></div>
@@ -1123,6 +1129,26 @@ export class ParArrowsApp {
       this.settingsButton.setAttribute("aria-expanded", String(!panel.hidden));
       if (!panel.hidden) this.renderMechanicsHelp();
     });
+    const mechanicsDialog = this.requireElement(
+      "mechanics-dialog",
+    ) as HTMLDialogElement;
+    this.requireElement("mechanics-list").addEventListener("click", (event) => {
+      const item = (event.target as HTMLElement).closest<HTMLElement>(
+        "li[data-mechanic]",
+      );
+      if (item?.dataset.mechanic)
+        this.openMechanicsDialog(item.dataset.mechanic);
+    });
+    this.requireElement("mechanics-dialog-close").addEventListener(
+      "click",
+      () => {
+        mechanicsDialog.close();
+      },
+    );
+    // A click that reaches the dialog element itself is the backdrop.
+    mechanicsDialog.addEventListener("click", (event) => {
+      if (event.target === mechanicsDialog) mechanicsDialog.close();
+    });
     this.gridLines.addEventListener("change", () => {
       this.settings = {
         ...this.settings,
@@ -1403,12 +1429,29 @@ export class ParArrowsApp {
       const text = document.createElement("p");
       text.textContent = mechanic.description;
       copy.append(title, text);
+      item.dataset.mechanic = mechanic.id;
       item.append(image, copy);
       return item;
     });
     list.replaceChildren(...items);
     this.requireElement("mechanics-more").hidden =
       encountered.length === MECHANIC_HELP.length;
+  }
+
+  /** Opens one guide entry enlarged, for the small thumbnails on phones. */
+  private openMechanicsDialog(id: string): void {
+    const mechanic = MECHANIC_HELP.find((entry) => entry.id === id);
+    if (!mechanic) return;
+    const dialog = this.requireElement("mechanics-dialog") as HTMLDialogElement;
+    const image = this.requireElement(
+      "mechanics-dialog-image",
+    ) as HTMLImageElement;
+    image.src = mechanicImagePath(mechanic.id);
+    image.alt = `${mechanic.title} on its introduction cube`;
+    this.requireElement("mechanics-dialog-title").textContent = mechanic.title;
+    this.requireElement("mechanics-dialog-copy").textContent =
+      mechanic.description;
+    dialog.showModal();
   }
 
   private openInstallDialog(): void {

@@ -74,6 +74,28 @@ export async function assertMechanicsGuide(
     await page
       .locator("#settings-panel")
       .screenshot({ path: `${output}/help/02-complete.png` });
+
+    // A thumbnail tap opens the mechanic enlarged and closes cleanly.
+    await page.locator("#mechanics-list li").first().click();
+    await page.waitForSelector("#mechanics-dialog[open]");
+    assert.equal(
+      await page.locator("#mechanics-dialog-title").textContent(),
+      "Arrows",
+    );
+    await page.waitForFunction(() => {
+      const image = document.querySelector<HTMLImageElement>(
+        "#mechanics-dialog-image",
+      );
+      return image !== null && image.complete && image.naturalWidth > 0;
+    });
+    const dialogBox = await page.locator("#mechanics-dialog").boundingBox();
+    assert.ok(
+      dialogBox && dialogBox.width > 300,
+      "The enlarged view stays roomy on phone-sized screens",
+    );
+    await page.screenshot({ path: `${output}/help/03-enlarged.png` });
+    await page.locator("#mechanics-dialog-close").click();
+    assert.equal(await page.locator("#mechanics-dialog[open]").count(), 0);
     console.log("PASS settings mechanics guide");
   } finally {
     await context.close();
