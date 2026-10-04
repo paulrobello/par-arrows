@@ -15,6 +15,7 @@ bun install --frozen-lockfile   # install
 make dev                        # Vite dev server at http://localhost:8057 (strict port)
 make dev-stop                   # release the dev port
 make checkall                   # full gate: format-check, lint, typecheck, test, build, icons-check
+make checkall-ci                # CI-parity gate — identical to checkall (ci.yml runs `make checkall` directly)
 make test                       # bun test (unit tests in tests/*.test.ts)
 bun test tests/core.test.ts     # one test file
 bun test -t "wrapping"          # tests matching a name

@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 DEV_PORT := 8057
 
-.PHONY: build test lint fmt format-check typecheck checkall pre-commit icons icons-check dev dev-stop dev-restart browser-test browser-install
+.PHONY: build test lint fmt format-check typecheck checkall checkall-ci pre-commit icons icons-check dev dev-stop dev-restart browser-test browser-install
 
 build:
 	bun run build
@@ -23,6 +23,10 @@ typecheck:
 	bun run typecheck
 
 checkall: format-check lint typecheck test build icons-check
+
+# ci.yml runs `make checkall` directly, so this alias is the same gate by
+# construction; it exists so the CI-parity target is uniform across repos.
+checkall-ci: checkall
 
 pre-commit:
 	pre-commit run --all-files
