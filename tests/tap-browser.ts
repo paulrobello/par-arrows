@@ -14,7 +14,11 @@ interface TapState {
   failedIds: string[];
   parkedOffsets: Record<string, number>;
   lives: number;
-  moving: { arrowId: string; duration: number } | null;
+  moving: {
+    arrowId: string;
+    duration: number;
+    anticipation?: number;
+  } | null;
   camera: { distance: number };
   visibleProjectedArrowPositions: { id: string; x: number; y: number }[];
 }
@@ -65,8 +69,8 @@ async function settle(page: Page): Promise<void> {
   const moving = (await snapshot(page)).moving;
   if (moving)
     await page.evaluate(
-      (duration) => window.advanceTime?.(duration + 1),
-      moving.duration,
+      (total) => window.advanceTime?.(total + 1),
+      moving.duration + (moving.anticipation ?? 0),
     );
 }
 

@@ -20,7 +20,7 @@ interface State {
   lives: number;
   remainingIds: string[];
   failedIds: string[];
-  moving: { duration: number; elapsed: number } | null;
+  moving: { duration: number; elapsed: number; anticipation?: number } | null;
   visibleProjectedArrowPositions: { id: string; x: number; y: number }[];
 }
 
@@ -43,7 +43,10 @@ async function finishMotion(page: Page): Promise<void> {
   if (moving) {
     await page.evaluate(
       (amount) => window.advanceTime?.(amount),
-      Math.max(0, moving.duration - moving.elapsed) + 32,
+      Math.max(
+        0,
+        moving.duration + (moving.anticipation ?? 0) - moving.elapsed,
+      ) + 32,
     );
   }
 }
@@ -118,7 +121,7 @@ export async function assertFirstRunWalkthrough(
   assert.ok(blockedMotion, "The blocked click must start a motion");
   await page.evaluate(
     (amount) => window.advanceTime?.(amount),
-    blockedMotion.duration / 2 + 33,
+    blockedMotion.duration / 2 + (blockedMotion.anticipation ?? 0) + 33,
   );
   const flash = await page.evaluate(() => ({
     chip: document.querySelector(".lives")?.classList.contains("life-lost"),

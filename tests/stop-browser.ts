@@ -21,6 +21,7 @@ interface State {
     kind: string;
     duration: number;
     elapsed: number;
+    anticipation?: number;
   } | null;
   visibleProjectedArrowPositions: { id: string; x: number; y: number }[];
 }
@@ -36,7 +37,10 @@ async function finishMotion(page: Page): Promise<void> {
   if (moving) {
     await page.evaluate(
       (amount) => window.advanceTime?.(amount),
-      Math.max(0, moving.duration - moving.elapsed) + 32,
+      Math.max(
+        0,
+        moving.duration + (moving.anticipation ?? 0) - moving.elapsed,
+      ) + 32,
     );
   }
 }

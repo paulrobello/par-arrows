@@ -73,9 +73,9 @@ describe("gate motion", () => {
     );
   });
 
-  test("a doomed attempt plays at three quarters time", () => {
+  test("a doomed attempt plays at three fifths time", () => {
     expect(arrowMotionDuration(1, "blocked")).toBeCloseTo(
-      arrowMotionDuration(1, "gated") / 0.75,
+      arrowMotionDuration(1, "gated") / 0.6,
     );
     // Gates are terrain, not collisions: the free rewind stays full speed.
     expect(arrowMotionDuration(1, "fall")).toBe(arrowMotionDuration(1, "exit"));

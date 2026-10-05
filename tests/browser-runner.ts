@@ -57,6 +57,7 @@ interface Snapshot {
     kind: string;
     elapsed: number;
     duration: number;
+    anticipation?: number;
   } | null;
   celebration: { active: boolean; elapsed: number; duration: number };
   theme: {
@@ -205,7 +206,13 @@ async function advance(page: Page, milliseconds = 1800): Promise<void> {
 async function finishMotion(page: Page): Promise<void> {
   const moving = (await snapshot(page)).moving;
   if (moving)
-    await advance(page, Math.max(0, moving.duration - moving.elapsed) + 16);
+    await advance(
+      page,
+      Math.max(
+        0,
+        moving.duration + (moving.anticipation ?? 0) - moving.elapsed,
+      ) + 16,
+    );
 }
 
 async function loadLevel(page: Page, levelId: number): Promise<void> {
@@ -242,7 +249,10 @@ async function launchLastArrow(page: Page, levelId = 1): Promise<void> {
         ).moving;
         if (moving)
           window.advanceTime?.(
-            Math.max(0, moving.duration - moving.elapsed) + 1,
+            Math.max(
+              0,
+              moving.duration + (moving.anticipation ?? 0) - moving.elapsed,
+            ) + 1,
           );
       }
     }

@@ -38,7 +38,7 @@ interface PickState {
   remainingIds: string[];
   failedIds: string[];
   lives: number;
-  moving: { arrowId: string; duration: number } | null;
+  moving: { arrowId: string; duration: number; anticipation?: number } | null;
   visibleProjectedArrowPositions: { id: string; x: number; y: number }[];
 }
 
@@ -52,8 +52,8 @@ async function settle(page: Page): Promise<void> {
   const moving = (await snapshot(page)).moving;
   if (moving)
     await page.evaluate(
-      (duration) => window.advanceTime?.(duration + 1),
-      moving.duration,
+      (total) => window.advanceTime?.(total + 1),
+      moving.duration + (moving.anticipation ?? 0),
     );
 }
 

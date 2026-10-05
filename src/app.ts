@@ -59,6 +59,8 @@ import {
 interface Motion {
   readonly result: MoveResult;
   readonly duration: number;
+  /** Lead-in beat before a detected life-losing move starts to travel. */
+  readonly anticipation: number;
   elapsed: number;
   impactShown: boolean;
 }
@@ -81,6 +83,8 @@ const HINT_FLASH_DURATION = 2400;
 const HINT_FLASH_HALF_PULSE = 400;
 const TUTORIAL_NUDGE_MS = 450;
 const LIFE_LOST_FLASH_MS = 900;
+/** A detected life-losing move holds this beat before its travel starts. */
+const DOOMED_ANTICIPATION_MS = 240;
 const MOUSE_PICK_MARGIN_PX = 6;
 const TOUCH_PICK_MARGIN_PX = 44;
 
@@ -499,6 +503,7 @@ export class ParArrowsApp {
             ),
             elapsed: Math.round(this.motion.elapsed),
             duration: this.motion.duration,
+            anticipation: this.motion.anticipation,
           }
         : null,
       celebration: this.celebration
@@ -679,7 +684,13 @@ export class ParArrowsApp {
     }
     if (this.motion) {
       this.motion.elapsed += delta;
-      const progress = Math.min(1, this.motion.elapsed / this.motion.duration);
+      // The anticipation beat holds the arrow still before a doomed move's
+      // travel begins, so the slowdown reads as starting before the arrow.
+      const travel = Math.max(
+        0,
+        this.motion.elapsed - this.motion.anticipation,
+      );
+      const progress = Math.min(1, travel / this.motion.duration);
       this.renderer.advanceFlights(delta, progress);
       this.renderer.animate(
         this.motion.result.arrowId,
@@ -789,6 +800,10 @@ export class ParArrowsApp {
       result,
       elapsed: 0,
       impactShown: false,
+      anticipation:
+        result.kind === "blocked" && !this.settings.reducedMotion
+          ? DOOMED_ANTICIPATION_MS
+          : 0,
       duration: arrowMotionDuration(
         this.renderer.motionDistance(arrowId, result),
         result.kind,

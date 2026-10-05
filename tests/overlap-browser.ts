@@ -65,6 +65,7 @@ interface State {
     kind: string;
     elapsed: number;
     duration: number;
+    anticipation?: number;
     members?: {
       arrowId: string;
       headPosition: [number, number, number];
@@ -111,7 +112,13 @@ async function advance(page: Page, milliseconds: number): Promise<void> {
 async function finishMotion(page: Page): Promise<void> {
   const moving = (await state(page)).moving;
   if (moving)
-    await advance(page, Math.max(0, moving.duration - moving.elapsed) + 32);
+    await advance(
+      page,
+      Math.max(
+        0,
+        moving.duration + (moving.anticipation ?? 0) - moving.elapsed,
+      ) + 32,
+    );
 }
 
 async function projectCell(
@@ -625,7 +632,12 @@ export async function assertOverlapIntro(
     );
     await advance(
       page,
-      Math.max(0, blockedMoving.duration * 0.75 - blockedMoving.elapsed),
+      Math.max(
+        0,
+        blockedMoving.duration * 0.75 +
+          (blockedMoving.anticipation ?? 0) -
+          blockedMoving.elapsed,
+      ),
     );
     const returning = await state(page);
     assert.ok(returning.moving?.members);

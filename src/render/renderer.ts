@@ -60,7 +60,7 @@ const GATE_STROKE = 0.07;
  * a key glyph crosses the surface (cells per second, three times an arrow).
  */
 const PADLOCK_POP_MS = 150;
-const KEY_FLIGHT_SPEED = 15;
+const KEY_FLIGHT_SPEED = 7.5;
 const KEY_FLIGHT_MIN_MS = 80;
 /** A flying key hovers this fraction of a cell above the surface. */
 const KEY_FLIGHT_HOVER = 0.12;
@@ -971,7 +971,7 @@ const NORMAL_ARROW_SPEED = 5;
 const REDUCED_MOTION_DURATION = 110 / 1.5625;
 const PAUSE_MINIMUM_DURATION = 160;
 /** A doomed attempt plays at this fraction of time until its rewind lands. */
-const DOOMED_TIME_SCALE = 0.75;
+const DOOMED_TIME_SCALE = 0.6;
 
 export function arrowMotionDuration(
   distance: number,

@@ -22,7 +22,12 @@ async function state(page: Page) {
     remainingIds: string[];
     failedIds: string[];
     visibleProjectedArrowPositions: { id: string; x: number; y: number }[];
-    moving: { headFace?: string; duration: number; elapsed: number } | null;
+    moving: {
+      headFace?: string;
+      duration: number;
+      elapsed: number;
+      anticipation?: number;
+    } | null;
     camera: {
       cubeScreenBounds: {
         left: number;
@@ -39,7 +44,10 @@ async function finishMotion(page: Page): Promise<void> {
   if (moving)
     await page.evaluate(
       (amount) => window.advanceTime?.(amount),
-      Math.max(0, moving.duration - moving.elapsed) + 16,
+      Math.max(
+        0,
+        moving.duration + (moving.anticipation ?? 0) - moving.elapsed,
+      ) + 16,
     );
 }
 
@@ -236,7 +244,10 @@ export async function assertWrapIntro(
         const moving = JSON.parse(
           window.render_game_to_text?.() ?? "{}",
         ).moving;
-        if (moving) window.advanceTime?.(moving.duration - moving.elapsed + 16);
+        if (moving)
+          window.advanceTime?.(
+            moving.duration + (moving.anticipation ?? 0) - moving.elapsed + 16,
+          );
       }
     }, remaining);
     assert.equal((await state(page)).remainingIds.length, 0);

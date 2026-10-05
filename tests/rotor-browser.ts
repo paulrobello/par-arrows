@@ -48,7 +48,12 @@ interface State {
   spotGlyphTurns: Record<string, number>;
   stops: string[];
   settledPaths: Record<string, Cell[]>;
-  moving: { kind: string; duration: number; elapsed: number } | null;
+  moving: {
+    kind: string;
+    duration: number;
+    elapsed: number;
+    anticipation?: number;
+  } | null;
   camera: {
     position: [number, number, number];
     orientation: [number, number, number, number];
@@ -93,7 +98,10 @@ async function finishMotion(page: Page): Promise<void> {
   if (moving) {
     await page.evaluate(
       (amount) => window.advanceTime?.(amount),
-      Math.max(0, moving.duration - moving.elapsed) + 32,
+      Math.max(
+        0,
+        moving.duration + (moving.anticipation ?? 0) - moving.elapsed,
+      ) + 32,
     );
   }
 }

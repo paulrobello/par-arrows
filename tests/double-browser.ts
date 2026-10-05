@@ -24,7 +24,7 @@ interface State {
     position: [number, number, number];
     orientation: [number, number, number, number];
   };
-  moving: { duration: number; elapsed: number } | null;
+  moving: { duration: number; anticipation?: number; elapsed: number } | null;
 }
 
 async function state(page: Page): Promise<State> {
@@ -38,7 +38,8 @@ async function finishMotion(page: Page): Promise<void> {
   if (!motion) return;
   await page.evaluate(
     (milliseconds) => window.advanceTime?.(milliseconds),
-    Math.max(0, motion.duration - motion.elapsed) + 32,
+    Math.max(0, motion.duration + (motion.anticipation ?? 0) - motion.elapsed) +
+      32,
   );
 }
 

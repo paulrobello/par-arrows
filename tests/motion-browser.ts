@@ -14,6 +14,7 @@ import { waitForReady } from "./runtime-fixtures";
 interface MotionSample {
   readonly duration: number;
   readonly elapsed: number;
+  readonly anticipation?: number;
   readonly headFace: string;
   readonly headPosition: readonly [number, number, number];
 }
@@ -145,6 +146,13 @@ export async function assertConsistentMotion(
         (id) => window.__PAR_ARROWS_TEST__?.activate(id),
         fixture.arrow.id,
       );
+      // A doomed move holds its anticipation beat before travelling; spend
+      // it up front so the sampled window measures pure travel.
+      const lead = await sample(page);
+      await page.evaluate(
+        (ms) => window.advanceTime?.(ms),
+        lead.anticipation ?? 0,
+      );
       if (fixture.wrapped) await page.evaluate(() => window.advanceTime?.(80));
       const before = await sample(page);
       if (fixture.wrapped)
@@ -156,9 +164,9 @@ export async function assertConsistentMotion(
       );
       const after = await sample(page);
       const speed = measuredSpeed(before, after, delta);
-      // A doomed attempt runs at three quarters time, so its rendered speed
-      // is 3.75 units/s instead of the plain 5.
-      const expectedSpeed = fixture.blocked ? 3.75 : 5;
+      // A doomed attempt runs at three fifths time, so its rendered speed
+      // is 3 units/s instead of the plain 5.
+      const expectedSpeed = fixture.blocked ? 3 : 5;
       assert.ok(
         Math.abs(speed - expectedSpeed) < 0.005,
         `${fixture.name} rendered speed was ${speed}, expected ${expectedSpeed} units/s`,

@@ -21,6 +21,7 @@ interface State {
     headPosition: [number, number, number];
     duration: number;
     elapsed: number;
+    anticipation?: number;
   } | null;
   camera: {
     position: [number, number, number];
@@ -40,7 +41,7 @@ async function finishMotion(page: Page): Promise<void> {
   if (motion)
     await page.evaluate(
       (time) => window.advanceTime?.(time),
-      motion.duration - motion.elapsed + 32,
+      motion.duration + (motion.anticipation ?? 0) - motion.elapsed + 32,
     );
 }
 
