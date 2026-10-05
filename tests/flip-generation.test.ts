@@ -2,8 +2,12 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import {
   FLIP_PATTERNS,
+  flipBlockFrequency,
   flipCoreFrequency,
   flipCoreIds,
+  isAuthoredLevel,
+  Rng,
+  seedForLevel,
 } from "../src/content/procedural";
 import { createGameState, simulateMove } from "../src/core/game-state";
 import { arrowTrack } from "../src/core/stops";
@@ -24,7 +28,30 @@ import {
 import { layoutFingerprint } from "../src/storage";
 import { cachedLevel } from "./generated-levels";
 
+// FNV-1a exactly as `hashSeed` in src/content/procedural.ts (not exported).
+function fnv1a(seed: string): number {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash = Math.imul(hash ^ seed.charCodeAt(index), 0x01000193) >>> 0;
+  }
+  return hash || 1;
+}
+
+const planDraw = (id: number, stream: string): number =>
+  new Rng(fnv1a(`${seedForLevel(id)}:${stream}`)).next();
+
+const trackKeys = (level: LevelDefinition, arrow: ArrowDefinition): string[] =>
+  arrowTrack(level, arrow).map(cellKey);
+
 describe("generated flip cores", () => {
+  test("flip blocker frequency ramps from level 31 to 90", () => {
+    expect(flipBlockFrequency(30)).toBe(0);
+    expect(flipBlockFrequency(31)).toBeCloseTo(0.35);
+    expect(flipBlockFrequency(60)).toBe(0);
+    expect(flipBlockFrequency(61)).toBeCloseTo(0.528);
+    expect(flipBlockFrequency(90)).toBeCloseTo(0.7);
+    expect(flipBlockFrequency(120)).toBeCloseTo(0.7);
+  });
   test("frequency ramps from level 31 to 90", () => {
     expect(flipCoreFrequency(30)).toBe(0);
     expect(flipCoreFrequency(31)).toBeCloseTo(0.25);
@@ -36,8 +63,24 @@ describe("generated flip cores", () => {
       "bounce",
       "relay",
       "relay2",
+      "lane",
+      "weave",
     ]);
   });
+
+  test("every flip pattern places at least once over 31-200", () => {
+    const placed = new Set<string>();
+    for (let id = 31; id <= 200; id += 1) {
+      if (isAuthoredLevel(id)) continue;
+      const level = cachedLevel(id);
+      for (const coreId of flipCoreIds(level.arrows)) {
+        const match = /-flip-([a-z0-9]+)-/.exec(coreId);
+        if (match?.[1]) placed.add(match[1] as string);
+      }
+    }
+    for (const pattern of FLIP_PATTERNS)
+      expect(placed.has(pattern.name)).toBe(true);
+  }, 600_000);
 
   test("every pattern keeps its properties at all four rotations", () => {
     const at = (x: number, y: number) => ({ face: "front" as const, x, y });
@@ -233,7 +276,100 @@ describe("generated flip cores", () => {
         }
       }
       expect(solveLevelTargets(level)).toBeDefined();
+      const blockers = level.arrows.filter((arrow) =>
+        arrow.id.includes("-flipb-"),
+      );
+      if (blockers.length > 0) {
+        // Closure must have absorbed the blockers and their chain.
+        expect(region.arrowIds).toEqual(
+          expect.arrayContaining(blockers.map((b) => b.id)),
+        );
+        // A1: the dance is gated behind a blocker on some core lane.
+        const coreTrack = new Set(
+          core.flatMap((arrow) => [
+            ...arrow.path.map(cellKey),
+            ...trackKeys(level, arrow),
+          ]),
+        );
+        expect(
+          blockers.some((blocker) =>
+            blocker.path.some((cell) => coreTrack.has(cellKey(cell))),
+          ),
+        ).toBe(true);
+      }
     }
     expect(coreIds.length).toBeGreaterThanOrEqual(40);
   }, 600_000);
+  test("entangled flip cores carry well-formed blockers on their lanes", () => {
+    let found = 0;
+    for (let id = 31; id <= 120; id += 1) {
+      if (isAuthoredLevel(id)) continue;
+      const level = cachedLevel(id);
+      const coreIdList = flipCoreIds(level.arrows);
+      if (coreIdList.length === 0) continue;
+      const cores = level.arrows.filter((arrow) =>
+        coreIdList.includes(arrow.id),
+      );
+      if (planDraw(id, "flip-block") >= flipBlockFrequency(id)) continue;
+      if (found >= 3) continue;
+      const blockers = level.arrows.filter((arrow) =>
+        arrow.id.includes("-flipb-"),
+      );
+      if (blockers.length === 0) continue; // legitimate fallback ids
+      found += 1;
+      expect(blockers.length).toBeLessThanOrEqual(2);
+      const coreTrack = new Set(
+        cores.flatMap((core) => [
+          ...core.path.map(cellKey),
+          ...trackKeys(level, core),
+        ]),
+      );
+      const seenCells = new Set<string>();
+      for (const blocker of blockers) {
+        for (const cell of blocker.path) {
+          expect(seenCells.has(cellKey(cell))).toBe(false);
+          seenCells.add(cellKey(cell));
+        }
+      }
+      for (const blocker of blockers) {
+        expect(blocker.path.length).toBe(2);
+        const onTrack = blocker.path.some((cell) =>
+          coreTrack.has(cellKey(cell)),
+        );
+        expect(onTrack).toBe(true);
+      }
+    }
+    expect(found).toBeGreaterThanOrEqual(3);
+  }, 300_000);
 });
+
+test("entangled boards open with the blocker chain, not the dance", () => {
+  let checked = 0;
+  for (let id = 31; id <= 200; id += 1) {
+    if (isAuthoredLevel(id)) continue;
+    const level = cachedLevel(id);
+    const blockers = level.arrows.filter((arrow) =>
+      arrow.id.includes("-flipb-"),
+    );
+    if (blockers.length === 0) continue;
+    checked += 1;
+    // Some core arrow carries a blocker prerequisite: the dance cannot begin
+    // before a blocker move.
+    const coreIds = new Set(flipCoreIds(level.arrows));
+    const cores = level.arrows.filter((arrow) => coreIds.has(arrow.id));
+    const coreTrack = new Set(
+      cores.flatMap((core) => [
+        ...core.path.map(cellKey),
+        ...trackKeys(level, core),
+      ]),
+    );
+    expect(
+      blockers.some((blocker) =>
+        blocker.path.some((cell) => coreTrack.has(cellKey(cell))),
+      ),
+    ).toBe(true);
+    // The board is clearable at play time.
+    expect(solveLevelTargets(level)).toBeDefined();
+  }
+  expect(checked).toBeGreaterThanOrEqual(3);
+}, 600_000);

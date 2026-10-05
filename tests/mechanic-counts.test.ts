@@ -2,7 +2,9 @@ import { expect, test } from "bun:test";
 import {
   directionalFacePlan,
   doubleArrowFrequency,
+  flipBlockFrequency,
   flipCoreFrequency,
+  flipCoreIds,
   fragileCorePlanned,
   getStopCount,
   isAuthoredLevel,
@@ -166,3 +168,23 @@ test("mechanic placement ratios stay within 10% of v9", () => {
     LEAP_CORES * 0.9,
   );
 }, 900_000);
+
+// The blocker plan places on its own stream; a planned core falls back to
+// zero blockers only on a failed re-proof. Measured share over 31-200 must
+// stay within the standing 10% band of the shipped value: 39 of 56 planned
+// cores carry blockers (0.696), so the floor sits at 0.59 (measured - 0.1).
+test("flip blocker share tracks its plan curve", () => {
+  let planned = 0;
+  let entangled = 0;
+  for (let id = 31; id <= 200; id += 1) {
+    if (isAuthoredLevel(id)) continue;
+    const level = cachedLevel(id);
+    if (flipCoreIds(level.arrows).length === 0) continue;
+    if (planDraw(id, "flip-block") >= flipBlockFrequency(id)) continue;
+    planned += 1;
+    if (level.arrows.some((arrow) => arrow.id.includes("-flipb-")))
+      entangled += 1;
+  }
+  expect(planned).toBeGreaterThan(30);
+  expect(entangled / planned).toBeGreaterThan(0.59);
+}, 300_000);

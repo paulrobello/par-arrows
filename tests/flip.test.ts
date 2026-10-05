@@ -10,10 +10,16 @@ import {
   simulateMove,
 } from "../src/core/game-state";
 import { cellKey } from "../src/core/topology";
-import type { Cell, Heading, LevelDefinition } from "../src/core/types";
+import type {
+  ArrowDefinition,
+  Cell,
+  Heading,
+  LevelDefinition,
+} from "../src/core/types";
 import {
   flipInterest,
   hasStrandingState,
+  interactionRegion,
   solveLevelTargets,
   validateLevel,
 } from "../src/core/validation";
@@ -330,4 +336,30 @@ describe("flip validation and solving", () => {
     );
     expect(validateLevel({ ...level, stops: [] }).valid).toBe(true);
   });
+});
+
+test("region closure absorbs a 7-arrow chain under the raised default cap", () => {
+  // Arrow i occupies (2i, 0) and (2i + 1, 0) heading east, so its track
+  // covers (2i + 2, 0) onward: arrow i + 1's whole body sits on arrow i's
+  // track and closure joins all seven.
+  const arrows: ArrowDefinition[] = Array.from({ length: 7 }, (_, i) => ({
+    id: `chain-${i}`,
+    path: [
+      { face: "front", x: 2 * i, y: 0 },
+      { face: "front", x: 2 * i + 1, y: 0 },
+    ],
+  }));
+  const level: LevelDefinition = {
+    id: 902,
+    title: "cap probe",
+    gridSize: 18,
+    lives: 3,
+    edgePolicies: [],
+    arrows,
+  };
+  const region = interactionRegion(level, ["chain-0"]);
+  expect(region).toBeDefined();
+  expect(region ? region.arrowIds.length : 0).toBe(7);
+  // The explicit small cap still overflows.
+  expect(interactionRegion(level, ["chain-0"], 6)).toBeUndefined();
 });

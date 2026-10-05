@@ -120,9 +120,10 @@ const PRE_LOCK: Readonly<Record<number, string>> = {
  * neighboring face across a seam from its gate, so the key's flight crosses
  * faces. The seeded coin prefers cross on every lock id; a cross aspirant
  * whose geometry cannot fit falls back to the same-face pattern, so this set
- * is the measured share of the 78 placed cores that fit cross-face.
+ * is the measured share of the placed cores that fit cross-face (flip-core
+ * blockers re-rolled which ids place cross-face).
  */
-const CROSS_FACE: ReadonlySet<number> = new Set([95, 131, 150, 195]);
+const CROSS_FACE: ReadonlySet<number> = new Set([95, 110, 150, 151, 195]);
 
 /** The core's two arrows and its lock, alone on the level's cube. */
 function coreBoard(level: LevelDefinition): LevelDefinition {

@@ -39,6 +39,7 @@ export interface FillInput {
   readonly clearShare: number;
   readonly length: () => number;
   readonly nodes: readonly FillNode[];
+  readonly precedence?: readonly (readonly [string, string])[];
   readonly leadBodies: ReadonlySet<string>;
   readonly forbiddenBody: ReadonlySet<string>;
   readonly forbiddenRay: ReadonlySet<string>;
@@ -93,9 +94,11 @@ export function dependencyFill(input: FillInput): FillResult {
   const owner = new Map<string, number>();
   const crossers = new Map<string, Set<number>>();
   const succ: Set<number>[] = [];
+  const indices = new Map<string, number>();
   const addNode = (node: FillNode): number => {
     const index =
       nodes.indexOf(node) >= 0 ? nodes.indexOf(node) : nodes.push(node) - 1;
+    if (!indices.has(node.id)) indices.set(node.id, index);
     succ[index] = succ[index] ?? new Set();
     for (const arrow of node.arrows) {
       for (const cell of arrow.path) owner.set(cellKey(cell), index);
@@ -115,6 +118,13 @@ export function dependencyFill(input: FillInput): FillResult {
       if (blocker !== undefined && blocker !== index) succ[blocker]!.add(index);
     }
   });
+  for (const [beforeId, afterId] of input.precedence ?? []) {
+    const before = indices.get(beforeId);
+    const after = indices.get(afterId);
+    if (before === undefined || after === undefined)
+      throw new Error("Dependency fill precedence names an unknown node.");
+    if (before !== after) succ[before]!.add(after);
+  }
   const reaches = (
     from: Iterable<number>,
     targets: ReadonlySet<number>,

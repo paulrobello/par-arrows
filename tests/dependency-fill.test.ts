@@ -1,5 +1,9 @@
 import { expect, test } from "bun:test";
-import { dependencyFill, type FillNode } from "../src/content/dependency-fill";
+import {
+  dependencyFill,
+  type FillInput,
+  type FillNode,
+} from "../src/content/dependency-fill";
 import { Rng } from "../src/content/procedural";
 import { simulateMove } from "../src/core/movement";
 import { arrowTrack } from "../src/core/stops";
@@ -260,4 +264,63 @@ test("growth never touches reserved cells and never grows existing nodes", () =>
   expect(level.arrows.find((arrow) => arrow.id === "s-0")?.path).toEqual(
     starter.path,
   );
+});
+
+function precedenceInput(
+  nodes: readonly FillNode[],
+  precedence: readonly (readonly [string, string])[],
+): FillInput {
+  return {
+    level: { gridSize: 9, edgePolicies: [] },
+    rng: new Rng(1234),
+    idPrefix: "t-",
+    firstIndex: 100,
+    target: 0,
+    attempts: 0,
+    clearShare: 0,
+    length: () => 3,
+    nodes,
+    precedence,
+    leadBodies: new Set(),
+    forbiddenBody: new Set(),
+    forbiddenRay: new Set(),
+    maxPathLength: 40,
+    shapeFull: () => false,
+    countShape: () => {},
+    uncountShape: () => {},
+  };
+}
+
+const stub = (id: string, x: number): FillNode => ({
+  id,
+  arrows: [{ id, path: [{ face: "front", x, y: 0 }] }],
+  routeKeys: new Set<string>(),
+});
+
+test("precedence orders independent nodes", () => {
+  const ids = dependencyFill(
+    precedenceInput(
+      [stub("a", 0), stub("b", 3), stub("c", 6)],
+      [
+        ["c", "a"],
+        ["a", "b"],
+      ],
+    ),
+  ).order.map((node) => node.id);
+  expect(ids.indexOf("c")).toBeLessThan(ids.indexOf("a"));
+  expect(ids.indexOf("a")).toBeLessThan(ids.indexOf("b"));
+});
+
+test("precedence cycle throws the fill-cycle error", () => {
+  expect(() =>
+    dependencyFill(
+      precedenceInput(
+        [stub("a", 0), stub("b", 3)],
+        [
+          ["a", "b"],
+          ["b", "a"],
+        ],
+      ),
+    ),
+  ).toThrow("Dependency fill input nodes contain a cycle.");
 });

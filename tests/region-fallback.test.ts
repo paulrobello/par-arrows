@@ -71,15 +71,20 @@ describe("flip region acceptance", () => {
   test("overflows past the arrow cap return not-ok", () => {
     // Extras chained into the region: extra-0 shares the cap's exit lane,
     // the column-4 pairs chain down extra-0's track, and the lane pair
-    // shares the reverser's bounce lane, so the closure recruits a seventh
-    // member and overflows the six-arrow cap. (The brief's (5,index) second
-    // cells repeat their first cell and none of them touch the region, so
+    // shares the reverser's bounce lane, and the east-heading pairs in
+    // columns 2-3 run their tracks into the column-4 bodies, so the
+    // closure recruits an eleventh member and overflows the ten-arrow cap.
+    // (The brief's (5,index) second cells repeat their first cell and none of them touch the region, so
     // the closure would stop at four members and pass.)
     const many = [...flipCore(33)];
     many.push({ id: "r33-extra-0", path: [cell(4, 0), cell(4, 1)] });
     many.push({ id: "r33-extra-1", path: [cell(4, 2), cell(4, 3)] });
     many.push({ id: "r33-extra-2", path: [cell(4, 4), cell(4, 5)] });
     many.push({ id: "r33-extra-3", path: [cell(1, 4), cell(1, 5)] });
+    many.push({ id: "r33-extra-4", path: [cell(2, 4), cell(3, 4)] });
+    many.push({ id: "r33-extra-5", path: [cell(2, 5), cell(3, 5)] });
+    many.push({ id: "r33-extra-6", path: [cell(2, 2), cell(3, 2)] });
+    many.push({ id: "r33-extra-7", path: [cell(2, 3), cell(3, 3)] });
     const board = {
       id: 912,
       title: "t",

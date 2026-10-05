@@ -4,14 +4,20 @@ import type { Browser, Page } from "playwright";
 import sharp from "sharp";
 import { PerspectiveCamera, Vector3 } from "three";
 import { FLIP_INTRO_LEVEL } from "../src/content/flip-intro";
-import { generateLevel } from "../src/content/procedural";
+import {
+  flipCoreIds,
+  generateLevel,
+  isAuthoredLevel,
+} from "../src/content/procedural";
 import {
   applyMove,
   createGameState,
   simulateMove,
 } from "../src/core/game-state";
 import { cellKey, cellToWorld, faceNormal } from "../src/core/topology";
-import type { Cell } from "../src/core/types";
+import type { Cell, Endpoint } from "../src/core/types";
+import { solveLevelTargets } from "../src/core/validation";
+import { cachedLevel } from "./generated-levels";
 import { waitForReady } from "./runtime-fixtures";
 
 const REVERSER = "flip-intro-reverser";
@@ -109,10 +115,14 @@ async function clickArrow(page: Page, arrowId: string): Promise<void> {
   await finishMotion(page);
 }
 
-async function activate(page: Page, arrowId: string): Promise<void> {
+async function activate(
+  page: Page,
+  arrowId: string,
+  endpoint: Endpoint = "head",
+): Promise<void> {
   await page.evaluate(
-    (id) => window.__PAR_ARROWS_TEST__?.activate(id),
-    arrowId,
+    ({ id, end }) => window.__PAR_ARROWS_TEST__?.activate(id, end),
+    { id: arrowId, end: endpoint },
   );
   await finishMotion(page);
 }
@@ -250,7 +260,8 @@ export async function assertFlipIntro(
   await assertScriptedWalkthrough(browser, url, output);
   await assertSeenPlayAndReload(browser, url, output);
   await assertGeneratedReversal(browser, url, output);
-  await assertRegionPark(browser, url, output);
+  await assertEntangledCore(browser, url);
+  await assertRegionPark(browser, url);
 }
 
 /**
@@ -743,48 +754,88 @@ async function assertGeneratedReversal(
 }
 
 /**
- * A generated region park that leaves a flip pending. On level 128 the relay2
- * traverser parks on the region circle back:4:15 with its tail still on the
- * flip spot back:5:15, so the spot's flip waits. The park and the pending
- * flip survive a reload; once both relay2 caps clear, the traverser resumes,
- * moves off the spot and flips it from west to east; its exit path flips the
- * relay2's second spot too.
+ * A generated region park that leaves a flip pending. The target is the first
+ * generated level (31-200) where an arrow's opening tap parks it on a stop
+ * circle with part of its body still on a flip spot, and where clearing the
+ * other exits greedily lets it resume, leave the spot and flip it. The park
+ * and the pending flip survive a reload, then the planned taps fire the flip.
  */
-async function assertRegionPark(
-  browser: Browser,
-  url: string,
-  output: string,
-): Promise<void> {
-  const levelId = 128;
-  const circle = "back:4:15";
-  const spotKey = "back:5:15";
-  const traverser = "r128-flip-relay2-traverser";
-  const east = "r128-flip-relay2-east";
-  const west = "r128-flip-relay2-west";
-  const secondSpot = "back:3:15";
-  const level = generateLevel(levelId);
-  assert.ok(level.stops?.some((stop) => cellKey(stop) === circle));
-  const initial = createGameState(level);
-  const park = simulateMove(level, initial, traverser);
-  assert.equal(park.kind, "paused");
-  assert.deepEqual(park.spotFlips ?? [], []);
-  const parked = applyMove(level, initial, park);
-  assert.deepEqual(parked.settledPaths?.[traverser]?.map(cellKey), [
-    spotKey,
-    circle,
-  ]);
-  const cleared = applyMove(level, parked, simulateMove(level, parked, east));
-  const cleared2 = applyMove(
-    level,
-    cleared,
-    simulateMove(level, cleared, west),
+async function assertRegionPark(browser: Browser, url: string): Promise<void> {
+  let found:
+    | {
+        levelId: number;
+        level: ReturnType<typeof generateLevel>;
+        traverser: string;
+        circle: string;
+        spotKey: string;
+        before: string;
+        after: string;
+        rest: string[];
+      }
+    | undefined;
+  for (let candidate = 31; candidate <= 200 && !found; candidate += 1) {
+    if (isAuthoredLevel(candidate)) continue;
+    const level = cachedLevel(candidate);
+    const flips = (level.directionals ?? []).filter(
+      (spot) => spot.kind === "flip",
+    );
+    if (flips.length === 0 || !level.stops?.length) continue;
+    const flipKeys = new Set(flips.map((spot) => cellKey(spot.cell)));
+    const initial = createGameState(level);
+    for (const arrow of level.arrows) {
+      if (found) break;
+      const park = simulateMove(level, initial, arrow.id);
+      if (park.kind !== "paused") continue;
+      const parked = applyMove(level, initial, park);
+      const path = parked.settledPaths?.[arrow.id];
+      if (!path) continue;
+      const circle = cellKey(path[path.length - 1] as Cell);
+      const spotKey = path
+        .slice(0, -1)
+        .map(cellKey)
+        .find((key) => flipKeys.has(key));
+      if (!spotKey) continue;
+      const headingOf = (game: typeof parked): string | undefined =>
+        game.spotHeadings?.[spotKey] ??
+        flips.find((spot) => cellKey(spot.cell) === spotKey)?.heading;
+      const before = headingOf(parked);
+      let current = parked;
+      const rest: string[] = [];
+      let resumed = false;
+      for (let guard = 0; guard < 400 && !resumed; guard += 1) {
+        const pick = level.arrows.find(
+          (other) =>
+            current.remainingIds.includes(other.id) &&
+            other.id !== arrow.id &&
+            simulateMove(level, current, other.id).kind === "exit",
+        );
+        const id = pick?.id ?? arrow.id;
+        const move = simulateMove(level, current, id);
+        if (move.kind !== "exit") break;
+        current = applyMove(level, current, move);
+        rest.push(id);
+        if (id === arrow.id) resumed = true;
+      }
+      const after = headingOf(current);
+      if (!resumed || !before || !after || before === after) continue;
+      found = {
+        levelId: candidate,
+        level,
+        traverser: arrow.id,
+        circle,
+        spotKey,
+        before,
+        after,
+        rest,
+      };
+    }
+  }
+  assert.ok(
+    found,
+    "A generated level from 31 through 200 must park an arrow over a flip spot",
   );
-  const resume = simulateMove(level, cleared2, traverser);
-  assert.equal(resume.kind, "exit");
-  assert.deepEqual(
-    resume.spotFlips?.map((flip) => cellKey(flip.cell)),
-    [spotKey, secondSpot],
-  );
+  const { levelId, level, traverser, circle, spotKey, before, after, rest } =
+    found;
 
   const context = await browser.newContext({
     viewport: { width: 1100, height: 760 },
@@ -806,7 +857,7 @@ async function assertRegionPark(
     assert.equal(current.mode, "campaign");
     assert.ok(current.stops.includes(circle));
     assert.equal(spotOf(current)?.kind, "flip");
-    assert.equal(spotOf(current)?.current, "west");
+    assert.equal(spotOf(current)?.current, before);
     assert.deepEqual(current.pendingFlips, []);
 
     await activate(page, traverser);
@@ -817,7 +868,7 @@ async function assertRegionPark(
       "The traverser parks on the region circle",
     );
     assert.deepEqual(current.pendingFlips, [spotKey], "The flip is pending");
-    assert.equal(spotOf(current)?.current, "west");
+    assert.equal(spotOf(current)?.current, before);
     assert.equal(current.lives, level.lives);
 
     await page.reload();
@@ -835,50 +886,115 @@ async function assertRegionPark(
       [spotKey],
       "The pending flip survives a reload",
     );
-    assert.equal(spotOf(current)?.current, "west");
+    assert.equal(spotOf(current)?.current, before);
 
-    const [nx, ny, nz] = faceNormal("back");
-    const facing = async (): Promise<number> => {
-      const [x, y, z] = (await state(page)).camera.position;
-      return (x * nx + y * ny + z * nz) / Math.hypot(x, y, z);
-    };
-    let direction = 1;
-    let score = await facing();
-    for (let attempt = 0; attempt < 120 && score < 0.8; attempt += 1) {
-      await page.evaluate(
-        (delta) => window.__PAR_ARROWS_TEST__?.orbit(delta, 0),
-        10 * direction,
-      );
-      const next = await facing();
-      if (next < score) direction = -direction;
-      score = next;
+    for (const id of rest) {
+      await activate(page, id);
+      current = await state(page);
+      assert.ok(!current.remainingIds.includes(id), `${id} clears`);
+      if (id !== traverser) {
+        assert.equal(spotOf(current)?.current, before, "Flip still pending");
+      }
     }
-    assert.ok(score >= 0.8, "The back face must face the camera");
-    await page.screenshot({ path: `${output}/flip/10-level128-parked.png` });
-
-    await activate(page, east);
-    current = await state(page);
-    assert.ok(!current.remainingIds.includes(east));
-    assert.equal(spotOf(current)?.current, "west");
-    await activate(page, west);
-    current = await state(page);
-    assert.ok(!current.remainingIds.includes(west));
-    await activate(page, traverser);
-    current = await state(page);
-    assert.ok(!current.remainingIds.includes(traverser));
     assert.deepEqual(current.pendingFlips, []);
     assert.equal(
       spotOf(current)?.current,
-      "east",
+      after,
       "The traverser moves off the spot and flips it",
     );
-    await page.screenshot({
-      path: `${output}/flip/11-level128-resumed.png`,
-    });
     console.log(
-      `flip: level ${levelId} parks ${traverser} on ${circle} over ${spotKey}, keeps the flip pending across a reload, then flips it east on resume after both relay caps clear`,
+      `flip: level ${levelId} parks ${traverser} on ${circle} over ${spotKey}, keeps the flip pending across a reload, then flips it ${before} to ${after} on resume`,
     );
-    assert.deepEqual(errors, [], "No page errors during the level 128 park");
+    assert.deepEqual(errors, [], "No page errors during the region park");
+  } finally {
+    await context.close();
+  }
+}
+
+/**
+ * The first generated cube whose flip core is entangled (carries `-flipb-`
+ * lane blockers), cleared in the solver's proven order with a reload halfway.
+ * The order opens with a blocker move, never a core arrow.
+ */
+async function assertEntangledCore(
+  browser: Browser,
+  url: string,
+): Promise<void> {
+  let target = 0;
+  for (let id = 31; id <= 200 && target === 0; id += 1) {
+    if (isAuthoredLevel(id)) continue;
+    const candidate = cachedLevel(id);
+    if (
+      flipCoreIds(candidate.arrows).length > 0 &&
+      candidate.arrows.some((arrow) => arrow.id.includes("-flipb-"))
+    ) {
+      target = id;
+    }
+  }
+  assert.ok(target > 0, "An entangled flip cube must exist in 31-200");
+  const level = cachedLevel(target);
+  const targets = solveLevelTargets(level) ?? [];
+  assert.ok(targets.length > 0, "The entangled cube must solve");
+  assert.ok(
+    !flipCoreIds(level.arrows).includes(targets[0]?.arrowId ?? ""),
+    "The proven order opens with a blocker move, never a core arrow",
+  );
+
+  const context = await browser.newContext({
+    viewport: { width: 1100, height: 760 },
+    colorScheme: "light",
+  });
+  const page = await context.newPage();
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  try {
+    await page.goto(url);
+    await waitForReady(page);
+    await openCampaignLevel(page, target);
+    let current = await state(page);
+    assert.equal(current.mode, "campaign");
+    assert.equal(current.remainingIds.length, level.arrows.length);
+
+    const half = Math.ceil(targets.length / 2);
+    for (const move of targets.slice(0, half)) {
+      await activate(page, move.arrowId, move.endpoint);
+    }
+    current = await state(page);
+    assert.equal(current.lives, level.lives, "The proven order costs no life");
+    const remaining = [...current.remainingIds].sort();
+    assert.ok(remaining.length < level.arrows.length, "Half the order clears");
+    assert.ok(remaining.length > 0, "The level is not finished at half");
+    const settled = current.settledPaths;
+
+    await page.reload();
+    await waitForReady(page);
+    current = await state(page);
+    assert.equal(current.mode, "campaign");
+    assert.equal(current.level.id, target);
+    assert.deepEqual(
+      [...current.remainingIds].sort(),
+      remaining,
+      "Cleared arrows survive a reload",
+    );
+    assert.deepEqual(
+      current.settledPaths,
+      settled,
+      "Parked paths survive a reload",
+    );
+
+    for (const move of targets.slice(half)) {
+      await activate(page, move.arrowId, move.endpoint);
+    }
+    current = await state(page);
+    assert.deepEqual(current.remainingIds, [], "Every arrow clears");
+    assert.equal(current.lives, level.lives, "No life is lost");
+    console.log(
+      `flip: entangled level ${target} clears in its proven order of ${targets.length} taps across a mid-level reload`,
+    );
+    assert.deepEqual(errors, [], "No page errors on the entangled cube");
   } finally {
     await context.close();
   }

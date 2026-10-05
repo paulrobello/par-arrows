@@ -1282,7 +1282,7 @@ export function flipHeadingProbes<
 export function interactionRegion(
   level: LevelDefinition,
   seedArrowIds: readonly string[],
-  maxArrows = 6,
+  maxArrows = 10,
 ): InteractionRegion | undefined {
   const byId = new Map(level.arrows.map((arrow) => [arrow.id, arrow]));
   const stopSet = new Set((level.stops ?? []).map(cellKey));

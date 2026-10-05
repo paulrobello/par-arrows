@@ -312,6 +312,17 @@ export function flipCorePlanned(id: number): boolean {
   );
 }
 
+/** Probability that a placed flip core carries blocker arrows on its lanes. */
+export function flipBlockFrequency(id: number): number {
+  assertLevelId(id);
+  if (id < FIRST_FLIP_LEVEL || isAuthoredLevel(id)) return 0;
+  const progress = Math.min(
+    1,
+    (id - FIRST_FLIP_LEVEL) / (90 - FIRST_FLIP_LEVEL),
+  );
+  return 0.35 + 0.35 * progress;
+}
+
 /** First generated level that can embed a rotor core. */
 const FIRST_ROTOR_LEVEL = 41;
 
@@ -1674,7 +1685,7 @@ function wormholeCore(
  * second's.
  */
 export const FLIP_PATTERNS: readonly {
-  readonly name: "gate" | "bounce" | "relay" | "relay2";
+  readonly name: "gate" | "bounce" | "relay" | "relay2" | "lane" | "weave";
   readonly heading: Heading;
   /** Further flip spots beyond the one at (2, 2), in the same pattern frame. */
   readonly extraSpots?: readonly {
@@ -1809,10 +1820,75 @@ export const FLIP_PATTERNS: readonly {
       },
     ],
   },
+  {
+    // The gate with four-cell bent packer and waiter lanes, so a blocker can
+    // be seeded on either lane.
+    name: "lane",
+    heading: "north",
+    arrows: [
+      {
+        name: "packer",
+        cells: [
+          [0, 0],
+          [0, 1],
+          [0, 2],
+          [1, 2],
+        ],
+      },
+      {
+        name: "waiter",
+        cells: [
+          [4, 4],
+          [4, 3],
+          [4, 2],
+          [3, 2],
+        ],
+      },
+      {
+        name: "lid",
+        cells: [
+          [2, 1],
+          [2, 0],
+        ],
+      },
+    ],
+  },
+  {
+    // The bounce with a four-cell bent runner, so the runner's lane has room
+    // for a blocker seeded on it.
+    name: "weave",
+    heading: "south",
+    arrows: [
+      {
+        name: "reverser",
+        cells: [
+          [2, 4],
+          [2, 3],
+        ],
+      },
+      {
+        name: "runner",
+        cells: [
+          [4, 4],
+          [4, 3],
+          [4, 2],
+          [3, 2],
+        ],
+      },
+      {
+        name: "cap",
+        cells: [
+          [1, 0],
+          [2, 0],
+        ],
+      },
+    ],
+  },
 ];
 
 /** Every generated flip-core arrow id carries this marker; seeds are found by it. */
 const FLIP_CORE_MARKER = "-flip-";
+const FLIP_BLOCK_MARKER = "-flipb-";
 
 /** Ids of a level's generated flip-core arrows, the seeds of its region. */
 export function flipCoreIds(arrows: readonly ArrowDefinition[]): string[] {
@@ -1946,6 +2022,10 @@ interface FlipCore {
   readonly stops: readonly Cell[];
   /** The proven interaction region's cells, reserved from later placement. */
   readonly cells: ReadonlySet<string>;
+  /** Blockers seeded on core lanes; empty on an isolated core. */
+  readonly blockers: readonly ArrowDefinition[];
+  /** The region's proven dance order as consecutive arrow ids. */
+  readonly dance: readonly string[];
 }
 
 /**
@@ -2084,10 +2164,185 @@ function flipCore(
         ...stops,
       ]);
       if (!verdict.ok) continue;
-      return { arrows, spots, stops, cells: verdict.cells };
+      const seeded = flipBlockers(
+        id,
+        restart,
+        level,
+        board,
+        arrows,
+        stops,
+        verdict.cells,
+        occupied,
+        parkTracks,
+        inBounds,
+      );
+      const dance = regionDanceOrder(level, board.directionals, stops, [
+        ...placed,
+        ...seeded.blockers,
+      ]);
+      return {
+        arrows,
+        spots,
+        stops,
+        cells: seeded.cells,
+        blockers: seeded.blockers,
+        dance,
+      };
     }
   }
   return undefined;
+}
+
+/**
+ * Seed blocker arrows on the core's lanes. Each blocker is a two-cell arrow
+ * whose tail covers a late track cell of some core arrow and whose head
+ * points off the lane, so that core arrow cannot move until the blocker
+ * leaves. Fill arrows interleave around the region while the blocker's own
+ * route stays reserved like the core's lanes, so the dance sits behind the
+ * board's opening moves rather than an isolated vignette. Every placement re-proves the interaction region
+ * with the blockers as members — closure absorbs them — and a failed
+ * re-proof keeps the proven prefix. The returned cells are the last
+ * accepted region's cells.
+ */
+function flipBlockers(
+  id: number,
+  restart: number,
+  level: LevelDefinition,
+  board: LevelDefinition,
+  coreArrows: readonly ArrowDefinition[],
+  stops: readonly Cell[],
+  regionCells: ReadonlySet<string>,
+  occupied: ReadonlySet<string>,
+  parkTracks: ReadonlySet<string>,
+  inBounds: (cell: Cell) => boolean,
+): { blockers: readonly ArrowDefinition[]; cells: ReadonlySet<string> } {
+  const rng = coreStream(id, "flip-block", restart);
+  if (flipBlockFrequency(id) === 0 || rng.next() >= flipBlockFrequency(id))
+    return { blockers: [], cells: regionCells };
+  const maxBlockers = id >= 60 && rng.next() < 0.3 ? 2 : 1;
+  const size = level.gridSize;
+  const spotKeys = new Set(
+    (board.directionals ?? []).map((spot) => cellKey(spot.cell)),
+  );
+  const stopKeys = new Set([...(level.stops ?? []), ...stops].map(cellKey));
+  const placed = [...level.arrows, ...coreArrows];
+  const blockers: ArrowDefinition[] = [];
+  let cells = regionCells;
+  const blockerKeys = new Set<string>();
+  for (
+    let attempt = 0;
+    attempt < 6 && blockers.length < maxBlockers;
+    attempt += 1
+  ) {
+    const owner = coreArrows[rng.int(coreArrows.length)] as ArrowDefinition;
+    const track = arrowTrack(board, owner).slice(owner.path.length);
+    const candidates = track.slice(Math.max(0, track.length - 4));
+    if (candidates.length === 0) continue;
+    const entangle = candidates[rng.int(candidates.length)] as Cell;
+    const entangleKey = cellKey(entangle);
+    // The entangle cell sits inside the region by definition; the blocker's
+    // head and route cells must not, or a blocker route would cross a core
+    // body and cycle the graph.
+    const offLane = (cell: Cell): boolean => {
+      const key = cellKey(cell);
+      return (
+        !inBounds(cell) ||
+        occupied.has(key) ||
+        parkTracks.has(key) ||
+        spotKeys.has(key) ||
+        stopKeys.has(key) ||
+        regionCells.has(key) ||
+        blockerKeys.has(key)
+      );
+    };
+    if (
+      !inBounds(entangle) ||
+      occupied.has(entangleKey) ||
+      parkTracks.has(entangleKey) ||
+      spotKeys.has(entangleKey) ||
+      stopKeys.has(entangleKey) ||
+      blockerKeys.has(entangleKey)
+    )
+      continue;
+    const trackKeysSet = new Set(track.map(cellKey));
+    const routeBlocked = (key: string): boolean =>
+      occupied.has(key) ||
+      parkTracks.has(key) ||
+      stopKeys.has(key) ||
+      spotKeys.has(key) ||
+      regionCells.has(key) ||
+      blockerKeys.has(key);
+    const options = (["east", "west", "south", "north"] as const)
+      .map((heading) => ({
+        heading,
+        cell: stepSurface(entangle, heading, size),
+      }))
+      .filter(({ cell }) => !trackKeysSet.has(cellKey(cell)) && !offLane(cell))
+      .map(({ cell }) => ({
+        id: `r${id}${FLIP_BLOCK_MARKER}${blockers.length}`,
+        path: [entangle, cell],
+      }))
+      .filter(
+        (candidate) =>
+          !arrowTrack(board, candidate)
+            .slice(candidate.path.length)
+            .some((cell) => routeBlocked(cellKey(cell))),
+      );
+    if (options.length === 0) continue;
+    const blocker = options[rng.int(options.length)] as ArrowDefinition;
+    const verdict = acceptFlipRegion(
+      level,
+      [...placed, ...blockers, blocker],
+      board.directionals ?? [],
+      [...(level.stops ?? []), ...stops],
+    );
+    if (!verdict.ok) break;
+    blockers.push(blocker);
+    for (const cell of blocker.path) blockerKeys.add(cellKey(cell));
+    cells = verdict.cells;
+  }
+  return { blockers, cells };
+}
+
+/**
+ * The proven dance order: solve the region on a board holding only its own
+ * arrows and circles, exactly as `flipRegionLead` does, and keep the
+ * consecutive arrow ids as fill-graph precedence constraints. Empty on a
+ * failed derivation — the graph then falls back to body-blocker edges only.
+ */
+function regionDanceOrder(
+  level: LevelDefinition,
+  spots: readonly DirectionalSpotDefinition[],
+  stops: readonly Cell[],
+  placed: readonly ArrowDefinition[],
+): readonly string[] {
+  const seeds = regionCoreIds(placed);
+  const allStops = [...(level.stops ?? []), ...stops];
+  const probe: LevelDefinition = {
+    ...level,
+    arrows: [...placed],
+    directionals: [...spots],
+    ...(allStops.length > 0 ? { stops: allStops } : {}),
+  };
+  const region = interactionRegion(probe, seeds);
+  if (!region) return [];
+  const regionStops = new Set(region.stopKeys);
+  const regionStopsList = (probe.stops ?? []).filter((stop) =>
+    regionStops.has(cellKey(stop)),
+  );
+  const { stops: _allStops, ...bare } = probe;
+  const sub: LevelDefinition = {
+    ...bare,
+    arrows: probe.arrows.filter((arrow) => region.arrowIds.includes(arrow.id)),
+    ...(regionStopsList.length > 0 ? { stops: regionStopsList } : {}),
+  };
+  const targets = solveLevelTargets(sub);
+  if (!targets) return [];
+  const dance: string[] = [];
+  for (const target of targets) {
+    if (dance[dance.length - 1] !== target.arrowId) dance.push(target.arrowId);
+  }
+  return dance;
 }
 
 /**
@@ -2830,7 +3085,14 @@ function rotorCore(
       [...(level.stops ?? []), stop],
     );
     if (!verdict.ok) continue;
-    return { arrows, spots, stops: [stop], cells: verdict.cells };
+    return {
+      arrows,
+      spots,
+      stops: [stop],
+      cells: verdict.cells,
+      blockers: [],
+      dance: [],
+    };
   }
   return undefined;
 }
@@ -4590,6 +4852,12 @@ export function generateLevel(id: number): LevelDefinition {
           const shape = shapeOf(arrow.path);
           if (shape) shapeCounts.set(shape, (shapeCounts.get(shape) ?? 0) + 1);
         }
+        // Independently placed cores can already repeat a shape past the cap
+        // before the fill runs, and the fill can only refuse more copies.
+        if ([...shapeCounts.values()].some((count) => count > cap)) {
+          skip = "shape";
+          continue;
+        }
         const shapeFull = (path: readonly Cell[]): boolean => {
           const shape = shapeOf(path);
           return shape !== undefined && (shapeCounts.get(shape) ?? 0) >= cap;
@@ -4620,6 +4888,16 @@ export function generateLevel(id: number): LevelDefinition {
           ...(mirror?.arrows ?? []).map((arrow) => arrow.id),
           ...(leap?.arrows ?? []).map((arrow) => arrow.id),
         ]);
+        // An entangled flip core's arrows and blockers are graph nodes, so
+        // they leave the lead set for emission and the certificate while
+        // `leadIds` still reserves their bodies and tracks.
+        const flipEntangled = (flip?.blockers.length ?? 0) > 0;
+        const flipIdSet = new Set(
+          (flip?.arrows ?? []).map((arrow) => arrow.id),
+        );
+        const emissionLeads = flipEntangled
+          ? new Set([...leadIds].filter((arrowId) => !flipIdSet.has(arrowId)))
+          : leadIds;
         const leadBodies = new Set(
           arrows
             .filter((arrow) => leadIds.has(arrow.id))
@@ -4716,8 +4994,30 @@ export function generateLevel(id: number): LevelDefinition {
             arrows: [arrow],
             routeKeys: new Set(nodeRoute(arrow)),
           })),
+          ...(flipEntangled && flip
+            ? [
+                ...flip.arrows.map((arrow) => ({
+                  id: arrow.id,
+                  arrows: [arrow],
+                  routeKeys: new Set(
+                    flipHeadingProbes(leadBoard).flatMap((probe) =>
+                      arrowTrack(probe, arrow)
+                        .slice(arrow.path.length)
+                        .map(cellKey),
+                    ),
+                  ),
+                })),
+                ...flip.blockers.map((arrow) => ({
+                  id: arrow.id,
+                  arrows: [arrow],
+                  routeKeys: new Set(nodeRoute(arrow)),
+                })),
+              ]
+            : []),
         ];
-        const prefilled = arrows.length;
+        // Blockers enter the board as graph nodes, so they spend the budget.
+        const prefilled =
+          arrows.length + (flipEntangled && flip ? flip.blockers.length : 0);
         let fill: FillResult;
         try {
           fill = dependencyFill({
@@ -4737,6 +5037,20 @@ export function generateLevel(id: number): LevelDefinition {
                 ),
               ),
             nodes: graphNodes,
+            ...(flipEntangled && flip
+              ? {
+                  // A region can hold lead arrows that are not graph nodes.
+                  precedence: flip.dance
+                    .filter((arrowId) =>
+                      graphNodes.some((node) => node.id === arrowId),
+                    )
+                    .map((arrowId, index, kept): [string, string] => [
+                      kept[index - 1] as string,
+                      arrowId,
+                    ])
+                    .slice(1),
+                }
+              : {}),
             leadBodies,
             forbiddenBody,
             forbiddenRay,
@@ -4762,7 +5076,7 @@ export function generateLevel(id: number): LevelDefinition {
         // certificate's reversed array is then a valid removal order, and
         // `cellsBefore` in the spot passes means "bodies still present when
         // this arrow moves". `arrows` stays the same array object.
-        const leads = arrows.filter((arrow) => leadIds.has(arrow.id));
+        const leads = arrows.filter((arrow) => emissionLeads.has(arrow.id));
         arrows.length = 0;
         for (const node of [...fill.order].reverse())
           arrows.push(...node.arrows);
@@ -4989,13 +5303,16 @@ export function generateLevel(id: number): LevelDefinition {
             : []),
           ...[...arrows]
             .reverse()
-            .filter((arrow) => !leadIds.has(arrow.id))
+            .filter((arrow) => !emissionLeads.has(arrow.id))
             .map((arrow) => arrow.id),
         ];
         const accepted =
           flipLead !== undefined &&
           (tier.certificate
-            ? validateGenerated(level, [...flipLead, ...certificate])
+            ? validateGenerated(
+                level,
+                flipEntangled ? certificate : [...flipLead, ...certificate],
+              )
             : validateLevel(level).valid &&
               solveLevelTargets(level) !== undefined);
         if (accepted) return level;
@@ -5052,10 +5369,12 @@ export function generateLevel(id: number): LevelDefinition {
             const trimmedAccepted =
               trimmedSafe &&
               (tier.certificate
-                ? validateGenerated(trimmed, [
-                    ...(trimmedLead ?? []),
-                    ...certificate,
-                  ])
+                ? validateGenerated(
+                    trimmed,
+                    flipEntangled
+                      ? certificate
+                      : [...(trimmedLead ?? []), ...certificate],
+                  )
                 : validateLevel(trimmed).valid &&
                   solveLevelTargets(trimmed) !== undefined);
             if (trimmedAccepted) return trimmed;

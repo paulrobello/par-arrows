@@ -649,8 +649,9 @@ describe("runtime campaign generator", () => {
     const shapes = new Set<string>();
     // The self-passage rule rebuilds boards where a lone park arrow folded
     // over its own body, so the first twin core moved from level 75 to 77;
-    // the sweep reaches past it.
-    for (let id = 6; id <= 77; id += 1) {
+    // flip-core blockers then re-rolled flip-planned ids and moved it to 108
+    // (also 113); the sweep reaches past it.
+    for (let id = 6; id <= 113; id += 1) {
       const level = generateLevel(id);
       if ((level.stops ?? []).length === 0) continue;
       const parkArrows = level.arrows.filter((arrow) =>

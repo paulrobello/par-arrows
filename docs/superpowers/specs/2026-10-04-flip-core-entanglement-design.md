@@ -1,7 +1,7 @@
 # Flip-Core Entanglement — Design Spec
 
 Date: 2026-10-04
-Status: Approved design (A1), pending implementation plan
+Status: Implemented
 Scope: Phase 1 — flip cores in generated levels (31–200). Later phases extend the same primitive to rotor, lock, fragile, mirror, leap, and wormhole cores.
 
 ## Problem
@@ -81,3 +81,7 @@ Saves on re-rolled ids refresh once via the existing layout-fingerprint rule. No
 - Phase 2: rotor cores inherit the machinery unchanged (same region proofs).
 - Phase 3: lock, fragile, mirror, leap, wormhole cores take the same blocker primitive against their per-lane proofs; their "no outside arrow reaches the cell" checks are unchanged (blockers sit on lanes, never the mechanic cell).
 - Phase 4 (separate design): mechanic-mediated fill lanes (O2) — fill routes deliberately crossing the mechanic cell itself.
+
+## Errata (post-review)
+
+The "blockers are themselves gated by fill arrows" mechanism in §1 and §2 does not exist as described: region closure absorbs every blocker route into the region's cells, and both `forbiddenBody` and `forbiddenRay` reserve those cells, so no fill body can land on a blocker route and no fill route can cross one. The shipped gating is the blocker-on-lane prerequisite plus the dance's merged-order position mid-board (entangled solves open with 12-17 ordinary moves before the first blocker tap), which satisfies A1 by its stated path: a blocker prerequisite on a core arrow's track.
