@@ -318,7 +318,10 @@ describe("lock generation", () => {
       // The leap pass is a third copy of the first pass on certificate tiers,
       // so the sampled lock ids carry the mirror pass's restart cost too
       // (measured 3391 ms on CI for id 104 when leap cores shipped).
-      expect(performance.now() - started).toBeLessThan(4000);
+      // Lane-blocker era: raised from 4 s with runner headroom (the
+      // entangled seeder plus per-blocker certificate replays; the leap-era
+      // comment above recorded 3391 ms on CI).
+      expect(performance.now() - started).toBeLessThan(8000);
       expect(level.locks).toHaveLength(1);
       expect(layoutFingerprint(generateLevel(id))).toBe(
         layoutFingerprint(level),

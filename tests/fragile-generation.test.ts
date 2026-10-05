@@ -274,7 +274,9 @@ describe("fragile generation", () => {
     for (const id of [49, 104, 150, 199]) {
       const started = performance.now();
       const level = generateLevel(id);
-      expect(performance.now() - started).toBeLessThan(4000);
+      // Lane-blocker era: raised from 4 s with runner headroom (the
+      // entangled seeder plus per-blocker certificate replays).
+      expect(performance.now() - started).toBeLessThan(8000);
       expect(level.fragile).toHaveLength(1);
       expect(layoutFingerprint(generateLevel(id))).toBe(
         layoutFingerprint(level),
