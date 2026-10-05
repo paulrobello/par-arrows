@@ -4,11 +4,7 @@ import type { Browser, Page } from "playwright";
 import sharp from "sharp";
 import { PerspectiveCamera, Vector3 } from "three";
 import { FLIP_INTRO_LEVEL } from "../src/content/flip-intro";
-import {
-  flipCoreIds,
-  generateLevel,
-  isAuthoredLevel,
-} from "../src/content/procedural";
+import { generateLevel, isAuthoredLevel } from "../src/content/procedural";
 import {
   applyMove,
   createGameState,
@@ -911,32 +907,54 @@ async function assertRegionPark(browser: Browser, url: string): Promise<void> {
   }
 }
 
+const CORE_MARKERS = [
+  "-flip-",
+  "-rotor-",
+  "-fragile-",
+  "-lock-",
+  "-mirror-",
+  "-leap-",
+  "-wormhole-",
+] as const;
+
+const isCoreArrowId = (id: string): boolean =>
+  CORE_MARKERS.some((marker) => id.includes(marker));
+
 /**
- * The first generated cube whose flip core is entangled (carries `-flipb-`
- * lane blockers), cleared in the solver's proven order with a reload halfway.
- * The order opens with a blocker move, never a core arrow.
+ * The first generated cube whose core of any mechanic is entangled (carries
+ * `-flipb-` or `-xblock-` lane blockers), cleared in the solver's proven order
+ * with a reload halfway. The order opens with a blocker move, never a core
+ * arrow.
  */
 async function assertEntangledCore(
   browser: Browser,
   url: string,
 ): Promise<void> {
-  let target = 0;
-  for (let id = 31; id <= 200 && target === 0; id += 1) {
-    if (isAuthoredLevel(id)) continue;
-    const candidate = cachedLevel(id);
-    if (
-      flipCoreIds(candidate.arrows).length > 0 &&
-      candidate.arrows.some((arrow) => arrow.id.includes("-flipb-"))
-    ) {
-      target = id;
+  const firstWith = (marker: string): number => {
+    for (let id = 31; id <= 200; id += 1) {
+      if (isAuthoredLevel(id)) continue;
+      if (cachedLevel(id).arrows.some((arrow) => arrow.id.includes(marker))) {
+        return id;
+      }
     }
-  }
-  assert.ok(target > 0, "An entangled flip cube must exist in 31-200");
+    return 0;
+  };
+  // The -xblock- path is the newer one, so it gets the real-engine check first.
+  const target = firstWith("-xblock-") || firstWith("-flipb-");
+  assert.ok(target > 0, "An entangled cube must exist in 31-200");
   const level = cachedLevel(target);
+  const entangledKind = [
+    ...new Set(
+      level.arrows
+        .map((arrow) => /-(flipb|xblock)-([a-z]*)/.exec(arrow.id))
+        .filter((m): m is RegExpExecArray => m !== null)
+        .map((m) => (m[1] === "flipb" ? "flip" : m[2])),
+    ),
+  ].join("+");
   const targets = solveLevelTargets(level) ?? [];
   assert.ok(targets.length > 0, "The entangled cube must solve");
   assert.ok(
-    !flipCoreIds(level.arrows).includes(targets[0]?.arrowId ?? ""),
+    !isCoreArrowId(targets[0]?.arrowId ?? ""),
     "The proven order opens with a blocker move, never a core arrow",
   );
 
@@ -992,7 +1010,7 @@ async function assertEntangledCore(
     assert.deepEqual(current.remainingIds, [], "Every arrow clears");
     assert.equal(current.lives, level.lives, "No life is lost");
     console.log(
-      `flip: entangled level ${target} clears in its proven order of ${targets.length} taps across a mid-level reload`,
+      `flip: entangled level ${target} (${entangledKind}) clears in its proven order of ${targets.length} taps across a mid-level reload`,
     );
     assert.deepEqual(errors, [], "No page errors on the entangled cube");
   } finally {

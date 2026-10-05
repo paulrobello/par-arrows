@@ -13,6 +13,7 @@ import {
   createGameState,
   simulateMove,
 } from "../src/core/game-state";
+import { trackKeys } from "../src/core/stops";
 import { cellKey } from "../src/core/topology";
 import type { LevelDefinition } from "../src/core/types";
 import {
@@ -280,4 +281,35 @@ describe("fragile generation", () => {
       );
     }
   }, 60_000);
+
+  test("entangled fragile cores carry well-formed blockers on their lanes", () => {
+    let found = 0;
+    for (let id = 46; id <= 200 && found < 3; id += 1) {
+      if (isAuthoredLevel(id) || !fragileCorePlanned(id)) continue;
+      const level = cachedLevel(id);
+      const blockers = level.arrows.filter((arrow) =>
+        arrow.id.includes("-xblock-fragile"),
+      );
+      if (blockers.length === 0) continue; // legitimate fallback ids
+      found += 1;
+      const coreTrack = new Set(
+        level.arrows
+          .filter((arrow) => arrow.id.includes("-fragile-"))
+          .flatMap((core) => [
+            ...core.path.map(cellKey),
+            ...trackKeys(level, core),
+          ]),
+      );
+      for (const blocker of blockers) {
+        // Blocker ids end "-xblock-fragile<n>", so the "-fragile-" core filter never
+        // picks a blocker up as a core arrow.
+        expect(blocker.id.includes("-fragile-")).toBe(false);
+        expect(blocker.path.length).toBe(2);
+        expect(blocker.path.some((cell) => coreTrack.has(cellKey(cell)))).toBe(
+          true,
+        );
+      }
+    }
+    expect(found).toBeGreaterThanOrEqual(3);
+  }, 600_000);
 });

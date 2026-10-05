@@ -1,7 +1,7 @@
 # Mechanic Blocker Entanglement, Phase 2+ — Design Spec
 
 Date: 2026-10-05
-Status: Approved direction (A1 phasing), pending implementation plan
+Status: Implemented
 Scope: Extend the shipped flip-core entanglement (commit `3a3b939`, spec `2026-10-04-flip-core-entanglement-design.md`) to the remaining six mechanics: rotor (phase 2), then wormhole, fragile, lock, mirror, leap (phase 3).
 
 ## Problem
@@ -64,3 +64,7 @@ Campaign-wide (end of phase 3): `make checkall-ci` green; full headed browser sw
 ## Costs
 
 Fixture churn on every id carrying an entangled core of each mechanic as it ships (established pattern; saves refresh once per affected id). Generation time re-measured after each phase. No storage, renderer, PWA, or content-version changes. Later-phase note carried from flip's review: blocker routes stay region/mechanic-reserved — do not chase the fill-gating chain.
+
+## Errata
+
+Rotor was investigated in phase 2 and found inexpressible in the removal-graph certificate: both rotor patterns park an arrow mid-dance and resume it after other arrows, which one-exit-per-arrow replay cannot express. Rotor therefore stays plan-zero, and no `:rotor-block` stream ships; the per-mechanic table and Phase 2 section above describe the original plan. Phase 3's five lane mechanics (wormhole, fragile, lock, mirror, leap) shipped as specified.

@@ -326,6 +326,34 @@ export function flipBlockFrequency(id: number): number {
 /** First generated level that can embed a rotor core. */
 const FIRST_ROTOR_LEVEL = 41;
 
+const blockCurve =
+  (first: number) =>
+  (id: number): number => {
+    assertLevelId(id);
+    if (id < first || isAuthoredLevel(id)) return 0;
+    const progress = Math.min(1, (id - first) / 59);
+    return 0.35 + 0.35 * progress;
+  };
+
+const BLOCK_FREQUENCY: Record<
+  "rotor" | "wormhole" | "fragile" | "lock" | "mirror" | "leap",
+  (id: number) => number
+> = {
+  rotor: blockCurve(FIRST_ROTOR_LEVEL),
+  wormhole: blockCurve(36),
+  fragile: blockCurve(46),
+  lock: blockCurve(51),
+  mirror: blockCurve(56),
+  leap: blockCurve(61),
+};
+
+export const rotorBlockFrequency = BLOCK_FREQUENCY.rotor;
+export const wormholeBlockFrequency = BLOCK_FREQUENCY.wormhole;
+export const fragileBlockFrequency = BLOCK_FREQUENCY.fragile;
+export const lockBlockFrequency = BLOCK_FREQUENCY.lock;
+export const mirrorBlockFrequency = BLOCK_FREQUENCY.mirror;
+export const leapBlockFrequency = BLOCK_FREQUENCY.leap;
+
 /** Probability that a generated level without a flip plan draws a rotor core. */
 export function rotorCoreFrequency(id: number): number {
   assertLevelId(id);
@@ -2304,6 +2332,152 @@ function flipBlockers(
   return { blockers, cells };
 }
 
+const XBLOCK_MARKER = "-xblock-";
+const LANE_KINDS = ["wormhole", "fragile", "lock", "mirror", "leap"] as const;
+type LaneKind = (typeof LANE_KINDS)[number];
+
+interface LaneBlockerInput {
+  kind: LaneKind;
+  id: number;
+  restart: number;
+  /** The board with the mechanic and spots, for track derivation. */
+  board: LevelDefinition;
+  coreArrows: readonly ArrowDefinition[];
+  certificate: readonly CertificateEntry[];
+  /** The mechanic's core-board literal, for the replay proof. */
+  coreBoard: LevelDefinition;
+  occupied: ReadonlySet<string>;
+  parkTracks: ReadonlySet<string>;
+  /** Every reserved cell: mechanic cells, portal ends, region cells. */
+  reservedCells: ReadonlySet<string>;
+  /** Reserved cells a blocker route may cross: lead cells that are empty
+   * by the time any graph node moves. */
+  crossable: ReadonlySet<string>;
+  inBounds: (cell: Cell) => boolean;
+}
+
+/**
+ * Seed blocker arrows on a certificate-led core's lanes: the per-lane
+ * sibling of `flipBlockers`. Each blocker is a two-cell arrow whose tail
+ * covers a late track cell of some core arrow and whose head points off the
+ * lane; the mechanic's certificate must still replay on the core board with
+ * the blockers as members. A failed replay keeps the proven prefix. Blocker
+ * routes stay reserved like the core's lanes, so the caller must add their
+ * track keys to `forbiddenBody` and `forbiddenRay`. A certificate whose
+ * chain repeats an arrow id is a multi-leg dance the removal graph cannot
+ * express, so it seeds nothing and draws nothing from the stream.
+ */
+function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
+  const { kind, id, restart } = input;
+  const chain = certificateToChain(input.certificate);
+  if (new Set(chain).size !== chain.length) return [];
+  const rng = coreStream(id, `${kind}-block`, restart);
+  const frequency = BLOCK_FREQUENCY[kind];
+  if (frequency(id) === 0 || rng.next() >= frequency(id)) return [];
+  const first = { wormhole: 36, fragile: 46, lock: 51, mirror: 56, leap: 61 }[
+    kind
+  ] as number;
+  const maxBlockers = id >= first + 29 && rng.next() < 0.3 ? 2 : 1;
+  const size = input.board.gridSize;
+  const spotKeys = new Set(
+    (input.board.directionals ?? []).map((spot) => cellKey(spot.cell)),
+  );
+  const stopKeys = new Set((input.coreBoard.stops ?? []).map(cellKey));
+  const blockers: ArrowDefinition[] = [];
+  const blockerKeys = new Set<string>();
+  // The core's own lanes are already in `occupied`. A blocker tail may sit
+  // on a late lane cell (that is the entanglement), but its head and route
+  // must stay off every lane, or the blocker would cross a core body.
+  const laneKeys = new Set(
+    input.coreArrows.flatMap((arrow) =>
+      arrowTrack(input.board, arrow).map(cellKey),
+    ),
+  );
+  const coreBodyKeys = new Set(
+    input.coreArrows.flatMap((arrow) => arrow.path.map(cellKey)),
+  );
+  const bannedKey = (key: string): boolean =>
+    input.occupied.has(key) ||
+    input.parkTracks.has(key) ||
+    spotKeys.has(key) ||
+    stopKeys.has(key) ||
+    input.reservedCells.has(key) ||
+    blockerKeys.has(key);
+  const bannedEntangle = (key: string): boolean =>
+    coreBodyKeys.has(key) ||
+    input.parkTracks.has(key) ||
+    spotKeys.has(key) ||
+    stopKeys.has(key) ||
+    input.reservedCells.has(key) ||
+    blockerKeys.has(key) ||
+    (input.occupied.has(key) && !laneKeys.has(key));
+  const bannedRoute = (key: string): boolean =>
+    coreBodyKeys.has(key) ||
+    input.parkTracks.has(key) ||
+    spotKeys.has(key) ||
+    stopKeys.has(key) ||
+    input.reservedCells.has(key) ||
+    blockerKeys.has(key) ||
+    (input.occupied.has(key) && !input.crossable.has(key));
+  for (
+    let attempt = 0;
+    attempt < 6 && blockers.length < maxBlockers;
+    attempt += 1
+  ) {
+    const owner = input.coreArrows[
+      rng.int(input.coreArrows.length)
+    ] as ArrowDefinition;
+    const track = arrowTrack(input.board, owner).slice(owner.path.length);
+    const candidates = track.slice(Math.max(0, track.length - 4));
+    if (candidates.length === 0) continue;
+    const entangle = candidates[rng.int(candidates.length)] as Cell;
+    if (!input.inBounds(entangle) || bannedEntangle(cellKey(entangle)))
+      continue;
+    const trackKeySet = new Set(track.map(cellKey));
+    const options = (["east", "west", "south", "north"] as const)
+      .map((heading) => ({
+        heading,
+        cell: stepSurface(entangle, heading, size),
+      }))
+      .filter(
+        ({ cell }) =>
+          !trackKeySet.has(cellKey(cell)) &&
+          input.inBounds(cell) &&
+          !bannedKey(cellKey(cell)),
+      );
+    if (options.length === 0) continue;
+    const choice = options[rng.int(options.length)] as {
+      heading: Heading;
+      cell: Cell;
+    };
+    const blocker: ArrowDefinition = {
+      id: `r${id}${XBLOCK_MARKER}${kind}${blockers.length}`,
+      path: [entangle, choice.cell],
+    };
+    const routeKeys = arrowTrack(input.board, blocker)
+      .slice(blocker.path.length)
+      .map(cellKey);
+    // The route may cross a core's lane cells, which are empty by the time
+    // the blocker leaves, but never a core body or any other reserve.
+    if (routeKeys.some(bannedRoute)) continue;
+    const proofBoard: LevelDefinition = {
+      ...input.coreBoard,
+      arrows: [...input.coreBoard.arrows, ...blockers, blocker],
+    };
+    // A blocker sits on a core lane, so it leaves first: the fill graph's
+    // body edges order it ahead of the core arrow it covers.
+    const proofCertificate = [
+      ...blockers.map((placed) => placed.id),
+      blocker.id,
+      ...input.certificate,
+    ];
+    if (!validateGenerated(proofBoard, proofCertificate)) break;
+    blockers.push(blocker);
+    for (const cell of blocker.path) blockerKeys.add(cellKey(cell));
+  }
+  return blockers;
+}
+
 /**
  * The proven dance order: solve the region on a board holding only its own
  * arrows and circles, exactly as `flipRegionLead` does, and keep the
@@ -4086,6 +4260,27 @@ function strandSafeCircle(
  */
 type CertificateEntry = string | MoveTarget;
 
+/**
+ * The arrow ids a certificate taps, in order, consecutive repeats merged.
+ * A core whose chain repeats an id non-consecutively is a multi-leg dance
+ * the one-exit removal graph cannot express.
+ */
+function certificateToChain(
+  certificate: readonly CertificateEntry[],
+): readonly string[] {
+  const chain: string[] = [];
+  for (const entry of certificate) {
+    const arrowId =
+      typeof entry === "string"
+        ? entry.startsWith(PARK_CERTIFICATE_PREFIX)
+          ? entry.slice(PARK_CERTIFICATE_PREFIX.length)
+          : entry
+        : entry.arrowId;
+    if (chain[chain.length - 1] !== arrowId) chain.push(arrowId);
+  }
+  return chain;
+}
+
 function replayCertificate(
   level: LevelDefinition,
   certificate: readonly CertificateEntry[],
@@ -4336,7 +4531,26 @@ export function generateLevel(id: number): LevelDefinition {
       // tiers; a give-up below withdraws them so the pass rebuilds as the
       // exact plan-zero construction.
       let slots = tier.certificate ? wormholeSlots : 0;
-      construction: for (let restart = 0; restart < 8; restart += 1) {
+      // Lane blockers are optional: their reserved routes fence the fill, so
+      // a restart that seeded any and then failed is retried once at the
+      // same restart with lane seeding off. Lane streams share nothing with
+      // construction, so the retry is the exact unentangled construction and
+      // entanglement never costs a core placement (measured 2026-10-05:
+      // without the retry, blocker-fenced restarts failed coverage or depth
+      // and the next restart dropped its wormholes, 0.789 to 0.706 placed).
+      let lanesOff = false;
+      let lanesSeeded = false;
+      let restart = 0;
+      const nextRestart = (): void => {
+        if (lanesSeeded && !lanesOff) {
+          lanesOff = true;
+          return;
+        }
+        lanesOff = false;
+        restart += 1;
+      };
+      construction: for (; restart < 8; nextRestart()) {
+        lanesSeeded = false;
         // Tier 0 keeps the unsalted construction seeds; each later tier salts
         // the construction RNG so it never replays a rejected earlier tier.
         // Core streams stay keyed by `restart` alone.
@@ -4888,16 +5102,6 @@ export function generateLevel(id: number): LevelDefinition {
           ...(mirror?.arrows ?? []).map((arrow) => arrow.id),
           ...(leap?.arrows ?? []).map((arrow) => arrow.id),
         ]);
-        // An entangled flip core's arrows and blockers are graph nodes, so
-        // they leave the lead set for emission and the certificate while
-        // `leadIds` still reserves their bodies and tracks.
-        const flipEntangled = (flip?.blockers.length ?? 0) > 0;
-        const flipIdSet = new Set(
-          (flip?.arrows ?? []).map((arrow) => arrow.id),
-        );
-        const emissionLeads = flipEntangled
-          ? new Set([...leadIds].filter((arrowId) => !flipIdSet.has(arrowId)))
-          : leadIds;
         const leadBodies = new Set(
           arrows
             .filter((arrow) => leadIds.has(arrow.id))
@@ -4915,6 +5119,175 @@ export function generateLevel(id: number): LevelDefinition {
             ...(flip ? flip.spots : []),
           ],
         };
+        // Entangled cores: the region core and any lane core that seeded
+        // blockers. Their arrows and blockers are graph nodes, so they leave
+        // the lead set for emission and the certificate while `leadIds`
+        // still reserves their bodies and tracks.
+        const laneCores: {
+          kind: LaneKind;
+          arrows: readonly ArrowDefinition[];
+          certificate: readonly CertificateEntry[];
+          coreBoard: LevelDefinition;
+          cellKeys: ReadonlySet<string>;
+        }[] = [
+          ...(wormholes.length > 0
+            ? [
+                {
+                  kind: "wormhole" as const,
+                  arrows: wormholes.flatMap((entry) => entry.arrows),
+                  certificate: wormholes.flatMap((entry) => entry.certificate),
+                  coreBoard: {
+                    ...candidateLevel,
+                    arrows: [] as ArrowDefinition[],
+                    wormholes: wormholes.map((entry) => entry.wormhole),
+                  },
+                  cellKeys: portalKeys,
+                },
+              ]
+            : []),
+          ...(fragile && fragileKey
+            ? [
+                {
+                  kind: "fragile" as const,
+                  arrows: fragile.arrows,
+                  certificate: fragile.certificate,
+                  coreBoard: {
+                    ...candidateLevel,
+                    arrows: [] as ArrowDefinition[],
+                    fragile: [fragile.cell],
+                  },
+                  cellKeys: new Set([fragileKey]),
+                },
+              ]
+            : []),
+          ...(lock
+            ? [
+                {
+                  kind: "lock" as const,
+                  arrows: lock.arrows,
+                  certificate: lock.certificate,
+                  coreBoard: {
+                    ...candidateLevel,
+                    arrows: [] as ArrowDefinition[],
+                    locks: [lock.lock],
+                  },
+                  cellKeys: new Set(lockKeys),
+                },
+              ]
+            : []),
+          ...(mirror
+            ? [
+                {
+                  kind: "mirror" as const,
+                  arrows: mirror.arrows,
+                  certificate: mirror.certificate,
+                  coreBoard: {
+                    ...candidateLevel,
+                    arrows: [] as ArrowDefinition[],
+                    mirrors: [mirror.mirror],
+                  },
+                  cellKeys: new Set(mirrorKeys),
+                },
+              ]
+            : []),
+          ...(leap
+            ? [
+                {
+                  kind: "leap" as const,
+                  arrows: leap.arrows,
+                  certificate: leap.certificate,
+                  coreBoard: {
+                    ...candidateLevel,
+                    arrows: [] as ArrowDefinition[],
+                    leaps: [leap.pad],
+                  },
+                  cellKeys: new Set(leapKeys),
+                },
+              ]
+            : []),
+        ];
+        const entangled: {
+          kind: string;
+          arrows: readonly ArrowDefinition[];
+          blockers: readonly ArrowDefinition[];
+          chain: readonly string[];
+        }[] = [];
+        if (flip && flip.blockers.length > 0)
+          entangled.push({
+            kind: "region",
+            arrows: flip.arrows,
+            blockers: flip.blockers,
+            chain: flip.dance,
+          });
+        const entangledTargets = new Map<string, MoveTarget>();
+        const priorBlockerKeys = new Set<string>();
+        for (const lane of lanesOff ? [] : laneCores) {
+          const laneBoard: LevelDefinition = {
+            ...lane.coreBoard,
+            arrows: [...lane.arrows],
+            ...(nodeBoard.directionals.length > 0
+              ? { directionals: nodeBoard.directionals }
+              : {}),
+            ...(core ? { stops: core.stops } : {}),
+          };
+          const blockers = seedLaneBlockers({
+            kind: lane.kind,
+            id,
+            restart,
+            board: laneBoard,
+            coreArrows: lane.arrows,
+            certificate: lane.certificate,
+            coreBoard: laneBoard,
+            occupied,
+            parkTracks: parkTrackKeys,
+            // Earlier lanes' blockers are not in `occupied`, so their bodies
+            // and routes are reserved here to keep lanes from colliding.
+            reservedCells: new Set([...lane.cellKeys, ...priorBlockerKeys]),
+            // Lead bodies and tracks are gone before any graph node moves,
+            // so a blocker route may cross them; the flip region stays fenced.
+            crossable: new Set(
+              [...occupied].filter(
+                (key) => !(flip?.cells ?? new Set()).has(key),
+              ),
+            ),
+            inBounds: (cell) =>
+              cell.x >= 0 &&
+              cell.y >= 0 &&
+              cell.x < candidateLevel.gridSize &&
+              cell.y < candidateLevel.gridSize,
+          });
+          if (blockers.length === 0) continue;
+          for (const blocker of blockers) {
+            for (const cell of blocker.path)
+              priorBlockerKeys.add(cellKey(cell));
+            for (const cell of arrowTrack(nodeBoard, blocker).slice(
+              blocker.path.length,
+            ))
+              priorBlockerKeys.add(cellKey(cell));
+          }
+          entangled.push({
+            kind: lane.kind,
+            arrows: lane.arrows,
+            blockers,
+            chain: certificateToChain(lane.certificate),
+          });
+          // A core tap may name an endpoint (a double leaving by its tail),
+          // so the graph section replays the core's own entry, not its id.
+          for (const entry of lane.certificate) {
+            if (typeof entry !== "string")
+              entangledTargets.set(entry.arrowId, entry);
+          }
+        }
+        lanesSeeded = entangled.some((entry) => entry.kind !== "region");
+        const entangledKinds = new Set(entangled.map((entry) => entry.kind));
+        const flipEntangled = entangledKinds.has("region");
+        const entangledBlockers = entangled.flatMap((entry) => entry.blockers);
+        const emissionExcluded = new Set(
+          entangled.flatMap((entry) => entry.arrows.map((arrow) => arrow.id)),
+        );
+        const emissionLeads = new Set(
+          [...leadIds].filter((arrowId) => !emissionExcluded.has(arrowId)),
+        );
         // Reserved cells no fill body may use: everything `occupied` holds
         // that is not a placed body, plus the parking core's tracks, which
         // must stay clear because the park core leaves before any fill.
@@ -4966,6 +5339,16 @@ export function generateLevel(id: number): LevelDefinition {
             : trackKeys(leadBoard, arrow);
           for (const key of keys) forbiddenBody.add(key);
         }
+        // A blocker's route stays reserved like a core lane: no fill body
+        // sits on it and no fill route crosses it.
+        for (const blocker of entangledBlockers) {
+          for (const key of arrowTrack(nodeBoard, blocker)
+            .slice(blocker.path.length)
+            .map(cellKey)) {
+            forbiddenBody.add(key);
+            forbiddenRay.add(key);
+          }
+        }
         // Graph nodes placed before the fill leave after every lead, so no
         // lead may still need a cell they sit on.
         const nodeArrows = [...groupArrows, ...starterArrows];
@@ -4979,6 +5362,19 @@ export function generateLevel(id: number): LevelDefinition {
         }
         const nodeRoute = (arrow: ArrowDefinition): readonly string[] =>
           arrowTrack(nodeBoard, arrow).slice(arrow.path.length).map(cellKey);
+        // An entangled core's routes must be traced with its mechanic in
+        // place: a mirror or pad bends a lane off the stripped line, which
+        // would otherwise run into the partner core arrow's body and close a
+        // cycle against the certificate's precedence. It carries every
+        // mechanic's cells, which is a no-op for cores it does not trace,
+        // because those cells are reserved or ray-forbidden to other arrows.
+        const entangledBoard = {
+          ...leadBoard,
+          ...(fragile ? { fragile: [fragile.cell] } : {}),
+          ...(lock ? { locks: [lock.lock] } : {}),
+          ...(mirror ? { mirrors: [mirror.mirror] } : {}),
+          ...(leap ? { leaps: [leap.pad] } : {}),
+        };
         const graphNodes: FillNode[] = [
           ...(groupArrows.length > 0
             ? [
@@ -4994,30 +5390,28 @@ export function generateLevel(id: number): LevelDefinition {
             arrows: [arrow],
             routeKeys: new Set(nodeRoute(arrow)),
           })),
-          ...(flipEntangled && flip
-            ? [
-                ...flip.arrows.map((arrow) => ({
-                  id: arrow.id,
-                  arrows: [arrow],
-                  routeKeys: new Set(
-                    flipHeadingProbes(leadBoard).flatMap((probe) =>
-                      arrowTrack(probe, arrow)
-                        .slice(arrow.path.length)
-                        .map(cellKey),
-                    ),
-                  ),
-                })),
-                ...flip.blockers.map((arrow) => ({
-                  id: arrow.id,
-                  arrows: [arrow],
-                  routeKeys: new Set(nodeRoute(arrow)),
-                })),
-              ]
-            : []),
+          ...entangled.flatMap((entry) => [
+            ...entry.arrows.map((arrow) => ({
+              id: arrow.id,
+              arrows: [arrow],
+              routeKeys: new Set(
+                flipHeadingProbes(entangledBoard).flatMap((probe) =>
+                  arrowTrack(probe, arrow)
+                    .slice(arrow.path.length)
+                    .map(cellKey),
+                ),
+              ),
+            })),
+            ...entry.blockers.map((arrow) => ({
+              id: arrow.id,
+              arrows: [arrow],
+              routeKeys: new Set(nodeRoute(arrow)),
+            })),
+          ]),
         ];
+        const nodeIds = new Set(graphNodes.map((node) => node.id));
         // Blockers enter the board as graph nodes, so they spend the budget.
-        const prefilled =
-          arrows.length + (flipEntangled && flip ? flip.blockers.length : 0);
+        const prefilled = arrows.length + entangledBlockers.length;
         let fill: FillResult;
         try {
           fill = dependencyFill({
@@ -5037,18 +5431,20 @@ export function generateLevel(id: number): LevelDefinition {
                 ),
               ),
             nodes: graphNodes,
-            ...(flipEntangled && flip
+            ...(entangled.length > 0
               ? {
-                  // A region can hold lead arrows that are not graph nodes.
-                  precedence: flip.dance
-                    .filter((arrowId) =>
-                      graphNodes.some((node) => node.id === arrowId),
-                    )
-                    .map((arrowId, index, kept): [string, string] => [
-                      kept[index - 1] as string,
-                      arrowId,
-                    ])
-                    .slice(1),
+                  // A core can hold lead arrows that are not graph nodes.
+                  precedence: entangled.flatMap((entry) => {
+                    const kept = entry.chain.filter((arrowId) =>
+                      nodeIds.has(arrowId),
+                    );
+                    return kept
+                      .slice(1)
+                      .map((afterId, index): [string, string] => [
+                        kept[index] as string,
+                        afterId,
+                      ]);
+                  }),
                 }
               : {}),
             leadBodies,
@@ -5290,11 +5686,19 @@ export function generateLevel(id: number): LevelDefinition {
         // The fragile core touches no other arrow's reach, so its crossing
         // certificate may lead wherever it sits.
         const certificate: CertificateEntry[] = [
-          ...(fragile ? fragile.certificate : []),
-          ...(lock ? lock.certificate : []),
-          ...(mirror ? mirror.certificate : []),
-          ...(leap ? leap.certificate : []),
-          ...wormholes.flatMap((entry) => entry.certificate),
+          // An entangled core replays in the graph section, after its
+          // blockers, so its own certificate must not lead.
+          ...(fragile && !entangledKinds.has("fragile")
+            ? fragile.certificate
+            : []),
+          ...(lock && !entangledKinds.has("lock") ? lock.certificate : []),
+          ...(mirror && !entangledKinds.has("mirror")
+            ? mirror.certificate
+            : []),
+          ...(leap && !entangledKinds.has("leap") ? leap.certificate : []),
+          ...(entangledKinds.has("wormhole")
+            ? []
+            : wormholes.flatMap((entry) => entry.certificate)),
           ...(double ? double.certificate : []),
           ...(core ? core.parkLegs : []),
           ...(core ? [...core.arrows].reverse().map((arrow) => arrow.id) : []),
@@ -5304,7 +5708,10 @@ export function generateLevel(id: number): LevelDefinition {
           ...[...arrows]
             .reverse()
             .filter((arrow) => !emissionLeads.has(arrow.id))
-            .map((arrow) => arrow.id),
+            .map(
+              (arrow): CertificateEntry =>
+                entangledTargets.get(arrow.id) ?? arrow.id,
+            ),
         ];
         const accepted =
           flipLead !== undefined &&

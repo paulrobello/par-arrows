@@ -5,15 +5,21 @@ import {
   flipBlockFrequency,
   flipCoreFrequency,
   flipCoreIds,
+  fragileBlockFrequency,
   fragileCorePlanned,
   getStopCount,
   isAuthoredLevel,
+  leapBlockFrequency,
   leapCorePlanned,
+  lockBlockFrequency,
   lockCorePlanned,
+  mirrorBlockFrequency,
   mirrorCorePlanned,
   Rng,
+  rotorBlockFrequency,
   rotorCorePlanned,
   seedForLevel,
+  wormholeBlockFrequency,
   wormholePlan,
 } from "../src/content/procedural";
 import { solveLevel } from "../src/core/validation";
@@ -188,3 +194,87 @@ test("flip blocker share tracks its plan curve", () => {
   expect(planned).toBeGreaterThan(30);
   expect(entangled / planned).toBeGreaterThan(0.59);
 }, 300_000);
+
+// Lane-blocker shares for the five certificate-led mechanics, measured over
+// 31-200 on 2026-10-05 as entangled / planned (core placed AND the
+// `<mech>-block` draw under its curve). Each floor is measured - 0.1.
+// Rotor cores never entangle (multi-leg dance), so rotor has no pin; the
+// shared sweep in tests/mechanic-entangle.test.ts pins that limitation.
+const LANE_SHARES = [
+  // wormhole 25 of 52 (0.481)
+  {
+    kind: "wormhole",
+    marker: "-wormhole-",
+    frequency: wormholeBlockFrequency,
+    floor: 0.38,
+    minPlanned: 30,
+  },
+  // fragile 25 of 48 (0.521)
+  {
+    kind: "fragile",
+    marker: "-fragile-",
+    frequency: fragileBlockFrequency,
+    floor: 0.42,
+    minPlanned: 30,
+  },
+  // lock 22 of 42 (0.524)
+  {
+    kind: "lock",
+    marker: "-lock-",
+    frequency: lockBlockFrequency,
+    floor: 0.42,
+    minPlanned: 25,
+  },
+  // mirror 21 of 46 (0.457)
+  {
+    kind: "mirror",
+    marker: "-mirror-",
+    frequency: mirrorBlockFrequency,
+    floor: 0.35,
+    minPlanned: 25,
+  },
+  // leap 30 of 42 (0.714)
+  {
+    kind: "leap",
+    marker: "-leap-",
+    frequency: leapBlockFrequency,
+    floor: 0.61,
+    minPlanned: 25,
+  },
+] as const;
+
+for (const lane of LANE_SHARES) {
+  test(`${lane.kind} blocker share tracks its plan curve`, () => {
+    let planned = 0;
+    let entangled = 0;
+    for (let id = 31; id <= 200; id += 1) {
+      if (isAuthoredLevel(id)) continue;
+      const level = cachedLevel(id);
+      if (!level.arrows.some((arrow) => arrow.id.includes(lane.marker)))
+        continue;
+      const frequency = lane.frequency(id);
+      if (frequency === 0 || planDraw(id, `${lane.kind}-block`) >= frequency)
+        continue;
+      planned += 1;
+      if (
+        level.arrows.some((arrow) => arrow.id.includes(`-xblock-${lane.kind}`))
+      )
+        entangled += 1;
+    }
+    expect(planned).toBeGreaterThan(lane.minPlanned);
+    expect(entangled / planned).toBeGreaterThan(lane.floor);
+  }, 300_000);
+}
+
+test("block curves ramp from each mechanic's first level", () => {
+  expect(rotorBlockFrequency(40)).toBe(0);
+  expect(rotorBlockFrequency(41)).toBeCloseTo(0.35);
+  expect(rotorBlockFrequency(100)).toBeCloseTo(0.7);
+  expect(wormholeBlockFrequency(36)).toBeCloseTo(0.35);
+  expect(wormholeBlockFrequency(95)).toBeCloseTo(0.7);
+  expect(fragileBlockFrequency(46)).toBeCloseTo(0.35);
+  expect(lockBlockFrequency(51)).toBeCloseTo(0.35);
+  expect(mirrorBlockFrequency(56)).toBeCloseTo(0.35);
+  expect(leapBlockFrequency(61)).toBeCloseTo(0.35);
+  expect(leapBlockFrequency(60)).toBe(0);
+});

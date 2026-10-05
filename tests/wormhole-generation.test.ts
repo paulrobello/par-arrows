@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import {
   flipCoreIds,
   generateLevel,
+  isAuthoredLevel,
   wormholeFrequency,
   wormholePlan,
 } from "../src/content/procedural";
@@ -112,5 +113,33 @@ describe("wormhole generation", () => {
     for (const level of cored.slice(0, 6)) {
       expect(solveLevelTargets({ ...level, wormholes: [] })).toBeUndefined();
     }
+  }, 600_000);
+
+  test("entangled wormhole cores carry well-formed blockers on their lanes", () => {
+    let found = 0;
+    for (let id = 36; id <= 200 && found < 3; id += 1) {
+      if (isAuthoredLevel(id) || wormholePlan(id) === 0) continue;
+      const level = cachedLevel(id);
+      const blockers = level.arrows.filter((arrow) =>
+        arrow.id.includes("-xblock-wormhole"),
+      );
+      if (blockers.length === 0) continue; // legitimate fallback ids
+      found += 1;
+      const coreTrack = new Set(
+        level.arrows
+          .filter((arrow) => arrow.id.includes("-wormhole-"))
+          .flatMap((core) => [
+            ...core.path.map(cellKey),
+            ...arrowTrack(level, core).map(cellKey),
+          ]),
+      );
+      for (const blocker of blockers) {
+        expect(blocker.path.length).toBe(2);
+        expect(blocker.path.some((cell) => coreTrack.has(cellKey(cell)))).toBe(
+          true,
+        );
+      }
+    }
+    expect(found).toBeGreaterThanOrEqual(3);
   }, 600_000);
 });
