@@ -278,3 +278,20 @@ test("block curves ramp from each mechanic's first level", () => {
   expect(leapBlockFrequency(61)).toBeCloseTo(0.35);
   expect(leapBlockFrequency(60)).toBe(0);
 });
+
+// The second blocker comes from a seeded coin on each `-block` stream, so the
+// campaign must carry at least one id where the coin hit: otherwise the
+// two-blocker half of the design would be untested dead weight. Measured at
+// HEAD, 7 flip ids carry two `-flipb-` blockers.
+test("a two-blocker flip id exists in the campaign", () => {
+  let twoBlockers = 0;
+  for (let id = 31; id <= 200; id += 1) {
+    if (isAuthoredLevel(id)) continue;
+    const blockers = cachedLevel(id).arrows.filter((arrow) =>
+      arrow.id.includes("-flipb-"),
+    ).length;
+    expect(blockers).toBeLessThanOrEqual(2);
+    if (blockers === 2) twoBlockers += 1;
+  }
+  expect(twoBlockers).toBeGreaterThanOrEqual(1);
+}, 300_000);

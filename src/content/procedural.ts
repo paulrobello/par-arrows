@@ -326,6 +326,21 @@ export function flipBlockFrequency(id: number): number {
 /** First generated level that can embed a rotor core. */
 const FIRST_ROTOR_LEVEL = 41;
 
+/** First generated level that can embed a wormhole core. */
+const FIRST_WORMHOLE_LEVEL = 36;
+
+/** First generated level that can embed a fragile core. */
+const FIRST_FRAGILE_LEVEL = 46;
+
+/** First generated level that can embed a lock core. */
+const FIRST_LOCK_LEVEL = 51;
+
+/** First generated level that can embed a mirror core. */
+const FIRST_MIRROR_LEVEL = 56;
+
+/** First generated level that can embed a leap core. */
+const FIRST_LEAP_LEVEL = 61;
+
 const blockCurve =
   (first: number) =>
   (id: number): number => {
@@ -340,11 +355,11 @@ const BLOCK_FREQUENCY: Record<
   (id: number) => number
 > = {
   rotor: blockCurve(FIRST_ROTOR_LEVEL),
-  wormhole: blockCurve(36),
-  fragile: blockCurve(46),
-  lock: blockCurve(51),
-  mirror: blockCurve(56),
-  leap: blockCurve(61),
+  wormhole: blockCurve(FIRST_WORMHOLE_LEVEL),
+  fragile: blockCurve(FIRST_FRAGILE_LEVEL),
+  lock: blockCurve(FIRST_LOCK_LEVEL),
+  mirror: blockCurve(FIRST_MIRROR_LEVEL),
+  leap: blockCurve(FIRST_LEAP_LEVEL),
 };
 
 export const rotorBlockFrequency = BLOCK_FREQUENCY.rotor;
@@ -377,9 +392,6 @@ export function rotorCorePlanned(id: number): boolean {
   return coreStream(id, "rotor-plan", 0).next() < rotorCoreFrequency(id);
 }
 
-/** First generated level that can embed a fragile core. */
-const FIRST_FRAGILE_LEVEL = 46;
-
 /** Probability that a generated level attempts a fragile core. */
 export function fragileCoreFrequency(id: number): number {
   assertLevelId(id);
@@ -398,9 +410,6 @@ export function fragileCorePlanned(id: number): boolean {
     coreStream(id, "fragile-plan", 0).next() < fragileCoreFrequency(id)
   );
 }
-
-/** First generated level that can embed a lock core. */
-const FIRST_LOCK_LEVEL = 51;
 
 /** Probability that a generated level attempts a lock core. */
 export function lockCoreFrequency(id: number): number {
@@ -421,9 +430,6 @@ export function lockCorePlanned(id: number): boolean {
   );
 }
 
-/** First generated level that can embed a mirror core. */
-const FIRST_MIRROR_LEVEL = 56;
-
 /** Probability that a generated level attempts a mirror core. */
 export function mirrorCoreFrequency(id: number): number {
   assertLevelId(id);
@@ -443,9 +449,6 @@ export function mirrorCorePlanned(id: number): boolean {
   );
 }
 
-/** First generated level that can embed a leap core. */
-const FIRST_LEAP_LEVEL = 61;
-
 /** Probability that a generated level attempts a leap core. */
 export function leapCoreFrequency(id: number): number {
   assertLevelId(id);
@@ -464,9 +467,6 @@ export function leapCorePlanned(id: number): boolean {
     coreStream(id, "leap-plan", 0).next() < leapCoreFrequency(id)
   );
 }
-
-/** First generated level that can embed a wormhole core. */
-const FIRST_WORMHOLE_LEVEL = 36;
 
 /** Probability that a generated level attempts a wormhole core. */
 export function wormholeFrequency(id: number): number {
@@ -5068,7 +5068,12 @@ export function generateLevel(id: number): LevelDefinition {
         }
         // Independently placed cores can already repeat a shape past the cap
         // before the fill runs, and the fill can only refuse more copies.
-        if ([...shapeCounts.values()].some((count) => count > cap)) {
+        // Certificate tiers restart; the final tier accepts the board rather
+        // than throwing, like the depth and coverage gates.
+        if (
+          tier.certificate &&
+          [...shapeCounts.values()].some((count) => count > cap)
+        ) {
           skip = "shape";
           continue;
         }
