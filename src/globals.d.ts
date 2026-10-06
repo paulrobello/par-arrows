@@ -18,6 +18,7 @@ interface Window {
     getLevel(): import("./core/types").LevelDefinition;
     activate(arrowId: string, endpoint?: import("./core/types").Endpoint): void;
     render(): void;
+    renderStats(): { calls: number; triangles: number };
     orbit(deltaX: number, deltaY: number): void;
   };
 }

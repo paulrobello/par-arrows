@@ -1555,6 +1555,7 @@ export class ParArrowsApp {
         activate: (id, endpoint = "head") =>
           this.attempt({ arrowId: id, endpoint }),
         render: () => this.renderer.render(),
+        renderStats: () => this.renderer.renderStats(),
         orbit: (deltaX, deltaY) => this.renderer.orbit(deltaX, deltaY),
       };
     }
