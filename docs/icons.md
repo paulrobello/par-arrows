@@ -7,7 +7,7 @@ The suite uses the game's cube, flat arrow, ink, ice, and blue visual language. 
 | Use | Files |
 | --- | --- |
 | Browser icon | `public/favicon.ico`, `public/favicon.svg` |
-| Raster favicons | `public/favicon-16x16.png`, `favicon-32x32.png`, `favicon-48x48.png`, `favicon-64x64.png`, `favicon-128x128.png` |
+| Raster favicons | `public/favicon-16x16.png`, `public/favicon-32x32.png`, `public/favicon-48x48.png`, `public/favicon-64x64.png`, `public/favicon-128x128.png` |
 | Apple home screen | `public/apple-touch-icon.png` (180 × 180) |
 | Standard PWA | `public/icon-192.png`, `public/icon-512.png`, `public/icon.svg` |
 | Maskable PWA | `public/icon-maskable-192.png`, `public/icon-maskable-512.png` |
