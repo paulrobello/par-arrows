@@ -5,6 +5,7 @@ import {
   LOCK_CORE_MARKER,
   MIRROR_CORE_MARKER,
 } from "../src/content/procedural";
+import type { ArrowDefinition, LevelDefinition } from "../src/core/types";
 import { arrowTrack } from "../src/core/stops";
 import { cellKey } from "../src/core/topology";
 import { validateLevel } from "../src/core/validation";
@@ -26,6 +27,18 @@ const SEEDED = [
   "-dir-",
 ];
 
+// A double's certified move is its tail, so its lane runs from the reversed path.
+function coreLaneKeys(
+  level: LevelDefinition,
+  arrow: ArrowDefinition,
+): string[] {
+  const oriented =
+    arrow.kind === "double"
+      ? { ...arrow, path: [...arrow.path].reverse() }
+      : arrow;
+  return arrowTrack(level, oriented).slice(arrow.path.length).map(cellKey);
+}
+
 const LANE_MECHANICS = [
   { name: "wormhole", marker: "-wormhole-", ids: [44, 48, 49, 53] },
   { name: "fragile", marker: FRAGILE_CORE_MARKER, ids: [46, 52, 57] },
@@ -46,9 +59,7 @@ describe("mechanic lanes join the dependency fill", () => {
         );
         expect(coreArrows.length).toBeGreaterThan(0);
         const laneKeys = new Set(
-          coreArrows.flatMap((arrow) =>
-            arrowTrack(level, arrow).slice(arrow.path.length).map(cellKey),
-          ),
+          coreArrows.flatMap((arrow) => coreLaneKeys(level, arrow)),
         );
         const fill = level.arrows.filter(
           (arrow) => !SEEDED.some((marker) => arrow.id.includes(marker)),
@@ -60,5 +71,51 @@ describe("mechanic lanes join the dependency fill", () => {
         expect(validateLevel(level).valid).toBe(true);
       }
     });
+  }
+});
+
+// Measured 2026-10-08 over each mechanic's first level to 200, stride 3
+// (placed cores only); floor is measured minus 0.05.
+const COVERAGE_FLOOR: Record<(typeof LANE_MECHANICS)[number]["name"], number> =
+  {
+    wormhole: 0.95, // 1.00 measured (28/28)
+    fragile: 0.95, // 1.00 measured (29/29)
+    lock: 0.95, // 1.00 measured (26/26)
+    mirror: 0.95, // 1.00 measured (26/26)
+    leap: 0.95, // 1.00 measured (25/25)
+    double: 0.91, // 0.96 measured (25/26), tail lane
+    directional: 0.95, // 1.00 measured (42/42)
+  };
+
+describe("natural lane blocking coverage", () => {
+  for (const mechanic of LANE_MECHANICS) {
+    test(`${mechanic.name}: nearly every placed core lane carries a fill body`, () => {
+      let placed = 0;
+      let blocked = 0;
+      for (let id = mechanic.ids[0]; id <= 200; id += 3) {
+        const level = cachedLevel(id);
+        const coreArrows = level.arrows.filter((arrow) =>
+          arrow.id.includes(mechanic.marker),
+        );
+        if (coreArrows.length === 0) continue;
+        placed += 1;
+        const keys = new Set(
+          coreArrows.flatMap((arrow) => coreLaneKeys(level, arrow)),
+        );
+        const fill = level.arrows.filter(
+          (arrow) => !SEEDED.some((marker) => arrow.id.includes(marker)),
+        );
+        if (
+          fill.some((arrow) =>
+            arrow.path.some((cell) => keys.has(cellKey(cell))),
+          )
+        )
+          blocked += 1;
+      }
+      expect(placed).toBeGreaterThan(20);
+      expect(blocked / placed).toBeGreaterThanOrEqual(
+        COVERAGE_FLOOR[mechanic.name],
+      );
+    }, 600_000);
   }
 });
