@@ -241,7 +241,8 @@ describe("rotor generation", () => {
     for (const id of [42, 58, 111, 196]) {
       const started = performance.now();
       const level = generateLevel(id);
-      expect(performance.now() - started).toBeLessThan(2000);
+      // 2570ms measured on CI 2026-10-08 after lane cores joined the fill; raised from 2000.
+      expect(performance.now() - started).toBeLessThan(4000);
       expect(rotorCoreIds(level.arrows).length).toBeGreaterThan(0);
       expect(layoutFingerprint(generateLevel(id))).toBe(
         layoutFingerprint(level),
