@@ -70,7 +70,7 @@ import { ROTOR_INTRO_LEVEL } from "./rotor-intro";
 import { STOP_INTRO_LEVEL } from "./stop-intro";
 import { WORMHOLE_INTRO_LEVEL } from "./wormhole-intro";
 
-export const GENERATOR_VERSION = 10;
+export const GENERATOR_VERSION = 11;
 
 /** Absolute arrow ceiling: the largest fill target `getLevelConfig` returns. */
 export const MAX_GENERATED_ARROWS = 200;
@@ -5090,22 +5090,16 @@ export function generateLevel(id: number): LevelDefinition {
           if (shape) shapeCounts.set(shape, (shapeCounts.get(shape) ?? 1) - 1);
         };
         // Lead arrows clear first, in certificate order; they are not graph
-        // nodes. Their bodies are never fill cells. A fill route may cross a
-        // double, directional or wormhole lead body, which is gone before
-        // the fill moves; park and flip bodies stay ray-forbidden through
-        // the park tracks and the flip region below.
+        // nodes. Their bodies are never fill cells. Leads are the park core,
+        // the directional and double cores (until they join the graph), and
+        // the flip or rotor region. The five lane cores are graph nodes, so
+        // their bodies block fill cells as owner cells and their lanes are
+        // fill-blockable like any starter's.
         const leadIds = new Set<string>([
           ...(core?.arrows ?? []).map((arrow) => arrow.id),
           ...(directionalSpot?.arrows ?? []).map((arrow) => arrow.id),
           ...(double?.arrows ?? []).map((arrow) => arrow.id),
-          ...wormholes.flatMap((entry) =>
-            entry.arrows.map((arrow) => arrow.id),
-          ),
           ...(flip?.arrows ?? []).map((arrow) => arrow.id),
-          ...(fragile?.arrows ?? []).map((arrow) => arrow.id),
-          ...(lock?.arrows ?? []).map((arrow) => arrow.id),
-          ...(mirror?.arrows ?? []).map((arrow) => arrow.id),
-          ...(leap?.arrows ?? []).map((arrow) => arrow.id),
         ]);
         const leadBodies = new Set(
           arrows
@@ -5124,10 +5118,10 @@ export function generateLevel(id: number): LevelDefinition {
             ...(flip ? flip.spots : []),
           ],
         };
-        // Entangled cores: the region core and any lane core that seeded
-        // blockers. Their arrows and blockers are graph nodes, so they leave
-        // the lead set for emission and the certificate while `leadIds`
-        // still reserves their bodies and tracks.
+        // Entangled cores: the region core (only when it seeded blockers)
+        // and every lane core, whether or not blockers seeded. Their arrows
+        // and blockers are graph nodes, so they leave the lead set for
+        // emission and the certificate.
         const laneCores: {
           kind: LaneKind;
           arrows: readonly ArrowDefinition[];
@@ -5226,7 +5220,7 @@ export function generateLevel(id: number): LevelDefinition {
           });
         const entangledTargets = new Map<string, MoveTarget>();
         const priorBlockerKeys = new Set<string>();
-        for (const lane of lanesOff ? [] : laneCores) {
+        for (const lane of laneCores) {
           const laneBoard: LevelDefinition = {
             ...lane.coreBoard,
             arrows: [...lane.arrows],
@@ -5235,33 +5229,34 @@ export function generateLevel(id: number): LevelDefinition {
               : {}),
             ...(core ? { stops: core.stops } : {}),
           };
-          const blockers = seedLaneBlockers({
-            kind: lane.kind,
-            id,
-            restart,
-            board: laneBoard,
-            coreArrows: lane.arrows,
-            certificate: lane.certificate,
-            coreBoard: laneBoard,
-            occupied,
-            parkTracks: parkTrackKeys,
-            // Earlier lanes' blockers are not in `occupied`, so their bodies
-            // and routes are reserved here to keep lanes from colliding.
-            reservedCells: new Set([...lane.cellKeys, ...priorBlockerKeys]),
-            // Lead bodies and tracks are gone before any graph node moves,
-            // so a blocker route may cross them; the flip region stays fenced.
-            crossable: new Set(
-              [...occupied].filter(
-                (key) => !(flip?.cells ?? new Set()).has(key),
-              ),
-            ),
-            inBounds: (cell) =>
-              cell.x >= 0 &&
-              cell.y >= 0 &&
-              cell.x < candidateLevel.gridSize &&
-              cell.y < candidateLevel.gridSize,
-          });
-          if (blockers.length === 0) continue;
+          const blockers = lanesOff
+            ? []
+            : seedLaneBlockers({
+                kind: lane.kind,
+                id,
+                restart,
+                board: laneBoard,
+                coreArrows: lane.arrows,
+                certificate: lane.certificate,
+                coreBoard: laneBoard,
+                occupied,
+                parkTracks: parkTrackKeys,
+                // Earlier lanes' blockers are not in `occupied`, so their bodies
+                // and routes are reserved here to keep lanes from colliding.
+                reservedCells: new Set([...lane.cellKeys, ...priorBlockerKeys]),
+                // Lead bodies and tracks are gone before any graph node moves,
+                // so a blocker route may cross them; the flip region stays fenced.
+                crossable: new Set(
+                  [...occupied].filter(
+                    (key) => !(flip?.cells ?? new Set()).has(key),
+                  ),
+                ),
+                inBounds: (cell) =>
+                  cell.x >= 0 &&
+                  cell.y >= 0 &&
+                  cell.x < candidateLevel.gridSize &&
+                  cell.y < candidateLevel.gridSize,
+              });
           for (const blocker of blockers) {
             for (const cell of blocker.path)
               priorBlockerKeys.add(cellKey(cell));
@@ -5283,7 +5278,9 @@ export function generateLevel(id: number): LevelDefinition {
               entangledTargets.set(entry.arrowId, entry);
           }
         }
-        lanesSeeded = entangled.some((entry) => entry.kind !== "region");
+        lanesSeeded = entangled.some(
+          (entry) => entry.kind !== "region" && entry.blockers.length > 0,
+        );
         const entangledKinds = new Set(entangled.map((entry) => entry.kind));
         const flipEntangled = entangledKinds.has("region");
         const entangledBlockers = entangled.flatMap((entry) => entry.blockers);
@@ -5303,6 +5300,32 @@ export function generateLevel(id: number): LevelDefinition {
           ...[...occupied].filter((key) => !bodyKeys.has(key)),
           ...parkTrackKeys,
         ]);
+        // Lane cores are graph nodes, so their lanes are ordinary routes a
+        // fill body may block. Only the mechanic cells stay reserved; lead
+        // tracks and blocker routes are re-added below.
+        {
+          const laneBoard = {
+            ...nodeBoard,
+            ...(wormholes.length > 0
+              ? { wormholes: wormholes.map((entry) => entry.wormhole) }
+              : {}),
+            ...(fragile ? { fragile: [fragile.cell] } : {}),
+            ...(lock ? { locks: [lock.lock] } : {}),
+            ...(mirror ? { mirrors: [mirror.mirror] } : {}),
+            ...(leap ? { leaps: [leap.pad] } : {}),
+          };
+          const mechanicCells = new Set(
+            laneCores.flatMap((lane) => [...lane.cellKeys]),
+          );
+          for (const lane of laneCores)
+            for (const arrow of lane.arrows)
+              for (const probe of flipHeadingProbes(laneBoard))
+                for (const cell of arrowTrack(probe, arrow)) {
+                  const key = cellKey(cell);
+                  if (!mechanicCells.has(key) && !parkTrackKeys.has(key))
+                    forbiddenBody.delete(key);
+                }
+        }
         // Cells no fill route may cross: circles, which stop a route; spots
         // placed so far, which bend it; portal ends, which move it; the flip
         // region, whose closure counts every cell an arrow can reach; and

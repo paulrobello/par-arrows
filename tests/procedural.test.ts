@@ -126,8 +126,8 @@ function normalizedShapeSignature(
 }
 
 describe("generated double arrows", () => {
-  test("uses v10 generation, keeps the authored seeds, and the planned frequency curve", () => {
-    expect(GENERATOR_VERSION).toBe(10);
+  test("uses v11 generation, keeps the authored seeds, and the planned frequency curve", () => {
+    expect(GENERATOR_VERSION).toBe(11);
     expect(AUTHORED_LEVEL_IDS).toEqual([
       1, 5, 11, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60,
     ]);
@@ -207,7 +207,7 @@ describe("generated double arrows", () => {
 
 describe("runtime campaign generator", () => {
   test("has a versioned stable seed and rejects unsafe ids", () => {
-    expect(GENERATOR_VERSION).toBe(10);
+    expect(GENERATOR_VERSION).toBe(11);
     expect(seedForLevel(1_000_000)).toBe(seedForLevel(1_000_000));
     expect(seedForLevel(1_000_000)).not.toBe(seedForLevel(1_000_001));
     for (const id of [0, -1, 1.5, Number.MAX_SAFE_INTEGER, MAX_LEVEL_ID + 1])
@@ -221,28 +221,28 @@ describe("runtime campaign generator", () => {
     }
   }, 30_000);
 
-  test("pins v10 geometry for early generated levels and keeps the authored cubes", () => {
-    // Re-rolled for generator v10.
+  test("pins v11 geometry for early generated levels and keeps the authored cubes", () => {
+    // Re-rolled for generator v11.
     expect(geometryHash(generateLevel(2))).toBe(
-      "cf2f92bda9b5b1a9480f8aaf12afbbbc8d3180712c4cc10ab7718c8bc0ac507c",
+      "8873698cd5bc9a4615cfd425fa1fe72e8ab7a9b6a16ec360f3fadb79115b6423",
     );
     expect(geometryHash(generateLevel(10))).toBe(
-      "0bed69470ffe8eb628f51a0c6e31f46008e720f5687c80f17bcd63fc53e9702a",
+      "5abd7e2f8e6886d7767af4f54e1322ea49bce6608d0ae8e7c8633425a132c985",
     );
     expect(geometryHash(generateLevel(12))).toBe(
-      "58ef432b859859849aeff9004a7dd3e06955d72be7f31127ecc43692ce4fef33",
+      "c394d47d4d0611b6dbede804565bbd3f1c774f844fb098684d0ff1e4a2e65fa4",
     );
     expect(geometryHash(generateLevel(13))).toBe(
-      "0d9e3439637e03909bce98cafd27762e02ab5cce21f2c314971fab8078fb5be3",
+      "10de04197b7d2c26217114ffeb369a815d8fc56b5b5d01980842eec1170dc045",
     );
     expect(geometryHash(generateLevel(14))).toBe(
-      "6ee76798966de9cc6bd19b6bbdd5096dd4899a50f4fa42dcef2999608cea35fe",
+      "63d63ee2dc223b7c1521e483d611e066a87086259403006a551c1ee66da42eb9",
     );
     expect(geometryHash(generateLevel(3))).toBe(
-      "85c87297ba08873c5c4ae32928903b3c15c58471411372c13d68570cf5167f70",
+      "bd8d7ce45d5fa1648c6d886fac6de9548249748339e52e5949b83f57f5f64f0e",
     );
     expect(geometryHash(generateLevel(4))).toBe(
-      "7ba22f8ad4e119aa3ff883ca0fbab432846c6492039ef85baaed8dde7a9adea6",
+      "11a3bc7c7cd1b3fb71f2e68e384cc1069924272e821305167f77200a5097e8fa",
     );
     expect(generateLevel(5)).toBe(STOP_INTRO_LEVEL);
     expect(generateLevel(15)).toBe(OVERLAP_INTRO_LEVEL);
