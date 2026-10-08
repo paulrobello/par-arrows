@@ -22,6 +22,8 @@ const SEEDED = [
   "-flipb-",
   "-flip-",
   "-rotor-",
+  "-double-",
+  "-dir-",
 ];
 
 const LANE_MECHANICS = [
@@ -30,6 +32,8 @@ const LANE_MECHANICS = [
   { name: "lock", marker: LOCK_CORE_MARKER, ids: [64, 67, 70] },
   { name: "mirror", marker: MIRROR_CORE_MARKER, ids: [57, 67, 69] },
   { name: "leap", marker: LEAP_CORE_MARKER, ids: [61, 64, 69] },
+  { name: "double", marker: "-double-", ids: [34, 41, 51, 68] },
+  { name: "directional", marker: "-dir-", ids: [21, 24, 33, 62] },
 ] as const;
 
 describe("mechanic lanes join the dependency fill", () => {

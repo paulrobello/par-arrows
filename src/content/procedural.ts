@@ -4387,10 +4387,11 @@ function validateGenerated(
 }
 
 /**
- * Build a pure, reproducible level. Cores lead; every other arrow is a node
- * in an acyclic "must leave first" graph built by `dependencyFill`, and
+ * Build a pure, reproducible level. Only the parking core and the flip or
+ * rotor region lead; every other arrow, the mechanic cores included, is a
+ * node in an acyclic "must leave first" graph built by `dependencyFill`, and
  * `level.arrows` lists those nodes in reverse removal order ahead of the
- * cores, so the core certificates followed by the reversed node section are
+ * leads, so the lead certificates followed by the reversed node section are
  * a real no-mistake solution certificate. Levels carrying stop circles also
  * embed the parking core, whose circles and tracks are reserved from every
  * fill body so the park legs can never fail. A flip core's proven
@@ -4534,7 +4535,8 @@ export function generateLevel(id: number): LevelDefinition {
       // Lane blockers are optional: their reserved routes fence the fill, so
       // a restart that seeded any and then failed is retried once at the
       // same restart with lane seeding off. Lane streams share nothing with
-      // construction, so the retry is the exact unentangled construction and
+      // construction, so the retry is the exact no-seeded-blocker construction
+      // (cores stay graph nodes) and
       // entanglement never costs a core placement (measured 2026-10-05:
       // without the retry, blocker-fenced restarts failed coverage or depth
       // and the next restart dropped its wormholes, 0.789 to 0.706 placed).
@@ -5090,15 +5092,13 @@ export function generateLevel(id: number): LevelDefinition {
           if (shape) shapeCounts.set(shape, (shapeCounts.get(shape) ?? 1) - 1);
         };
         // Lead arrows clear first, in certificate order; they are not graph
-        // nodes. Their bodies are never fill cells. Leads are the park core,
-        // the directional and double cores (until they join the graph), and
-        // the flip or rotor region. The five lane cores are graph nodes, so
-        // their bodies block fill cells as owner cells and their lanes are
+        // nodes. Their bodies are never fill cells. Leads are the park core
+        // and the flip or rotor region. Every other core (the five lane
+        // cores, the double and the directional core) is a graph node, so
+        // its body blocks fill cells as an owner cell and its lane is
         // fill-blockable like any starter's.
         const leadIds = new Set<string>([
           ...(core?.arrows ?? []).map((arrow) => arrow.id),
-          ...(directionalSpot?.arrows ?? []).map((arrow) => arrow.id),
-          ...(double?.arrows ?? []).map((arrow) => arrow.id),
           ...(flip?.arrows ?? []).map((arrow) => arrow.id),
         ]);
         const leadBodies = new Set(
@@ -5278,6 +5278,26 @@ export function generateLevel(id: number): LevelDefinition {
               entangledTargets.set(entry.arrowId, entry);
           }
         }
+        if (double)
+          entangled.push({
+            kind: "double",
+            arrows: double.arrows,
+            blockers: [],
+            chain: certificateToChain(double.certificate),
+          });
+        if (directionalSpot)
+          entangled.push({
+            kind: "directional",
+            arrows: directionalSpot.arrows,
+            blockers: [],
+            chain: directionalSpot.arrows.map((arrow) => arrow.id),
+          });
+        // A core tap may name an endpoint (a double leaving by its tail),
+        // so the graph section replays the core's own entry, not its id.
+        for (const entry of double ? double.certificate : []) {
+          if (typeof entry !== "string")
+            entangledTargets.set(entry.arrowId, entry);
+        }
         lanesSeeded = entangled.some(
           (entry) => entry.kind !== "region" && entry.blockers.length > 0,
         );
@@ -5323,6 +5343,29 @@ export function generateLevel(id: number): LevelDefinition {
                 for (const cell of arrowTrack(probe, arrow)) {
                   const key = cellKey(cell);
                   if (!mechanicCells.has(key) && !parkTrackKeys.has(key))
+                    forbiddenBody.delete(key);
+                }
+          // The double and directional cores are graph nodes too, so their
+          // tracks (both ends of a double) release the same way; a static
+          // spot's own cell stays reserved.
+          const spotKeys = new Set(
+            nodeBoard.directionals.map((spot) => cellKey(spot.cell)),
+          );
+          for (const arrow of [
+            ...(double?.arrows ?? []),
+            ...(directionalSpot?.arrows ?? []),
+          ])
+            for (const path of arrow.kind === "double"
+              ? [arrow.path, [...arrow.path].reverse()]
+              : [arrow.path])
+              for (const probe of flipHeadingProbes(laneBoard))
+                for (const cell of arrowTrack(probe, { ...arrow, path })) {
+                  const key = cellKey(cell);
+                  if (
+                    !mechanicCells.has(key) &&
+                    !parkTrackKeys.has(key) &&
+                    !spotKeys.has(key)
+                  )
                     forbiddenBody.delete(key);
                 }
         }
@@ -5423,10 +5466,19 @@ export function generateLevel(id: number): LevelDefinition {
               id: arrow.id,
               arrows: [arrow],
               routeKeys: new Set(
-                flipHeadingProbes(entangledBoard).flatMap((probe) =>
-                  arrowTrack(probe, arrow)
-                    .slice(arrow.path.length)
-                    .map(cellKey),
+                (arrow.kind === "double"
+                  ? entangledTargets.get(arrow.id)?.endpoint === "tail"
+                    ? [[...arrow.path].reverse()]
+                    : entangledTargets.get(arrow.id)?.endpoint === "head"
+                      ? [arrow.path]
+                      : [arrow.path, [...arrow.path].reverse()]
+                  : [arrow.path]
+                ).flatMap((path) =>
+                  flipHeadingProbes(entangledBoard).flatMap((probe) =>
+                    arrowTrack(probe, { ...arrow, path })
+                      .slice(path.length)
+                      .map(cellKey),
+                  ),
                 ),
               ),
             })),
@@ -5727,10 +5779,12 @@ export function generateLevel(id: number): LevelDefinition {
           ...(entangledKinds.has("wormhole")
             ? []
             : wormholes.flatMap((entry) => entry.certificate)),
-          ...(double ? double.certificate : []),
+          ...(double && !entangledKinds.has("double")
+            ? double.certificate
+            : []),
           ...(core ? core.parkLegs : []),
           ...(core ? [...core.arrows].reverse().map((arrow) => arrow.id) : []),
-          ...(directionalSpot
+          ...(directionalSpot && !entangledKinds.has("directional")
             ? directionalSpot.arrows.map((arrow) => arrow.id)
             : []),
           ...[...arrows]
