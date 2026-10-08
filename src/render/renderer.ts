@@ -1785,6 +1785,9 @@ export class PuzzleRenderer {
           if (budget < natural)
             compressed = Math.max(KEY_FLIGHT_MIN_MS, budget);
         }
+        // A flight between cells on one face is already in view, so only a
+        // cross-face flight takes the camera with it.
+        const sameFace = route[0]!.face === route[route.length - 1]!.face;
         this.keyFlights.set(entry.id, {
           lockId: entry.id,
           path,
@@ -1792,7 +1795,7 @@ export class PuzzleRenderer {
           duration: compressed,
           elapsed: 0,
           pendingStart: shareAt(entry.step),
-          followCancelled: false,
+          followCancelled: sameFace,
           landed: false,
         });
       }
