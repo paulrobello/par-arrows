@@ -1032,7 +1032,7 @@ try {
   }
   assert.ok(ready, "Isolated server must start within 15 seconds");
   browser = await engine.launch({
-    headless: false,
+    headless: process.env.BROWSER_HEADLESS === "1",
     ...(engine === chromium && process.env.PAR_ARROWS_TEST_WINDOW_POSITION
       ? {
           args: [
