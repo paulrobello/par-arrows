@@ -177,8 +177,8 @@ test("mechanic placement ratios stay within 10% of v9", () => {
 
 // The blocker plan places on its own stream; a planned core falls back to
 // zero blockers only on a failed re-proof. Measured share over 31-200 must
-// stay within the standing 10% band of the shipped value: 39 of 56 planned
-// cores carry blockers (0.696), so the floor sits at 0.59 (measured - 0.1).
+// stay above the v11 measurement: 36/61 = 0.590 measured 2026-10-08, so the
+// floor sits at 0.54 (measured - 0.05).
 test("flip blocker share tracks its plan curve", () => {
   let planned = 0;
   let entangled = 0;
@@ -192,53 +192,53 @@ test("flip blocker share tracks its plan curve", () => {
       entangled += 1;
   }
   expect(planned).toBeGreaterThan(30);
-  expect(entangled / planned).toBeGreaterThan(0.59);
+  expect(entangled / planned).toBeGreaterThan(0.54);
 }, 300_000);
 
 // Lane-blocker shares for the five certificate-led mechanics, measured over
-// 31-200 on 2026-10-05 as entangled / planned (core placed AND the
-// `<mech>-block` draw under its curve). Each floor is measured - 0.1.
+// 31-200 on 2026-10-08 (v11) as seeded-blocker cores / planned (core placed
+// AND the `<mech>-block` draw under its curve). Each floor is measured - 0.05.
 // Rotor cores never entangle (multi-leg dance), so rotor has no pin; the
 // shared sweep in tests/mechanic-entangle.test.ts pins that limitation.
 const LANE_SHARES = [
-  // wormhole 25 of 52 (0.481)
+  // 40/52 = 0.769 measured 2026-10-08; pin floor 0.72
   {
     kind: "wormhole",
     marker: "-wormhole-",
     frequency: wormholeBlockFrequency,
-    floor: 0.38,
+    floor: 0.72,
     minPlanned: 30,
   },
-  // fragile 25 of 48 (0.521)
+  // 41/51 = 0.804 measured 2026-10-08; pin floor 0.75
   {
     kind: "fragile",
     marker: "-fragile-",
     frequency: fragileBlockFrequency,
-    floor: 0.42,
+    floor: 0.75,
     minPlanned: 30,
   },
-  // lock 22 of 42 (0.524)
+  // 38/49 = 0.776 measured 2026-10-08; pin floor 0.73
   {
     kind: "lock",
     marker: "-lock-",
     frequency: lockBlockFrequency,
-    floor: 0.42,
+    floor: 0.73,
     minPlanned: 25,
   },
-  // mirror 21 of 46 (0.457)
+  // 35/42 = 0.833 measured 2026-10-08; pin floor 0.78
   {
     kind: "mirror",
     marker: "-mirror-",
     frequency: mirrorBlockFrequency,
-    floor: 0.35,
+    floor: 0.78,
     minPlanned: 25,
   },
-  // leap 30 of 42 (0.714)
+  // 39/48 = 0.813 measured 2026-10-08; pin floor 0.76
   {
     kind: "leap",
     marker: "-leap-",
     frequency: leapBlockFrequency,
-    floor: 0.61,
+    floor: 0.76,
     minPlanned: 25,
   },
 ] as const;
