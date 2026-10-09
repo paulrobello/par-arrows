@@ -1,7 +1,7 @@
 # Mechanic Lanes Join the Dependency Fill — Design Spec
 
 Date: 2026-10-08
-Status: Proposed
+Status: Implemented
 Scope: generated levels 2–200 for seven mechanics (directional, double, wormhole, fragile, lock, mirror, leap). Authored intro cubes unchanged. Flip/rotor regions and park cores keep their fences.
 
 ## Problem
@@ -67,3 +67,10 @@ Measure per mechanic over its id range: the share of placed cores whose lane car
 - Restart and give-up rates may shift (more edges near cores); bands are re-measured, fallback ladders unchanged in kind.
 - Closure rises (more prerequisites), making the depth gate easier; floors stay, measured bands re-pinned.
 - Generation cost: node-cores add routeKey sets to the fill's edge checks. Entangled boards already pay this on roughly half of planned cores, so the budget should hold — verified by measurement in implementation, not assumed.
+
+## Errata (implementation, 2026-10-08)
+
+Two deviations from this spec were upheld in review:
+
+1. Lane-release block. Dropping the lead-track `forbiddenBody` additions was not enough: `occupied` still holds each core's `.cells`, so an occupied lane stayed reserved through `leadIds` alone and the coverage test stayed red. Task 1 added an explicit pass after `forbiddenBody` is built that deletes the node cores' tracks (all flip-heading probes) from it, except mechanic cells, park tracks and static spot cells; Task 2 extended it to the double and directional cores.
+2. Double route traced from one endpoint. Section 1 says a double's route keys union both endpoints. That made `dependencyFill` detect a cycle on every restart (the head route hits blocker b's body while b's route runs through the double), so no double placed at all. The double node traces only the certificate-named endpoint (the tail); the same 15 double ids placed as before. A fill body on the head-end route therefore creates no must-leave-first edge, which is harmless because only the tail end moves first.

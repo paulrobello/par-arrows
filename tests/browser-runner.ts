@@ -1032,7 +1032,12 @@ try {
   }
   assert.ok(ready, "Isolated server must start within 15 seconds");
   browser = await engine.launch({
-    headless: process.env.BROWSER_HEADLESS === "1",
+    // Headless by default; BROWSER_HEADED=1 opens a window. On darwin the
+    // `channel: "chrome"` spread below makes headless the full-binary new
+    // headless, which renders on the real GPU. Without a full-binary channel
+    // Playwright's headless is the legacy chrome-headless-shell, which
+    // software-renders through SwiftShader and is not valid pixel evidence.
+    headless: process.env.BROWSER_HEADED !== "1",
     ...(engine === chromium && process.env.PAR_ARROWS_TEST_WINDOW_POSITION
       ? {
           args: [
