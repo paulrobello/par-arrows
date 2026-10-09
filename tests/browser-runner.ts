@@ -1031,6 +1031,13 @@ try {
     await Bun.sleep(100);
   }
   assert.ok(ready, "Isolated server must start within 15 seconds");
+  if (
+    process.env.BROWSER_HEADED !== "1" &&
+    !(process.platform === "darwin" && engine === chromium)
+  )
+    console.warn(
+      "Headless without the full-binary chrome channel uses the legacy chrome-headless-shell (SwiftShader): not valid pixel evidence. Set BROWSER_HEADED=1.",
+    );
   browser = await engine.launch({
     // Headless by default; BROWSER_HEADED=1 opens a window. On darwin the
     // `channel: "chrome"` spread below makes headless the full-binary new

@@ -5292,8 +5292,6 @@ export function generateLevel(id: number): LevelDefinition {
             blockers: [],
             chain: directionalSpot.arrows.map((arrow) => arrow.id),
           });
-        // A core tap may name an endpoint (a double leaving by its tail),
-        // so the graph section replays the core's own entry, not its id.
         for (const entry of double ? double.certificate : []) {
           if (typeof entry !== "string")
             entangledTargets.set(entry.arrowId, entry);
