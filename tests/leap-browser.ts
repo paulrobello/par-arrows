@@ -548,6 +548,12 @@ async function assertGeneratedCore(
     const leaperAt = certificate.findIndex((t) => t.arrowId === leaper);
     const blockerAt = certificate.findIndex((t) => t.arrowId === blocker);
     assert.ok(leaperAt >= 0 && blockerAt > leaperAt, "The leaper first");
+    assert.ok(
+      certificate
+        .slice(0, leaperAt)
+        .some((t) => !t.arrowId.includes(LEAP_CORE_MARKER)),
+      "A non-core arrow precedes the leaper in the certificate",
+    );
     for (const target of certificate.slice(0, leaperAt + 1)) {
       await activate(page, target.arrowId, target.endpoint);
     }

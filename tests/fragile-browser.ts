@@ -806,6 +806,12 @@ async function assertGeneratedCore(
     const crosserAt = certificate.findIndex((t) => t.arrowId === crosser);
     const doubleAt = certificate.findIndex((t) => t.arrowId === double);
     assert.ok(crosserAt >= 0 && doubleAt > crosserAt);
+    assert.ok(
+      certificate
+        .slice(0, crosserAt)
+        .some((t) => !t.arrowId.includes(FRAGILE_CORE_MARKER)),
+      "A non-core arrow precedes the crosser in the certificate",
+    );
     for (const target of certificate.slice(0, crosserAt + 1)) {
       await activate(page, target.arrowId, target.endpoint);
     }

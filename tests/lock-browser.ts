@@ -10,6 +10,11 @@ import {
   lockCorePlanned,
 } from "../src/content/procedural";
 import { cellKey, cellToWorld, faceNormal } from "../src/core/topology";
+import {
+  applyMove,
+  createGameState,
+  simulateMove,
+} from "../src/core/game-state";
 import { solveLevelTargets } from "../src/core/validation";
 import type { Cell, FaceId } from "../src/core/types";
 import { THEME_PALETTES } from "../src/render/renderer";
@@ -680,9 +685,46 @@ async function assertGeneratedCore(
     const keyAt = certificate.findIndex((t) => t.arrowId === keyArrow);
     const openerAt = certificate.findIndex((t) => t.arrowId === opener);
     assert.ok(keyAt >= 0 && openerAt > keyAt, "The key arrow leaves first");
-    for (const target of certificate.slice(0, keyAt + 1)) {
+    assert.ok(
+      certificate
+        .slice(0, keyAt)
+        .some((t) => !t.arrowId.includes(LOCK_CORE_MARKER)),
+      "A non-core arrow precedes the key arrow in the certificate",
+    );
+    for (const target of certificate.slice(0, keyAt)) {
       await activate(page, target.arrowId, target.endpoint);
     }
+    // Just before the key arrow moves, the opener's first tap is the free
+    // gated rewind when its lane is clear to the gate. A lane blocker still
+    // on the board makes it an ordinary collision instead, which would cost
+    // a life, so that case is asserted explicitly and not tapped.
+    let before = createGameState(level);
+    for (const target of certificate.slice(0, keyAt)) {
+      const result = simulateMove(
+        level,
+        before,
+        target.arrowId,
+        target.endpoint,
+      );
+      before = applyMove(level, before, result);
+    }
+    const openerKind = simulateMove(level, before, opener).kind;
+    assert.ok(
+      openerKind === "gated" || openerKind === "blocked",
+      `The opener meets the closed gate or a lane blocker (${openerKind})`,
+    );
+    if (openerKind === "gated") {
+      await activate(page, opener);
+      current = await state(page);
+      assert.ok(current.remainingIds.includes(opener), "The opener rewinds");
+      assert.equal(current.lives, level.lives, "A gated rewind is free");
+      assert.deepEqual(current.failedIds, []);
+    } else {
+      console.log(
+        `lock: level ${id} opener lane holds a blocker before the key, so no free rewind is tapped`,
+      );
+    }
+    await activate(page, keyArrow);
     current = await state(page);
     assert.ok(current.remainingIds.includes(opener), "The opener waits");
     assert.ok(!current.remainingIds.includes(keyArrow));

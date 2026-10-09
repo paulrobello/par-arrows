@@ -575,8 +575,26 @@ async function assertGeneratedCore(
       positions.every((at) => at >= 0),
       "Both core arrows are certified",
     );
-    for (const target of certificate.slice(0, Math.max(...positions) + 1)) {
+    assert.ok(
+      certificate
+        .slice(0, Math.min(...positions))
+        .some((t) => !t.arrowId.includes(MIRROR_CORE_MARKER)),
+      "A non-core arrow precedes the core arrows in the certificate",
+    );
+    for (const [index, target] of certificate
+      .slice(0, Math.max(...positions) + 1)
+      .entries()) {
       await activate(page, target.arrowId, target.endpoint);
+      current = await state(page);
+      assert.ok(
+        !current.remainingIds.includes(target.arrowId),
+        `Certificate step ${index} (${target.arrowId}) leaves`,
+      );
+      assert.equal(
+        current.lives,
+        level.lives,
+        `Certificate step ${index} (${target.arrowId}) costs no life`,
+      );
     }
     current = await state(page);
     assert.ok(
