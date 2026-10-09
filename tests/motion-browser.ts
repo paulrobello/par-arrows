@@ -175,7 +175,7 @@ export async function assertConsistentMotion(
       if (fixture.blocked) {
         await page.evaluate(
           (milliseconds) => window.advanceTime?.(milliseconds),
-          before.duration * 0.7 - after.elapsed,
+          before.duration * 0.7 + (lead.anticipation ?? 0) - after.elapsed,
         );
         const returning = await sample(page);
         await page.evaluate(

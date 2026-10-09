@@ -10,6 +10,7 @@ import {
   mirrorCorePlanned,
 } from "../src/content/procedural";
 import { cellKey, cellToWorld, faceNormal } from "../src/core/topology";
+import { solveLevelTargets } from "../src/core/validation";
 import type { Cell, FaceId } from "../src/core/types";
 import { THEME_PALETTES } from "../src/render/renderer";
 import { waitForReady } from "./runtime-fixtures";
@@ -563,15 +564,25 @@ async function assertGeneratedCore(
       path: `${output}/mirror/02-level${id}-start.png`,
     });
 
-    await activate(page, north);
+    // Lane blockers entangle the core, so replay the solver's zero-life
+    // order; either face-off arrow may go first.
+    const certificate = solveLevelTargets(level);
+    assert.ok(certificate, `Level ${id} is solvable`);
+    const positions = [north, south].map((arrowId) =>
+      certificate.findIndex((t) => t.arrowId === arrowId),
+    );
+    assert.ok(
+      positions.every((at) => at >= 0),
+      "Both core arrows are certified",
+    );
+    for (const target of certificate.slice(0, Math.max(...positions) + 1)) {
+      await activate(page, target.arrowId, target.endpoint);
+    }
     current = await state(page);
     assert.ok(
       !current.remainingIds.includes(north),
       "The northbound core arrow leaves through the mirror",
     );
-    assert.equal(current.lives, level.lives);
-    await activate(page, south);
-    current = await state(page);
     assert.ok(
       !current.remainingIds.includes(south),
       "The southbound core arrow leaves through the mirror",

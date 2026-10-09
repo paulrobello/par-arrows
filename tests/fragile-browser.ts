@@ -6,6 +6,7 @@ import { PerspectiveCamera, Vector3 } from "three";
 import { FRAGILE_INTRO_LEVEL } from "../src/content/fragile-intro";
 import { FRAGILE_CORE_MARKER, generateLevel } from "../src/content/procedural";
 import { cellKey, cellToWorld, faceNormal } from "../src/core/topology";
+import { solveLevelTargets } from "../src/core/validation";
 import type { Cell, FaceId } from "../src/core/types";
 import { THEME_PALETTES } from "../src/render/renderer";
 import { waitForReady } from "./runtime-fixtures";
@@ -15,7 +16,7 @@ const DOUBLE = "fragile-intro-double";
 const BRIDGE: Cell = { face: "front", x: 1, y: 1 };
 const BRIDGE_KEY = cellKey(BRIDGE);
 /** The first generated id that places a fragile core. */
-const GENERATED_LEVEL = 49;
+const GENERATED_LEVEL = 46;
 
 interface FragileText {
   cell: string;
@@ -798,7 +799,16 @@ async function assertGeneratedCore(
       path: `${output}/fragile/08-level${GENERATED_LEVEL}-start.png`,
     });
 
-    await activate(page, crosser);
+    // Lane blockers entangle the core, so the certificate clears the arrows
+    // ahead of the crosser first.
+    const certificate = solveLevelTargets(level);
+    assert.ok(certificate, `Level ${GENERATED_LEVEL} is solvable`);
+    const crosserAt = certificate.findIndex((t) => t.arrowId === crosser);
+    const doubleAt = certificate.findIndex((t) => t.arrowId === double);
+    assert.ok(crosserAt >= 0 && doubleAt > crosserAt);
+    for (const target of certificate.slice(0, crosserAt + 1)) {
+      await activate(page, target.arrowId, target.endpoint);
+    }
     current = await state(page);
     assert.ok(!current.remainingIds.includes(crosser));
     assert.deepEqual(current.fragile, [{ cell: key, collapsed: true }]);
@@ -818,7 +828,9 @@ async function assertGeneratedCore(
       `The generated hole shows its frame (${looks.rim})`,
     );
 
-    await activate(page, double, "tail");
+    for (const target of certificate.slice(crosserAt + 1, doubleAt + 1)) {
+      await activate(page, target.arrowId, target.endpoint);
+    }
     current = await state(page);
     assert.ok(!current.remainingIds.includes(double));
     assert.deepEqual(current.fallenIds, []);

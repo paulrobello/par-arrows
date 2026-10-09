@@ -1699,15 +1699,14 @@ try {
   await assertLevelPreview(browser, url, output);
   await assertWrappingEdges(browser, url, output, {
     // The dimming fixture needs a cube whose sole wrapping pair is the
-    // front-east/right-west seam (level 81, no wormholes whose orange ring
-    // would count as seam yellow). The movement fixture needs a
-    // wrap-crossing arrow that exits on the full board and one that is
-    // blocked; level 81 lost its exiting crossing when v10 rebuilt the
-    // board, level 37 lost it when the self-passage rule rebuilt its board,
-    // and level 42 lost it when wormhole cores gained their far-side
-    // blocker, so movement and rebound moved to level 22.
-    dimmingLevelId: 81,
-    movementLevelId: 22,
+    // front-east/right-west seam, with no wormholes whose orange ring would
+    // count as seam yellow (level 22; 63 is the next). The movement fixture
+    // needs a wrap-crossing arrow that exits on the full board and the
+    // rebound fixture one that is blocked. Under generator v11 the first
+    // exiting crossing is on level 11, and level 22's crossings are all
+    // blocked, so dimming and rebound stay on 22 and movement is level 11.
+    dimmingLevelId: 22,
+    movementLevelId: 11,
     reboundLevelId: 22,
   });
   await assertVersionReload(page);

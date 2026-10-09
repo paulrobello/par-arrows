@@ -6,13 +6,14 @@ import type { LevelDefinition } from "../src/core/types";
 import { waitForReady } from "./runtime-fixtures";
 
 /**
- * Levels the sweep runs over. The first is a sparse early cube with a
- * colliding arrow within 2 x OFFSET_PX of a safe one, which the aimed-press
- * check needs (level 2 no longer has one). The second is the densest
- * generated grid: the first cube at both the 18 x 18 grid and the 200-arrow
- * cap.
+ * Levels the sweep runs over. The first is the first sparse early cube (3 to
+ * 12) with a colliding arrow within 2 x OFFSET_PX of a safe one, which the
+ * aimed-press check needs; a generator re-roll moves which id that is, so it
+ * is scanned for. The second is the densest generated grid: the first cube at
+ * both the 18 x 18 grid and the 200-arrow cap.
  */
-const LEVEL_IDS = [3, 68] as const;
+const EARLY_CANDIDATES = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12] as const;
+const DENSE_LEVEL = 68;
 /** How far off an arrow a finger may land and still mean that arrow. */
 const OFFSET_PX = 7;
 /** Directions probed around each arrow. */
@@ -119,7 +120,35 @@ export async function assertWidePickTargets(
       return selected;
     };
 
-    for (const levelId of LEVEL_IDS) {
+    let earlyId: number | undefined;
+    for (const candidate of EARLY_CANDIDATES) {
+      await loadLevel(page, candidate);
+      const candidateLevel = generateLevel(candidate);
+      const candidateState = createGameState(candidateLevel);
+      const candidatePoints = (await snapshot(page))
+        .visibleProjectedArrowPositions;
+      const hasContested = candidatePoints.some(
+        (point) =>
+          !isSafe(candidateLevel, candidateState, point.id) &&
+          candidatePoints.some(
+            (other) =>
+              other.id !== point.id &&
+              isSafe(candidateLevel, candidateState, other.id) &&
+              Math.hypot(other.x - point.x, other.y - point.y) <= OFFSET_PX * 2,
+          ),
+      );
+      if (hasContested) {
+        earlyId = candidate;
+        break;
+      }
+    }
+    assert.ok(
+      earlyId !== undefined,
+      "Some early cube holds a colliding arrow beside a safe one",
+    );
+    console.log(`pick: sparse early cube is level ${earlyId}`);
+
+    for (const levelId of [earlyId, DENSE_LEVEL]) {
       await loadLevel(page, levelId);
       const level = generateLevel(levelId);
       const initial = createGameState(level);

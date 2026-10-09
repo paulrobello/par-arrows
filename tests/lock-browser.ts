@@ -10,6 +10,7 @@ import {
   lockCorePlanned,
 } from "../src/content/procedural";
 import { cellKey, cellToWorld, faceNormal } from "../src/core/topology";
+import { solveLevelTargets } from "../src/core/validation";
 import type { Cell, FaceId } from "../src/core/types";
 import { THEME_PALETTES } from "../src/render/renderer";
 import { waitForReady } from "./runtime-fixtures";
@@ -672,15 +673,23 @@ async function assertGeneratedCore(
     await faceCamera(page, lock.lock.face);
     await page.screenshot({ path: `${output}/lock/06-level${id}-start.png` });
 
-    await activate(page, opener);
+    // Lane blockers entangle the core, so replay the solver's zero-life
+    // order: the key arrow must precede the opener.
+    const certificate = solveLevelTargets(level);
+    assert.ok(certificate, `Level ${id} is solvable`);
+    const keyAt = certificate.findIndex((t) => t.arrowId === keyArrow);
+    const openerAt = certificate.findIndex((t) => t.arrowId === opener);
+    assert.ok(keyAt >= 0 && openerAt > keyAt, "The key arrow leaves first");
+    for (const target of certificate.slice(0, keyAt + 1)) {
+      await activate(page, target.arrowId, target.endpoint);
+    }
     current = await state(page);
-    assert.ok(current.remainingIds.includes(opener), "The opener is barred");
-    assert.equal(current.lives, level.lives);
-    await activate(page, keyArrow);
-    current = await state(page);
+    assert.ok(current.remainingIds.includes(opener), "The opener waits");
     assert.ok(!current.remainingIds.includes(keyArrow));
     assert.deepEqual(current.unlockedIds, [lock.id]);
-    await activate(page, opener);
+    for (const target of certificate.slice(keyAt + 1, openerAt + 1)) {
+      await activate(page, target.arrowId, target.endpoint);
+    }
     current = await state(page);
     assert.ok(!current.remainingIds.includes(opener));
     assert.equal(current.lives, level.lives);
@@ -735,8 +744,16 @@ async function assertCrossFaceFlight(
     await openCampaignLevel(page, id);
     let current = await state(page);
     assert.deepEqual(current.lockGlyphOpen, { [lock.id]: 0 });
-    // Activate without fast-forwarding the move, so the flight is sampled
-    // airborne during the key arrow's travel.
+    // Lane blockers entangle the core: clear the arrows ahead of the key
+    // arrow in the solver's order, then activate it without fast-forwarding
+    // so the flight is sampled airborne during its travel.
+    const certificate = solveLevelTargets(level);
+    assert.ok(certificate, `Level ${id} is solvable`);
+    const keyAt = certificate.findIndex((t) => t.arrowId === keyArrow);
+    assert.ok(keyAt >= 0, "The key arrow is in the certificate");
+    for (const target of certificate.slice(0, keyAt)) {
+      await activate(page, target.arrowId, target.endpoint);
+    }
     await page.evaluate((arrow) => {
       window.__PAR_ARROWS_TEST__?.activate(arrow, "head");
     }, keyArrow);

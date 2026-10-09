@@ -257,9 +257,9 @@ export async function runHintChecks(
   }
 
   const wrappedLevel = LEVELS[1];
-  const wrapped = wrappedLevel?.arrows.find(
-    (arrow) => new Set(arrow.path.map((cell) => cell.face)).size > 1,
-  );
+  const wrapped = wrappedLevel?.arrows
+    .filter((arrow) => new Set(arrow.path.map((cell) => cell.face)).size > 1)
+    .sort((a, b) => a.path.length - b.path.length)[0];
   assert.ok(wrappedLevel && wrapped);
   const removable = wrappedLevel.arrows.find(
     (arrow) =>

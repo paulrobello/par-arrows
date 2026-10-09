@@ -10,6 +10,7 @@ import {
   leapCorePlanned,
 } from "../src/content/procedural";
 import { cellKey, cellToWorld, faceNormal } from "../src/core/topology";
+import { solveLevelTargets } from "../src/core/validation";
 import type { Cell, FaceId } from "../src/core/types";
 import { THEME_PALETTES } from "../src/render/renderer";
 import { waitForReady } from "./runtime-fixtures";
@@ -540,19 +541,24 @@ async function assertGeneratedCore(
       path: `${output}/leap/02-level${id}-start.png`,
     });
 
-    await activate(page, leaper);
+    // Lane blockers entangle the core, so replay the solver's zero-life
+    // order and check both core arrows leave in it.
+    const certificate = solveLevelTargets(level);
+    assert.ok(certificate, `Level ${id} is solvable`);
+    const leaperAt = certificate.findIndex((t) => t.arrowId === leaper);
+    const blockerAt = certificate.findIndex((t) => t.arrowId === blocker);
+    assert.ok(leaperAt >= 0 && blockerAt > leaperAt, "The leaper first");
+    for (const target of certificate.slice(0, leaperAt + 1)) {
+      await activate(page, target.arrowId, target.endpoint);
+    }
     current = await state(page);
-    assert.ok(
-      !current.remainingIds.includes(leaper),
-      "The leaper leaves through the pad",
-    );
+    assert.ok(!current.remainingIds.includes(leaper), "The leaper leaves");
     assert.equal(current.lives, level.lives);
-    await activate(page, blocker);
+    for (const target of certificate.slice(leaperAt + 1, blockerAt + 1)) {
+      await activate(page, target.arrowId, target.endpoint);
+    }
     current = await state(page);
-    assert.ok(
-      !current.remainingIds.includes(blocker),
-      "The blocker follows over the vacated lane",
-    );
+    assert.ok(!current.remainingIds.includes(blocker), "The blocker leaves");
     assert.equal(current.lives, level.lives);
     await page.screenshot({
       path: `${output}/leap/03-level${id}-core-cleared.png`,
