@@ -5320,7 +5320,12 @@ export function generateLevel(id: number): LevelDefinition {
         ]);
         // Lane cores are graph nodes, so their lanes are ordinary routes a
         // fill body may block. Only the mechanic cells stay reserved; lead
-        // tracks and blocker routes are re-added below.
+        // tracks and blocker routes are re-added below. The flip or rotor
+        // region and every spot cell stay reserved too: a fill body's cells
+        // come from the backwards walk and tail growth, which check
+        // `forbiddenBody` but never `forbiddenRay`, so a released cell
+        // inside the region or on a spot would take a fill body outside
+        // every proof that reserved it.
         {
           const laneBoard = {
             ...nodeBoard,
@@ -5335,20 +5340,25 @@ export function generateLevel(id: number): LevelDefinition {
           const mechanicCells = new Set(
             laneCores.flatMap((lane) => [...lane.cellKeys]),
           );
+          const regionKeys = flip?.cells ?? new Set<string>();
+          const spotKeys = new Set(
+            nodeBoard.directionals.map((spot) => cellKey(spot.cell)),
+          );
           for (const lane of laneCores)
             for (const arrow of lane.arrows)
               for (const probe of flipHeadingProbes(laneBoard))
                 for (const cell of arrowTrack(probe, arrow)) {
                   const key = cellKey(cell);
-                  if (!mechanicCells.has(key) && !parkTrackKeys.has(key))
+                  if (
+                    !mechanicCells.has(key) &&
+                    !parkTrackKeys.has(key) &&
+                    !regionKeys.has(key) &&
+                    !spotKeys.has(key)
+                  )
                     forbiddenBody.delete(key);
                 }
           // The double and directional cores are graph nodes too, so their
-          // tracks (both ends of a double) release the same way; a static
-          // spot's own cell stays reserved.
-          const spotKeys = new Set(
-            nodeBoard.directionals.map((spot) => cellKey(spot.cell)),
-          );
+          // tracks (both ends of a double) release the same way.
           for (const arrow of [
             ...(double?.arrows ?? []),
             ...(directionalSpot?.arrows ?? []),
@@ -5362,6 +5372,7 @@ export function generateLevel(id: number): LevelDefinition {
                   if (
                     !mechanicCells.has(key) &&
                     !parkTrackKeys.has(key) &&
+                    !regionKeys.has(key) &&
                     !spotKeys.has(key)
                   )
                     forbiddenBody.delete(key);
