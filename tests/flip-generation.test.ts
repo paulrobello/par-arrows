@@ -205,19 +205,19 @@ describe("generated flip cores", () => {
     expect(constructFlip(empty, new Rng(1), new Set(), full)).toBeUndefined();
   }, 60_000);
 
-  // One pass over ids 2-200: every level matches the committed v8 baseline;
+  // Preserve the actual shared-spot regression independently of later
+  // optional-mechanic rerolls. Captured from level 124 at f8bda3eb.
   test("a later fragile reroll preserves shared two-spot safety", () => {
-    const level = cachedLevel(124);
-    const ids = new Set(flipCoreIds(level.arrows));
-    const core = {
-      ...level,
-      arrows: level.arrows.filter((arrow) => ids.has(arrow.id)),
-      stops: [],
-      directionals: (level.directionals ?? []).filter(
-        (spot) => spot.kind === "flip",
+    const core = JSON.parse(
+      readFileSync(
+        new URL(
+          "./fixtures/fragile-shared-flip-regression.json",
+          import.meta.url,
+        ),
+        "utf8",
       ),
-    };
-    expect(core.directionals.length).toBe(2);
+    ) as LevelDefinition;
+    expect(core.directionals!.length).toBe(2);
     const [first, second] = [...safetyWitnesses(core).values()];
     expect([...first!].some((id) => second!.has(id))).toBe(true);
   });

@@ -27,7 +27,8 @@ describe("mirror generation", () => {
         // Blocker ids end "-xblock-mirror<n>", so the "-mirror-" core filter never
         // picks a blocker up as a core arrow.
         expect(blocker.id.includes("-mirror-")).toBe(false);
-        expect(blocker.path.length).toBe(2);
+        expect(blocker.path.length).toBeGreaterThanOrEqual(3);
+        expect(blocker.path.length).toBeLessThanOrEqual(8);
         expect(blocker.path.some((cell) => coreTrack.has(cellKey(cell)))).toBe(
           true,
         );

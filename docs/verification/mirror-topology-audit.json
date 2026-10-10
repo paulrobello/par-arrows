@@ -1,0 +1,5418 @@
+{
+  "baseline": "f8bda3eb7f75c028a4f8f1e2df0a609b42284aae",
+  "planned": 71,
+  "placed": 63,
+  "changed": 64,
+  "unrelated": [],
+  "ordinaryBlocked": 62,
+  "multiFace": 34,
+  "rows": [
+    {
+      "id": 57,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "top",
+            "x": 10,
+            "y": 10
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r57-139",
+        "r57-34",
+        "r57-87",
+        "r57-134",
+        "r57-90",
+        "r57-73",
+        "r57-158",
+        "r57-45",
+        "r57-74"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r57-mirror-south",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 15
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r57-mirror-c1",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 12
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r57-mirror-c2",
+          "length": 11,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 7,
+            "y": 14
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r57-mirror-c3",
+          "length": 9,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 4,
+            "y": 13
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r57-mirror-north",
+          "length": 10,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 10
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 63,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "left",
+            "x": 14,
+            "y": 17
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r63-140",
+        "r63-29",
+        "r63-139",
+        "r63-100",
+        "r63-66",
+        "r63-165",
+        "r63-32"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r63-mirror-south",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 14,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r63-mirror-c1",
+          "length": 10,
+          "faces": ["left", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r63-mirror-c2",
+          "length": 9,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 1,
+            "y": 7
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r63-mirror-north",
+          "length": 5,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 17
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 67,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "top",
+            "x": 6,
+            "y": 11
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r67-160",
+        "r67-154",
+        "r67-104",
+        "r67-97",
+        "r67-89",
+        "r67-128",
+        "r67-102",
+        "r67-182",
+        "r67-147",
+        "r67-46",
+        "r67-86",
+        "r67-77",
+        "r67-16",
+        "r67-133"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r67-mirror-south",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r67-mirror-c1",
+          "length": 14,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 2
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r67-mirror-c2",
+          "length": 10,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 0,
+            "y": 6
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r67-mirror-north",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 1,
+            "y": 11
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 69,
+      "placed": false
+    },
+    {
+      "id": 72,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "front",
+            "x": 15,
+            "y": 7
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": ["r72-159", "r72-144", "r72-67", "r72-84", "r72-62"],
+      "seededBlockers": [
+        {
+          "id": "r72-xblock-mirror0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r72-mirror-south",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 10,
+            "y": 7
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r72-mirror-c1",
+          "length": 15,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r72-mirror-c2",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 13,
+            "y": 4
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r72-mirror-north",
+          "length": 9,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 3
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 74,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "top",
+            "x": 12,
+            "y": 12
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r74-104",
+        "r74-96",
+        "r74-81",
+        "r74-194",
+        "r74-186",
+        "r74-24",
+        "r74-97",
+        "r74-45",
+        "r74-72",
+        "r74-73"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r74-xblock-mirror0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r74-mirror-south",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 12
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r74-mirror-c1",
+          "length": 15,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 13
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r74-mirror-c2",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r74-mirror-c3",
+          "length": 9,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 7,
+            "y": 1
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r74-mirror-c4",
+          "length": 9,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 4
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r74-mirror-north",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 10
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 75,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "front",
+            "x": 13,
+            "y": 13
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r75-172",
+        "r75-77",
+        "r75-88",
+        "r75-122",
+        "r75-191",
+        "r75-63",
+        "r75-93",
+        "r75-105"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r75-xblock-mirror0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r75-mirror-south",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 13
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r75-mirror-c1",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 16
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r75-mirror-c2",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 15
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r75-mirror-c3",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 10
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r75-mirror-north",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 13,
+            "y": 9
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 77,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "right",
+            "x": 1,
+            "y": 12
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r77-148",
+        "r77-137",
+        "r77-66",
+        "r77-44",
+        "r77-30",
+        "r77-166",
+        "r77-105",
+        "r77-145",
+        "r77-25",
+        "r77-111",
+        "r77-127"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r77-xblock-mirror0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r77-mirror-south",
+          "length": 4,
+          "faces": ["front", "right"],
+          "head": {
+            "face": "right",
+            "x": 0,
+            "y": 12
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r77-mirror-c1",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 3,
+            "y": 13
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r77-mirror-c2",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 10
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r77-mirror-c3",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 7
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r77-mirror-north",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 1,
+            "y": 9
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 82,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "front",
+            "x": 5,
+            "y": 15
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r82-86",
+        "r82-130",
+        "r82-115",
+        "r82-160",
+        "r82-158",
+        "r82-71",
+        "r82-168",
+        "r82-173",
+        "r82-78",
+        "r82-164",
+        "r82-152",
+        "r82-110"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r82-mirror-south",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r82-mirror-c1",
+          "length": 16,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 13,
+            "y": 12
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r82-mirror-c2",
+          "length": 3,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 0
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r82-mirror-c3",
+          "length": 7,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r82-mirror-c4",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 2
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r82-mirror-north",
+          "length": 10,
+          "faces": ["bottom", "front"],
+          "head": {
+            "face": "front",
+            "x": 10,
+            "y": 15
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 87,
+      "placed": false
+    },
+    {
+      "id": 88,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "bottom",
+            "x": 1,
+            "y": 4
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r88-123",
+        "r88-83",
+        "r88-96",
+        "r88-164",
+        "r88-197",
+        "r88-104",
+        "r88-157"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r88-xblock-mirror0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r88-mirror-south",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 2,
+            "y": 4
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r88-mirror-c1",
+          "length": 16,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r88-mirror-c2",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 5
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r88-mirror-c3",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 4
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r88-mirror-north",
+          "length": 8,
+          "faces": ["bottom", "front"],
+          "head": {
+            "face": "bottom",
+            "x": 1,
+            "y": 1
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 89,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "bottom",
+            "x": 9,
+            "y": 15
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r89-67",
+        "r89-89",
+        "r89-112",
+        "r89-83",
+        "r89-31",
+        "r89-146",
+        "r89-128",
+        "r89-121",
+        "r89-116",
+        "r89-48"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r89-xblock-mirror0",
+          "length": 7
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r89-mirror-south",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r89-mirror-c1",
+          "length": 27,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 13
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r89-mirror-c2",
+          "length": 9,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 2,
+            "y": 16
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r89-mirror-north",
+          "length": 10,
+          "faces": ["left", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 1,
+            "y": 15
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 90,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "bottom",
+            "x": 3,
+            "y": 13
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r90-121",
+        "r90-197",
+        "r90-154",
+        "r90-162",
+        "r90-191",
+        "r90-188",
+        "r90-169",
+        "r90-172",
+        "r90-156",
+        "r90-80",
+        "r90-37",
+        "r90-33",
+        "r90-102",
+        "r90-93",
+        "r90-90"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r90-mirror-south",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 13
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r90-mirror-c1",
+          "length": 9,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 16
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r90-mirror-c2",
+          "length": 11,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 13
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r90-mirror-c3",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 9
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r90-mirror-c4",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r90-mirror-north",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 3,
+            "y": 7
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 101,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "front",
+            "x": 10,
+            "y": 5
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r101-160",
+        "r101-88",
+        "r101-127",
+        "r101-19",
+        "r101-145",
+        "r101-142",
+        "r101-53",
+        "r101-149",
+        "r101-50",
+        "r101-132",
+        "r101-48"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r101-mirror-south",
+          "length": 5,
+          "faces": ["top", "front"],
+          "head": {
+            "face": "front",
+            "x": 10,
+            "y": 1
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r101-mirror-c1",
+          "length": 9,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 3
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r101-mirror-c2",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 4
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r101-mirror-north",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 5
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "bottom",
+            "x": 12,
+            "y": 10
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r103-49",
+        "r103-189",
+        "r103-118",
+        "r103-173",
+        "r103-95",
+        "r103-69"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r103-xblock-mirror0",
+          "length": 6
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r103-mirror-south",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r103-mirror-c1",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r103-mirror-c2",
+          "length": 10,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r103-mirror-north",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 10
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 104,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "back",
+            "x": 12,
+            "y": 0
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": ["r104-52", "r104-39"],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r104-mirror-south",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r104-mirror-c1",
+          "length": 27,
+          "faces": ["back", "left", "top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r104-mirror-c2",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 4
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r104-mirror-c3",
+          "length": 11,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 0
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r104-mirror-north",
+          "length": 3,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 0
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "placed": false
+    },
+    {
+      "id": 109,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "right",
+            "x": 5,
+            "y": 2
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r109-108",
+        "r109-134",
+        "r109-176",
+        "r109-39",
+        "r109-194",
+        "r109-132",
+        "r109-127",
+        "r109-136",
+        "r109-173",
+        "r109-159",
+        "r109-96",
+        "r109-112",
+        "r109-76",
+        "r109-33"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r109-xblock-mirror0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r109-mirror-south",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 4,
+            "y": 2
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r109-mirror-c1",
+          "length": 28,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "right",
+            "x": 1,
+            "y": 13
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r109-mirror-c2",
+          "length": 11,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 13
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r109-mirror-c3",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 4,
+            "y": 10
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r109-mirror-north",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 5,
+            "y": 7
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 111,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "front",
+            "x": 8,
+            "y": 7
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r111-109",
+        "r111-190",
+        "r111-167",
+        "r111-141",
+        "r111-197",
+        "r111-173",
+        "r111-83",
+        "r111-105",
+        "r111-47",
+        "r111-172"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r111-xblock-mirror1",
+          "length": 8
+        },
+        {
+          "id": "r111-xblock-mirror0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r111-mirror-south",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 4
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r111-mirror-c1",
+          "length": 20,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "front",
+            "x": 4,
+            "y": 0
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r111-mirror-c2",
+          "length": 9,
+          "faces": ["top", "front"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 0
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r111-mirror-c3",
+          "length": 3,
+          "faces": ["top", "front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 0
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r111-mirror-c4",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 6
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r111-mirror-north",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 7
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 113,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "right",
+            "x": 11,
+            "y": 2
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r113-87",
+        "r113-186",
+        "r113-173",
+        "r113-74",
+        "r113-60",
+        "r113-47",
+        "r113-50"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r113-mirror-south",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 2
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r113-mirror-c1",
+          "length": 10,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 5
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r113-mirror-c2",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 5
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r113-mirror-north",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 3
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 115,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "left",
+            "x": 1,
+            "y": 4
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r115-180",
+        "r115-107",
+        "r115-158",
+        "r115-69",
+        "r115-53",
+        "r115-161",
+        "r115-105",
+        "r115-81"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r115-xblock-mirror0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r115-mirror-south",
+          "length": 7,
+          "faces": ["left", "back"],
+          "head": {
+            "face": "left",
+            "x": 0,
+            "y": 4
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r115-mirror-c1",
+          "length": 21,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 15,
+            "y": 7
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r115-mirror-c2",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 12,
+            "y": 7
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r115-mirror-c3",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 7
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r115-mirror-c4",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 7
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r115-mirror-north",
+          "length": 7,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "left",
+            "x": 1,
+            "y": 0
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 119,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "left",
+            "x": 1,
+            "y": 3
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": ["r119-196", "r119-143", "r119-79"],
+      "seededBlockers": [
+        {
+          "id": "r119-xblock-mirror0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r119-mirror-south",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 2,
+            "y": 3
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r119-mirror-c1",
+          "length": 20,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r119-mirror-c2",
+          "length": 11,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r119-mirror-north",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 1,
+            "y": 6
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 120,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "bottom",
+            "x": 7,
+            "y": 5
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r120-135",
+        "r120-184",
+        "r120-91",
+        "r120-118",
+        "r120-59",
+        "r120-102",
+        "r120-66",
+        "r120-99",
+        "r120-138",
+        "r120-148",
+        "r120-111",
+        "r120-77",
+        "r120-72",
+        "r120-154",
+        "r120-97",
+        "r120-113"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r120-xblock-mirror1",
+          "length": 3
+        },
+        {
+          "id": "r120-xblock-mirror0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r120-mirror-south",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 5
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r120-mirror-c1",
+          "length": 12,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 1,
+            "y": 9
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r120-mirror-c2",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 3,
+            "y": 6
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r120-mirror-c3",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r120-mirror-c4",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 2
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r120-mirror-north",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 2
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 122,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "left",
+            "x": 16,
+            "y": 7
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r122-111",
+        "r122-66",
+        "r122-79",
+        "r122-197",
+        "r122-140",
+        "r122-74",
+        "r122-55",
+        "r122-54",
+        "r122-95",
+        "r122-75",
+        "r122-173",
+        "r122-143",
+        "r122-122",
+        "r122-184",
+        "r122-97",
+        "r122-179",
+        "r122-133",
+        "r122-34",
+        "r122-157",
+        "r122-35",
+        "r122-118",
+        "r122-94"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r122-xblock-mirror0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r122-mirror-south",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 14,
+            "y": 7
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r122-mirror-c1",
+          "length": 18,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 15,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r122-mirror-c2",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 4
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r122-mirror-c3",
+          "length": 10,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 15,
+            "y": 3
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r122-mirror-north",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 16,
+            "y": 3
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 124,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "left",
+            "x": 15,
+            "y": 4
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": ["r124-160", "r124-117", "r124-125", "r124-73"],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r124-mirror-south",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 4
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r124-mirror-c1",
+          "length": 30,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 11
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r124-mirror-c2",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 10,
+            "y": 11
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r124-mirror-c3",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 4,
+            "y": 10
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r124-mirror-c4",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 3,
+            "y": 5
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r124-mirror-north",
+          "length": 9,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "left",
+            "x": 15,
+            "y": 6
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 128,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "right",
+            "x": 1,
+            "y": 15
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r128-96",
+        "r128-70",
+        "r128-69",
+        "r128-77",
+        "r128-117"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r128-xblock-mirror0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r128-mirror-south",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 15
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r128-mirror-c1",
+          "length": 23,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 7
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r128-mirror-c2",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 7
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r128-mirror-north",
+          "length": 9,
+          "faces": ["front", "right"],
+          "head": {
+            "face": "right",
+            "x": 1,
+            "y": 8
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 129,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "left",
+            "x": 4,
+            "y": 9
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r129-100",
+        "r129-121",
+        "r129-56",
+        "r129-96",
+        "r129-66",
+        "r129-72",
+        "r129-42"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r129-xblock-mirror0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r129-mirror-south",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 11
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r129-mirror-c1",
+          "length": 25,
+          "faces": ["left", "back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r129-mirror-c2",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 13
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r129-mirror-north",
+          "length": 9,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 9
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 131,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "back",
+            "x": 12,
+            "y": 4
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r131-66",
+        "r131-33",
+        "r131-116",
+        "r131-99",
+        "r131-80",
+        "r131-59",
+        "r131-188",
+        "r131-106",
+        "r131-90",
+        "r131-56"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r131-xblock-mirror0",
+          "length": 7
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r131-mirror-south",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 4
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r131-mirror-c1",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 8,
+            "y": 2
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r131-mirror-c2",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 3
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r131-mirror-north",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 5
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 135,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "bottom",
+            "x": 14,
+            "y": 16
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r135-57",
+        "r135-194",
+        "r135-193",
+        "r135-135",
+        "r135-198",
+        "r135-88",
+        "r135-145",
+        "r135-92",
+        "r135-93",
+        "r135-63",
+        "r135-69"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r135-mirror-south",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 14,
+            "y": 15
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r135-mirror-c1",
+          "length": 30,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 9
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r135-mirror-c2",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r135-mirror-c3",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 16
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r135-mirror-c4",
+          "length": 10,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 15,
+            "y": 17
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r135-mirror-north",
+          "length": 4,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 16
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 136,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "front",
+            "x": 6,
+            "y": 11
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r136-41",
+        "r136-132",
+        "r136-193",
+        "r136-159",
+        "r136-107",
+        "r136-74",
+        "r136-48",
+        "r136-120",
+        "r136-154"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r136-mirror-south",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r136-mirror-c1",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 10,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r136-mirror-c2",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r136-mirror-c3",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 0,
+            "y": 9
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r136-mirror-north",
+          "length": 9,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 11
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 138,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "back",
+            "x": 9,
+            "y": 11
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r138-50",
+        "r138-61",
+        "r138-199",
+        "r138-135",
+        "r138-191",
+        "r138-186",
+        "r138-147",
+        "r138-94"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r138-xblock-mirror0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r138-mirror-south",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 6
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r138-mirror-c1",
+          "length": 14,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 8,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r138-mirror-c2",
+          "length": 10,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 9
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r138-mirror-north",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 11
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 143,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "left",
+            "x": 2,
+            "y": 1
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r143-63",
+        "r143-119",
+        "r143-142",
+        "r143-155",
+        "r143-71",
+        "r143-114"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r143-xblock-mirror1",
+          "length": 7
+        },
+        {
+          "id": "r143-xblock-mirror0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r143-mirror-south",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 2,
+            "y": 3
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r143-mirror-c1",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 2,
+            "y": 6
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r143-mirror-c2",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r143-mirror-north",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 1
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 144,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "front",
+            "x": 1,
+            "y": 2
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r144-119",
+        "r144-144",
+        "r144-87",
+        "r144-85",
+        "r144-44",
+        "r144-184",
+        "r144-74",
+        "r144-75",
+        "r144-52",
+        "r144-150"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r144-mirror-south",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 2
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r144-mirror-c1",
+          "length": 15,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 4
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r144-mirror-c2",
+          "length": 11,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 6
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r144-mirror-c3",
+          "length": 9,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 7
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r144-mirror-north",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 5
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 146,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "bottom",
+            "x": 9,
+            "y": 10
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r146-188",
+        "r146-89",
+        "r146-123",
+        "r146-187",
+        "r146-67",
+        "r146-93",
+        "r146-66",
+        "r146-63"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r146-mirror-south",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 10
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r146-mirror-c1",
+          "length": 29,
+          "faces": ["bottom", "front"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 14
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r146-mirror-c2",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 14
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r146-mirror-c3",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 14
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r146-mirror-c4",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 13
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r146-mirror-north",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 12
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 147,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "back",
+            "x": 16,
+            "y": 6
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r147-162",
+        "r147-139",
+        "r147-46",
+        "r147-184",
+        "r147-50",
+        "r147-77",
+        "r147-82",
+        "r147-89"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r147-mirror-south",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 6
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r147-mirror-c1",
+          "length": 31,
+          "faces": ["back", "bottom", "top"],
+          "head": {
+            "face": "top",
+            "x": 8,
+            "y": 1
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r147-mirror-c2",
+          "length": 10,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 0
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r147-mirror-c3",
+          "length": 4,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 1
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r147-mirror-north",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 16,
+            "y": 4
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 148,
+      "placed": false
+    },
+    {
+      "id": 150,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "bottom",
+            "x": 9,
+            "y": 7
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r150-34",
+        "r150-63",
+        "r150-51",
+        "r150-65",
+        "r150-110",
+        "r150-102",
+        "r150-148"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r150-xblock-mirror0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r150-mirror-south",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 7
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r150-mirror-c1",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r150-mirror-c2",
+          "length": 11,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 9
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r150-mirror-north",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 10
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 153,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "front",
+            "x": 16,
+            "y": 2
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r153-183",
+        "r153-178",
+        "r153-106",
+        "r153-166",
+        "r153-87",
+        "r153-52",
+        "r153-88"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r153-mirror-south",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 2
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r153-mirror-c1",
+          "length": 29,
+          "faces": ["front", "right"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 13
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r153-mirror-c2",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 9
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r153-mirror-c3",
+          "length": 11,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 8
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r153-mirror-c4",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r153-mirror-north",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 4
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 154,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "front",
+            "x": 2,
+            "y": 6
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r154-197",
+        "r154-94",
+        "r154-30",
+        "r154-44",
+        "r154-157",
+        "r154-184",
+        "r154-188",
+        "r154-49",
+        "r154-171",
+        "r154-46",
+        "r154-189",
+        "r154-40",
+        "r154-32"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r154-xblock-mirror1",
+          "length": 3
+        },
+        {
+          "id": "r154-xblock-mirror0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r154-mirror-south",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 5
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r154-mirror-c1",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 2
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r154-mirror-c2",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 3
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r154-mirror-north",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 6
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 155,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "front",
+            "x": 15,
+            "y": 16
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": ["r155-126", "r155-61", "r155-146", "r155-67"],
+      "seededBlockers": [
+        {
+          "id": "r155-xblock-mirror0",
+          "length": 8
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r155-mirror-south",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 15
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r155-mirror-c1",
+          "length": 13,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 12
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r155-mirror-c2",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 13
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r155-mirror-c3",
+          "length": 11,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 17
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r155-mirror-north",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 16
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 156,
+      "placed": false
+    },
+    {
+      "id": 157,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "front",
+            "x": 2,
+            "y": 1
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": ["r157-36", "r157-158", "r157-68"],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r157-mirror-south",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 4
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r157-mirror-c1",
+          "length": 16,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r157-mirror-c2",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r157-mirror-c3",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 3
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r157-mirror-north",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 4,
+            "y": 1
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 158,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "front",
+            "x": 6,
+            "y": 3
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r158-136",
+        "r158-51",
+        "r158-57",
+        "r158-197",
+        "r158-192",
+        "r158-160",
+        "r158-75",
+        "r158-50"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r158-xblock-mirror0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r158-mirror-south",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 4
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r158-mirror-c1",
+          "length": 18,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 10
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r158-mirror-c2",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 9
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r158-mirror-north",
+          "length": 9,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 3
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 159,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "bottom",
+            "x": 5,
+            "y": 12
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r159-159",
+        "r159-149",
+        "r159-146",
+        "r159-38",
+        "r159-51",
+        "r159-138",
+        "r159-56",
+        "r159-60",
+        "r159-96"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r159-xblock-mirror0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r159-mirror-south",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 10
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r159-mirror-c1",
+          "length": 13,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 5
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r159-mirror-c2",
+          "length": 11,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 2,
+            "y": 7
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r159-mirror-north",
+          "length": 9,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 2,
+            "y": 12
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 161,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "back",
+            "x": 14,
+            "y": 4
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r161-187",
+        "r161-20",
+        "r161-150",
+        "r161-79",
+        "r161-52",
+        "r161-91",
+        "r161-152"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r161-mirror-south",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r161-mirror-c1",
+          "length": 20,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "back",
+            "x": 13,
+            "y": 9
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r161-mirror-c2",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 16,
+            "y": 7
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r161-mirror-c3",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 13,
+            "y": 7
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r161-mirror-north",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 4
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 162,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "bottom",
+            "x": 4,
+            "y": 15
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [],
+      "seededBlockers": [
+        {
+          "id": "r162-xblock-mirror0",
+          "length": 7
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r162-mirror-south",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 13
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r162-mirror-c1",
+          "length": 24,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 10
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r162-mirror-c2",
+          "length": 10,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 12
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r162-mirror-c3",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r162-mirror-north",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 15
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 163,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "bottom",
+            "x": 6,
+            "y": 1
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r163-142",
+        "r163-131",
+        "r163-110",
+        "r163-129",
+        "r163-104",
+        "r163-57",
+        "r163-140",
+        "r163-81",
+        "r163-64"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r163-xblock-mirror1",
+          "length": 5
+        },
+        {
+          "id": "r163-xblock-mirror0",
+          "length": 6
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r163-mirror-south",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r163-mirror-c1",
+          "length": 13,
+          "faces": ["left", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 5
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r163-mirror-c2",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 5
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r163-mirror-north",
+          "length": 10,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 1
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 165,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "left",
+            "x": 3,
+            "y": 4
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r165-50",
+        "r165-53",
+        "r165-81",
+        "r165-199",
+        "r165-192",
+        "r165-33",
+        "r165-146",
+        "r165-137",
+        "r165-124"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r165-xblock-mirror0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r165-mirror-south",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r165-mirror-c1",
+          "length": 9,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 9
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r165-mirror-c2",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 9,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r165-mirror-north",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 4
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 166,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "bottom",
+            "x": 3,
+            "y": 8
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r166-110",
+        "r166-89",
+        "r166-187",
+        "r166-137",
+        "r166-177",
+        "r166-164",
+        "r166-130",
+        "r166-107"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r166-mirror-south",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r166-mirror-c1",
+          "length": 30,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r166-mirror-c2",
+          "length": 3,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 17,
+            "y": 7
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r166-mirror-c3",
+          "length": 11,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 12
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r166-mirror-c4",
+          "length": 11,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 12
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r166-mirror-north",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 3,
+            "y": 11
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 168,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "bottom",
+            "x": 11,
+            "y": 10
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r168-199",
+        "r168-178",
+        "r168-152",
+        "r168-127",
+        "r168-183",
+        "r168-38",
+        "r168-98",
+        "r168-95",
+        "r168-67",
+        "r168-188",
+        "r168-84",
+        "r168-191",
+        "r168-173",
+        "r168-35",
+        "r168-179",
+        "r168-103"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r168-mirror-south",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 10
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r168-mirror-c1",
+          "length": 17,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "bottom",
+            "x": 15,
+            "y": 11
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r168-mirror-c2",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 15,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r168-mirror-c3",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 14,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r168-mirror-c4",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 14,
+            "y": 4
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r168-mirror-north",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 8
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 170,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "left",
+            "x": 11,
+            "y": 17
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": ["r170-86", "r170-46"],
+      "seededBlockers": [
+        {
+          "id": "r170-xblock-mirror0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r170-mirror-south",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 16
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r170-mirror-c1",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 16
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r170-mirror-c2",
+          "length": 4,
+          "faces": ["left", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 6
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r170-mirror-north",
+          "length": 3,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 9,
+            "y": 17
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 171,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "back",
+            "x": 15,
+            "y": 11
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r171-88",
+        "r171-151",
+        "r171-111",
+        "r171-181",
+        "r171-67"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r171-xblock-mirror1",
+          "length": 3
+        },
+        {
+          "id": "r171-xblock-mirror0",
+          "length": 7
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r171-mirror-south",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 11
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r171-mirror-c1",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 9
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r171-mirror-c2",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 15
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r171-mirror-north",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 13
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 173,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "top",
+            "x": 9,
+            "y": 14
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r173-158",
+        "r173-26",
+        "r173-66",
+        "r173-95",
+        "r173-107",
+        "r173-166",
+        "r173-119",
+        "r173-80"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r173-xblock-mirror0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r173-mirror-south",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 10
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r173-mirror-c1",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 1,
+            "y": 13
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r173-mirror-c2",
+          "length": 10,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 12
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r173-mirror-c3",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 13
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r173-mirror-north",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 14
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 174,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "front",
+            "x": 12,
+            "y": 1
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r174-183",
+        "r174-94",
+        "r174-150",
+        "r174-51",
+        "r174-128",
+        "r174-112",
+        "r174-138",
+        "r174-50",
+        "r174-40",
+        "r174-114",
+        "r174-33",
+        "r174-187"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r174-mirror-c1",
+          "length": 26,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 16
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r174-mirror-south",
+          "length": 6,
+          "faces": ["top", "front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 1
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r174-mirror-c2",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 10
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r174-mirror-c3",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r174-mirror-c4",
+          "length": 9,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 2
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r174-mirror-north",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 13,
+            "y": 1
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 175,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "right",
+            "x": 11,
+            "y": 9
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r175-98",
+        "r175-158",
+        "r175-62",
+        "r175-164",
+        "r175-192",
+        "r175-168",
+        "r175-120",
+        "r175-45",
+        "r175-47",
+        "r175-67"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r175-xblock-mirror0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r175-mirror-south",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 16,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r175-mirror-c1",
+          "length": 13,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 15,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r175-mirror-c2",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r175-mirror-north",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 11
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 178,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "back",
+            "x": 5,
+            "y": 17
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": ["r178-95", "r178-79", "r178-191", "r178-135"],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r178-mirror-south",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 5,
+            "y": 16
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r178-mirror-c1",
+          "length": 6,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 16
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r178-mirror-c2",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 16
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r178-mirror-c3",
+          "length": 11,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r178-mirror-north",
+          "length": 3,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 6,
+            "y": 17
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 179,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "bottom",
+            "x": 4,
+            "y": 7
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r179-182",
+        "r179-113",
+        "r179-191",
+        "r179-81",
+        "r179-103",
+        "r179-63",
+        "r179-51",
+        "r179-189",
+        "r179-54",
+        "r179-126",
+        "r179-148",
+        "r179-60",
+        "r179-29"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r179-xblock-mirror0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r179-mirror-south",
+          "length": 6,
+          "faces": ["left", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 7
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r179-mirror-c1",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 1,
+            "y": 13
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r179-mirror-c2",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 2,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r179-mirror-c3",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 2,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r179-mirror-north",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 4
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 181,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "front",
+            "x": 17,
+            "y": 17
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r181-98",
+        "r181-137",
+        "r181-178",
+        "r181-40",
+        "r181-83",
+        "r181-65",
+        "r181-94",
+        "r181-54"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r181-xblock-mirror1",
+          "length": 5
+        },
+        {
+          "id": "r181-xblock-mirror0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r181-mirror-south",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 17
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r181-mirror-c1",
+          "length": 14,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r181-mirror-c2",
+          "length": 9,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r181-mirror-c3",
+          "length": 10,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 12
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r181-mirror-c4",
+          "length": 11,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 3,
+            "y": 16
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r181-mirror-north",
+          "length": 5,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 17,
+            "y": 16
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 182,
+      "placed": false
+    },
+    {
+      "id": 183,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "right",
+            "x": 14,
+            "y": 15
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r183-136",
+        "r183-167",
+        "r183-161",
+        "r183-79",
+        "r183-123",
+        "r183-105",
+        "r183-70"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r183-xblock-mirror0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r183-mirror-south",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 15
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r183-mirror-c1",
+          "length": 29,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "right",
+            "x": 5,
+            "y": 4
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r183-mirror-c2",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 2
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r183-mirror-c3",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r183-mirror-north",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 11
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 186,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "back",
+            "x": 14,
+            "y": 11
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r186-183",
+        "r186-161",
+        "r186-135",
+        "r186-151",
+        "r186-150",
+        "r186-134",
+        "r186-59",
+        "r186-121",
+        "r186-187",
+        "r186-123",
+        "r186-103",
+        "r186-78",
+        "r186-31"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r186-mirror-south",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 6
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r186-mirror-c1",
+          "length": 5,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 1,
+            "y": 11
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r186-mirror-c2",
+          "length": 7,
+          "faces": ["left", "back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r186-mirror-c3",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 8,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r186-mirror-c4",
+          "length": 10,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 6,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r186-mirror-north",
+          "length": 10,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 11
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 187,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "bottom",
+            "x": 2,
+            "y": 6
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r187-155",
+        "r187-46",
+        "r187-197",
+        "r187-193",
+        "r187-133",
+        "r187-78",
+        "r187-136",
+        "r187-135",
+        "r187-162"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r187-xblock-mirror0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r187-mirror-south",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 6
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r187-mirror-c1",
+          "length": 27,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 12
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r187-mirror-c2",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r187-mirror-c3",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r187-mirror-north",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 2,
+            "y": 8
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 188,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "left",
+            "x": 9,
+            "y": 17
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r188-42",
+        "r188-21",
+        "r188-48",
+        "r188-149",
+        "r188-197",
+        "r188-198",
+        "r188-133",
+        "r188-53",
+        "r188-99",
+        "r188-158",
+        "r188-63"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r188-xblock-mirror0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r188-mirror-south",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 9,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r188-mirror-c1",
+          "length": 11,
+          "faces": ["left", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 3,
+            "y": 6
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r188-mirror-c2",
+          "length": 11,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 5
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r188-mirror-c3",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 4
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r188-mirror-north",
+          "length": 10,
+          "faces": ["front", "bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 17,
+            "y": 17
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 190,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "top",
+            "x": 10,
+            "y": 6
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r190-92",
+        "r190-86",
+        "r190-185",
+        "r190-44",
+        "r190-122",
+        "r190-144",
+        "r190-76",
+        "r190-162",
+        "r190-107",
+        "r190-51",
+        "r190-115"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r190-xblock-mirror0",
+          "length": 6
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r190-mirror-south",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 7
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r190-mirror-c1",
+          "length": 24,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 14
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r190-mirror-c2",
+          "length": 9,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 5
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r190-mirror-north",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 6
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 191,
+      "placed": false
+    },
+    {
+      "id": 194,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "left",
+            "x": 7,
+            "y": 13
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r194-46",
+        "r194-184",
+        "r194-180",
+        "r194-45",
+        "r194-37",
+        "r194-79",
+        "r194-70",
+        "r194-91",
+        "r194-97"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r194-mirror-south",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 13
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r194-mirror-c1",
+          "length": 10,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 3
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r194-mirror-c2",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 3
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r194-mirror-c3",
+          "length": 11,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 5
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r194-mirror-c4",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r194-mirror-north",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 15
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 195,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "top",
+            "x": 2,
+            "y": 14
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r195-66",
+        "r195-142",
+        "r195-37",
+        "r195-52",
+        "r195-136",
+        "r195-179",
+        "r195-99",
+        "r195-113",
+        "r195-164",
+        "r195-159",
+        "r195-102",
+        "r195-61",
+        "r195-174"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r195-xblock-mirror0",
+          "length": 6
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r195-mirror-south",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r195-mirror-c1",
+          "length": 29,
+          "faces": ["top", "left", "back"],
+          "head": {
+            "face": "back",
+            "x": 8,
+            "y": 0
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r195-mirror-c2",
+          "length": 7,
+          "faces": ["back", "top"],
+          "head": {
+            "face": "top",
+            "x": 8,
+            "y": 1
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r195-mirror-c3",
+          "length": 11,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 3
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r195-mirror-c4",
+          "length": 10,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 9
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r195-mirror-north",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 14
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 196,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "front",
+            "x": 14,
+            "y": 11
+          },
+          "orientation": "/"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r196-97",
+        "r196-59",
+        "r196-167",
+        "r196-197",
+        "r196-37",
+        "r196-156",
+        "r196-121",
+        "r196-162",
+        "r196-124",
+        "r196-110",
+        "r196-82",
+        "r196-174",
+        "r196-123",
+        "r196-99",
+        "r196-50"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r196-xblock-mirror0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r196-mirror-south",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 12
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r196-mirror-c1",
+          "length": 29,
+          "faces": ["front", "right", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r196-mirror-c2",
+          "length": 11,
+          "faces": ["bottom", "front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 16
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r196-mirror-c3",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 15
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r196-mirror-c4",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 14
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r196-mirror-north",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 11
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 198,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "right",
+            "x": 7,
+            "y": 4
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r198-166",
+        "r198-90",
+        "r198-150",
+        "r198-89",
+        "r198-59",
+        "r198-137",
+        "r198-121",
+        "r198-116",
+        "r198-42",
+        "r198-123",
+        "r198-170",
+        "r198-165",
+        "r198-31",
+        "r198-127",
+        "r198-58"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r198-mirror-south",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r198-mirror-c1",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 3,
+            "y": 2
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r198-mirror-c2",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 5,
+            "y": 4
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r198-mirror-c3",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 9
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r198-mirror-c4",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 10,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r198-mirror-north",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 4
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 199,
+      "placed": true,
+      "mirror": [
+        {
+          "cell": {
+            "face": "right",
+            "x": 0,
+            "y": 8
+          },
+          "orientation": "\\"
+        }
+      ],
+      "ordinaryBlockers": [
+        "r199-153",
+        "r199-99",
+        "r199-189",
+        "r199-84",
+        "r199-144",
+        "r199-193"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r199-mirror-south",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 5,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r199-mirror-c1",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 3,
+            "y": 4
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r199-mirror-c2",
+          "length": 11,
+          "faces": ["front", "right"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r199-mirror-c3",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 8
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r199-mirror-c4",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 10
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r199-mirror-north",
+          "length": 6,
+          "faces": ["front", "right"],
+          "head": {
+            "face": "right",
+            "x": 0,
+            "y": 11
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 200,
+      "placed": false
+    }
+  ]
+}

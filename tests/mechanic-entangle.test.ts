@@ -59,7 +59,7 @@ test("entangled blockers sit on their core lanes and keep the level solvable", (
         if (kind === "flip" || kind === "wormhole") {
           expect(blocker.path.length).toBeGreaterThanOrEqual(3);
           expect(blocker.path.length).toBeLessThanOrEqual(10);
-        } else if (kind === "fragile" || kind === "lock") {
+        } else if (kind === "fragile" || kind === "lock" || kind === "mirror") {
           expect(blocker.path.length).toBeGreaterThanOrEqual(3);
           expect(blocker.path.length).toBeLessThanOrEqual(8);
         } else expect(blocker.path.length).toBe(2);

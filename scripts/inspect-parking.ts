@@ -1,4 +1,4 @@
-/** Text-only inspection of generated parking, rotor, flip, wormhole, double, overlap, fragile or lock layouts.
+/** Text-only inspection of generated parking, rotor, flip, wormhole, double, overlap, fragile, lock or mirror layouts.
  * Run: bun scripts/inspect-parking.ts [levelIds...]
  *      MECHANIC=rotor bun scripts/inspect-parking.ts 42 58 111 196 */
 import { generateLevel } from "../src/content/procedural";
@@ -20,6 +20,7 @@ const mechanic = [
   "overlap",
   "fragile",
   "lock",
+  "mirror",
 ].includes(process.env.MECHANIC ?? "")
   ? process.env.MECHANIC!
   : "park";
@@ -33,7 +34,8 @@ for (const id of ids.length ? ids : [6, 17, 58, 150]) {
       (mechanic === "flip" && arrow.id.includes("-flipb-")) ||
       (mechanic === "wormhole" && arrow.id.includes("-xblock-wormhole")) ||
       (mechanic === "fragile" && arrow.id.includes("-xblock-fragile")) ||
-      (mechanic === "lock" && arrow.id.includes("-xblock-lock")),
+      (mechanic === "lock" && arrow.id.includes("-xblock-lock")) ||
+      (mechanic === "mirror" && arrow.id.includes("-xblock-mirror")),
   );
   const solution = solveLevelTargets(level);
   if (!solution) throw new Error(`No solution for level ${id}`);
@@ -94,7 +96,7 @@ for (const id of ids.length ? ids : [6, 17, 58, 150]) {
   const wormLabels = "PCDEQHIKXYZ0123456789";
   for (const [index, arrow] of core.entries()) {
     const label =
-      mechanic === "lock"
+      mechanic === "lock" || mechanic === "mirror"
         ? String(index)
         : mechanic === "double" || mechanic === "fragile"
           ? arrow.kind === "double"
@@ -142,6 +144,11 @@ for (const id of ids.length ? ids : [6, 17, 58, 150]) {
           cellKey(lock.lock),
       );
     }
+  if (mechanic === "mirror")
+    for (const mirror of level.mirrors ?? []) {
+      marks.set(cellKey(mirror.cell), mirror.orientation);
+      console.log("Mirror " + cellKey(mirror.cell) + ": " + mirror.orientation);
+    }
   for (const stop of level.stops ?? []) marks.set(cellKey(stop), "O");
   for (const spot of level.directionals ?? []) {
     if (spot.kind !== mechanic) continue;
@@ -152,19 +159,21 @@ for (const id of ids.length ? ids : [6, 17, 58, 150]) {
     );
   }
   console.log(
-    mechanic === "lock"
-      ? "K key; G gate; numbered grown opener, key, dependencies and seeded blockers; O stop; . outside body; blank empty"
-      : mechanic === "fragile"
-        ? "# crack; D double; numbered grown crosser, dependencies and seeded blockers; O stop; . outside body; blank empty"
-        : mechanic === "overlap"
-          ? "0/1/2 shared-tail members (shared cells show the last member); O stop; . outside body; blank empty"
-          : mechanic === "double"
-            ? "D two-headed opener; numbered grown contact bodies; O stop; . outside body; blank empty"
-            : mechanic === "wormhole"
-              ? "A/B first portal pair; U/V second pair; labelled grown core/blocker bodies; O stop; . outside body; blank empty"
-              : mechanic === "flip"
-                ? "F flip; A/B approachers; 0/1/2 lane contacts; X/Y grown seeded blockers; O stop; . outside body; blank empty"
-                : "R rotor; P parker; B continuation blocker; 0/1/2 followers; O stop; . outside body; blank empty",
+    mechanic === "mirror"
+      ? "Slash mirror; numbered grown approaches, routed dependency body and blockers; O stop; . outside body; blank empty"
+      : mechanic === "lock"
+        ? "K key; G gate; numbered grown opener, key, dependencies and seeded blockers; O stop; . outside body; blank empty"
+        : mechanic === "fragile"
+          ? "# crack; D double; numbered grown crosser, dependencies and seeded blockers; O stop; . outside body; blank empty"
+          : mechanic === "overlap"
+            ? "0/1/2 shared-tail members (shared cells show the last member); O stop; . outside body; blank empty"
+            : mechanic === "double"
+              ? "D two-headed opener; numbered grown contact bodies; O stop; . outside body; blank empty"
+              : mechanic === "wormhole"
+                ? "A/B first portal pair; U/V second pair; labelled grown core/blocker bodies; O stop; . outside body; blank empty"
+                : mechanic === "flip"
+                  ? "F flip; A/B approachers; 0/1/2 lane contacts; X/Y grown seeded blockers; O stop; . outside body; blank empty"
+                  : "R rotor; P parker; B continuation blocker; 0/1/2 followers; O stop; . outside body; blank empty",
   );
   const faces: FaceId[] = ["front", "back", "left", "right", "top", "bottom"];
   console.log(

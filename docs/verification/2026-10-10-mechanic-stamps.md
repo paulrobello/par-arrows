@@ -20,11 +20,11 @@ This audit covers production `generateLevel`, campaign and preview resolution, a
 | Overlap | `PAIR_PATTERNS` and `TRIO_PATTERNS` choose complete member leg plans: classic, staggered, lanes, seam, wrap, fork and related variants. | Replaced by grown shared spines, sampled peel trees and surface branches in this batch; 651-test canonical gate, 500-seed stress and all 176 shipping group proofs pass. |
 | Fragile | `FRAGILE_PATTERN` fixes the crosser and double body around one crack, copying the introductory geometry. | Replaced by grown competing approaches, endpoint dependencies and attached blockers; 654-test canonical gate and 500-seed stress pass. |
 | Lock | `LOCK_PATTERN` fixes opener/key geometry; the cross-face variant moves the same construction across a seam. | Replaced by independently grown keyed routes and dependencies; 657-test canonical gate, 35-test integration and 500-seed stress pass. |
-| Mirror | `MIRROR_PATTERN` fixes two opposite two-cell approaches around the mirror. | Remains. |
+| Mirror | `MIRROR_PATTERN` fixes two opposite two-cell approaches around the mirror. | Replaced by grown four-to-six-arrow body cycles, independently grown secondary approaches and proved reflected ordering; canonical 660 tests and 500-seed stress pass. |
 | Leap | `LEAP_PATTERN` fixes the two-cell leaper and bent blocker around the pad. | Remains. |
 | Double | The double body grows, but `doubleCore` attaches fixed two-cell A/B blockers at the body and immediately beyond the head. | Replaced by grown required-use endpoint circuits in this batch; canonical gate, all 80 assembled endpoint proofs and 500-seed stress pass. |
 | Static directional core | `directionalCore` varies short tail lengths, one-/two-cell gaps and optional single bends in an opposed-flanker construction. | Limited procedural motif remains; it needs stronger topology variation. |
-| Other seeded lane blockers | Mirror and leap still receive two-cell contact arrows from `seedLaneBlockers`. | Remain. They must be included in their mechanic batches. |
+| Other seeded lane blockers | Leap still receives two-cell contact arrows from `seedLaneBlockers`. | Mirror blockers grow with their body cycles; Leap remains to remove. |
 
 ## Already integrated passes
 
@@ -36,7 +36,7 @@ The former fixed campaign catalog in generation/quality scripts is historical re
 
 ## Authored lessons and scope
 
-Authored levels 1, 5, 11, 15, 20, 25, 30, 35, 40, 45, 50, 55 and 60 remain fixed lessons. Several formerly supplied generated mechanic geometry; that copying is removed for parking, rotor, flip, wormhole, double, overlap, fragile and the current Lock work, and still survives in the catalog findings above.
+Authored levels 1, 5, 11, 15, 20, 25, 30, 35, 40, 45, 50, 55 and 60 remain fixed lessons. Several formerly supplied generated mechanic geometry; that copying is removed for parking, rotor, flip, wormhole, double, overlap, fragile, Lock and Mirror, and still survives in the catalog findings above.
 
 A unique authored lesson is not automatically exempt from the user's no-stamps requirement. Its layout, IDs, guided tap order, help thumbnail and browser assertions form a coordinated teaching contract. Changing those lessons needs matching tutorial/help work and real-GPU acceptance. The cloud can prove movement and solvability, but cannot certify renderer, picking, animation or updated help captures. Retaining the lessons is an explicit current scope boundary, not an assertion that the entire request is complete.
 

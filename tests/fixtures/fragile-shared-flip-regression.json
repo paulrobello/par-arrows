@@ -1,0 +1,191 @@
+{
+  "id": 124,
+  "title": "Fragile reroll 124 shared-Flip regression at f8bda3eb",
+  "gridSize": 18,
+  "lives": 3,
+  "arrows": [
+    {
+      "id": "r124-flip-a",
+      "path": [
+        {
+          "face": "left",
+          "x": 16,
+          "y": 5
+        },
+        {
+          "face": "left",
+          "x": 15,
+          "y": 5
+        },
+        {
+          "face": "left",
+          "x": 15,
+          "y": 6
+        },
+        {
+          "face": "left",
+          "x": 15,
+          "y": 7
+        },
+        {
+          "face": "left",
+          "x": 14,
+          "y": 7
+        },
+        {
+          "face": "left",
+          "x": 13,
+          "y": 7
+        }
+      ]
+    },
+    {
+      "id": "r124-flip-b",
+      "path": [
+        {
+          "face": "left",
+          "x": 11,
+          "y": 4
+        },
+        {
+          "face": "left",
+          "x": 11,
+          "y": 5
+        },
+        {
+          "face": "left",
+          "x": 11,
+          "y": 6
+        }
+      ]
+    },
+    {
+      "id": "r124-flip-c0",
+      "path": [
+        {
+          "face": "left",
+          "x": 5,
+          "y": 8
+        },
+        {
+          "face": "left",
+          "x": 5,
+          "y": 7
+        },
+        {
+          "face": "left",
+          "x": 5,
+          "y": 6
+        },
+        {
+          "face": "left",
+          "x": 5,
+          "y": 5
+        },
+        {
+          "face": "left",
+          "x": 5,
+          "y": 4
+        }
+      ]
+    },
+    {
+      "id": "r124-flip-c1",
+      "path": [
+        {
+          "face": "left",
+          "x": 10,
+          "y": 10
+        },
+        {
+          "face": "left",
+          "x": 10,
+          "y": 9
+        },
+        {
+          "face": "left",
+          "x": 10,
+          "y": 8
+        },
+        {
+          "face": "left",
+          "x": 11,
+          "y": 8
+        },
+        {
+          "face": "left",
+          "x": 12,
+          "y": 8
+        },
+        {
+          "face": "left",
+          "x": 13,
+          "y": 8
+        },
+        {
+          "face": "left",
+          "x": 14,
+          "y": 8
+        }
+      ]
+    }
+  ],
+  "directionals": [
+    {
+      "cell": {
+        "face": "left",
+        "x": 11,
+        "y": 7
+      },
+      "heading": "east",
+      "kind": "flip"
+    },
+    {
+      "cell": {
+        "face": "left",
+        "x": 12,
+        "y": 7
+      },
+      "heading": "north",
+      "kind": "flip"
+    }
+  ],
+  "edgePolicies": [
+    {
+      "face": "back",
+      "edge": "north",
+      "policy": "continue",
+      "neighbor": {
+        "face": "top",
+        "entering": "south"
+      }
+    },
+    {
+      "face": "top",
+      "edge": "north",
+      "policy": "continue",
+      "neighbor": {
+        "face": "back",
+        "entering": "south"
+      }
+    },
+    {
+      "face": "front",
+      "edge": "east",
+      "policy": "continue",
+      "neighbor": {
+        "face": "right",
+        "entering": "east"
+      }
+    },
+    {
+      "face": "right",
+      "edge": "west",
+      "policy": "continue",
+      "neighbor": {
+        "face": "front",
+        "entering": "west"
+      }
+    }
+  ]
+}

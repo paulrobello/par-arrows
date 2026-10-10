@@ -1,3 +1,4 @@
+import { constructMirror } from "./mirror";
 import { constructFragile } from "./fragile";
 import { constructLock } from "./lock";
 import { constructOverlap } from "./overlap";
@@ -1050,7 +1051,7 @@ interface LaneBlockerInput {
 /**
  * Seed blocker arrows on a certificate-led core's lanes: the per-lane
  * sibling of `flipBlockers`. Wormhole, Fragile and Lock blockers grow their
- * bodies. Mirror and Leap still use two-cell arrows whose tail
+ * bodies, as do Mirror blockers. Leap still uses two-cell arrows whose tail
  * covers a late track cell of some core arrow and whose head points off the
  * lane; the mechanic's certificate must still replay on the core board with
  * the blockers as members. A failed replay keeps the proven prefix. Blocker
@@ -1069,7 +1070,10 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
     (spot) => spot.kind === "flip",
   );
   const grownLane =
-    kind === "wormhole" || kind === "fragile" || kind === "lock";
+    kind === "wormhole" ||
+    kind === "fragile" ||
+    kind === "lock" ||
+    kind === "mirror";
   if (frequency(id) === 0) return [];
   const placementDraw = rng.next();
   // A grown layout may need more construction restarts. Preserve the
@@ -1446,54 +1450,14 @@ function lockCore(
   return { arrows, lock, certificate, cells };
 }
 
-/**
- * The mirror-core geometry relative to the mirror cell at (0, 0), rotated per
- * placement attempt. Two arrows face off along one lane through the mirror,
- * each straight lane ending on the other's head, so the stripped board is
- * deadlocked; the reflection sends the two approaches along the perpendicular
- * corridor to opposite sides, so the mirror is required.
- */
-export const MIRROR_PATTERN = {
-  north: [
-    [0, 2],
-    [0, 1],
-  ],
-  south: [
-    [0, -2],
-    [0, -1],
-  ],
-} as const;
-
 /** Every generated mirror-core arrow id carries this marker. */
 export const MIRROR_CORE_MARKER = "-mirror-";
-
 interface MirrorCore {
   readonly arrows: readonly ArrowDefinition[];
   readonly mirror: MirrorDefinition;
-  /** The core's solution: the two face-off arrows through the mirror. */
   readonly certificate: readonly MoveTarget[];
-  /** Bodies, lanes and the mirror cell, reserved from later placement. */
   readonly cells: ReadonlySet<string>;
 }
-
-/** A rotor spot frozen at its current heading: the static spot it would be. */
-function frozenSpots(
-  spots: readonly DirectionalSpotDefinition[],
-): DirectionalSpotDefinition[] {
-  return spots.map((spot) =>
-    spot.kind === "rotor" ? { cell: spot.cell, heading: spot.heading } : spot,
-  );
-}
-
-/**
- * Place a mirror core on its own seeded stream, modeled on `lockCore`. Every
- * lane the two face-off arrows can travel (under every flip and rotor state),
- * plus the mirror cell, must avoid every reserved cell and the parking core's
- * and groups' tracks, and no arrow already placed may reach any core cell, so
- * the core plays alone. On the core board by itself the solver must clear it,
- * the same board with the mirror stripped must be deadlocked, and no order
- * may strand or soft-lock it.
- */
 function mirrorCore(
   id: number,
   level: LevelDefinition,
@@ -1501,97 +1465,68 @@ function mirrorCore(
   forbiddenTracks: ReadonlySet<string>,
   restart: number,
 ): MirrorCore | undefined {
-  const size = level.gridSize;
-  const rng = coreStream(id, "mirror-core", restart);
-  const faces = shuffledFaces(rng);
-  const margin = 4;
-  const inBounds = (cell: Cell): boolean =>
-    cell.x >= 0 && cell.y >= 0 && cell.x < size && cell.y < size;
-  // The mirror certificate leads the whole replay, so already-placed cores
-  // move only after the face-off pair has fully exited and only their bodies
-  // can block it; their tracks crossing a corridor are harmless. Everything
-  // placed later keeps off the core's cells and lanes through the shared
-  // reservations instead.
-  const existing = level.arrows.map((arrow) => arrow.path.map(cellKey));
-  for (let attempt = 0; attempt < 64; attempt += 1) {
-    const face = faces[attempt % faces.length] as FaceId;
-    const rotation = rng.int(4);
-    const mirrorCell: Cell = {
-      face,
-      x: margin + rng.int(Math.max(1, size - 2 * margin)),
-      y: margin + rng.int(Math.max(1, size - 2 * margin)),
-    };
-    const at = ([dx, dy]: readonly [number, number]): Cell =>
-      patternCell(mirrorCell, dx, dy, rotation);
-    const northId = `r${id}${MIRROR_CORE_MARKER}north`;
-    const southId = `r${id}${MIRROR_CORE_MARKER}south`;
-    const arrows: ArrowDefinition[] = [
-      { id: northId, path: MIRROR_PATTERN.north.map(at) },
-      { id: southId, path: MIRROR_PATTERN.south.map(at) },
-    ];
-    const bodies = arrows.flatMap((arrow) => arrow.path);
-    if (
-      [...bodies, mirrorCell].some(
-        (cell) => !inBounds(cell) || occupied.has(cellKey(cell)),
+  // These static cores may wait for a Mirror body on an empty future lane.
+  // Actual bodies and all persistent glyphs stay protected. Other required
+  // regions retain their complete reservation; fill orders the new contact.
+  const families = ["-double-", "-fragile-", "-lock-"];
+  const releasable = new Set(
+    level.arrows
+      .filter((a) => families.some((marker) => a.id.includes(marker)))
+      .flatMap((a) => [...occupancyKeys(level, a)]),
+  );
+  const bodies = new Set(level.arrows.flatMap((a) => a.path.map(cellKey)));
+  const protectedKeys = new Set([
+    ...bodies,
+    ...forbiddenTracks,
+    ...level.arrows
+      .filter((a) => !families.some((marker) => a.id.includes(marker)))
+      .flatMap((a) => [...occupancyKeys(level, a)]),
+    ...(level.stops ?? []).map(cellKey),
+    ...(level.directionals ?? []).map((s) => cellKey(s.cell)),
+    ...(level.fragile ?? []).map(cellKey),
+    ...(level.locks ?? []).flatMap((l) => [cellKey(l.key), cellKey(l.lock)]),
+    ...(level.wormholes ?? []).flatMap((w) => [cellKey(w.a), cellKey(w.b)]),
+  ]);
+  const physicalOccupied = new Set(
+    [...occupied].filter(
+      (key) => !releasable.has(key) || protectedKeys.has(key),
+    ),
+  );
+  const earlierReach = new Set(
+    level.arrows.flatMap((a) => [...occupancyKeys(level, a)]),
+  );
+  const core = constructMirror(
+    level,
+    coreStream(id, "mirror-topology-v1", restart),
+    new Set([...physicalOccupied, ...forbiddenTracks]),
+    64,
+    new Set([...occupied, ...earlierReach]),
+  );
+  if (!core) return;
+  const { arrows, mirror, certificate } = core,
+    glyph = cellKey(mirror.cell);
+  const cells = new Set([glyph, ...arrows.flatMap((a) => a.path.map(cellKey))]);
+  for (const probe of flipHeadingProbes(level)) {
+    const board = { ...probe, mirrors: [mirror] };
+    for (const arrow of arrows) {
+      const keys = arrowTrack(board, arrow).map(cellKey);
+      if (
+        (arrow.id.endsWith("-north") || arrow.id.endsWith("-south")) &&
+        !keys.includes(glyph)
       )
-    )
-      continue;
-    const mirrorKey = cellKey(mirrorCell);
-    const cells = new Set<string>([mirrorKey, ...bodies.map(cellKey)]);
-    // The lanes must be the POST-mechanic routes: a mirror bends its arrows
-    // off their straight tracks, so unlike the lock and fragile cores the
-    // reservation traces on a board that carries the mirror.
-    let lanesFit = true;
-    for (const probe of flipHeadingProbes(level)) {
-      const mirrorBoard = {
-        ...probe,
-        mirrors: [{ cell: mirrorCell, orientation: "/" as const }],
-      };
-      for (const arrow of arrows) {
-        const keys = arrowTrack(mirrorBoard, arrow).map(cellKey);
-        if (!keys.includes(mirrorKey)) lanesFit = false;
-        for (const entry of keys) cells.add(entry);
-      }
+        return;
+      for (const key of keys) cells.add(key);
     }
-    if (
-      !lanesFit ||
-      [...cells].some(
-        (entry) => occupied.has(entry) || forbiddenTracks.has(entry),
-      ) ||
-      existing.some((keys) =>
-        [...cells].some((entry) => (keys as readonly string[]).includes(entry)),
-      )
-    )
-      continue;
-    const mirror: MirrorDefinition = { cell: mirrorCell, orientation: "/" };
-    const coreLevel: LevelDefinition = {
-      id: level.id,
-      title: level.title,
-      gridSize: level.gridSize,
-      lives: level.lives,
-      ...(level.edgePolicies ? { edgePolicies: level.edgePolicies } : {}),
-      arrows,
-      mirrors: [mirror],
-    };
-    if (!validateLevel(coreLevel).valid) continue;
-    const stripped = { ...coreLevel, mirrors: [] };
-    if (solveLevelTargets(stripped) !== undefined) continue;
-    const certificate = solveLevelTargets(coreLevel);
-    if (!certificate) continue;
-    let state = createGameState(coreLevel);
-    for (const target of certificate) {
-      state = applyMove(
-        coreLevel,
-        state,
-        simulateGameMove(coreLevel, state, target.arrowId, target.endpoint),
-      );
-    }
-    if (state.status !== "won") continue;
-    if (hasStrandingState(coreLevel) !== false) continue;
-    if (hasSoftLockState(coreLevel) !== false) continue;
-    return { arrows, mirror, certificate, cells };
   }
-  return undefined;
+  if (
+    [...cells].some(
+      (key) => physicalOccupied.has(key) || forbiddenTracks.has(key),
+    )
+  )
+    return;
+  if (level.arrows.some((a) => a.path.some((c) => cells.has(cellKey(c)))))
+    return;
+  return { arrows, mirror, certificate, cells };
 }
 
 /**
@@ -2772,6 +2707,24 @@ export function generateLevel(id: number): LevelDefinition {
   // independent, so reuse the proof or bounded failure within this generation
   // call. The full board and reservation sets are part of the key: another
   // context must perform its own search.
+  const mirrorCache = new Map<string, MirrorCore | undefined>();
+  const placeMirror = (
+    id: number,
+    board: LevelDefinition,
+    bodies: ReadonlySet<string>,
+    tracks: ReadonlySet<string>,
+    restart: number,
+  ) => {
+    const key = JSON.stringify([
+      board,
+      [...bodies].sort(),
+      [...tracks].sort(),
+      restart,
+    ]);
+    if (!mirrorCache.has(key))
+      mirrorCache.set(key, mirrorCore(id, board, bodies, tracks, restart));
+    return mirrorCache.get(key);
+  };
   const rotorCache = new Map<string, FlipCore | undefined>();
   const placeRotor = (
     board: LevelDefinition,
@@ -2917,10 +2870,10 @@ export function generateLevel(id: number): LevelDefinition {
         lanesSingle = false;
         restart += 1;
       };
-      // Larger keyed circuits can exhaust the coupled mirror pass on
-      // starter/wrap reservations. Four additional independent assemblies
-      // keep its placement floor; neither constructor nor proofs change.
-      const restartLimit = lockPass && mirrorPass ? 12 : 8;
+      // Grown reflected circuits carry three to five bodies and can exhaust
+      // starter/wrap reservations. Mirror passes permit sixteen independent
+      // assemblies; their constructor bounds and engine proofs stay fixed.
+      const restartLimit = mirrorPass ? 16 : 8;
       construction: for (; restart < restartLimit; nextRestart()) {
         lanesSeeded = false;
         // Tier 0 keeps the unsalted construction seeds; each later tier salts
@@ -3242,10 +3195,15 @@ export function generateLevel(id: number): LevelDefinition {
         }
         // The mirror core comes after the lock core, fenced the same way.
         const mirror = mirrorPass
-          ? mirrorCore(
+          ? placeMirror(
               id,
               {
                 ...regionBoard,
+                ...(fragile ? { fragile: [fragile.cell] } : {}),
+                ...(lock ? { locks: [lock.lock] } : {}),
+                ...(wormholes.length
+                  ? { wormholes: wormholes.map((w) => w.wormhole) }
+                  : {}),
                 arrows,
                 directionals: [
                   ...(regionBoard.directionals ?? []),
@@ -3870,13 +3828,13 @@ export function generateLevel(id: number): LevelDefinition {
           ...(mirror ? { mirrors: [mirror.mirror] } : {}),
           ...(leap ? { leaps: [leap.pad] } : {}),
         };
-        // Wormhole and grown Lock passes reserve the proved stateful region
+        // Wormhole, grown Lock and Mirror passes reserve the proved stateful region
         // first. Its heading-dependent internal edges form one atomic
         // multi-leg node. A union of mutually exclusive headings can falsely
         // close a cycle; the actual certificate still proves every leg.
         // Other construction contexts retain their preceding node model.
         const atomicMembers =
-          (slots > 0 || lockPass) && flipEntangled && flip
+          (slots > 0 || lockPass || mirrorPass) && flipEntangled && flip
             ? [...flip.arrows, ...flip.blockers]
             : [];
         const atomicIds = new Set(atomicMembers.map((a) => a.id));
@@ -3916,7 +3874,7 @@ export function generateLevel(id: number): LevelDefinition {
             routeKeys: new Set(nodeRoute(arrow)),
           })),
           ...entangled.flatMap((entry) =>
-            (slots > 0 || lockPass) && entry.kind === "region"
+            (slots > 0 || lockPass || mirrorPass) && entry.kind === "region"
               ? [
                   {
                     id: atomicMembers[0]!.id,

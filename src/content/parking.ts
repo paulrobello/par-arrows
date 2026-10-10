@@ -46,9 +46,11 @@ export function constructParking(
   budget: number,
   rotorPhase = false,
   portalCycle = false,
+  attemptLimit = 96,
+  acceptContact?: (cell: Cell) => boolean,
 ): ParkingConstruction | undefined {
   if (budget < 1) return undefined;
-  for (let attempt = 0; attempt < 96; attempt += 1) {
+  for (let attempt = 0; attempt < attemptLimit; attempt += 1) {
     const head: Cell = {
       face: rng.pick(FACES),
       x: rng.int(level.gridSize),
@@ -84,6 +86,7 @@ export function constructParking(
     if (maximumTravel < minimumTravel) continue;
     const travel = minimumTravel + rng.int(maximumTravel - minimumTravel + 1);
     const stop = route[travel - 1]!;
+    if (acceptContact && !acceptContact(stop)) continue;
     const parker: ArrowDefinition = { id: `r${level.id}-park-p`, path };
     const board = { ...level, arrows: [parker], stops: [stop] };
     const parked = currentPath(board, parker, travel);
