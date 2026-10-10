@@ -1,3 +1,4 @@
+import { constructLeap } from "./leap";
 import { constructMirror } from "./mirror";
 import { constructFragile } from "./fragile";
 import { constructLock } from "./lock";
@@ -1050,10 +1051,8 @@ interface LaneBlockerInput {
 
 /**
  * Seed blocker arrows on a certificate-led core's lanes: the per-lane
- * sibling of `flipBlockers`. Wormhole, Fragile and Lock blockers grow their
- * bodies, as do Mirror blockers. Leap still uses two-cell arrows whose tail
- * covers a late track cell of some core arrow and whose head points off the
- * lane; the mechanic's certificate must still replay on the core board with
+ * sibling of `flipBlockers`. Every lane blocker grows a contact body with
+ * an independent exit. There is no two-cell fallback; the mechanic's certificate must still replay on the core board with
  * the blockers as members. A failed replay keeps the proven prefix. Blocker
  * routes stay reserved like the core's lanes, so the caller must add their
  * track keys to `forbiddenBody` and `forbiddenRay`. A certificate whose
@@ -1066,23 +1065,10 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
   if (new Set(chain).size !== chain.length) return [];
   const rng = coreStream(id, `${kind}-block`, restart);
   const frequency = BLOCK_FREQUENCY[kind];
-  const grownFlip = (input.board.directionals ?? []).some(
-    (spot) => spot.kind === "flip",
-  );
-  const grownLane =
-    kind === "wormhole" ||
-    kind === "fragile" ||
-    kind === "lock" ||
-    kind === "mirror";
   if (frequency(id) === 0) return [];
-  const placementDraw = rng.next();
-  // A grown layout may need more construction restarts. Preserve the
-  // original blocker-presence plan; only its placement geometry retries.
-  const planDraw =
-    grownFlip || grownLane
-      ? coreStream(id, `${kind}-block`, 0).next()
-      : placementDraw;
-  if (planDraw >= frequency(id)) return [];
+  // Retain the placement-stream draw; presence uses its original root plan.
+  rng.next();
+  if (coreStream(id, `${kind}-block`, 0).next() >= frequency(id)) return [];
   const first = { wormhole: 36, fragile: 46, lock: 51, mirror: 56, leap: 61 }[
     kind
   ] as number;
@@ -1137,24 +1123,16 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
     input.reservedCells.has(key) ||
     blockerKeys.has(key) ||
     (input.occupied.has(key) && !input.crossable.has(key));
-  // On changed flip boards, search the whole lane instead of repeatedly
-  // sampling a fenced final four-cell window. Unrelated boards retain their
-  // original draws and bounds; every candidate still replays the certificate.
+  // Sample the whole actual lane. Every grown contact body must preserve
+  // the complete certificate; a failed candidate supplies no short fallback.
   for (
     let attempt = 0;
-    attempt < (grownFlip || grownLane ? 24 : 6) &&
-    blockers.length < maxBlockers;
+    attempt < 24 && blockers.length < maxBlockers;
     attempt += 1
   ) {
-    // Keep the original successful prefix. Broader contacts are a fallback
-    // for an empty result, not another way to crowd later mechanic lanes.
-    const broader = grownLane || (grownFlip && attempt >= 6);
-    if (broader && !grownLane && blockers.length > 0) break;
     const owner = coreArrows[rng.int(coreArrows.length)] as ArrowDefinition;
     const track = arrowTrack(input.board, owner).slice(owner.path.length);
-    const candidates = broader
-      ? track.filter((cell) => !bannedEntangle(cellKey(cell)))
-      : track.slice(Math.max(0, track.length - 4));
+    const candidates = track.filter((cell) => !bannedEntangle(cellKey(cell)));
     if (candidates.length === 0) continue;
     const entangle = candidates[rng.int(candidates.length)] as Cell;
     if (!input.inBounds(entangle) || bannedEntangle(cellKey(entangle)))
@@ -1172,79 +1150,71 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
           !bannedKey(cellKey(cell)),
       );
     if (options.length === 0) continue;
-    const clearOptions = broader
-      ? options.filter(
-          (option) =>
-            !arrowTrack(input.board, {
-              id: "candidate",
-              path: [entangle, option.cell],
-            })
-              .slice(2)
-              .some((cell) => bannedRoute(cellKey(cell))),
-        )
-      : options;
+    const clearOptions = options.filter(
+      (option) =>
+        !arrowTrack(input.board, {
+          id: "candidate",
+          path: [entangle, option.cell],
+        })
+          .slice(2)
+          .some((cell) => bannedRoute(cellKey(cell))),
+    );
     if (!clearOptions.length) continue;
-    const shortest = broader
-      ? Math.min(
-          ...clearOptions.map(
-            (option) =>
-              arrowTrack(input.board, {
-                id: "candidate",
-                path: [entangle, option.cell],
-              }).length,
-          ),
-        )
-      : undefined;
-    const choices = broader
-      ? clearOptions.filter(
-          (option) =>
-            arrowTrack(input.board, {
-              id: "candidate",
-              path: [entangle, option.cell],
-            }).length === shortest,
-        )
-      : clearOptions;
+    const shortest = Math.min(
+      ...clearOptions.map(
+        (option) =>
+          arrowTrack(input.board, {
+            id: "candidate",
+            path: [entangle, option.cell],
+          }).length,
+      ),
+    );
+    const choices = clearOptions.filter(
+      (option) =>
+        arrowTrack(input.board, {
+          id: "candidate",
+          path: [entangle, option.cell],
+        }).length === shortest,
+    );
     const choice = choices[rng.int(choices.length)] as {
       heading: Heading;
       cell: Cell;
     };
     let path = [entangle, choice.cell];
-    if (grownLane) {
-      let stemFits = true;
-      for (let step = 0, gap = rng.int(3); step < gap; step++) {
-        const heading = headingForPath(path, size);
-        if (!heading) {
-          stemFits = false;
-          break;
-        }
-        const next = stepSurface(path[path.length - 1]!, heading, size);
-        if (
-          bannedKey(cellKey(next)) ||
-          path.some((c) => cellKey(c) === cellKey(next))
-        ) {
-          stemFits = false;
-          break;
-        }
-        path.push(next);
+    let stemFits = true;
+    for (let step = 0, gap = rng.int(3); step < gap; step++) {
+      const heading = headingForPath(path, size);
+      if (!heading) {
+        stemFits = false;
+        break;
       }
-      if (!stemFits) continue;
-      path = growMechanicBody(
-        input.board,
-        rng,
-        path,
-        new Set([
-          ...input.occupied,
-          ...input.parkTracks,
-          ...input.reservedCells,
-          ...spotKeys,
-          ...stopKeys,
-          ...blockerKeys,
-          ...laneKeys,
-        ]),
-        Math.max(path.length, 3 + rng.int(6)),
-      );
-      if (path.length < 3) continue;
+      const next = stepSurface(path[path.length - 1]!, heading, size);
+      if (
+        bannedKey(cellKey(next)) ||
+        path.some((c) => cellKey(c) === cellKey(next))
+      ) {
+        stemFits = false;
+        break;
+      }
+      path.push(next);
     }
+    if (!stemFits) continue;
+    path = growMechanicBody(
+      input.board,
+      rng,
+      path,
+      new Set([
+        ...input.occupied,
+        ...input.parkTracks,
+        ...input.reservedCells,
+        ...spotKeys,
+        ...stopKeys,
+        ...blockerKeys,
+        ...laneKeys,
+      ]),
+      Math.max(path.length, 3 + rng.int(6)),
+    );
+    if (path.length < 3) continue;
     const blocker: ArrowDefinition = {
       id: `r${id}${XBLOCK_MARKER}${kind}${blockers.length}`,
       path,
@@ -1267,8 +1237,7 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
       ...input.certificate,
     ];
     if (!validateGenerated(proofBoard, proofCertificate)) {
-      if (grownFlip || grownLane) continue;
-      break;
+      continue;
     }
     blockers.push(blocker);
     for (const cell of blocker.path) blockerKeys.add(cellKey(cell));
@@ -1529,52 +1498,13 @@ function mirrorCore(
   return { arrows, mirror, certificate, cells };
 }
 
-/**
- * The leap-core geometry relative to the pad at (0, 0), rotated per placement
- * attempt. The leaper faces a bent blocker: the blocker's body covers the
- * pad's skip cell, and its head points back at the leaper's head, so each
- * lane ends on the other's body. The pad alone breaks the deadlock: the
- * leaper leaps over the blocker's body and exits past it, and the blocker
- * then leaps the same pad in the other direction over the vacated cells.
- */
-export const LEAP_PATTERN = {
-  leaper: [
-    [-2, 0],
-    [-1, 0],
-  ],
-  blocker: [
-    [1, 0],
-    [1, -1],
-    [0, -1],
-    [0, -2],
-    [-1, -2],
-    [-1, -1],
-  ],
-} as const;
-
-/** Every generated leap-core arrow id carries this marker. */
 export const LEAP_CORE_MARKER = "-leap-";
-
 interface LeapCore {
   readonly arrows: readonly ArrowDefinition[];
   readonly pad: Cell;
-  /** The core's solution: the leaper, then the blocker. */
   readonly certificate: readonly MoveTarget[];
-  /** Bodies, the pad, and both lanes, reserved from later placement. */
   readonly cells: ReadonlySet<string>;
 }
-
-/**
- * Place a leap core on its own seeded stream, modeled on `mirrorCore`. Every
- * lane the two arrows can travel (under every flip and rotor state), plus the
- * pad, must avoid every reserved cell and the parking core's and groups'
- * tracks, and no arrow already placed may reach any core cell, so the core
- * plays alone. On the core board by itself the solver must clear it, the same
- * board with the pad stripped must be deadlocked, and no order may strand or
- * soft-lock it, with the leaper leaving before the blocker. Only the
- * leaper's lane crosses the pad; the blocker's lane is the plain run it
- * drives once the leaper has vacated its head cell.
- */
 function leapCore(
   id: number,
   level: LevelDefinition,
@@ -1582,99 +1512,65 @@ function leapCore(
   forbiddenTracks: ReadonlySet<string>,
   restart: number,
 ): LeapCore | undefined {
-  const size = level.gridSize;
-  const rng = coreStream(id, "leap-core", restart);
-  const faces = shuffledFaces(rng);
-  const margin = 3;
-  const inBounds = (cell: Cell): boolean =>
-    cell.x >= 0 && cell.y >= 0 && cell.x < size && cell.y < size;
-  // The leap certificate leads the whole replay, so already-placed cores move
-  // only after the leaper and blocker have fully exited and only their bodies
-  // can block them; their tracks crossing a lane are harmless. Everything
-  // placed later keeps off the core's cells and lanes through the shared
-  // reservations.
-  const existing = level.arrows.map((arrow) => arrow.path.map(cellKey));
-  for (let attempt = 0; attempt < 64; attempt += 1) {
-    const face = faces[attempt % faces.length] as FaceId;
-    const rotation = rng.int(4);
-    const padCell: Cell = {
-      face,
-      x: margin + rng.int(Math.max(1, size - 2 * margin)),
-      y: margin + rng.int(Math.max(1, size - 2 * margin)),
-    };
-    const at = ([dx, dy]: readonly [number, number]): Cell =>
-      patternCell(padCell, dx, dy, rotation);
-    const leaperId = `r${id}${LEAP_CORE_MARKER}leaper`;
-    const blockerId = `r${id}${LEAP_CORE_MARKER}blocker`;
-    const arrows: ArrowDefinition[] = [
-      { id: leaperId, path: LEAP_PATTERN.leaper.map(at) },
-      { id: blockerId, path: LEAP_PATTERN.blocker.map(at) },
-    ];
-    const bodies = arrows.flatMap((arrow) => arrow.path);
-    if (
-      [...bodies, padCell].some(
-        (cell) => !inBounds(cell) || occupied.has(cellKey(cell)),
-      )
-    )
-      continue;
-    const padKey = cellKey(padCell);
-    const cells = new Set<string>([padKey, ...bodies.map(cellKey)]);
-    // The lanes must be the POST-mechanic routes: the pad's skip remaps the
-    // leaper's lane, so the reservation traces on a board that carries the
-    // pad.
-    let lanesFit = true;
-    for (const probe of flipHeadingProbes(level)) {
-      const leapBoard = { ...probe, leaps: [padCell] };
-      for (const arrow of arrows) {
-        const keys = arrowTrack(leapBoard, arrow).map(cellKey);
-        if (arrow.id === leaperId && !keys.includes(padKey)) lanesFit = false;
-        for (const entry of keys) cells.add(entry);
-      }
+  // These static cores may wait for a Leap body on an empty future lane.
+  // Actual bodies and all persistent glyphs stay protected. Other required
+  // regions retain their complete reservation; fill orders the new contact.
+  const families = ["-double-", "-fragile-", "-lock-", "-mirror-"];
+  const releasable = new Set(
+    level.arrows
+      .filter((a) => families.some((marker) => a.id.includes(marker)))
+      .flatMap((a) => [...occupancyKeys(level, a)]),
+  );
+  const bodies = new Set(level.arrows.flatMap((a) => a.path.map(cellKey)));
+  const protectedKeys = new Set([
+    ...bodies,
+    ...forbiddenTracks,
+    ...level.arrows
+      .filter((a) => !families.some((marker) => a.id.includes(marker)))
+      .flatMap((a) => [...occupancyKeys(level, a)]),
+    ...(level.stops ?? []).map(cellKey),
+    ...(level.directionals ?? []).map((s) => cellKey(s.cell)),
+    ...(level.fragile ?? []).map(cellKey),
+    ...(level.locks ?? []).flatMap((l) => [cellKey(l.key), cellKey(l.lock)]),
+    ...(level.mirrors ?? []).map((m) => cellKey(m.cell)),
+    ...(level.wormholes ?? []).flatMap((w) => [cellKey(w.a), cellKey(w.b)]),
+  ]);
+  const physicalOccupied = new Set(
+    [...occupied].filter(
+      (key) => !releasable.has(key) || protectedKeys.has(key),
+    ),
+  );
+  const earlierReach = new Set(
+    level.arrows.flatMap((a) => [...occupancyKeys(level, a)]),
+  );
+  const core = constructLeap(
+    level,
+    coreStream(id, "leap-topology-v1", restart),
+    new Set([...physicalOccupied, ...forbiddenTracks]),
+    32,
+    new Set([...occupied, ...earlierReach]),
+  );
+  if (!core) return;
+  const { arrows, pad, certificate } = core,
+    glyph = cellKey(pad);
+  const cells = new Set([glyph, ...arrows.flatMap((a) => a.path.map(cellKey))]);
+  for (const probe of flipHeadingProbes(level)) {
+    const board = { ...probe, leaps: [pad] };
+    for (const arrow of arrows) {
+      const keys = arrowTrack(board, arrow).map(cellKey);
+      if (arrow.id.endsWith("-leaper") && !keys.includes(glyph)) return;
+      for (const key of keys) cells.add(key);
     }
-    if (
-      !lanesFit ||
-      [...cells].some(
-        (entry) => occupied.has(entry) || forbiddenTracks.has(entry),
-      ) ||
-      existing.some((keys) =>
-        [...cells].some((entry) => (keys as readonly string[]).includes(entry)),
-      )
-    )
-      continue;
-    const coreLevel: LevelDefinition = {
-      id: level.id,
-      title: level.title,
-      gridSize: level.gridSize,
-      lives: level.lives,
-      ...(level.edgePolicies ? { edgePolicies: level.edgePolicies } : {}),
-      arrows,
-      leaps: [padCell],
-    };
-    if (!validateLevel(coreLevel).valid) continue;
-    const stripped = { ...coreLevel, leaps: [] };
-    if (solveLevelTargets(stripped) !== undefined) continue;
-    const certificate = solveLevelTargets(coreLevel);
-    if (!certificate) continue;
-    let state = createGameState(coreLevel);
-    for (const target of certificate) {
-      state = applyMove(
-        coreLevel,
-        state,
-        simulateGameMove(coreLevel, state, target.arrowId, target.endpoint),
-      );
-    }
-    if (state.status !== "won") continue;
-    if (hasStrandingState(coreLevel) !== false) continue;
-    if (hasSoftLockState(coreLevel) !== false) continue;
-    const order = certificate.map((target) => target.arrowId);
-    if (
-      order.indexOf(leaperId) < 0 ||
-      order.indexOf(leaperId) > order.indexOf(blockerId)
-    )
-      continue;
-    return { arrows, pad: padCell, certificate, cells };
   }
-  return undefined;
+  if (
+    [...cells].some(
+      (key) => physicalOccupied.has(key) || forbiddenTracks.has(key),
+    )
+  )
+    return;
+  if (level.arrows.some((a) => a.path.some((c) => cells.has(cellKey(c)))))
+    return;
+  return { arrows, pad, certificate, cells };
 }
 
 /**
@@ -1880,32 +1776,6 @@ function flipRegionLead(
     state = applyMove(sub, state, result);
   }
   return lead;
-}
-
-function patternCell(
-  base: Cell,
-  dx: number,
-  dy: number,
-  rotation: number,
-): Cell {
-  const turns = ((rotation % 4) + 4) % 4;
-  const x =
-    turns === 0
-      ? base.x + dx
-      : turns === 1
-        ? base.x - dy
-        : turns === 2
-          ? base.x - dx
-          : base.x + dy;
-  const y =
-    turns === 0
-      ? base.y + dy
-      : turns === 1
-        ? base.y + dx
-        : turns === 2
-          ? base.y - dy
-          : base.y - dx;
-  return { face: base.face, x, y };
 }
 
 const HEADING_VECTORS: Record<
@@ -3229,6 +3099,12 @@ export function generateLevel(id: number): LevelDefinition {
               id,
               {
                 ...regionBoard,
+                ...(fragile ? { fragile: [fragile.cell] } : {}),
+                ...(lock ? { locks: [lock.lock] } : {}),
+                ...(mirror ? { mirrors: [mirror.mirror] } : {}),
+                ...(wormholes.length
+                  ? { wormholes: wormholes.map((w) => w.wormhole) }
+                  : {}),
                 arrows,
                 directionals: [
                   ...(regionBoard.directionals ?? []),
@@ -3834,7 +3710,9 @@ export function generateLevel(id: number): LevelDefinition {
         // close a cycle; the actual certificate still proves every leg.
         // Other construction contexts retain their preceding node model.
         const atomicMembers =
-          (slots > 0 || lockPass || mirrorPass) && flipEntangled && flip
+          (slots > 0 || lockPass || mirrorPass || leapPass) &&
+          flipEntangled &&
+          flip
             ? [...flip.arrows, ...flip.blockers]
             : [];
         const atomicIds = new Set(atomicMembers.map((a) => a.id));
@@ -3874,7 +3752,8 @@ export function generateLevel(id: number): LevelDefinition {
             routeKeys: new Set(nodeRoute(arrow)),
           })),
           ...entangled.flatMap((entry) =>
-            (slots > 0 || lockPass || mirrorPass) && entry.kind === "region"
+            (slots > 0 || lockPass || mirrorPass || leapPass) &&
+            entry.kind === "region"
               ? [
                   {
                     id: atomicMembers[0]!.id,

@@ -1,0 +1,4562 @@
+{
+  "baseline": "7bdec7b4fe86ac9ad39d41104557ce4341bde641",
+  "planned": 77,
+  "placed": 72,
+  "changed": 72,
+  "unrelated": [],
+  "ordinaryBlocked": 72,
+  "multiFace": 34,
+  "rows": [
+    {
+      "id": 61,
+      "placed": true,
+      "leap": [
+        {
+          "face": "top",
+          "x": 10,
+          "y": 8
+        }
+      ],
+      "ordinaryBlockers": [
+        "r61-181",
+        "r61-157",
+        "r61-126",
+        "r61-174",
+        "r61-59",
+        "r61-70"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r61-xblock-leap0",
+          "length": 8
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r61-leap-blocker",
+          "length": 29,
+          "faces": ["top", "right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 7
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r61-leap-c2",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 4
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r61-leap-c3",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 2
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r61-leap-leaper",
+          "length": 6,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 8
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 63,
+      "placed": true,
+      "leap": [
+        {
+          "face": "left",
+          "x": 9,
+          "y": 5
+        }
+      ],
+      "ordinaryBlockers": [
+        "r63-49",
+        "r63-145",
+        "r63-140",
+        "r63-141",
+        "r63-37",
+        "r63-168",
+        "r63-129"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r63-leap-blocker",
+          "length": 12,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 5
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r63-leap-c2",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 10
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r63-leap-leaper",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 9,
+            "y": 8
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 64,
+      "placed": true,
+      "leap": [
+        {
+          "face": "front",
+          "x": 5,
+          "y": 16
+        }
+      ],
+      "ordinaryBlockers": ["r64-37", "r64-53", "r64-188", "r64-186", "r64-170"],
+      "seededBlockers": [
+        {
+          "id": "r64-xblock-leap0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r64-leap-blocker",
+          "length": 24,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 12
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r64-leap-c2",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r64-leap-leaper",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 10,
+            "y": 16
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 69,
+      "placed": false
+    },
+    {
+      "id": 75,
+      "placed": true,
+      "leap": [
+        {
+          "face": "front",
+          "x": 6,
+          "y": 10
+        }
+      ],
+      "ordinaryBlockers": [
+        "r75-97",
+        "r75-197",
+        "r75-69",
+        "r75-152",
+        "r75-80",
+        "r75-104"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r75-leap-blocker",
+          "length": 16,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 3
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r75-leap-c2",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r75-leap-leaper",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 10
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 76,
+      "placed": true,
+      "leap": [
+        {
+          "face": "right",
+          "x": 10,
+          "y": 3
+        }
+      ],
+      "ordinaryBlockers": [
+        "r76-90",
+        "r76-85",
+        "r76-78",
+        "r76-177",
+        "r76-125",
+        "r76-41",
+        "r76-51",
+        "r76-91",
+        "r76-183",
+        "r76-83",
+        "r76-29",
+        "r76-141",
+        "r76-50",
+        "r76-155",
+        "r76-96"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r76-leap-c3",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 9
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r76-leap-blocker",
+          "length": 11,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 5
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r76-leap-c2",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 8
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r76-leap-leaper",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 10,
+            "y": 7
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 77,
+      "placed": true,
+      "leap": [
+        {
+          "face": "left",
+          "x": 6,
+          "y": 3
+        }
+      ],
+      "ordinaryBlockers": [
+        "r77-56",
+        "r77-117",
+        "r77-76",
+        "r77-110",
+        "r77-33",
+        "r77-97",
+        "r77-159",
+        "r77-140",
+        "r77-28"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r77-leap-blocker",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 2
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r77-leap-c2",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 2
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r77-leap-leaper",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 3
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 78,
+      "placed": true,
+      "leap": [
+        {
+          "face": "right",
+          "x": 0,
+          "y": 1
+        }
+      ],
+      "ordinaryBlockers": [
+        "r78-131",
+        "r78-25",
+        "r78-197",
+        "r78-176",
+        "r78-65",
+        "r78-117",
+        "r78-106",
+        "r78-167",
+        "r78-150",
+        "r78-119",
+        "r78-62",
+        "r78-88",
+        "r78-166",
+        "r78-97"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r78-xblock-leap0",
+          "length": 8
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r78-leap-blocker",
+          "length": 10,
+          "faces": ["front", "right", "top"],
+          "head": {
+            "face": "top",
+            "x": 16,
+            "y": 15
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r78-leap-c2",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 14
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r78-leap-c3",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 15
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r78-leap-leaper",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 17
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 80,
+      "placed": true,
+      "leap": [
+        {
+          "face": "right",
+          "x": 17,
+          "y": 15
+        }
+      ],
+      "ordinaryBlockers": ["r80-175", "r80-190"],
+      "seededBlockers": [
+        {
+          "id": "r80-xblock-leap0",
+          "length": 6
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r80-leap-c2",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 15,
+            "y": 9
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r80-leap-blocker",
+          "length": 15,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 10
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r80-leap-leaper",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 17,
+            "y": 10
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 81,
+      "placed": true,
+      "leap": [
+        {
+          "face": "left",
+          "x": 14,
+          "y": 17
+        }
+      ],
+      "ordinaryBlockers": ["r81-166", "r81-189"],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r81-leap-blocker",
+          "length": 22,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 9,
+            "y": 10
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r81-leap-c2",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r81-leap-leaper",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 17
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 83,
+      "placed": true,
+      "leap": [
+        {
+          "face": "right",
+          "x": 11,
+          "y": 9
+        }
+      ],
+      "ordinaryBlockers": [
+        "r83-197",
+        "r83-194",
+        "r83-117",
+        "r83-40",
+        "r83-84",
+        "r83-87",
+        "r83-124"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r83-xblock-leap0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r83-leap-blocker",
+          "length": 9,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r83-leap-c2",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 14
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r83-leap-leaper",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 13
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 84,
+      "placed": true,
+      "leap": [
+        {
+          "face": "back",
+          "x": 2,
+          "y": 3
+        }
+      ],
+      "ordinaryBlockers": ["r84-181", "r84-155", "r84-156"],
+      "seededBlockers": [
+        {
+          "id": "r84-xblock-leap0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r84-leap-c2",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 5,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r84-leap-blocker",
+          "length": 10,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 4,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r84-leap-leaper",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 3,
+            "y": 3
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 85,
+      "placed": true,
+      "leap": [
+        {
+          "face": "top",
+          "x": 4,
+          "y": 3
+        }
+      ],
+      "ordinaryBlockers": ["r85-74", "r85-57", "r85-126", "r85-154", "r85-82"],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r85-leap-blocker",
+          "length": 15,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 7,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r85-leap-c2",
+          "length": 6,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "top",
+            "x": 8,
+            "y": 1
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r85-leap-leaper",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 7,
+            "y": 3
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 86,
+      "placed": true,
+      "leap": [
+        {
+          "face": "back",
+          "x": 2,
+          "y": 15
+        }
+      ],
+      "ordinaryBlockers": ["r86-78", "r86-151", "r86-192", "r86-91", "r86-123"],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r86-leap-blocker",
+          "length": 19,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 12
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r86-leap-c2",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r86-leap-leaper",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 15
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 88,
+      "placed": true,
+      "leap": [
+        {
+          "face": "top",
+          "x": 14,
+          "y": 10
+        }
+      ],
+      "ordinaryBlockers": [
+        "r88-81",
+        "r88-88",
+        "r88-47",
+        "r88-119",
+        "r88-127",
+        "r88-113",
+        "r88-173",
+        "r88-124"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r88-xblock-leap0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r88-leap-c2",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 11
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r88-leap-blocker",
+          "length": 13,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 12
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r88-leap-leaper",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 10
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 90,
+      "placed": true,
+      "leap": [
+        {
+          "face": "left",
+          "x": 11,
+          "y": 16
+        }
+      ],
+      "ordinaryBlockers": ["r90-129", "r90-111", "r90-100", "r90-169"],
+      "seededBlockers": [
+        {
+          "id": "r90-xblock-leap1",
+          "length": 3
+        },
+        {
+          "id": "r90-xblock-leap0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r90-leap-c2",
+          "length": 6,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 5
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r90-leap-blocker",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 17
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r90-leap-c3",
+          "length": 3,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 9,
+            "y": 17
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r90-leap-leaper",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 16
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 91,
+      "placed": true,
+      "leap": [
+        {
+          "face": "right",
+          "x": 15,
+          "y": 14
+        }
+      ],
+      "ordinaryBlockers": [
+        "r91-41",
+        "r91-179",
+        "r91-178",
+        "r91-45",
+        "r91-158",
+        "r91-65"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r91-leap-blocker",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 16,
+            "y": 11
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r91-leap-c2",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 12
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r91-leap-leaper",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 14
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 92,
+      "placed": true,
+      "leap": [
+        {
+          "face": "top",
+          "x": 16,
+          "y": 2
+        }
+      ],
+      "ordinaryBlockers": ["r92-80", "r92-140", "r92-152", "r92-146", "r92-74"],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r92-leap-blocker",
+          "length": 15,
+          "faces": ["top", "right"],
+          "head": {
+            "face": "right",
+            "x": 16,
+            "y": 4
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r92-leap-c2",
+          "length": 4,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 17,
+            "y": 2
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r92-leap-leaper",
+          "length": 4,
+          "faces": ["right", "back", "top"],
+          "head": {
+            "face": "top",
+            "x": 16,
+            "y": 0
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 95,
+      "placed": true,
+      "leap": [
+        {
+          "face": "front",
+          "x": 12,
+          "y": 10
+        }
+      ],
+      "ordinaryBlockers": [
+        "r95-125",
+        "r95-117",
+        "r95-39",
+        "r95-53",
+        "r95-47",
+        "r95-27",
+        "r95-172",
+        "r95-120",
+        "r95-100",
+        "r95-132",
+        "r95-106",
+        "r95-170",
+        "r95-62",
+        "r95-58"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r95-xblock-leap1",
+          "length": 3
+        },
+        {
+          "id": "r95-xblock-leap0",
+          "length": 6
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r95-leap-blocker",
+          "length": 19,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 7
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r95-leap-c2",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 6
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r95-leap-leaper",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 7
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 98,
+      "placed": true,
+      "leap": [
+        {
+          "face": "front",
+          "x": 14,
+          "y": 10
+        }
+      ],
+      "ordinaryBlockers": [
+        "r98-50",
+        "r98-165",
+        "r98-150",
+        "r98-54",
+        "r98-154",
+        "r98-146",
+        "r98-82",
+        "r98-20",
+        "r98-143",
+        "r98-116",
+        "r98-90"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r98-leap-blocker",
+          "length": 12,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 7
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r98-leap-c2",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 5
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r98-leap-leaper",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 6
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 101,
+      "placed": true,
+      "leap": [
+        {
+          "face": "top",
+          "x": 3,
+          "y": 4
+        }
+      ],
+      "ordinaryBlockers": ["r101-178", "r101-137", "r101-83"],
+      "seededBlockers": [
+        {
+          "id": "r101-xblock-leap0",
+          "length": 8
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r101-leap-c2",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 1
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r101-leap-blocker",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 3
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r101-leap-leaper",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 2
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 102,
+      "placed": true,
+      "leap": [
+        {
+          "face": "right",
+          "x": 13,
+          "y": 15
+        }
+      ],
+      "ordinaryBlockers": [
+        "r102-192",
+        "r102-182",
+        "r102-149",
+        "r102-89",
+        "r102-148"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r102-xblock-leap1",
+          "length": 3
+        },
+        {
+          "id": "r102-xblock-leap0",
+          "length": 6
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r102-leap-c2",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r102-leap-blocker",
+          "length": 21,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 12
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r102-leap-leaper",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 13
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "placed": true,
+      "leap": [
+        {
+          "face": "top",
+          "x": 15,
+          "y": 11
+        }
+      ],
+      "ordinaryBlockers": ["r103-103"],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r103-leap-blocker",
+          "length": 16,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 6
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r103-leap-c2",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 6
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r103-leap-leaper",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 8
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 106,
+      "placed": true,
+      "leap": [
+        {
+          "face": "right",
+          "x": 4,
+          "y": 10
+        }
+      ],
+      "ordinaryBlockers": [
+        "r106-46",
+        "r106-168",
+        "r106-149",
+        "r106-134",
+        "r106-102"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r106-xblock-leap0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r106-leap-blocker",
+          "length": 20,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 10,
+            "y": 17
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r106-leap-c2",
+          "length": 3,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 17
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r106-leap-c3",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 5,
+            "y": 16
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r106-leap-leaper",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 4,
+            "y": 16
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 108,
+      "placed": true,
+      "leap": [
+        {
+          "face": "top",
+          "x": 10,
+          "y": 1
+        }
+      ],
+      "ordinaryBlockers": [
+        "r108-151",
+        "r108-89",
+        "r108-159",
+        "r108-56",
+        "r108-158",
+        "r108-140"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r108-leap-c2",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r108-leap-blocker",
+          "length": 9,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 3
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r108-leap-leaper",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 1
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 109,
+      "placed": true,
+      "leap": [
+        {
+          "face": "back",
+          "x": 3,
+          "y": 3
+        }
+      ],
+      "ordinaryBlockers": [
+        "r109-75",
+        "r109-155",
+        "r109-36",
+        "r109-41",
+        "r109-188",
+        "r109-31",
+        "r109-172",
+        "r109-107",
+        "r109-58",
+        "r109-73",
+        "r109-135"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r109-xblock-leap0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r109-leap-blocker",
+          "length": 21,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 9
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r109-leap-c3",
+          "length": 6,
+          "faces": ["right", "back"],
+          "head": {
+            "face": "back",
+            "x": 0,
+            "y": 9
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r109-leap-c2",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 1,
+            "y": 8
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r109-leap-leaper",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 3,
+            "y": 7
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 110,
+      "placed": true,
+      "leap": [
+        {
+          "face": "bottom",
+          "x": 10,
+          "y": 11
+        }
+      ],
+      "ordinaryBlockers": [
+        "r110-170",
+        "r110-139",
+        "r110-47",
+        "r110-71",
+        "r110-45",
+        "r110-53",
+        "r110-131"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r110-leap-blocker",
+          "length": 11,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 6
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r110-leap-c2",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 6
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r110-leap-c3",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r110-leap-leaper",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 11
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 112,
+      "placed": false
+    },
+    {
+      "id": 113,
+      "placed": true,
+      "leap": [
+        {
+          "face": "back",
+          "x": 2,
+          "y": 6
+        }
+      ],
+      "ordinaryBlockers": [
+        "r113-183",
+        "r113-148",
+        "r113-116",
+        "r113-28",
+        "r113-124",
+        "r113-38",
+        "r113-106",
+        "r113-73"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r113-xblock-leap1",
+          "length": 5
+        },
+        {
+          "id": "r113-xblock-leap0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r113-leap-c2",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 0
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r113-leap-c3",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r113-leap-blocker",
+          "length": 12,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 6,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r113-leap-leaper",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 3,
+            "y": 6
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 116,
+      "placed": true,
+      "leap": [
+        {
+          "face": "front",
+          "x": 10,
+          "y": 13
+        }
+      ],
+      "ordinaryBlockers": [
+        "r116-113",
+        "r116-47",
+        "r116-169",
+        "r116-55",
+        "r116-67",
+        "r116-71",
+        "r116-128",
+        "r116-121"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r116-xblock-leap1",
+          "length": 4
+        },
+        {
+          "id": "r116-xblock-leap0",
+          "length": 7
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r116-leap-blocker",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 14
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r116-leap-c2",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 14
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r116-leap-leaper",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 13
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 120,
+      "placed": true,
+      "leap": [
+        {
+          "face": "front",
+          "x": 2,
+          "y": 13
+        }
+      ],
+      "ordinaryBlockers": ["r120-195", "r120-113", "r120-192", "r120-129"],
+      "seededBlockers": [
+        {
+          "id": "r120-xblock-leap0",
+          "length": 7
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r120-leap-c2",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 11
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r120-leap-blocker",
+          "length": 16,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 9
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r120-leap-c3",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r120-leap-leaper",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 13
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 122,
+      "placed": true,
+      "leap": [
+        {
+          "face": "back",
+          "x": 11,
+          "y": 13
+        }
+      ],
+      "ordinaryBlockers": [
+        "r122-62",
+        "r122-118",
+        "r122-177",
+        "r122-44",
+        "r122-33",
+        "r122-136"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r122-xblock-leap0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r122-leap-c2",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r122-leap-blocker",
+          "length": 13,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 13,
+            "y": 11
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r122-leap-leaper",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 11
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 126,
+      "placed": true,
+      "leap": [
+        {
+          "face": "front",
+          "x": 4,
+          "y": 10
+        }
+      ],
+      "ordinaryBlockers": [
+        "r126-190",
+        "r126-110",
+        "r126-101",
+        "r126-74",
+        "r126-35",
+        "r126-37",
+        "r126-116",
+        "r126-112",
+        "r126-181",
+        "r126-147",
+        "r126-53",
+        "r126-63",
+        "r126-159",
+        "r126-40",
+        "r126-134",
+        "r126-71"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r126-xblock-leap0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r126-leap-blocker",
+          "length": 11,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 6
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r126-leap-c2",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r126-leap-leaper",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 10
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 127,
+      "placed": true,
+      "leap": [
+        {
+          "face": "top",
+          "x": 2,
+          "y": 13
+        }
+      ],
+      "ordinaryBlockers": ["r127-117", "r127-95", "r127-53"],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r127-leap-blocker",
+          "length": 16,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 6
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r127-leap-c3",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 10
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r127-leap-c2",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r127-leap-leaper",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 13
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 128,
+      "placed": true,
+      "leap": [
+        {
+          "face": "bottom",
+          "x": 0,
+          "y": 8
+        }
+      ],
+      "ordinaryBlockers": [
+        "r128-47",
+        "r128-90",
+        "r128-101",
+        "r128-159",
+        "r128-138",
+        "r128-137"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r128-leap-c2",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 2,
+            "y": 7
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r128-leap-c3",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 1,
+            "y": 1
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r128-leap-blocker",
+          "length": 32,
+          "faces": ["bottom", "left", "front"],
+          "head": {
+            "face": "bottom",
+            "x": 3,
+            "y": 3
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r128-leap-leaper",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 4
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 129,
+      "placed": true,
+      "leap": [
+        {
+          "face": "left",
+          "x": 15,
+          "y": 9
+        }
+      ],
+      "ordinaryBlockers": [
+        "r129-172",
+        "r129-160",
+        "r129-119",
+        "r129-110",
+        "r129-116"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r129-xblock-leap0",
+          "length": 6
+        },
+        {
+          "id": "r129-xblock-leap1",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r129-leap-blocker",
+          "length": 16,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 14,
+            "y": 14
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r129-leap-c3",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 12
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r129-leap-c2",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 12,
+            "y": 12
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r129-leap-leaper",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 9
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 130,
+      "placed": true,
+      "leap": [
+        {
+          "face": "front",
+          "x": 6,
+          "y": 11
+        }
+      ],
+      "ordinaryBlockers": ["r130-29", "r130-147", "r130-156", "r130-124"],
+      "seededBlockers": [
+        {
+          "id": "r130-xblock-leap0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r130-leap-blocker",
+          "length": 21,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 6
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r130-leap-c2",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 6
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r130-leap-leaper",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 8
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 131,
+      "placed": true,
+      "leap": [
+        {
+          "face": "left",
+          "x": 10,
+          "y": 3
+        }
+      ],
+      "ordinaryBlockers": [
+        "r131-124",
+        "r131-180",
+        "r131-43",
+        "r131-162",
+        "r131-35",
+        "r131-68",
+        "r131-53",
+        "r131-119",
+        "r131-74"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r131-xblock-leap0",
+          "length": 8
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r131-leap-blocker",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 4
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r131-leap-c2",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 5
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r131-leap-leaper",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 5
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 135,
+      "placed": true,
+      "leap": [
+        {
+          "face": "left",
+          "x": 7,
+          "y": 9
+        }
+      ],
+      "ordinaryBlockers": [
+        "r135-164",
+        "r135-141",
+        "r135-38",
+        "r135-196",
+        "r135-70",
+        "r135-58",
+        "r135-56",
+        "r135-92"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r135-xblock-leap0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r135-leap-c2",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r135-leap-blocker",
+          "length": 16,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 4
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r135-leap-c3",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r135-leap-leaper",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 9
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 137,
+      "placed": true,
+      "leap": [
+        {
+          "face": "top",
+          "x": 13,
+          "y": 3
+        }
+      ],
+      "ordinaryBlockers": [
+        "r137-182",
+        "r137-166",
+        "r137-90",
+        "r137-97",
+        "r137-66",
+        "r137-151",
+        "r137-68",
+        "r137-165",
+        "r137-118"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r137-xblock-leap0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r137-leap-c2",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 8
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r137-leap-c3",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 8
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r137-leap-blocker",
+          "length": 11,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 5
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r137-leap-leaper",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 7
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 138,
+      "placed": true,
+      "leap": [
+        {
+          "face": "front",
+          "x": 17,
+          "y": 3
+        }
+      ],
+      "ordinaryBlockers": ["r138-124", "r138-71"],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r138-leap-c2",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 13,
+            "y": 6
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r138-leap-c3",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 6
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r138-leap-blocker",
+          "length": 11,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 5
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r138-leap-leaper",
+          "length": 4,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 17,
+            "y": 5
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 139,
+      "placed": true,
+      "leap": [
+        {
+          "face": "back",
+          "x": 7,
+          "y": 6
+        }
+      ],
+      "ordinaryBlockers": [
+        "r139-188",
+        "r139-36",
+        "r139-158",
+        "r139-45",
+        "r139-148",
+        "r139-130",
+        "r139-44",
+        "r139-68",
+        "r139-118"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r139-leap-c2",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 4,
+            "y": 7
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r139-leap-blocker",
+          "length": 21,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 5,
+            "y": 8
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r139-leap-leaper",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 7
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 141,
+      "placed": true,
+      "leap": [
+        {
+          "face": "back",
+          "x": 12,
+          "y": 11
+        }
+      ],
+      "ordinaryBlockers": [
+        "r141-37",
+        "r141-134",
+        "r141-89",
+        "r141-31",
+        "r141-90",
+        "r141-98",
+        "r141-181",
+        "r141-197",
+        "r141-115"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r141-xblock-leap0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r141-leap-c2",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 16,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r141-leap-blocker",
+          "length": 11,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 9
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r141-leap-c3",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 16,
+            "y": 10
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r141-leap-leaper",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 11
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 143,
+      "placed": true,
+      "leap": [
+        {
+          "face": "front",
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "ordinaryBlockers": ["r143-162", "r143-149", "r143-28"],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r143-leap-blocker",
+          "length": 22,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 5
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r143-leap-c2",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 3
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r143-leap-leaper",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 0
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 144,
+      "placed": true,
+      "leap": [
+        {
+          "face": "left",
+          "x": 3,
+          "y": 6
+        }
+      ],
+      "ordinaryBlockers": [
+        "r144-40",
+        "r144-192",
+        "r144-135",
+        "r144-75",
+        "r144-156",
+        "r144-107",
+        "r144-163",
+        "r144-143",
+        "r144-77"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r144-xblock-leap0",
+          "length": 6
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r144-leap-blocker",
+          "length": 14,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "top",
+            "x": 1,
+            "y": 5
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r144-leap-c2",
+          "length": 6,
+          "faces": ["top", "left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 0
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r144-leap-c3",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r144-leap-leaper",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 6
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 145,
+      "placed": true,
+      "leap": [
+        {
+          "face": "front",
+          "x": 9,
+          "y": 17
+        }
+      ],
+      "ordinaryBlockers": [
+        "r145-145",
+        "r145-126",
+        "r145-55",
+        "r145-120",
+        "r145-86",
+        "r145-119",
+        "r145-180"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r145-xblock-leap0",
+          "length": 6
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r145-leap-blocker",
+          "length": 17,
+          "faces": ["bottom", "front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 13
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r145-leap-c2",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 16
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r145-leap-leaper",
+          "length": 5,
+          "faces": ["bottom", "front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 17
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 146,
+      "placed": true,
+      "leap": [
+        {
+          "face": "front",
+          "x": 2,
+          "y": 6
+        }
+      ],
+      "ordinaryBlockers": ["r146-94", "r146-106", "r146-160"],
+      "seededBlockers": [
+        {
+          "id": "r146-xblock-leap0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r146-leap-blocker",
+          "length": 12,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 5
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r146-leap-c3",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 3,
+            "y": 3
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r146-leap-c2",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 1
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r146-leap-leaper",
+          "length": 5,
+          "faces": ["top", "front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 2
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 147,
+      "placed": true,
+      "leap": [
+        {
+          "face": "left",
+          "x": 7,
+          "y": 17
+        }
+      ],
+      "ordinaryBlockers": ["r147-46", "r147-70", "r147-126"],
+      "seededBlockers": [
+        {
+          "id": "r147-xblock-leap0",
+          "length": 6
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r147-leap-blocker",
+          "length": 34,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 3
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r147-leap-c2",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 4
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r147-leap-c3",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 3,
+            "y": 4
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r147-leap-leaper",
+          "length": 6,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 12,
+            "y": 17
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 149,
+      "placed": true,
+      "leap": [
+        {
+          "face": "left",
+          "x": 15,
+          "y": 11
+        }
+      ],
+      "ordinaryBlockers": ["r149-39", "r149-59", "r149-155", "r149-195"],
+      "seededBlockers": [
+        {
+          "id": "r149-xblock-leap0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r149-leap-blocker",
+          "length": 16,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 12,
+            "y": 4
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r149-leap-c2",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 14,
+            "y": 4
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r149-leap-leaper",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 15,
+            "y": 7
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 150,
+      "placed": true,
+      "leap": [
+        {
+          "face": "top",
+          "x": 14,
+          "y": 2
+        }
+      ],
+      "ordinaryBlockers": [
+        "r150-199",
+        "r150-183",
+        "r150-77",
+        "r150-112",
+        "r150-118",
+        "r150-58",
+        "r150-68",
+        "r150-52",
+        "r150-122",
+        "r150-84",
+        "r150-49",
+        "r150-127",
+        "r150-46",
+        "r150-87",
+        "r150-79"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r150-leap-c2",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 4
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r150-leap-blocker",
+          "length": 16,
+          "faces": ["back", "top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r150-leap-leaper",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 2
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 151,
+      "placed": true,
+      "leap": [
+        {
+          "face": "left",
+          "x": 15,
+          "y": 15
+        }
+      ],
+      "ordinaryBlockers": ["r151-155", "r151-55", "r151-30"],
+      "seededBlockers": [
+        {
+          "id": "r151-xblock-leap0",
+          "length": 3
+        },
+        {
+          "id": "r151-xblock-leap1",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r151-leap-c2",
+          "length": 3,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 17
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r151-leap-c3",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 17
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r151-leap-blocker",
+          "length": 14,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r151-leap-leaper",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 15
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 153,
+      "placed": true,
+      "leap": [
+        {
+          "face": "top",
+          "x": 13,
+          "y": 12
+        }
+      ],
+      "ordinaryBlockers": [
+        "r153-178",
+        "r153-75",
+        "r153-63",
+        "r153-149",
+        "r153-145",
+        "r153-91"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r153-xblock-leap0",
+          "length": 3
+        },
+        {
+          "id": "r153-xblock-leap1",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r153-leap-blocker",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 12
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r153-leap-c2",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r153-leap-leaper",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 8
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 160,
+      "placed": true,
+      "leap": [
+        {
+          "face": "back",
+          "x": 4,
+          "y": 1
+        }
+      ],
+      "ordinaryBlockers": [
+        "r160-68",
+        "r160-94",
+        "r160-109",
+        "r160-178",
+        "r160-189",
+        "r160-174",
+        "r160-166",
+        "r160-163",
+        "r160-114",
+        "r160-143",
+        "r160-60"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r160-xblock-leap1",
+          "length": 6
+        },
+        {
+          "id": "r160-xblock-leap0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r160-leap-c2",
+          "length": 4,
+          "faces": ["back", "top"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 0
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r160-leap-blocker",
+          "length": 16,
+          "faces": ["back", "right", "top"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 1
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r160-leap-leaper",
+          "length": 5,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 4,
+            "y": 0
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 163,
+      "placed": true,
+      "leap": [
+        {
+          "face": "top",
+          "x": 11,
+          "y": 10
+        }
+      ],
+      "ordinaryBlockers": [
+        "r163-178",
+        "r163-177",
+        "r163-123",
+        "r163-71",
+        "r163-97"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r163-xblock-leap0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r163-leap-blocker",
+          "length": 17,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 7,
+            "y": 7
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r163-leap-c2",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 8
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r163-leap-leaper",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 8
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 165,
+      "placed": true,
+      "leap": [
+        {
+          "face": "right",
+          "x": 9,
+          "y": 9
+        }
+      ],
+      "ordinaryBlockers": [
+        "r165-93",
+        "r165-76",
+        "r165-191",
+        "r165-38",
+        "r165-120",
+        "r165-108",
+        "r165-63",
+        "r165-179",
+        "r165-174",
+        "r165-148",
+        "r165-141"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r165-leap-blocker",
+          "length": 17,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r165-leap-c3",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 16
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r165-leap-c2",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r165-leap-leaper",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 15
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 166,
+      "placed": true,
+      "leap": [
+        {
+          "face": "back",
+          "x": 5,
+          "y": 12
+        }
+      ],
+      "ordinaryBlockers": [
+        "r166-54",
+        "r166-49",
+        "r166-111",
+        "r166-83",
+        "r166-78"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r166-xblock-leap0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r166-leap-blocker",
+          "length": 16,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 6
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r166-leap-c2",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 10
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r166-leap-leaper",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 12
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 167,
+      "placed": true,
+      "leap": [
+        {
+          "face": "front",
+          "x": 9,
+          "y": 15
+        }
+      ],
+      "ordinaryBlockers": [
+        "r167-65",
+        "r167-174",
+        "r167-33",
+        "r167-142",
+        "r167-98",
+        "r167-161"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r167-xblock-leap1",
+          "length": 4
+        },
+        {
+          "id": "r167-xblock-leap0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r167-leap-c2",
+          "length": 6,
+          "faces": ["bottom", "front"],
+          "head": {
+            "face": "front",
+            "x": 3,
+            "y": 16
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r167-leap-blocker",
+          "length": 12,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 12
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r167-leap-leaper",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 15
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 169,
+      "placed": true,
+      "leap": [
+        {
+          "face": "left",
+          "x": 1,
+          "y": 6
+        }
+      ],
+      "ordinaryBlockers": [
+        "r169-126",
+        "r169-118",
+        "r169-45",
+        "r169-80",
+        "r169-44",
+        "r169-35"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r169-xblock-leap0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r169-leap-c2",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 0,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r169-leap-blocker",
+          "length": 9,
+          "faces": ["left", "back"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r169-leap-leaper",
+          "length": 4,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 1,
+            "y": 8
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 175,
+      "placed": true,
+      "leap": [
+        {
+          "face": "right",
+          "x": 8,
+          "y": 6
+        }
+      ],
+      "ordinaryBlockers": ["r175-149", "r175-176", "r175-168"],
+      "seededBlockers": [
+        {
+          "id": "r175-xblock-leap1",
+          "length": 4
+        },
+        {
+          "id": "r175-xblock-leap0",
+          "length": 8
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r175-leap-blocker",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 6
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r175-leap-c2",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 10
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r175-leap-leaper",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 10
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 176,
+      "placed": true,
+      "leap": [
+        {
+          "face": "bottom",
+          "x": 8,
+          "y": 9
+        }
+      ],
+      "ordinaryBlockers": [
+        "r176-69",
+        "r176-166",
+        "r176-42",
+        "r176-154",
+        "r176-41",
+        "r176-160",
+        "r176-87",
+        "r176-34",
+        "r176-135"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r176-leap-blocker",
+          "length": 12,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 3
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r176-leap-c2",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 5
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r176-leap-c3",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r176-leap-leaper",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 9
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 177,
+      "placed": true,
+      "leap": [
+        {
+          "face": "top",
+          "x": 16,
+          "y": 15
+        }
+      ],
+      "ordinaryBlockers": ["r177-45"],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r177-leap-blocker",
+          "length": 15,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 11
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r177-leap-c2",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 11
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r177-leap-leaper",
+          "length": 6,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 16,
+            "y": 11
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 178,
+      "placed": true,
+      "leap": [
+        {
+          "face": "top",
+          "x": 9,
+          "y": 10
+        }
+      ],
+      "ordinaryBlockers": [
+        "r178-31",
+        "r178-161",
+        "r178-89",
+        "r178-86",
+        "r178-91",
+        "r178-119",
+        "r178-97",
+        "r178-85",
+        "r178-82",
+        "r178-60"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r178-xblock-leap0",
+          "length": 6
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r178-leap-blocker",
+          "length": 20,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 1
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r178-leap-c3",
+          "length": 5,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 16,
+            "y": 14
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r178-leap-c2",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r178-leap-leaper",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 10
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 179,
+      "placed": true,
+      "leap": [
+        {
+          "face": "top",
+          "x": 15,
+          "y": 12
+        }
+      ],
+      "ordinaryBlockers": [
+        "r179-178",
+        "r179-67",
+        "r179-62",
+        "r179-44",
+        "r179-80",
+        "r179-158"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r179-xblock-leap0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r179-leap-blocker",
+          "length": 12,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 10
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r179-leap-c3",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 10
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r179-leap-c2",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 8,
+            "y": 9
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r179-leap-leaper",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 12
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 181,
+      "placed": true,
+      "leap": [
+        {
+          "face": "front",
+          "x": 0,
+          "y": 15
+        }
+      ],
+      "ordinaryBlockers": [
+        "r181-69",
+        "r181-198",
+        "r181-84",
+        "r181-50",
+        "r181-132",
+        "r181-110",
+        "r181-41",
+        "r181-188",
+        "r181-144",
+        "r181-96",
+        "r181-113",
+        "r181-74",
+        "r181-68"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r181-xblock-leap0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r181-leap-blocker",
+          "length": 6,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 15
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r181-leap-c3",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 16
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r181-leap-c2",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 1,
+            "y": 0
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r181-leap-leaper",
+          "length": 4,
+          "faces": ["left", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 0
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 182,
+      "placed": false
+    },
+    {
+      "id": 184,
+      "placed": true,
+      "leap": [
+        {
+          "face": "left",
+          "x": 8,
+          "y": 4
+        }
+      ],
+      "ordinaryBlockers": [
+        "r184-135",
+        "r184-36",
+        "r184-82",
+        "r184-190",
+        "r184-32",
+        "r184-24",
+        "r184-126",
+        "r184-103"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r184-xblock-leap0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r184-leap-blocker",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 9,
+            "y": 5
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r184-leap-c2",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 6
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r184-leap-c3",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 12,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r184-leap-leaper",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 4
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 185,
+      "placed": true,
+      "leap": [
+        {
+          "face": "right",
+          "x": 7,
+          "y": 14
+        }
+      ],
+      "ordinaryBlockers": [
+        "r185-136",
+        "r185-71",
+        "r185-95",
+        "r185-113",
+        "r185-57",
+        "r185-130",
+        "r185-63",
+        "r185-101",
+        "r185-188",
+        "r185-106",
+        "r185-61",
+        "r185-35"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r185-xblock-leap0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r185-leap-blocker",
+          "length": 28,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 4
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r185-leap-c3",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 5,
+            "y": 9
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r185-leap-c2",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 3,
+            "y": 4
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r185-leap-leaper",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 7
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 186,
+      "placed": true,
+      "leap": [
+        {
+          "face": "front",
+          "x": 11,
+          "y": 5
+        }
+      ],
+      "ordinaryBlockers": [
+        "r186-124",
+        "r186-150",
+        "r186-44",
+        "r186-183",
+        "r186-147",
+        "r186-139",
+        "r186-116",
+        "r186-95"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r186-xblock-leap1",
+          "length": 3
+        },
+        {
+          "id": "r186-xblock-leap0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r186-leap-c2",
+          "length": 6,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 17,
+            "y": 4
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r186-leap-blocker",
+          "length": 15,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r186-leap-leaper",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 5
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 189,
+      "placed": true,
+      "leap": [
+        {
+          "face": "right",
+          "x": 14,
+          "y": 8
+        }
+      ],
+      "ordinaryBlockers": [
+        "r189-65",
+        "r189-74",
+        "r189-165",
+        "r189-71",
+        "r189-152"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r189-xblock-leap0",
+          "length": 7
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r189-leap-blocker",
+          "length": 20,
+          "faces": ["right", "back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r189-leap-c3",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 2,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r189-leap-c2",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 3,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r189-leap-leaper",
+          "length": 4,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 16,
+            "y": 8
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 190,
+      "placed": true,
+      "leap": [
+        {
+          "face": "right",
+          "x": 12,
+          "y": 15
+        }
+      ],
+      "ordinaryBlockers": [
+        "r190-109",
+        "r190-150",
+        "r190-119",
+        "r190-117",
+        "r190-77",
+        "r190-114",
+        "r190-61"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r190-xblock-leap0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r190-leap-blocker",
+          "length": 36,
+          "faces": ["right", "bottom", "back"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 7
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r190-leap-c2",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 15,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r190-leap-c3",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 10
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r190-leap-leaper",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 10
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 191,
+      "placed": false
+    },
+    {
+      "id": 192,
+      "placed": true,
+      "leap": [
+        {
+          "face": "left",
+          "x": 17,
+          "y": 2
+        }
+      ],
+      "ordinaryBlockers": ["r192-55", "r192-189"],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r192-leap-blocker",
+          "length": 15,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 7
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r192-leap-c2",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 16,
+            "y": 7
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r192-leap-leaper",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 17,
+            "y": 6
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 194,
+      "placed": true,
+      "leap": [
+        {
+          "face": "front",
+          "x": 4,
+          "y": 12
+        }
+      ],
+      "ordinaryBlockers": [
+        "r194-154",
+        "r194-82",
+        "r194-86",
+        "r194-39",
+        "r194-115",
+        "r194-107",
+        "r194-168",
+        "r194-62"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r194-leap-c2",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 10,
+            "y": 6
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r194-leap-c3",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r194-leap-blocker",
+          "length": 16,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r194-leap-leaper",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 4,
+            "y": 10
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 196,
+      "placed": true,
+      "leap": [
+        {
+          "face": "bottom",
+          "x": 2,
+          "y": 7
+        }
+      ],
+      "ordinaryBlockers": [
+        "r196-127",
+        "r196-92",
+        "r196-32",
+        "r196-169",
+        "r196-144"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r196-leap-blocker",
+          "length": 21,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 10
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r196-leap-c2",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 10
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r196-leap-leaper",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 2,
+            "y": 9
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 198,
+      "placed": true,
+      "leap": [
+        {
+          "face": "back",
+          "x": 17,
+          "y": 10
+        }
+      ],
+      "ordinaryBlockers": [
+        "r198-40",
+        "r198-55",
+        "r198-177",
+        "r198-66",
+        "r198-68"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r198-xblock-leap0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r198-leap-blocker",
+          "length": 19,
+          "faces": ["left", "back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 13
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r198-leap-c2",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 16,
+            "y": 13
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r198-leap-leaper",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 12
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 199,
+      "placed": true,
+      "leap": [
+        {
+          "face": "bottom",
+          "x": 12,
+          "y": 15
+        }
+      ],
+      "ordinaryBlockers": ["r199-143", "r199-92"],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r199-leap-blocker",
+          "length": 14,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 9
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r199-leap-c3",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 12
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r199-leap-c2",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 12
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r199-leap-leaper",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 15
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 200,
+      "placed": false
+    }
+  ]
+}

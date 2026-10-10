@@ -206,9 +206,9 @@ describe("generated flip cores", () => {
   }, 60_000);
 
   // Preserve the actual shared-spot regression independently of later
-  // optional-mechanic rerolls. Captured from level 124 at f8bda3eb.
+  // optional-mechanic rerolls. Capture the constructor context from 124 at f8bda3eb.
   test("a later fragile reroll preserves shared two-spot safety", () => {
-    const core = JSON.parse(
+    const input = JSON.parse(
       readFileSync(
         new URL(
           "./fixtures/fragile-shared-flip-regression.json",
@@ -216,7 +216,22 @@ describe("generated flip cores", () => {
         ),
         "utf8",
       ),
-    ) as LevelDefinition;
+    ) as {
+      level: LevelDefinition;
+      seed: number;
+      occupied: string[];
+      tracks: string[];
+      limit: number;
+    };
+    const core = constructFlip(
+      input.level,
+      new Rng(input.seed),
+      new Set(input.occupied),
+      new Set(input.tracks),
+      input.limit,
+    );
+    expect(core).toBeDefined();
+    if (!core) throw new Error("Historical shared-Flip context must construct");
     expect(core.directionals!.length).toBe(2);
     const [first, second] = [...safetyWitnesses(core).values()];
     expect([...first!].some((id) => second!.has(id))).toBe(true);

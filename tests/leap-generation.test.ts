@@ -27,7 +27,8 @@ describe("leap generation", () => {
         // Blocker ids end "-xblock-leap<n>", so the "-leap-" core filter never
         // picks a blocker up as a core arrow.
         expect(blocker.id.includes("-leap-")).toBe(false);
-        expect(blocker.path.length).toBe(2);
+        expect(blocker.path.length).toBeGreaterThanOrEqual(3);
+        expect(blocker.path.length).toBeLessThanOrEqual(8);
         expect(blocker.path.some((cell) => coreTrack.has(cellKey(cell)))).toBe(
           true,
         );
