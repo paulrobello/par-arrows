@@ -5,6 +5,8 @@
  *   bun scripts/capture-help-shots.ts
  * Kill the preview server afterwards. Each thumbnail is the canvas of the
  * mechanic's introduction cube, so the guide's pictures always match play.
+ * Pass mechanic IDs to refresh only changed lessons. HELP_HEADLESS=1 permits
+ * draft software captures; these do not replace real-GPU acceptance.
  */
 import { mkdir } from "node:fs/promises";
 import { chromium } from "playwright";
@@ -26,7 +28,19 @@ const SHOTS: ReadonlyArray<readonly [string, string]> = [
   ["leap", "/?feature=leap&test=1"],
 ];
 
-const browser = await chromium.launch({ headless: false });
+const requested = process.argv.slice(2);
+for (const id of requested)
+  if (!SHOTS.some(([known]) => known === id))
+    throw new Error(`Unknown mechanic: ${id}`);
+const shots = requested.length
+  ? SHOTS.filter(([id]) => requested.includes(id))
+  : SHOTS;
+const headless = process.env.HELP_HEADLESS === "1";
+if (headless)
+  console.log(
+    "Draft headless captures; hardware-GPU acceptance remains required.",
+  );
+const browser = await chromium.launch({ headless });
 const context = await browser.newContext({
   viewport: { width: 560, height: 380 },
   deviceScaleFactor: 2,
@@ -34,7 +48,7 @@ const context = await browser.newContext({
 });
 const page = await context.newPage();
 await mkdir(new URL("../public/help/", import.meta.url), { recursive: true });
-for (const [id, path] of SHOTS) {
+for (const [id, path] of shots) {
   await page.goto(`${BASE}${path}`);
   await page.waitForSelector("canvas");
   await page.waitForTimeout(1800);

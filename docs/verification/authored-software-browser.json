@@ -1,0 +1,41 @@
+{
+  "baseline": "cc04861ca14161cd67505e43cd08599b37b3d993",
+  "bun": "1.4.2",
+  "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "softwareRendering": true,
+  "hardwareGpuAcceptance": "pending",
+  "physicalDeviceAcceptance": false,
+  "thresholdsChanged": false,
+  "cases": [
+    {
+      "mechanic": "directional",
+      "command": "PLAYWRIGHT_BROWSERS_PATH=/workspace/par-arrows-browser-cache DIRECTIONAL_ONLY=1 bun tests/browser-runner.ts",
+      "exitCode": 0,
+      "log": "Headless without the full-binary chrome channel uses the legacy chrome-headless-shell (SwiftShader): not valid pixel evidence. Set BROWSER_HEADED=1.\n"
+    },
+    {
+      "mechanic": "rotor",
+      "command": "PLAYWRIGHT_BROWSERS_PATH=/workspace/par-arrows-browser-cache ROTOR_ONLY=1 bun tests/browser-runner.ts",
+      "exitCode": 0,
+      "log": "Headless without the full-binary chrome channel uses the legacy chrome-headless-shell (SwiftShader): not valid pixel evidence. Set BROWSER_HEADED=1.\nrotor: glyph amber 289 px light, 289 px dark, 0 px light-amber after the swap\nrotor: level 40 glyph turns at 250/350/460 ms 0,0.8333333333333341,1\nrotor: glyph after reload drift 0 px vs north, 133 px vs west\nrotor: level 58 core parks r58-rotor-p across a reload and turns bottom:8:11 east -> south -> west -> west -> west -> west -> west\n"
+    },
+    {
+      "mechanic": "mirror",
+      "command": "PLAYWRIGHT_BROWSERS_PATH=/workspace/par-arrows-browser-cache MIRROR_ONLY=1 bun tests/browser-runner.ts",
+      "exitCode": 0,
+      "log": "Headless without the full-binary chrome channel uses the legacy chrome-headless-shell (SwiftShader): not valid pixel evidence. Set BROWSER_HEADED=1.\nmirror: 337/336 px (light/dark), 22 px light-mirror after the swap\n"
+    },
+    {
+      "mechanic": "help",
+      "command": "PLAYWRIGHT_BROWSERS_PATH=/workspace/par-arrows-browser-cache HELP_ONLY=1 bun tests/browser-runner.ts",
+      "exitCode": 0,
+      "log": "Headless without the full-binary chrome channel uses the legacy chrome-headless-shell (SwiftShader): not valid pixel evidence. Set BROWSER_HEADED=1.\nPASS settings mechanics guide\n"
+    }
+  ],
+  "helpCaptures": {
+    "command": "PLAYWRIGHT_BROWSERS_PATH=/workspace/par-arrows-browser-cache HELP_HEADLESS=1 bun scripts/capture-help-shots.ts directional rotor mirror",
+    "exitCode": 0,
+    "provisional": true,
+    "log": "Draft headless captures; hardware-GPU acceptance remains required.\ncaptured directional\ncaptured rotor\ncaptured mirror\n"
+  }
+}

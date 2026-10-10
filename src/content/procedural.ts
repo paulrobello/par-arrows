@@ -148,14 +148,14 @@ export function seedForLevel(id: number): string {
   if (id === 5) return "par-arrows:runtime:4:level:5:stop-intro:1";
   if (id === 11) return "par-arrows:runtime:2:level:11:wrap-intro:1";
   if (id === 15) return "par-arrows:runtime:3:level:15:overlap-intro:1";
-  if (id === 20) return "par-arrows:runtime:4:level:20:directional-intro:1";
+  if (id === 20) return "par-arrows:runtime:4:level:20:directional-intro:2";
   if (id === 25) return "par-arrows:runtime:7:level:25:double-intro:1";
   if (id === 30) return "par-arrows:runtime:7:level:30:flip-intro:1";
   if (id === 35) return "par-arrows:runtime:7:level:35:wormhole-intro:1";
-  if (id === 40) return "par-arrows:runtime:7:level:40:rotor-intro:1";
+  if (id === 40) return "par-arrows:runtime:7:level:40:rotor-intro:2";
   if (id === 45) return "par-arrows:runtime:7:level:45:fragile-intro:1";
   if (id === 50) return "par-arrows:runtime:7:level:50:lock-intro:1";
-  if (id === 55) return "par-arrows:runtime:7:level:55:mirror-intro:1";
+  if (id === 55) return "par-arrows:runtime:7:level:55:mirror-intro:2";
   if (id === 60) return "par-arrows:runtime:7:level:60:leap-intro:1";
   return `par-arrows:runtime:${GENERATOR_VERSION}:level:${id}`;
 }

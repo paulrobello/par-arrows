@@ -18,20 +18,21 @@ import { solveLevelTargets, validateLevel } from "../src/core/validation";
 import { scriptForLevel } from "../src/tutorial";
 
 const NORTH = "mirror-intro-north";
-const SOUTH = "mirror-intro-south";
+const EAST = "mirror-intro-east";
+const RELEASE = "mirror-intro-release";
 
 describe("mirror introduction", () => {
   test("level 55 is the authored mirror cube", () => {
     expect(generateLevel(55)).toBe(MIRROR_INTRO_LEVEL);
     expect(isAuthoredLevel(55)).toBe(true);
     expect(seedForLevel(55)).toBe(
-      "par-arrows:runtime:7:level:55:mirror-intro:1",
+      "par-arrows:runtime:7:level:55:mirror-intro:2",
     );
     expect(validateLevel(MIRROR_INTRO_LEVEL).errors).toEqual([]);
-    expect(MIRROR_INTRO_LEVEL.gridSize).toBe(4);
+    expect(MIRROR_INTRO_LEVEL.gridSize).toBe(5);
     expect(MIRROR_INTRO_LEVEL.lives).toBe(5);
     expect(MIRROR_INTRO_LEVEL.mirrors).toEqual([
-      { cell: { face: "front", x: 1, y: 1 }, orientation: "/" },
+      { cell: { face: "front", x: 2, y: 2 }, orientation: "/" },
     ]);
     expect(MIRROR_INTRO_LEVEL.stops ?? []).toEqual([]);
     expect(MIRROR_INTRO_LEVEL.directionals ?? []).toEqual([]);
@@ -41,19 +42,44 @@ describe("mirror introduction", () => {
     expect(MIRROR_INTRO_LEVEL.edgePolicies ?? []).toEqual([]);
   });
 
-  test("the face-off pair needs the mirror, and either order clears", () => {
-    const initial = createGameState(MIRROR_INTRO_LEVEL);
-    const north = simulateMove(MIRROR_INTRO_LEVEL, initial, NORTH);
+  test("perpendicular approaches use distinct reflected exits and a required release", () => {
+    let state = createGameState(MIRROR_INTRO_LEVEL);
+    expect(simulateMove(MIRROR_INTRO_LEVEL, state, EAST).blockerId).toBe(
+      RELEASE,
+    );
+    expect(
+      simulateMove({ ...MIRROR_INTRO_LEVEL, mirrors: [] }, state, EAST).kind,
+    ).toBe("exit");
+    const north = simulateMove(MIRROR_INTRO_LEVEL, state, NORTH);
     expect(north.kind).toBe("exit");
-    const south = simulateMove(MIRROR_INTRO_LEVEL, initial, SOUTH);
-    expect(south.kind).toBe("exit");
-    const state = applyMove(MIRROR_INTRO_LEVEL, initial, north);
-    const again = simulateMove(MIRROR_INTRO_LEVEL, state, SOUTH);
-    expect(again.kind).toBe("exit");
-    const solution = solveLevelTargets(MIRROR_INTRO_LEVEL);
-    expect(solution?.[0]?.arrowId).toBe(NORTH);
-    const stripped = { ...MIRROR_INTRO_LEVEL, mirrors: [] };
-    expect(solveLevelTargets(stripped)).toBeUndefined();
+    expect(north.route).toEqual([
+      { face: "front", x: 2, y: 3 },
+      { face: "front", x: 2, y: 2 },
+      { face: "front", x: 3, y: 2 },
+      { face: "front", x: 4, y: 2 },
+    ]);
+    state = applyMove(MIRROR_INTRO_LEVEL, state, north);
+    expect(simulateMove(MIRROR_INTRO_LEVEL, state, EAST).kind).toBe("blocked");
+    const release = simulateMove(MIRROR_INTRO_LEVEL, state, RELEASE);
+    expect(release.kind).toBe("exit");
+    state = applyMove(MIRROR_INTRO_LEVEL, state, release);
+    const east = simulateMove(MIRROR_INTRO_LEVEL, state, EAST);
+    expect(east.kind).toBe("exit");
+    expect(east.route).toEqual([
+      { face: "front", x: 1, y: 2 },
+      { face: "front", x: 2, y: 2 },
+      { face: "front", x: 2, y: 1 },
+      { face: "front", x: 2, y: 0 },
+    ]);
+    state = applyMove(MIRROR_INTRO_LEVEL, state, east);
+    expect(state.status).toBe("won");
+    expect(state.lives).toBe(5);
+    expect(
+      solveLevelTargets(MIRROR_INTRO_LEVEL)?.map((t) => t.arrowId),
+    ).toEqual([NORTH, RELEASE, EAST]);
+    expect(
+      solveLevelTargets({ ...MIRROR_INTRO_LEVEL, mirrors: [] }),
+    ).toBeUndefined();
   });
 
   test("the walkthrough gates the north arrow first", () => {
@@ -65,7 +91,8 @@ describe("mirror introduction", () => {
       arrowIds: [NORTH],
       outcomes: ["exit"],
     });
-    expect(script?.steps[1]?.highlightId).toBe(SOUTH);
+    expect(script?.steps[1]?.highlightId).toBe(RELEASE);
+    expect(script?.steps[2]?.highlightId).toBe(EAST);
   });
 
   test("?feature=mirror opens level 55 without changing campaign saves", () => {

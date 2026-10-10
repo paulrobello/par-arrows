@@ -16,7 +16,8 @@ import { THEME_PALETTES } from "../src/render/renderer";
 import { waitForReady } from "./runtime-fixtures";
 
 const NORTH = "mirror-intro-north";
-const SOUTH = "mirror-intro-south";
+const EAST = "mirror-intro-east";
+const RELEASE = "mirror-intro-release";
 const MIRROR_CELL = MIRROR_INTRO_LEVEL.mirrors?.[0]?.cell as Cell;
 
 interface State {
@@ -393,9 +394,9 @@ async function assertPreviewEntry(
 }
 
 /**
- * First-run walkthrough in campaign play: the walkthrough refuses the south
+ * First-run walkthrough in campaign play: the walkthrough refuses the east
  * arrow while it waits for the north one, the north arrow reflects east and
- * leaves, the walkthrough then asks for the south arrow, and the level clears.
+ * leaves, the walkthrough then asks for the east arrow, and the level clears.
  */
 async function assertScriptedWalkthrough(
   browser: Browser,
@@ -417,16 +418,16 @@ async function assertScriptedWalkthrough(
     assert.equal(tutorial.active, true);
     assert.equal(tutorial.highlightId, NORTH);
 
-    // The gated script ignores the south arrow while it waits for north.
+    // The gated script ignores the east arrow while it waits for north.
     await page.evaluate(
       (id) => window.__PAR_ARROWS_TEST__?.activate(id, "head"),
-      SOUTH,
+      EAST,
     );
     await finishMotion(page);
     let current = await state(page);
     assert.ok(
-      current.remainingIds.includes(SOUTH),
-      "The walkthrough must ignore the south arrow first",
+      current.remainingIds.includes(EAST),
+      "The walkthrough must ignore the east arrow first",
     );
     assert.equal(current.lives, MIRROR_INTRO_LEVEL.lives);
 
@@ -434,11 +435,14 @@ async function assertScriptedWalkthrough(
     current = await state(page);
     assert.ok(!current.remainingIds.includes(NORTH));
     tutorial = await tutorialState(page);
-    assert.equal(tutorial.highlightId, SOUTH);
+    assert.equal(tutorial.highlightId, RELEASE);
+    await activate(page, RELEASE);
+    tutorial = await tutorialState(page);
+    assert.equal(tutorial.highlightId, EAST);
 
-    await activate(page, SOUTH);
+    await activate(page, EAST);
     current = await state(page);
-    assert.ok(!current.remainingIds.includes(SOUTH));
+    assert.ok(!current.remainingIds.includes(EAST));
 
     // Clear the rest of the cube to finish the walkthrough.
     const state1 = await state(page);
@@ -459,7 +463,7 @@ async function assertScriptedWalkthrough(
 
 /**
  * Progress made on the authored mirror cube survives a reload: north gone,
- * lives whole, and the south arrow still leaves through the same mirror.
+ * lives whole, and the east arrow still leaves through the same mirror.
  */
 async function assertReloadMidLevel(
   browser: Browser,
@@ -492,9 +496,10 @@ async function assertReloadMidLevel(
     assert.deepEqual(current.mirrors, [
       { cell: cellKey(MIRROR_CELL), orientation: "/" },
     ]);
-    await activate(page, SOUTH);
+    await activate(page, RELEASE);
+    await activate(page, EAST);
     current = await state(page);
-    assert.ok(!current.remainingIds.includes(SOUTH));
+    assert.ok(!current.remainingIds.includes(EAST));
     void output;
     assert.deepEqual(errors, [], "No page errors across the reload");
   } finally {
@@ -504,7 +509,7 @@ async function assertReloadMidLevel(
 
 /**
  * The first generated mirror core plays in its certified order: the page
- * builds the same cube as the Node generator, both face-off arrows leave
+ * builds the same cube as the Node generator, the two reflected approaches leave
  * through the mirror, and no life is lost.
  */
 async function assertGeneratedCore(

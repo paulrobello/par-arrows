@@ -21,18 +21,18 @@ import {
 } from "../src/core/validation";
 import { cachedLevel } from "./generated-levels";
 
-const EAST = "dir-intro-east";
+const OPENER = "dir-intro-opener";
 const FREED = "dir-intro-freed";
 const BLOCKER = "dir-intro-blocker";
 
 describe("directional spot level content", () => {
-  test("cube twenty is a level-one-style cube with a single spot", () => {
+  test("cube twenty has its own three-body bend lesson", () => {
     expect(DIRECTIONAL_INTRO_LEVEL.id).toBe(20);
-    expect(DIRECTIONAL_INTRO_LEVEL.gridSize).toBe(4);
+    expect(DIRECTIONAL_INTRO_LEVEL.gridSize).toBe(6);
     expect(DIRECTIONAL_INTRO_LEVEL.lives).toBe(5);
     expect(DIRECTIONAL_INTRO_LEVEL.arrows).toHaveLength(3);
     expect(DIRECTIONAL_INTRO_LEVEL.directionals).toEqual([
-      { cell: { face: "front", x: 2, y: 1 }, heading: "north" },
+      { cell: { face: "front", x: 4, y: 3 }, heading: "east" },
     ]);
     expect(DIRECTIONAL_INTRO_LEVEL.edgePolicies ?? []).toEqual([]);
     expect(validateLevel(DIRECTIONAL_INTRO_LEVEL).valid).toBe(true);
@@ -46,7 +46,7 @@ describe("directional spot level content", () => {
     ).toBeUndefined();
   });
 
-  test("its three front arrows deadlock until the spot bends the east arrow", () => {
+  test("its three front arrows deadlock until the spot bends the opener", () => {
     const initial = createGameState(DIRECTIONAL_INTRO_LEVEL);
     // Nothing on the front face can leave: each arrow blocks the next.
     expect(simulateMove(DIRECTIONAL_INTRO_LEVEL, initial, FREED).kind).toBe(
@@ -56,14 +56,14 @@ describe("directional spot level content", () => {
       "blocked",
     );
 
-    // The spot bends the east arrow north and out of the cube, which opens the
+    // The spot bends the opener north and out of the cube, which opens the
     // freed arrow's lane and then the blocker's.
-    const bend = simulateMove(DIRECTIONAL_INTRO_LEVEL, initial, EAST);
+    const bend = simulateMove(DIRECTIONAL_INTRO_LEVEL, initial, OPENER);
     expect(bend.kind).toBe("exit");
     expect(bend.route.map(cellKey)).toEqual([
-      cellKey({ face: "front", x: 1, y: 1 }),
-      cellKey({ face: "front", x: 2, y: 1 }),
-      cellKey({ face: "front", x: 2, y: 0 }),
+      cellKey({ face: "front", x: 4, y: 2 }),
+      cellKey({ face: "front", x: 4, y: 3 }),
+      cellKey({ face: "front", x: 5, y: 3 }),
     ]);
 
     let state = applyMove(DIRECTIONAL_INTRO_LEVEL, initial, bend);
@@ -76,9 +76,9 @@ describe("directional spot level content", () => {
     expect(state.failedIds).toEqual([]);
   });
 
-  test("front arrows are dead while the east arrow still blocks the lane", () => {
+  test("front arrows are dead while the opener still blocks the lane", () => {
     const initial = createGameState(DIRECTIONAL_INTRO_LEVEL);
-    expect(simulateMove(DIRECTIONAL_INTRO_LEVEL, initial, EAST).kind).toBe(
+    expect(simulateMove(DIRECTIONAL_INTRO_LEVEL, initial, OPENER).kind).toBe(
       "exit",
     );
     const stripped: typeof DIRECTIONAL_INTRO_LEVEL = {
@@ -86,14 +86,14 @@ describe("directional spot level content", () => {
       directionals: [],
     };
     const dead = createGameState(stripped);
-    expect(simulateMove(stripped, dead, EAST).kind).toBe("blocked");
+    expect(simulateMove(stripped, dead, OPENER).kind).toBe("blocked");
     expect(simulateMove(stripped, dead, FREED).kind).toBe("blocked");
     expect(simulateMove(stripped, dead, BLOCKER).kind).toBe("blocked");
   });
 
   test("its scripted solution clears the cube without losing a life", () => {
     let state = createGameState(DIRECTIONAL_INTRO_LEVEL);
-    for (const arrowId of [EAST, FREED, BLOCKER]) {
+    for (const arrowId of [OPENER, FREED, BLOCKER]) {
       const result = simulateMove(DIRECTIONAL_INTRO_LEVEL, state, arrowId);
       expect(result.kind).toBe("exit");
       state = applyMove(DIRECTIONAL_INTRO_LEVEL, state, result);

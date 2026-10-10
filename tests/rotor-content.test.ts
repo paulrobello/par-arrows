@@ -14,7 +14,7 @@ import {
   createGameState,
   simulateMove,
 } from "../src/core/game-state";
-import type { FaceId, LevelDefinition } from "../src/core/types";
+import type { LevelDefinition } from "../src/core/types";
 import {
   flipInterest,
   hasStrandingState,
@@ -25,13 +25,14 @@ import { TutorialRunner, scriptForLevel } from "../src/tutorial";
 
 const TURNER = "rotor-intro-turner";
 const BENDER = "rotor-intro-bender";
+const RELEASE = "rotor-intro-release";
 
 describe("rotor introduction", () => {
   test("level 40 is the authored rotor cube", () => {
     expect(generateLevel(40)).toBe(ROTOR_INTRO_LEVEL);
     expect(isAuthoredLevel(40)).toBe(true);
     expect(seedForLevel(40)).toBe(
-      "par-arrows:runtime:7:level:40:rotor-intro:1",
+      "par-arrows:runtime:7:level:40:rotor-intro:2",
     );
     expect(validateLevel(ROTOR_INTRO_LEVEL).errors).toEqual([]);
     expect(solveLevelTargets(ROTOR_INTRO_LEVEL)).toBeDefined();
@@ -48,7 +49,7 @@ describe("rotor introduction", () => {
     ).toBe(true);
   });
 
-  test("the rotor is required: without it the two front arrows deadlock", () => {
+  test("the rotor is required: without it the native body cycle deadlocks", () => {
     expect(
       solveLevelTargets({ ...ROTOR_INTRO_LEVEL, directionals: [] }),
     ).toBeUndefined();
@@ -76,25 +77,32 @@ describe("rotor introduction", () => {
     let state = createGameState(level);
     const early = simulateMove(level, state, BENDER);
     expect(early.kind).toBe("blocked");
-    expect(early.blockerId).toBe(TURNER);
+    expect(early.blockerId).toBe(RELEASE);
 
     const turner = simulateMove(level, state, TURNER);
     expect(turner.kind).toBe("exit");
     expect(turner.spotFlips).toEqual([
-      { cell: { face: "front", x: 2, y: 1 }, step: 3 },
+      { cell: { face: "front", x: 3, y: 2 }, step: 4 },
     ]);
     state = applyMove(level, state, turner);
-    expect(state.spotHeadings).toEqual({ "front:2:1": "north" });
+    expect(state.spotHeadings).toEqual({ "front:3:2": "north" });
 
+    expect(simulateMove(level, state, BENDER).blockerId).toBe(RELEASE);
+    const release = simulateMove(level, state, RELEASE);
+    expect(release.kind).toBe("exit");
+    state = applyMove(level, state, release);
+    expect(state.spotHeadings).toEqual({ "front:3:2": "north" });
     const bender = simulateMove(level, state, BENDER);
     expect(bender.kind).toBe("exit");
     expect(bender.route).toEqual([
+      { face: "front", x: 5, y: 2 },
+      { face: "front", x: 4, y: 2 },
+      { face: "front", x: 3, y: 2 },
       { face: "front", x: 3, y: 1 },
-      { face: "front", x: 2, y: 1 },
-      { face: "front", x: 2, y: 0 },
+      { face: "front", x: 3, y: 0 },
     ]);
     state = applyMove(level, state, bender);
-    expect(state.spotHeadings).toEqual({ "front:2:1": "east" });
+    expect(state.spotHeadings).toEqual({ "front:3:2": "east" });
 
     for (const id of state.remainingIds) {
       state = applyMove(level, state, simulateMove(level, state, id));
@@ -103,16 +111,15 @@ describe("rotor introduction", () => {
     expect(state.lives).toBe(level.lives);
   });
 
-  test("the four free arrows leave their own faces without touching the front pair", () => {
-    const level = ROTOR_INTRO_LEVEL;
-    const initial = createGameState(level);
-    for (const arrow of level.arrows) {
-      if (arrow.id === TURNER || arrow.id === BENDER) continue;
-      const face = arrow.path[0]?.face as FaceId;
-      const result = simulateMove(level, initial, arrow.id);
-      expect(result.kind).toBe("exit");
-      for (const cell of result.route) expect(cell.face).toBe(face);
-    }
+  test("the long release body depends on the turner, rather than an opposed head", () => {
+    const initial = createGameState(ROTOR_INTRO_LEVEL);
+    const move = simulateMove(ROTOR_INTRO_LEVEL, initial, RELEASE);
+    expect(move.kind).toBe("blocked");
+    expect(move.blockerId).toBe(TURNER);
+    expect(move.contact?.cell).toEqual({ face: "front", x: 1, y: 2 });
+    expect(
+      ROTOR_INTRO_LEVEL.arrows.find((a) => a.id === TURNER)!.path.at(-1),
+    ).toEqual({ face: "front", x: 2, y: 2 });
   });
 
   test("the walkthrough gates the turner, then the bender, then free play", () => {
@@ -128,6 +135,9 @@ describe("rotor introduction", () => {
     expect([...(runner.gate ?? [])]).toEqual([TURNER]);
 
     runner.onMove({ arrowId: TURNER, kind: "exit" });
+    expect(runner.current.highlightId).toBe(RELEASE);
+    expect([...(runner.gate ?? [])]).toEqual([RELEASE]);
+    runner.onMove({ arrowId: RELEASE, kind: "exit" });
     expect(runner.current.highlightId).toBe(BENDER);
     expect([...(runner.gate ?? [])]).toEqual([BENDER]);
 
@@ -138,7 +148,7 @@ describe("rotor introduction", () => {
     expect(runner.done).toBe(true);
   });
 
-  test("a resumed board past the turn skips straight to the bender", () => {
+  test("a resumed board past the turn continues with the release body", () => {
     const script = scriptForLevel(40);
     if (!script) throw new Error("Level 40 has no walkthrough.");
     const runner = new TutorialRunner(script);
@@ -147,7 +157,7 @@ describe("rotor introduction", () => {
         .map((arrow) => arrow.id)
         .filter((id) => id !== TURNER),
     );
-    expect(runner.current.highlightId).toBe(BENDER);
+    expect(runner.current.highlightId).toBe(RELEASE);
   });
 
   test.each(["rotor", "rotors", "ROTOR"])(

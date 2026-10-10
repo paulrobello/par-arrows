@@ -4,30 +4,37 @@ function cell(face: FaceId, x: number, y: number): Cell {
   return { face, x, y };
 }
 
-/** First mirror lesson: one silver mirror, two arrows, two destinations. */
+/** Two perpendicular approaches share one mirror and a release dependency.
+ * North reflects east; the long body leaves; east then reflects north. */
 export const MIRROR_INTRO_LEVEL: LevelDefinition = {
   id: 55,
   title: "Cube 55",
-  gridSize: 4,
+  gridSize: 5,
   lives: 5,
   arrowScale: 1,
-  mirrors: [{ cell: cell("front", 1, 1), orientation: "/" }],
+  mirrors: [{ cell: cell("front", 2, 2), orientation: "/" }],
   arrows: [
-    // Face-off pair around the mirror: each straight lane ends on the other's
-    // head, so only the reflection clears them, and the same mirror routes
-    // the two approaches to two different edges.
     {
       id: "mirror-intro-north",
-      path: [cell("front", 1, 3), cell("front", 1, 2)],
+      path: [cell("front", 1, 4), cell("front", 2, 4), cell("front", 2, 3)],
     },
     {
-      id: "mirror-intro-south",
+      id: "mirror-intro-release",
       path: [
-        cell("top", 1, 1),
-        cell("top", 1, 2),
-        cell("top", 1, 3),
-        cell("front", 1, 0),
+        cell("front", 2, 1),
+        cell("front", 3, 1),
+        cell("front", 4, 1),
+        cell("right", 0, 1),
+        cell("right", 0, 2),
+        cell("right", 0, 3),
+        cell("front", 4, 3),
+        cell("front", 4, 4),
+        cell("front", 3, 4),
       ],
+    },
+    {
+      id: "mirror-intro-east",
+      path: [cell("front", 0, 3), cell("front", 0, 2), cell("front", 1, 2)],
     },
   ],
 };

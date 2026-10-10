@@ -46,7 +46,7 @@ export const MECHANIC_HELP: readonly MechanicHelp[] = [
     title: "Directional spots",
     unlockLevel: 20,
     description:
-      "Cyan chevrons bend the road. A head that reaches one turns onto the chevron's heading.",
+      "Cyan chevrons bend the road. A head that reaches one turns onto the chevron's heading, letting it leave a blocked lane and release other arrows.",
   },
   {
     id: "double",
@@ -74,7 +74,7 @@ export const MECHANIC_HELP: readonly MechanicHelp[] = [
     title: "Rotor spots",
     unlockLevel: 40,
     description:
-      "Amber rotors turn a quarter clockwise each time an arrow passes, so four passes bring one back to its start.",
+      "Amber rotors turn a quarter clockwise once the whole arrow has passed. A head-on approach reverses; read the new heading and clear any body holding the next approach.",
   },
   {
     id: "fragile",
@@ -95,7 +95,7 @@ export const MECHANIC_HELP: readonly MechanicHelp[] = [
     title: "Mirrors",
     unlockLevel: 55,
     description:
-      "A silver mirror reflects a head across its diagonal, so the same mirror sends different approaches to different exits.",
+      "A silver mirror reflects a head across its diagonal. North can turn east and east can turn north; check the reflected exit for bodies before sending the next approach.",
   },
   {
     id: "leap",

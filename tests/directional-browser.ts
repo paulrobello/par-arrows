@@ -5,7 +5,7 @@ import { DIRECTIONAL_INTRO_LEVEL } from "../src/content/directional-intro";
 import { cellKey } from "../src/core/topology";
 import { waitForReady } from "./runtime-fixtures";
 
-const EAST = "dir-intro-east";
+const OPENER = "dir-intro-opener";
 const FREED = "dir-intro-freed";
 const BLOCKER = "dir-intro-blocker";
 
@@ -129,16 +129,16 @@ async function assertScriptedWalkthrough(
     );
     assert.deepEqual(opened.directionals, [
       {
-        cell: cellKey({ face: "front", x: 2, y: 1 }),
-        heading: "north",
+        cell: cellKey({ face: "front", x: 4, y: 3 }),
+        heading: "east",
         kind: "static",
-        current: "north",
+        current: "east",
       },
     ]);
     const script = await tutorialState(page);
     assert.ok(script.active, "The walkthrough must run on first sight");
-    assert.equal(script.highlightId, EAST);
-    assert.deepEqual(script.gate, [EAST]);
+    assert.equal(script.highlightId, OPENER);
+    assert.deepEqual(script.gate, [OPENER]);
     await page.screenshot({ path: `${output}/directional/01-intro.png` });
 
     // Input is gated: a non-highlighted arrow refuses the tap for free.
@@ -148,12 +148,12 @@ async function assertScriptedWalkthrough(
     assert.deepEqual(current.failedIds, []);
     assert.equal(current.remainingIds.length, 3);
 
-    // The chevron bends the east arrow north and off the cube.
-    await clickArrow(page, EAST);
+    // The chevron bends the opener east and off the cube.
+    await clickArrow(page, OPENER);
     current = await state(page);
     assert.equal(current.remainingIds.length, 2);
     assert.ok(
-      !current.remainingIds.includes(EAST),
+      !current.remainingIds.includes(OPENER),
       "The bent arrow must leave the cube",
     );
     await page.screenshot({ path: `${output}/directional/02-bent.png` });
@@ -232,10 +232,10 @@ async function assertUnscriptedPlay(
       "The mechanic banner must teach the chevrons",
     );
 
-    await clickArrow(page, EAST);
+    await clickArrow(page, OPENER);
     const moved = await state(page);
     assert.ok(
-      !moved.remainingIds.includes(EAST),
+      !moved.remainingIds.includes(OPENER),
       "The chevron bends the east arrow out of the deadlock lane",
     );
     assert.equal(moved.lives, DIRECTIONAL_INTRO_LEVEL.lives);

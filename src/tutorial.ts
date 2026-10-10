@@ -162,15 +162,15 @@ const DIRECTIONAL_INTRO_SCRIPT: TutorialScript = {
   steps: [
     {
       copy: "Cyan chevrons bend the road. Any arrow that reaches one turns onto the chevron's heading. Tap this arrow and watch it turn.",
-      highlightId: "dir-intro-east",
+      highlightId: "dir-intro-opener",
       advance: {
         kind: "move",
-        arrowIds: ["dir-intro-east"],
+        arrowIds: ["dir-intro-opener"],
         outcomes: ["exit"],
       },
     },
     {
-      copy: "The east arrow's body was blocking this one. With it gone, the lane is open. Tap it.",
+      copy: "The bent arrow's body was blocking this one. With it gone, the lane is open. Tap it.",
       highlightId: "dir-intro-freed",
       advance: {
         kind: "move",
@@ -314,7 +314,16 @@ const ROTOR_INTRO_SCRIPT: TutorialScript = {
       },
     },
     {
-      copy: "Once that arrow had fully passed, the rotor turned a quarter clockwise. It now bends this arrow onto a clear lane. Tap it.",
+      copy: "The rotor has turned a quarter clockwise. The first arrow also opened this long arrow's lane. Clear it to release the next approach.",
+      highlightId: "rotor-intro-release",
+      advance: {
+        kind: "move",
+        arrowIds: ["rotor-intro-release"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "Now approach the turned rotor from the other side. Its new heading bends this arrow north and out.",
       highlightId: "rotor-intro-bender",
       advance: {
         kind: "move",
@@ -393,7 +402,7 @@ const MIRROR_INTRO_SCRIPT: TutorialScript = {
   title: "Use the mirror.",
   steps: [
     {
-      copy: "A silver mirror reflects whatever runs into it: the same mirror sends a northbound arrow east and a southbound arrow west. This arrow's lane ends on its partner, so the mirror is the only way out. Tap it.",
+      copy: "A silver mirror reflects a head across its diagonal. This northbound arrow would hit the long body; the reflection sends it east to a clear exit. Tap it.",
       highlightId: "mirror-intro-north",
       advance: {
         kind: "move",
@@ -402,11 +411,20 @@ const MIRROR_INTRO_SCRIPT: TutorialScript = {
       },
     },
     {
-      copy: "Same mirror, different approach, different exit. Send the other one through.",
-      highlightId: "mirror-intro-south",
+      copy: "The first arrow opened this long arrow's lane. Clear it: its other end is holding the mirror's northbound exit.",
+      highlightId: "mirror-intro-release",
       advance: {
         kind: "move",
-        arrowIds: ["mirror-intro-south"],
+        arrowIds: ["mirror-intro-release"],
+        outcomes: ["exit"],
+      },
+    },
+    {
+      copy: "Same mirror, different approach: this eastbound arrow reflects north. Both the approach and its reflected exit must be clear.",
+      highlightId: "mirror-intro-east",
+      advance: {
+        kind: "move",
+        arrowIds: ["mirror-intro-east"],
         outcomes: ["exit"],
       },
     },

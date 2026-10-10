@@ -18,7 +18,8 @@ import { waitForReady } from "./runtime-fixtures";
 
 const TURNER = "rotor-intro-turner";
 const BENDER = "rotor-intro-bender";
-const ROTOR: Cell = { face: "front", x: 2, y: 1 };
+const RELEASE = "rotor-intro-release";
+const ROTOR = ROTOR_INTRO_LEVEL.directionals![0]!.cell;
 const ROTOR_KEY = cellKey(ROTOR);
 /** Representative generated phased-lane circuit; its solver supplies the tap order. */
 const GENERATED_LEVEL = 58;
@@ -509,8 +510,8 @@ async function assertScriptedWalkthrough(
     assert.equal(current.directionals[0]?.current, "west");
     assert.equal((await tutorialState(page)).highlightId, TURNER);
 
-    // The turner's 850 ms exit reports the advance after 3 head steps, so the
-    // glyph turns between about 300 and 402 ms of travel: untouched at 250,
+    // The revised turner's 833 ms exit reports the advance after four head
+    // steps. The glyph turns between about 267 and 367 ms: untouched at 250,
     // part-way at 350 and a full quarter at 460, while the diagnostic spot
     // state only settles once the move ends.
     await page.waitForTimeout(700);
@@ -541,8 +542,13 @@ async function assertScriptedWalkthrough(
     assert.deepEqual(current.spotGlyphTurns, { [ROTOR_KEY]: 1 });
     assert.deepEqual(current.pendingFlips, []);
     assert.equal(current.lives, ROTOR_INTRO_LEVEL.lives);
-    assert.equal((await tutorialState(page)).highlightId, BENDER);
+    assert.equal((await tutorialState(page)).highlightId, RELEASE);
     await page.screenshot({ path: `${output}/rotor/03-after-turner.png` });
+    await clickArrow(page, RELEASE);
+    current = await state(page);
+    assert.ok(!current.remainingIds.includes(RELEASE));
+    assert.equal(current.directionals[0]?.current, "north");
+    assert.equal((await tutorialState(page)).highlightId, BENDER);
 
     await clickArrow(page, BENDER);
     current = await state(page);
@@ -572,12 +578,12 @@ async function assertSeenPlayAndReload(
   url: string,
   output: string,
 ): Promise<void> {
-  // The rule under test: the bender runs straight into the turner at the
-  // authored west heading, and bends clear once the turner has turned it.
+  // The rule under test: the bender first meets the release body at the
+  // authored west heading, and bends clear after the turner and release body have left.
   const initial = createGameState(ROTOR_INTRO_LEVEL);
   assert.equal(
     simulateMove(ROTOR_INTRO_LEVEL, initial, BENDER).blockerId,
-    TURNER,
+    RELEASE,
   );
   const afterTurner = applyMove(
     ROTOR_INTRO_LEVEL,
@@ -586,7 +592,7 @@ async function assertSeenPlayAndReload(
   );
   assert.equal(
     simulateMove(ROTOR_INTRO_LEVEL, afterTurner, BENDER).kind,
-    "exit",
+    "blocked",
   );
 
   const context = await browser.newContext({
@@ -655,6 +661,10 @@ async function assertSeenPlayAndReload(
       `The reloaded glyph must match the north diagnostic (drift ${drift} px, turned ${turned} px)`,
     );
 
+    await activate(page, RELEASE);
+    current = await state(page);
+    assert.ok(!current.remainingIds.includes(RELEASE));
+    assert.equal(current.directionals[0]?.current, "north");
     await activate(page, BENDER);
     current = await state(page);
     assert.ok(!current.remainingIds.includes(BENDER));
