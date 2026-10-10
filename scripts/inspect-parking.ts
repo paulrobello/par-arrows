@@ -1,4 +1,4 @@
-/** Text-only inspection of generated parking, rotor, flip, wormhole, double, overlap, fragile, lock, mirror or leap layouts.
+/** Text-only inspection of generated parking, rotor, flip, wormhole, double, overlap, fragile, lock, mirror, leap or directional layouts.
  * Run: bun scripts/inspect-parking.ts [levelIds...]
  *      MECHANIC=rotor bun scripts/inspect-parking.ts 42 58 111 196 */
 import { generateLevel } from "../src/content/procedural";
@@ -22,10 +22,11 @@ const mechanic = [
   "lock",
   "mirror",
   "leap",
+  "directional",
 ].includes(process.env.MECHANIC ?? "")
   ? process.env.MECHANIC!
   : "park";
-const marker = `-${mechanic}-`;
+const marker = mechanic === "directional" ? "-dir-" : `-${mechanic}-`;
 const ids = process.argv.slice(2).map(Number);
 for (const id of ids.length ? ids : [6, 17, 58, 150]) {
   const level = generateLevel(id);
@@ -85,6 +86,16 @@ for (const id of ids.length ? ids : [6, 17, 58, 150]) {
         if (target.arrowId.endsWith("-leaper") && !occupants.length)
           throw new Error("The certified leaper must skip an occupied body");
       }
+    if (mechanic === "directional" && target.arrowId.endsWith("-dir-a")) {
+      const reversal = move.route?.some(
+        (c, i, r) => i > 1 && cellKey(c) === cellKey(r[i - 2]!),
+      );
+      console.log(
+        `${target.arrowId}: actual head-on reversal ${Boolean(reversal)}`,
+      );
+      if (!reversal)
+        throw new Error("The certified directional opener must reverse");
+    }
     state = applyMove(level, state, move);
     beforePark += 1;
   }
@@ -112,7 +123,10 @@ for (const id of ids.length ? ids : [6, 17, 58, 150]) {
   const wormLabels = "PCDEQHIKXYZ0123456789";
   for (const [index, arrow] of core.entries()) {
     const label =
-      mechanic === "lock" || mechanic === "mirror" || mechanic === "leap"
+      mechanic === "directional" ||
+      mechanic === "lock" ||
+      mechanic === "mirror" ||
+      mechanic === "leap"
         ? String(index)
         : mechanic === "double" || mechanic === "fragile"
           ? arrow.kind === "double"
@@ -172,31 +186,39 @@ for (const id of ids.length ? ids : [6, 17, 58, 150]) {
     }
   for (const stop of level.stops ?? []) marks.set(cellKey(stop), "O");
   for (const spot of level.directionals ?? []) {
-    if (spot.kind !== mechanic) continue;
-    const mark = mechanic === "rotor" ? "R" : "F";
+    if (
+      mechanic === "directional"
+        ? spot.kind === "flip" || spot.kind === "rotor"
+        : spot.kind !== mechanic
+    )
+      continue;
+    const mark =
+      mechanic === "directional" ? "Q" : mechanic === "rotor" ? "R" : "F";
     marks.set(cellKey(spot.cell), mark);
     console.log(
       `${mark}: ${mechanic} ${cellKey(spot.cell)}, initial heading ${spot.heading}`,
     );
   }
   console.log(
-    mechanic === "leap"
-      ? "L pad; numbered grown leaper, holding body, dependencies and blockers; O stop; . outside body; blank empty"
-      : mechanic === "mirror"
-        ? "Slash mirror; numbered grown approaches, native body cycle and blockers; O stop; . outside body; blank empty"
-        : mechanic === "lock"
-          ? "K key; G gate; numbered grown opener, key, dependencies and seeded blockers; O stop; . outside body; blank empty"
-          : mechanic === "fragile"
-            ? "# crack; D double; numbered grown crosser, dependencies and seeded blockers; O stop; . outside body; blank empty"
-            : mechanic === "overlap"
-              ? "0/1/2 shared-tail members (shared cells show the last member); O stop; . outside body; blank empty"
-              : mechanic === "double"
-                ? "D two-headed opener; numbered grown contact bodies; O stop; . outside body; blank empty"
-                : mechanic === "wormhole"
-                  ? "A/B first portal pair; U/V second pair; labelled grown core/blocker bodies; O stop; . outside body; blank empty"
-                  : mechanic === "flip"
-                    ? "F flip; A/B approachers; 0/1/2 lane contacts; X/Y grown seeded blockers; O stop; . outside body; blank empty"
-                    : "R rotor; P parker; B continuation blocker; 0/1/2 followers; O stop; . outside body; blank empty",
+    mechanic === "directional"
+      ? "Q static chevron; numbered grown reversal opener and native dependencies; O stop; . outside body; blank empty"
+      : mechanic === "leap"
+        ? "L pad; numbered grown leaper, holding body, dependencies and blockers; O stop; . outside body; blank empty"
+        : mechanic === "mirror"
+          ? "Slash mirror; numbered grown approaches, native body cycle and blockers; O stop; . outside body; blank empty"
+          : mechanic === "lock"
+            ? "K key; G gate; numbered grown opener, key, dependencies and seeded blockers; O stop; . outside body; blank empty"
+            : mechanic === "fragile"
+              ? "# crack; D double; numbered grown crosser, dependencies and seeded blockers; O stop; . outside body; blank empty"
+              : mechanic === "overlap"
+                ? "0/1/2 shared-tail members (shared cells show the last member); O stop; . outside body; blank empty"
+                : mechanic === "double"
+                  ? "D two-headed opener; numbered grown contact bodies; O stop; . outside body; blank empty"
+                  : mechanic === "wormhole"
+                    ? "A/B first portal pair; U/V second pair; labelled grown core/blocker bodies; O stop; . outside body; blank empty"
+                    : mechanic === "flip"
+                      ? "F flip; A/B approachers; 0/1/2 lane contacts; X/Y grown seeded blockers; O stop; . outside body; blank empty"
+                      : "R rotor; P parker; B continuation blocker; 0/1/2 followers; O stop; . outside body; blank empty",
   );
   const faces: FaceId[] = ["front", "back", "left", "right", "top", "bottom"];
   console.log(

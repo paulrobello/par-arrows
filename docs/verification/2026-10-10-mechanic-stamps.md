@@ -23,7 +23,7 @@ This audit covers production `generateLevel`, campaign and preview resolution, a
 | Mirror | `MIRROR_PATTERN` fixes two opposite two-cell approaches around the mirror. | Published `7bdec7b`: grown four-to-six-arrow body cycles and proved reflected ordering; canonical 660 tests and 500-seed stress pass. |
 | Leap | `LEAP_PATTERN` fixes the two-cell leaper and bent blocker around the pad. | Replaced by grown required skip-contact cycles; canonical 663 tests and 500-seed stress pass. |
 | Double | The double body grows, but `doubleCore` attaches fixed two-cell A/B blockers at the body and immediately beyond the head. | Replaced by grown required-use endpoint circuits in this batch; canonical gate, all 80 assembled endpoint proofs and 500-seed stress pass. |
-| Static directional core | `directionalCore` varies short tail lengths, one-/two-cell gaps and optional single bends in an opposed-flanker construction. | Limited procedural motif remains; it needs stronger topology variation. |
+| Static directional core | `directionalCore` varies short tail lengths, one-/two-cell gaps and optional single bends in an opposed-flanker construction. | Replaced by grown required reversal body cycles; independent whole/head geometry and actual blocker graphs vary, with reciprocal head-pair stamps rejected after every safe prefix. Final canonical gate and 500-seed stress pass. |
 | Other seeded lane blockers | The final two-cell lane-blocker fallback served Leap. | Removed; every lane family grows contact bodies, with no two-cell fallback. |
 
 ## Already integrated passes
@@ -36,7 +36,7 @@ The former fixed campaign catalog in generation/quality scripts is historical re
 
 ## Authored lessons and scope
 
-Authored levels 1, 5, 11, 15, 20, 25, 30, 35, 40, 45, 50, 55 and 60 remain fixed lessons. Several formerly supplied generated mechanic geometry; that copying is removed for parking, rotor, flip, wormhole, double, overlap, fragile, Lock, Mirror and Leap, and still survives in the catalog findings above.
+Authored levels 1, 5, 11, 15, 20, 25, 30, 35, 40, 45, 50, 55 and 60 remain fixed lessons. Several formerly supplied generated mechanic geometry; that copying is removed for parking, rotor, flip, wormhole, double, overlap, fragile, Lock, Mirror and Leap, and static directional cores. No authored lesson supplies runtime-generated geometry.
 
 A unique authored lesson is not automatically exempt from the user's no-stamps requirement. Its layout, IDs, guided tap order, help thumbnail and browser assertions form a coordinated teaching contract. Changing those lessons needs matching tutorial/help work and real-GPU acceptance. The cloud can prove movement and solvability, but cannot certify renderer, picking, animation or updated help captures. Retaining the lessons is an explicit current scope boundary, not an assertion that the entire request is complete.
 
@@ -44,4 +44,4 @@ A unique authored lesson is not automatically exempt from the user's no-stamps r
 
 Finish one mechanic at a time, including its attached blockers. Keep solvability, required use, safe-choice proofs, difficulty/density progression, placement and blocker-share floors, caps and timing checks. Independent seeds and shipped levels must show actual structural variation, not transformed gadgets. Preserve unrelated plans and fingerprints where possible, and explain necessary ordering changes with measured results.
 
-Each production batch runs `make checkall`, representative far-ID stress generation and supported layout inspection, then commits, merges into local main and pushes normally under the user's explicit authorization. Verify the exact origin SHA, Checks, automatic Pages and served version. Real-GPU browser acceptance remains separately outstanding. No all-stamps-removed claim is supported while the remaining catalogs, gadgets and authored review boundary above persist.
+Each production batch runs `make checkall`, representative far-ID stress generation and supported layout inspection, then commits, merges into local main and pushes normally under the user's explicit authorization. Verify the exact origin SHA, Checks, automatic Pages and served version. Real-GPU browser acceptance remains separately outstanding. The audited runtime catalogs, opposed-flanker gadgets and fixed short blocker fallbacks are removed. Unique authored lessons remain an explicit design-review boundary; cloud engine evidence does not complete real-GPU acceptance.

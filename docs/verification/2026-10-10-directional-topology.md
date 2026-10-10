@@ -1,0 +1,23 @@
+# Grown required reversal circuits
+
+The final runtime stamp was the static directional core: opposed flankers varied only short tails, gaps and optional bends around the same head-on gadget. The generator no longer builds that motif. `src/content/directional.ts` grows three- or four-body native cycles from sampled surface contacts, independently grown bodies and connector paths. The opener's actual first contact becomes a chevron pointing against its entry. That reversal releases the cycle; removing the chevron must deadlock it.
+
+Every body has at least three cells. Crucially, every reachable safe removal prefix rejects reciprocal first collisions on both other heads, so adding long tails cannot disguise the old flanker stamp. Actual engine validation, a zero-life certificate, and safe-state enumeration reject invalid, stranded or soft-locked candidates. Search is bounded to 32 candidates with sixteen native contact attempts each; exhaustion omits the optional structure rather than returning a gadget. The original directional plans, face/spot caps, difficulty/density gates, shape caps, natural-contact floors and placement floors remain authoritative.
+
+The generator reserves all actual post-chevron native lanes against later glyph placement, then releases them for dependency fill. Its actual solver certificate orders the grown cycle, rather than assuming the order in which bodies were placed. Later extras still place glyphs on existing routes under the existing proof constraints; they copy no bodies.
+
+## Structural and integration evidence
+
+The direct 64-seed test yields **64 complete layouts, 64 head/neck/glyph layouts and six actual blocker graphs**, three-/four-body circuits, body lengths from three to 27, and 41 circuits spanning multiple body faces. Complete and head geometry are canonicalized under translation and all 48 cube isometries. Graph variation is measured independently with coordinates and IDs removed. The independent test checks actual head-on reversal, stripped deadlock, safe-prefix head-pair rejection and zero-life completion.
+
+The actual campaign audit against Leap commit `9491f07` places **140/140** plans, changes exactly those 140 layouts and changes **zero unplanned fingerprints**. Ordinary fill contacts occur on 137 circuits; 59 span multiple body faces. Shipping regression passes 3,900 assertions and gives **140 complete layouts, 136 head layouts and seven actual blocker graphs**. All 199 repository fingerprints exactly match the stronger staged all-safe-prefix implementation. Its integration passes **52 tests, zero failures and 14,221 assertions across ten files in 398.12 seconds**, including the original placement/share/natural floors and coupled mechanic proofs. Repository typecheck passes.
+
+`MECHANIC=directional bun scripts/inspect-parking.ts 21 24 62 199` prints supported six-face grids, grown paths, glyphs, ordinary contacts and actual solver-prefix reversals. Ordinary contacts number seven, three, twelve and zero respectively; 199 is explicitly a legitimate no-ordinary-contact example, not evidence of universal contacts. All four actual assembled solver prefixes demonstrate the opener reversing over its own body.
+
+CPU whole-level replay of 21, 24, 62 and 199 passes every actual solver action, proves the opener reversal and finishes each cube with all three lives (100, 114, 189 and 200 safe actions). These are movement traces, not UI acceptance. Far-ID stress passes **500/500, zero failures in 427.2 seconds**; slowest sampled ID 4179387469245184 takes 6,901 ms. It checks exact configured density, validation, grid/count/path caps and construction at deterministic far IDs. Final **`make checkall` passes 666 tests, zero failures and 2,042,588 assertions across 73 files in 1,139.98 seconds**, including format, lint, typecheck, production build and icon checks. Every original placement/share/natural floor, shape cap and generation budget remains green.
+
+## Authored and GPU boundary
+
+The unique authored level-20 lesson, its guided arrow IDs, tap order and help thumbnail remain. It supplies no generated geometry. Retaining this coordinated teaching contract is an explicit design-review boundary, not an automatic exemption from the user's no-stamps request. The separately scoped authored audit now confirms exact body/head duplication between lessons 5/20 and canonical head duplication plus reciprocal head-only deadlocks in 40/55. They require coordinated tutorial/help updates; remaining unique lessons are still reviewed rather than automatically exempted.
+
+The cloud can validate movement and solver traces, but cannot certify picking, animation, canvas pixels or help captures. No real-GPU browser acceptance is claimed.

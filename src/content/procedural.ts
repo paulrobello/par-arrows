@@ -1,3 +1,4 @@
+import { constructDirectional } from "./directional";
 import { constructLeap } from "./leap";
 import { constructMirror } from "./mirror";
 import { constructFragile } from "./fragile";
@@ -1778,16 +1779,6 @@ function flipRegionLead(
   return lead;
 }
 
-const HEADING_VECTORS: Record<
-  Heading,
-  { readonly dx: number; readonly dy: number }
-> = {
-  east: { dx: 1, dy: 0 },
-  west: { dx: -1, dy: 0 },
-  south: { dx: 0, dy: 1 },
-  north: { dx: 0, dy: -1 },
-};
-
 const PERPENDICULAR: Record<Heading, readonly [Heading, Heading]> = {
   east: ["north", "south"],
   west: ["north", "south"],
@@ -1846,22 +1837,9 @@ export function hasDirectionalCore(id: number): boolean {
 interface DirectionalCore {
   readonly arrows: readonly ArrowDefinition[];
   readonly spot: DirectionalSpotDefinition;
+  readonly certificate: readonly MoveTarget[];
 }
 
-/**
- * Build a head-on deadlock that only a directional spot can break, on its own
- * seeded stream. Two arrows face each other across the spot cell with a
- * perpendicular exit corridor behind it: without the spot each arrow's track
- * runs into the other's head cell, so neither can ever move; with it, each
- * bends into the corridor and leaves. The corridor must exit and stay clear of
- * everything placed before the core; everything placed after rejects these
- * cells, which keeps the certificate replay infallible. Each placement draws
- * a variant from the stream: each flanker's tail distance from the spot (2-4),
- * the head-to-spot gap (1-2), and which tails bend off the lane. Variants are
- * cosmetic to the contract; the corridor reservation and mutual deadlock proof
- * are unchanged. Undefined means no
- * placement fit and the level falls back to a layout without directionals.
- */
 function directionalCore(
   id: number,
   level: Pick<LevelDefinition, "gridSize" | "edgePolicies">,
@@ -1871,137 +1849,27 @@ function directionalCore(
   restart = 0,
   spotForbidden: ReadonlySet<string> = new Set(),
 ): DirectionalCore | undefined {
-  const size = level.gridSize;
-  const rng = coreStream(id, "dir-core", restart);
-  const shuffled = shuffledFaces(rng);
-  const faces = preferredFace
-    ? [preferredFace, ...shuffled.filter((face) => face !== preferredFace)]
-    : shuffled;
-  for (let attempt = 0; attempt < 96; attempt += 1) {
-    const face = faces[attempt % faces.length] as FaceId;
-    const lane = HEADINGS[rng.int(HEADINGS.length)] as Heading;
-    const turn = PERPENDICULAR[lane][rng.int(2)] as Heading;
-    // Seeded variant: each flanker's reach (tail distance from the spot), the
-    // gap between its head and the spot, and which tails bend off the lane.
-    // Every draw keeps the required-use contract — two heads on one lane
-    // facing the spot, so each stripped track runs into the other's head cell
-    // and the spot bends each into the perpendicular corridor.
-    const approachTail = 2 + rng.int(3);
-    const opposingTail = 2 + rng.int(3);
-    const approachGap = 1 + rng.int(Math.min(2, approachTail - 1));
-    const opposingGap = 1 + rng.int(Math.min(2, opposingTail - 1));
-    const approachBend = rng.int(2) === 1 && approachTail - approachGap >= 2;
-    const opposingBend = rng.int(2) === 1 && opposingTail - opposingGap >= 2;
-    const approachLegSide = PERPENDICULAR[lane][rng.int(2)] as Heading;
-    const opposingLegSide = PERPENDICULAR[lane][rng.int(2)] as Heading;
-    const vector = HEADING_VECTORS[lane];
-    const spotCell: Cell = {
-      face,
-      x: 2 + rng.int(Math.max(1, size - 4)),
-      y: 2 + rng.int(Math.max(1, size - 4)),
-    };
-    const flanker = (
-      side: 1 | -1,
-      gap: number,
-      tail: number,
-      bend: boolean,
-      legSide: Heading,
-    ): readonly Cell[] => {
-      const cells: Cell[] = [];
-      const laneTail = bend ? tail - 1 : tail;
-      for (let distance = laneTail; distance >= gap; distance -= 1) {
-        cells.push({
-          face,
-          x: spotCell.x + side * distance * vector.dx,
-          y: spotCell.y + side * distance * vector.dy,
-        });
-      }
-      if (bend) {
-        cells.unshift({
-          face,
-          x:
-            spotCell.x +
-            side * (tail - 1) * vector.dx +
-            HEADING_VECTORS[legSide].dx,
-          y:
-            spotCell.y +
-            side * (tail - 1) * vector.dy +
-            HEADING_VECTORS[legSide].dy,
-        });
-      }
-      return cells;
-    };
-    const approachingPath = flanker(
-      -1,
-      approachGap,
-      approachTail,
-      approachBend,
-      approachLegSide,
-    );
-    const opposingPath = flanker(
-      1,
-      opposingGap,
-      opposingTail,
-      opposingBend,
-      opposingLegSide,
-    );
-    // A head resting two cells from the spot keeps the cell between them on
-    // both deadlocked routes, so it must hold empty like the spot itself.
-    const gapCells: Cell[] = [];
-    for (let distance = 1; distance < approachGap; distance += 1) {
-      gapCells.push({
-        face,
-        x: spotCell.x - distance * vector.dx,
-        y: spotCell.y - distance * vector.dy,
-      });
-    }
-    for (let distance = 1; distance < opposingGap; distance += 1) {
-      gapCells.push({
-        face,
-        x: spotCell.x + distance * vector.dx,
-        y: spotCell.y + distance * vector.dy,
-      });
-    }
-    const cells = [...approachingPath, ...opposingPath, ...gapCells, spotCell];
-    if (spotForbidden.has(cellKey(spotCell))) continue;
-    const patternKeys = new Set(cells.map(cellKey));
-    const taken = (cell: Cell): boolean =>
-      occupied.has(cellKey(cell)) || (parkTracks?.has(cellKey(cell)) ?? false);
-    if (
-      patternKeys.size !== cells.length ||
-      cells.some(
-        (cell) =>
-          cell.x < 0 ||
-          cell.y < 0 ||
-          cell.x >= size ||
-          cell.y >= size ||
-          taken(cell),
-      )
-    )
-      continue;
-    const corridor = exitRay(level, spotCell, turn).slice(1);
-    if (
-      corridor.length === 0 ||
-      corridor.some(
-        (cell) =>
-          cell.x < 0 ||
-          cell.y < 0 ||
-          cell.x >= size ||
-          cell.y >= size ||
-          patternKeys.has(cellKey(cell)) ||
-          taken(cell),
-      )
-    )
-      continue;
-    return {
-      arrows: [
-        { id: `r${id}-dir-a`, path: approachingPath },
-        { id: `r${id}-dir-b`, path: opposingPath },
-      ],
-      spot: { cell: spotCell, heading: turn },
-    };
-  }
-  return undefined;
+  const board: LevelDefinition = {
+    ...level,
+    id,
+    title: "native directional body cycle",
+    lives: 3,
+    arrows: [],
+  };
+  const c = constructDirectional(
+    board,
+    coreStream(id, "dir-topology-v1", restart),
+    new Set([...occupied, ...(parkTracks ?? [])]),
+    preferredFace,
+    32,
+    new Set([...occupied, ...spotForbidden]),
+  );
+  if (!c) return;
+  return {
+    arrows: c.arrows,
+    spot: c.directionals![0]!,
+    certificate: solveLevelTargets(c)!,
+  };
 }
 
 interface ExtraSpotPlanEntry {
@@ -2878,14 +2746,14 @@ export function generateLevel(id: number): LevelDefinition {
             arrows.push(arrow);
           }
           occupied.add(cellKey(directionalSpot.spot.cell));
-          for (const cell of exitRay(
-            candidateLevel,
-            directionalSpot.spot.cell,
-            directionalSpot.spot.heading,
-          ).slice(1)) {
-            dirCells.add(cellKey(cell));
-            occupied.add(cellKey(cell));
-          }
+          for (const arrow of directionalSpot.arrows)
+            for (const cell of arrowTrack(
+              { ...candidateLevel, directionals: [directionalSpot.spot] },
+              arrow,
+            ).slice(arrow.path.length)) {
+              dirCells.add(cellKey(cell));
+              occupied.add(cellKey(cell));
+            }
         }
         double = tier.certificate
           ? doubleCore(
@@ -3507,7 +3375,7 @@ export function generateLevel(id: number): LevelDefinition {
             kind: "directional",
             arrows: directionalSpot.arrows,
             blockers: [],
-            chain: directionalSpot.arrows.map((arrow) => arrow.id),
+            chain: certificateToChain(directionalSpot.certificate),
           });
         for (const entry of double ? double.certificate : []) {
           if (typeof entry !== "string")
@@ -4092,7 +3960,7 @@ export function generateLevel(id: number): LevelDefinition {
             ? double.certificate
             : []),
           ...(directionalSpot && !entangledKinds.has("directional")
-            ? directionalSpot.arrows.map((arrow) => arrow.id)
+            ? directionalSpot.certificate
             : []),
           ...[...arrows]
             .reverse()
