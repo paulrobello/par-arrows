@@ -1,0 +1,6105 @@
+{
+  "baseline": "565492071e5b40354aade7c44637c26835ab1012",
+  "eligible": 176,
+  "placed": 176,
+  "changed": 176,
+  "unrelated": [],
+  "ordinaryBlocked": 175,
+  "multiFace": 123,
+  "rows": [
+    {
+      "id": 16,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r16-overlap-0",
+          "length": 6,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 6
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r16-overlap-1",
+          "length": 13,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 0
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r17-overlap-0",
+          "length": 13,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 12
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r17-overlap-1",
+          "length": 11,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 12
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "count": 3,
+      "sharing": [2, 2, 4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r18-overlap-0",
+          "length": 14,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 8
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r18-overlap-1",
+          "length": 11,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 3
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r18-overlap-2",
+          "length": 10,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 7
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r19-overlap-0",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r19-overlap-1",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 13
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "count": 3,
+      "sharing": [2, 2, 2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r21-overlap-0",
+          "length": 5,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 4
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r21-overlap-1",
+          "length": 7,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 0
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r21-overlap-2",
+          "length": 8,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "back",
+            "x": 3,
+            "y": 6
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r22-overlap-0",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 12
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r22-overlap-1",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 11
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r23-overlap-0",
+          "length": 10,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r23-overlap-1",
+          "length": 7,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 8
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "count": 3,
+      "sharing": [2, 2, 4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r24-overlap-0",
+          "length": 13,
+          "faces": ["right", "back"],
+          "head": {
+            "face": "back",
+            "x": 4,
+            "y": 8
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r24-overlap-1",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 5,
+            "y": 6
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r24-overlap-2",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 10,
+            "y": 10
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r26-overlap-0",
+          "length": 9,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 15
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r26-overlap-1",
+          "length": 11,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 7
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "count": 3,
+      "sharing": [4, 4, 5],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r27-overlap-0",
+          "length": 13,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 3,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r27-overlap-1",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 3
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r27-overlap-2",
+          "length": 11,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 7
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r28-overlap-0",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 0,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r28-overlap-1",
+          "length": 8,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 9
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r29-overlap-0",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 13,
+            "y": 14
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r29-overlap-1",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 8
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r31-overlap-0",
+          "length": 10,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 14,
+            "y": 5
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r31-overlap-1",
+          "length": 10,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 10,
+            "y": 14
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r32-overlap-0",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 13
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r32-overlap-1",
+          "length": 11,
+          "faces": ["front", "right"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 9
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "count": 3,
+      "sharing": [3, 3, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r33-overlap-0",
+          "length": 13,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 1
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r33-overlap-1",
+          "length": 10,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 12
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r33-overlap-2",
+          "length": 11,
+          "faces": ["top", "right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 0
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r34-overlap-0",
+          "length": 10,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 2
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r34-overlap-1",
+          "length": 13,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 3
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "count": 3,
+      "sharing": [2, 2, 2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r36-overlap-0",
+          "length": 10,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 14,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r36-overlap-1",
+          "length": 11,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 17,
+            "y": 14
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r36-overlap-2",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 14
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r37-overlap-0",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 13
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r37-overlap-1",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 15,
+            "y": 9
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r38-overlap-0",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 9
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r38-overlap-1",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 3
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "count": 3,
+      "sharing": [2, 2, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r39-overlap-0",
+          "length": 8,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 1,
+            "y": 1
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r39-overlap-1",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 1
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r39-overlap-2",
+          "length": 8,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 4,
+            "y": 0
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r41-overlap-0",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 2
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r41-overlap-1",
+          "length": 10,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 0
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 42,
+      "count": 3,
+      "sharing": [2, 2, 2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r42-overlap-0",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 3,
+            "y": 13
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r42-overlap-1",
+          "length": 9,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 16
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r42-overlap-2",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 7
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r43-overlap-0",
+          "length": 9,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 1,
+            "y": 1
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r43-overlap-1",
+          "length": 11,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "top",
+            "x": 0,
+            "y": 3
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "count": 2,
+      "sharing": [4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r44-overlap-0",
+          "length": 13,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 5,
+            "y": 17
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r44-overlap-1",
+          "length": 14,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 4
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 46,
+      "count": 2,
+      "sharing": [4],
+      "ordinaryBlocked": false,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r46-overlap-0",
+          "length": 12,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 1
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r46-overlap-1",
+          "length": 13,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 3,
+            "y": 0
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 47,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r47-overlap-0",
+          "length": 12,
+          "faces": ["left", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 1,
+            "y": 14
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r47-overlap-1",
+          "length": 12,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 15
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 48,
+      "count": 3,
+      "sharing": [2, 2, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r48-overlap-0",
+          "length": 10,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 15,
+            "y": 10
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r48-overlap-1",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 1,
+            "y": 15
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r48-overlap-2",
+          "length": 8,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 15,
+            "y": 6
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 49,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r49-overlap-0",
+          "length": 12,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 0
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r49-overlap-1",
+          "length": 13,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 14
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "count": 3,
+      "sharing": [2, 2, 2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r51-overlap-0",
+          "length": 10,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 5
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r51-overlap-1",
+          "length": 9,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 5
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r51-overlap-2",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 0
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 52,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r52-overlap-0",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r52-overlap-1",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 9
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 53,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r53-overlap-0",
+          "length": 6,
+          "faces": ["left", "back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r53-overlap-1",
+          "length": 5,
+          "faces": ["left", "back"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 3
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 54,
+      "count": 3,
+      "sharing": [2, 2, 2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r54-overlap-0",
+          "length": 9,
+          "faces": ["front", "left", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r54-overlap-1",
+          "length": 8,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 1,
+            "y": 4
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r54-overlap-2",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 13
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 56,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r56-overlap-0",
+          "length": 9,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 16,
+            "y": 7
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r56-overlap-1",
+          "length": 13,
+          "faces": ["right", "back"],
+          "head": {
+            "face": "back",
+            "x": 0,
+            "y": 17
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 57,
+      "count": 3,
+      "sharing": [2, 2, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r57-overlap-0",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 6
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r57-overlap-1",
+          "length": 12,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r57-overlap-2",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 9
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 58,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r58-overlap-0",
+          "length": 9,
+          "faces": ["top", "right"],
+          "head": {
+            "face": "right",
+            "x": 3,
+            "y": 1
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r58-overlap-1",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 16,
+            "y": 14
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 59,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r59-overlap-0",
+          "length": 9,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 5
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r59-overlap-1",
+          "length": 10,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 17,
+            "y": 16
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 61,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r61-overlap-0",
+          "length": 12,
+          "faces": ["top", "right"],
+          "head": {
+            "face": "right",
+            "x": 10,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r61-overlap-1",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 6
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 62,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r62-overlap-0",
+          "length": 11,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 17
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r62-overlap-1",
+          "length": 12,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 5
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 63,
+      "count": 3,
+      "sharing": [2, 2, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r63-overlap-0",
+          "length": 11,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 3,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r63-overlap-1",
+          "length": 10,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 17
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r63-overlap-2",
+          "length": 12,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 16,
+            "y": 16
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 64,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r64-overlap-0",
+          "length": 9,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "left",
+            "x": 16,
+            "y": 3
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r64-overlap-1",
+          "length": 11,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 11
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 65,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r65-overlap-0",
+          "length": 6,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "left",
+            "x": 17,
+            "y": 10
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r65-overlap-1",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 3
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 66,
+      "count": 3,
+      "sharing": [3, 3, 4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r66-overlap-0",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r66-overlap-1",
+          "length": 11,
+          "faces": ["right", "back"],
+          "head": {
+            "face": "back",
+            "x": 3,
+            "y": 12
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r66-overlap-2",
+          "length": 10,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 6
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 67,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r67-overlap-0",
+          "length": 11,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 1,
+            "y": 6
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r67-overlap-1",
+          "length": 10,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 5
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 68,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r68-overlap-0",
+          "length": 11,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 0
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r68-overlap-1",
+          "length": 13,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 8
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 69,
+      "count": 3,
+      "sharing": [3, 3, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r69-overlap-0",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 7
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r69-overlap-1",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r69-overlap-2",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 8
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 70,
+      "count": 2,
+      "sharing": [5],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r70-overlap-0",
+          "length": 11,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 15,
+            "y": 11
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r70-overlap-1",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 14,
+            "y": 5
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 71,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r71-overlap-0",
+          "length": 10,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 15,
+            "y": 13
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r71-overlap-1",
+          "length": 7,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 15
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 72,
+      "count": 3,
+      "sharing": [2, 2, 2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r72-overlap-0",
+          "length": 6,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 14
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r72-overlap-1",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 17
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r72-overlap-2",
+          "length": 8,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 16,
+            "y": 17
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 73,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r73-overlap-0",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 7
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r73-overlap-1",
+          "length": 10,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 16
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 74,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r74-overlap-0",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 7
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r74-overlap-1",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 14
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 75,
+      "count": 3,
+      "sharing": [2, 2, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r75-overlap-0",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 0,
+            "y": 0
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r75-overlap-1",
+          "length": 11,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 0
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r75-overlap-2",
+          "length": 5,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 16
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 76,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r76-overlap-0",
+          "length": 6,
+          "faces": ["top", "right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 0
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r76-overlap-1",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 12
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 77,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r77-overlap-0",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 1
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r77-overlap-1",
+          "length": 9,
+          "faces": ["back", "top"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 3
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 78,
+      "count": 3,
+      "sharing": [2, 2, 2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r78-overlap-0",
+          "length": 14,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 4
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r78-overlap-1",
+          "length": 9,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 1,
+            "y": 13
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r78-overlap-2",
+          "length": 11,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 0
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 79,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r79-overlap-0",
+          "length": 11,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 12
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r79-overlap-1",
+          "length": 11,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "back",
+            "x": 16,
+            "y": 4
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 80,
+      "count": 2,
+      "sharing": [4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r80-overlap-0",
+          "length": 12,
+          "faces": ["top", "left"],
+          "head": {
+            "face": "top",
+            "x": 4,
+            "y": 10
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r80-overlap-1",
+          "length": 11,
+          "faces": ["top", "left"],
+          "head": {
+            "face": "left",
+            "x": 14,
+            "y": 6
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 81,
+      "count": 3,
+      "sharing": [2, 2, 2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r81-overlap-0",
+          "length": 11,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 6
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r81-overlap-1",
+          "length": 12,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 13
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r81-overlap-2",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 6
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 82,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r82-overlap-0",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 15,
+            "y": 13
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r82-overlap-1",
+          "length": 9,
+          "faces": ["right", "back"],
+          "head": {
+            "face": "back",
+            "x": 1,
+            "y": 10
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 83,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r83-overlap-0",
+          "length": 7,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 16
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r83-overlap-1",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 12
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 84,
+      "count": 3,
+      "sharing": [2, 2, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r84-overlap-0",
+          "length": 10,
+          "faces": ["top", "left"],
+          "head": {
+            "face": "left",
+            "x": 2,
+            "y": 2
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r84-overlap-1",
+          "length": 9,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 9
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r84-overlap-2",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 8
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 85,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r85-overlap-0",
+          "length": 7,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 16
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r85-overlap-1",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 7
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 86,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r86-overlap-0",
+          "length": 14,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "left",
+            "x": 16,
+            "y": 9
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r86-overlap-1",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 15
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 87,
+      "count": 3,
+      "sharing": [2, 2, 2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r87-overlap-0",
+          "length": 11,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 16
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r87-overlap-1",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 16
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r87-overlap-2",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 10
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 88,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r88-overlap-0",
+          "length": 9,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 1,
+            "y": 13
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r88-overlap-1",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 14
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 89,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r89-overlap-0",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 1,
+            "y": 5
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r89-overlap-1",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 4
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 90,
+      "count": 3,
+      "sharing": [2, 2, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r90-overlap-0",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 11
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r90-overlap-1",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r90-overlap-2",
+          "length": 13,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 11
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 91,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r91-overlap-0",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 11
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r91-overlap-1",
+          "length": 9,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 3,
+            "y": 17
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 92,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r92-overlap-0",
+          "length": 7,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 0
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r92-overlap-1",
+          "length": 10,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 13,
+            "y": 5
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 93,
+      "count": 3,
+      "sharing": [2, 2, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r93-overlap-0",
+          "length": 12,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 17,
+            "y": 13
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r93-overlap-1",
+          "length": 9,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 1,
+            "y": 15
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r93-overlap-2",
+          "length": 12,
+          "faces": ["bottom", "front", "right"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 16
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 94,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r94-overlap-0",
+          "length": 10,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r94-overlap-1",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 9
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 95,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r95-overlap-0",
+          "length": 12,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 0
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r95-overlap-1",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 3
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 96,
+      "count": 3,
+      "sharing": [2, 2, 2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r96-overlap-0",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 0,
+            "y": 2
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r96-overlap-1",
+          "length": 11,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 8
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r96-overlap-2",
+          "length": 10,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 1
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 97,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r97-overlap-0",
+          "length": 12,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 16,
+            "y": 11
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r97-overlap-1",
+          "length": 10,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 6
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 98,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r98-overlap-0",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 5
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r98-overlap-1",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 11
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 99,
+      "count": 3,
+      "sharing": [2, 2, 5],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r99-overlap-0",
+          "length": 8,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 16
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r99-overlap-1",
+          "length": 13,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 17,
+            "y": 7
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r99-overlap-2",
+          "length": 15,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 17,
+            "y": 10
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 100,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r100-overlap-0",
+          "length": 12,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "left",
+            "x": 16,
+            "y": 4
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r100-overlap-1",
+          "length": 11,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 12
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 101,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r101-overlap-0",
+          "length": 11,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 13
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r101-overlap-1",
+          "length": 11,
+          "faces": ["top", "right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 0
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 102,
+      "count": 3,
+      "sharing": [4, 4, 5],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r102-overlap-0",
+          "length": 13,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 5
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r102-overlap-1",
+          "length": 14,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r102-overlap-2",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 5,
+            "y": 4
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r103-overlap-0",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 12
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r103-overlap-1",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 5
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 104,
+      "count": 2,
+      "sharing": [5],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r104-overlap-0",
+          "length": 11,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r104-overlap-1",
+          "length": 12,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 1,
+            "y": 3
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "count": 3,
+      "sharing": [2, 2, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r105-overlap-0",
+          "length": 7,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 14
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r105-overlap-1",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 0
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r105-overlap-2",
+          "length": 14,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 10
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 106,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r106-overlap-0",
+          "length": 9,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 15
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r106-overlap-1",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 16,
+            "y": 10
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 107,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r107-overlap-0",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 6
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r107-overlap-1",
+          "length": 11,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 15
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 108,
+      "count": 3,
+      "sharing": [2, 2, 2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r108-overlap-0",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 14
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r108-overlap-1",
+          "length": 9,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r108-overlap-2",
+          "length": 8,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 17
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 109,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r109-overlap-0",
+          "length": 9,
+          "faces": ["right", "back"],
+          "head": {
+            "face": "back",
+            "x": 1,
+            "y": 14
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r109-overlap-1",
+          "length": 6,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 17,
+            "y": 12
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 110,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r110-overlap-0",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 5,
+            "y": 0
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r110-overlap-1",
+          "length": 7,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 16,
+            "y": 12
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 111,
+      "count": 3,
+      "sharing": [2, 2, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r111-overlap-0",
+          "length": 13,
+          "faces": ["front", "right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 3
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r111-overlap-1",
+          "length": 12,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r111-overlap-2",
+          "length": 6,
+          "faces": ["front", "right"],
+          "head": {
+            "face": "right",
+            "x": 0,
+            "y": 2
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 112,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r112-overlap-0",
+          "length": 11,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 4
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r112-overlap-1",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 9
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 113,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r113-overlap-0",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 16,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r113-overlap-1",
+          "length": 12,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 10
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 114,
+      "count": 3,
+      "sharing": [3, 3, 4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r114-overlap-0",
+          "length": 9,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 2,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r114-overlap-1",
+          "length": 14,
+          "faces": ["left", "back"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 13
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r114-overlap-2",
+          "length": 9,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 1,
+            "y": 2
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 115,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r115-overlap-0",
+          "length": 8,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 14
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r115-overlap-1",
+          "length": 10,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 17
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 116,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r116-overlap-0",
+          "length": 8,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "top",
+            "x": 0,
+            "y": 8
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r116-overlap-1",
+          "length": 11,
+          "faces": ["left", "back"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 5
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 117,
+      "count": 3,
+      "sharing": [2, 2, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r117-overlap-0",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r117-overlap-1",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 1
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r117-overlap-2",
+          "length": 8,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 16
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 118,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r118-overlap-0",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 1
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r118-overlap-1",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 2,
+            "y": 6
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 119,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r119-overlap-0",
+          "length": 11,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 4
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r119-overlap-1",
+          "length": 11,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 4
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 120,
+      "count": 3,
+      "sharing": [2, 2, 4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r120-overlap-0",
+          "length": 15,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 13
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r120-overlap-1",
+          "length": 9,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 1
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r120-overlap-2",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 7
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 121,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r121-overlap-0",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r121-overlap-1",
+          "length": 9,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 8
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 122,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r122-overlap-0",
+          "length": 10,
+          "faces": ["top", "right"],
+          "head": {
+            "face": "right",
+            "x": 17,
+            "y": 0
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r122-overlap-1",
+          "length": 13,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 0
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 123,
+      "count": 3,
+      "sharing": [2, 2, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r123-overlap-0",
+          "length": 13,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r123-overlap-1",
+          "length": 7,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 17,
+            "y": 17
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r123-overlap-2",
+          "length": 13,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 4,
+            "y": 8
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 124,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r124-overlap-0",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r124-overlap-1",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 6
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 125,
+      "count": 2,
+      "sharing": [4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r125-overlap-0",
+          "length": 15,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "left",
+            "x": 14,
+            "y": 7
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r125-overlap-1",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 4,
+            "y": 3
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 126,
+      "count": 3,
+      "sharing": [2, 2, 2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r126-overlap-0",
+          "length": 10,
+          "faces": ["top", "front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 0
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r126-overlap-1",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 10
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r126-overlap-2",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 7,
+            "y": 14
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 127,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r127-overlap-0",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 0
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r127-overlap-1",
+          "length": 7,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "top",
+            "x": 4,
+            "y": 4
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 128,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r128-overlap-0",
+          "length": 9,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 1
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r128-overlap-1",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 7
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 129,
+      "count": 3,
+      "sharing": [3, 3, 4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r129-overlap-0",
+          "length": 13,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 7
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r129-overlap-1",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r129-overlap-2",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 12
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 130,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r130-overlap-0",
+          "length": 13,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 14
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r130-overlap-1",
+          "length": 7,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "front",
+            "x": 0,
+            "y": 3
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 131,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r131-overlap-0",
+          "length": 10,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 13
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r131-overlap-1",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 1,
+            "y": 10
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 132,
+      "count": 3,
+      "sharing": [2, 2, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r132-overlap-0",
+          "length": 9,
+          "faces": ["top", "front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 3
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r132-overlap-1",
+          "length": 6,
+          "faces": ["top", "right"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r132-overlap-2",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 16
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 133,
+      "count": 2,
+      "sharing": [4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r133-overlap-0",
+          "length": 9,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 1,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r133-overlap-1",
+          "length": 9,
+          "faces": ["back", "left", "top"],
+          "head": {
+            "face": "top",
+            "x": 0,
+            "y": 0
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 134,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r134-overlap-0",
+          "length": 10,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 2,
+            "y": 12
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r134-overlap-1",
+          "length": 12,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 11
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 135,
+      "count": 3,
+      "sharing": [2, 2, 5],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r135-overlap-0",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 12
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r135-overlap-1",
+          "length": 11,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 16
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r135-overlap-2",
+          "length": 14,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 17
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 136,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r136-overlap-0",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 1,
+            "y": 1
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r136-overlap-1",
+          "length": 6,
+          "faces": ["back", "top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 1
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 137,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r137-overlap-0",
+          "length": 6,
+          "faces": ["back", "top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 2
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r137-overlap-1",
+          "length": 8,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 1,
+            "y": 3
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 138,
+      "count": 3,
+      "sharing": [2, 2, 4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r138-overlap-0",
+          "length": 8,
+          "faces": ["left", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 3
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r138-overlap-1",
+          "length": 5,
+          "faces": ["left", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 1,
+            "y": 1
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r138-overlap-2",
+          "length": 14,
+          "faces": ["left", "front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 0
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 139,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r139-overlap-0",
+          "length": 13,
+          "faces": ["front", "right"],
+          "head": {
+            "face": "right",
+            "x": 4,
+            "y": 3
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r139-overlap-1",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 3
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 140,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r140-overlap-0",
+          "length": 11,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 7
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r140-overlap-1",
+          "length": 7,
+          "faces": ["front", "right"],
+          "head": {
+            "face": "right",
+            "x": 1,
+            "y": 14
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 141,
+      "count": 3,
+      "sharing": [4, 4, 4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r141-overlap-0",
+          "length": 13,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 9
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r141-overlap-1",
+          "length": 12,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 16,
+            "y": 4
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r141-overlap-2",
+          "length": 11,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 12
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 142,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r142-overlap-0",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 14
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r142-overlap-1",
+          "length": 6,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 15,
+            "y": 17
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 143,
+      "count": 2,
+      "sharing": [4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r143-overlap-0",
+          "length": 11,
+          "faces": ["back", "top"],
+          "head": {
+            "face": "top",
+            "x": 17,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r143-overlap-1",
+          "length": 7,
+          "faces": ["back", "top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 1
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 144,
+      "count": 3,
+      "sharing": [2, 2, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r144-overlap-0",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r144-overlap-1",
+          "length": 11,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 2
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r144-overlap-2",
+          "length": 9,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 7
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 145,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r145-overlap-0",
+          "length": 11,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 3,
+            "y": 11
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r145-overlap-1",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 9
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 146,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r146-overlap-0",
+          "length": 7,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "left",
+            "x": 16,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r146-overlap-1",
+          "length": 11,
+          "faces": ["left", "front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 1,
+            "y": 0
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 147,
+      "count": 3,
+      "sharing": [2, 2, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r147-overlap-0",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 1,
+            "y": 6
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r147-overlap-1",
+          "length": 13,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 11
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r147-overlap-2",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 3
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 148,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r148-overlap-0",
+          "length": 12,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r148-overlap-1",
+          "length": 5,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "left",
+            "x": 17,
+            "y": 2
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 149,
+      "count": 2,
+      "sharing": [6],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r149-overlap-0",
+          "length": 16,
+          "faces": ["bottom", "right", "back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 15
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r149-overlap-1",
+          "length": 14,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 15,
+            "y": 11
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 150,
+      "count": 3,
+      "sharing": [4, 4, 4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r150-overlap-0",
+          "length": 14,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 10,
+            "y": 13
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r150-overlap-1",
+          "length": 10,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 15,
+            "y": 6
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r150-overlap-2",
+          "length": 16,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 8
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 151,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r151-overlap-0",
+          "length": 10,
+          "faces": ["right", "back"],
+          "head": {
+            "face": "back",
+            "x": 4,
+            "y": 11
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r151-overlap-1",
+          "length": 9,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 17,
+            "y": 5
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 152,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r152-overlap-0",
+          "length": 10,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 3,
+            "y": 2
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r152-overlap-1",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 17
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 153,
+      "count": 3,
+      "sharing": [2, 2, 2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r153-overlap-0",
+          "length": 12,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 2
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r153-overlap-1",
+          "length": 14,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 10
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r153-overlap-2",
+          "length": 5,
+          "faces": ["top", "back", "left"],
+          "head": {
+            "face": "left",
+            "x": 0,
+            "y": 0
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 154,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r154-overlap-0",
+          "length": 12,
+          "faces": ["front", "right"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r154-overlap-1",
+          "length": 10,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 16
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 155,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r155-overlap-0",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 1,
+            "y": 7
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r155-overlap-1",
+          "length": 8,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 13,
+            "y": 11
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 156,
+      "count": 3,
+      "sharing": [2, 2, 2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r156-overlap-0",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 17,
+            "y": 7
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r156-overlap-1",
+          "length": 10,
+          "faces": ["right", "back"],
+          "head": {
+            "face": "back",
+            "x": 5,
+            "y": 12
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r156-overlap-2",
+          "length": 13,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 15
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 157,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r157-overlap-0",
+          "length": 12,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r157-overlap-1",
+          "length": 14,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 1,
+            "y": 6
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 158,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r158-overlap-0",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 0
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r158-overlap-1",
+          "length": 10,
+          "faces": ["back", "top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 1
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 159,
+      "count": 3,
+      "sharing": [2, 2, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r159-overlap-0",
+          "length": 9,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 2,
+            "y": 7
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r159-overlap-1",
+          "length": 13,
+          "faces": ["back", "top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 3
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r159-overlap-2",
+          "length": 10,
+          "faces": ["back", "top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 2
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 160,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r160-overlap-0",
+          "length": 7,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 2,
+            "y": 13
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r160-overlap-1",
+          "length": 12,
+          "faces": ["back", "left", "bottom"],
+          "head": {
+            "face": "back",
+            "x": 16,
+            "y": 17
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 161,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r161-overlap-0",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 10,
+            "y": 17
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r161-overlap-1",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 11
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 162,
+      "count": 3,
+      "sharing": [2, 2, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r162-overlap-0",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 0,
+            "y": 5
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r162-overlap-1",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 7
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r162-overlap-2",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 0,
+            "y": 4
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 163,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r163-overlap-0",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 12
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r163-overlap-1",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 16
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 164,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r164-overlap-0",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 15,
+            "y": 3
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r164-overlap-1",
+          "length": 6,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 16
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 165,
+      "count": 3,
+      "sharing": [3, 3, 5],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r165-overlap-0",
+          "length": 11,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 2
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r165-overlap-1",
+          "length": 15,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "left",
+            "x": 14,
+            "y": 14
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r165-overlap-2",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 12
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 166,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r166-overlap-0",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 0,
+            "y": 1
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r166-overlap-1",
+          "length": 9,
+          "faces": ["top", "left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 3
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 167,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r167-overlap-0",
+          "length": 11,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r167-overlap-1",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 2
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 168,
+      "count": 3,
+      "sharing": [2, 2, 3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r168-overlap-0",
+          "length": 10,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r168-overlap-1",
+          "length": 10,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 15
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r168-overlap-2",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 3
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 169,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r169-overlap-0",
+          "length": 10,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 14,
+            "y": 7
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r169-overlap-1",
+          "length": 12,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 14
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 170,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r170-overlap-0",
+          "length": 8,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 15
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r170-overlap-1",
+          "length": 8,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 15
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 171,
+      "count": 3,
+      "sharing": [2, 2, 2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r171-overlap-0",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 1
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r171-overlap-1",
+          "length": 12,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 1,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r171-overlap-2",
+          "length": 10,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 11
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 172,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r172-overlap-0",
+          "length": 13,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 4
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r172-overlap-1",
+          "length": 12,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 13,
+            "y": 14
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 173,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r173-overlap-0",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 4
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r173-overlap-1",
+          "length": 10,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 0,
+            "y": 4
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 174,
+      "count": 3,
+      "sharing": [2, 2, 4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r174-overlap-0",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 13
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r174-overlap-1",
+          "length": 9,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 6,
+            "y": 10
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r174-overlap-2",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 13,
+            "y": 8
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 175,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r175-overlap-0",
+          "length": 5,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 2
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r175-overlap-1",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 12
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 176,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r176-overlap-0",
+          "length": 10,
+          "faces": ["right", "back", "top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 0
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r176-overlap-1",
+          "length": 11,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 0
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 177,
+      "count": 3,
+      "sharing": [4, 4, 5],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r177-overlap-0",
+          "length": 11,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 15
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r177-overlap-1",
+          "length": 11,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 2,
+            "y": 14
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r177-overlap-2",
+          "length": 11,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 6,
+            "y": 10
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 178,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r178-overlap-0",
+          "length": 9,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 1,
+            "y": 11
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r178-overlap-1",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 15
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 179,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r179-overlap-0",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 1
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r179-overlap-1",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 3,
+            "y": 4
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 180,
+      "count": 3,
+      "sharing": [4, 4, 5],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r180-overlap-0",
+          "length": 10,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 10
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r180-overlap-1",
+          "length": 9,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r180-overlap-2",
+          "length": 12,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 7
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 181,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r181-overlap-0",
+          "length": 7,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 11
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r181-overlap-1",
+          "length": 13,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 8
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 182,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r182-overlap-0",
+          "length": 10,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r182-overlap-1",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 15,
+            "y": 5
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 183,
+      "count": 3,
+      "sharing": [2, 2, 4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r183-overlap-0",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 9
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r183-overlap-1",
+          "length": 13,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 13,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r183-overlap-2",
+          "length": 7,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 6
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 184,
+      "count": 2,
+      "sharing": [4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r184-overlap-0",
+          "length": 11,
+          "faces": ["left", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 2,
+            "y": 5
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r184-overlap-1",
+          "length": 11,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 16
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 185,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r185-overlap-0",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 17,
+            "y": 15
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r185-overlap-1",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 17,
+            "y": 7
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 186,
+      "count": 3,
+      "sharing": [3, 3, 4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r186-overlap-0",
+          "length": 12,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 3,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r186-overlap-1",
+          "length": 15,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 15,
+            "y": 1
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r186-overlap-2",
+          "length": 13,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 4,
+            "y": 10
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 187,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r187-overlap-0",
+          "length": 12,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 17,
+            "y": 10
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r187-overlap-1",
+          "length": 11,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 4
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 188,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r188-overlap-0",
+          "length": 5,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "left",
+            "x": 14,
+            "y": 12
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r188-overlap-1",
+          "length": 13,
+          "faces": ["front", "left", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 0
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 189,
+      "count": 3,
+      "sharing": [2, 2, 2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r189-overlap-0",
+          "length": 8,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "top",
+            "x": 0,
+            "y": 17
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r189-overlap-1",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 14,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r189-overlap-2",
+          "length": 12,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 3
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 190,
+      "count": 2,
+      "sharing": [5],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r190-overlap-0",
+          "length": 9,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 1
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r190-overlap-1",
+          "length": 13,
+          "faces": ["right", "top", "front"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 17
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 191,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r191-overlap-0",
+          "length": 9,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 15
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r191-overlap-1",
+          "length": 7,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 7,
+            "y": 8
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 192,
+      "count": 3,
+      "sharing": [3, 3, 4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r192-overlap-0",
+          "length": 11,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r192-overlap-1",
+          "length": 9,
+          "faces": ["left", "top", "front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 0
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r192-overlap-2",
+          "length": 8,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "left",
+            "x": 17,
+            "y": 0
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 193,
+      "count": 2,
+      "sharing": [4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r193-overlap-0",
+          "length": 11,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 2
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r193-overlap-1",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 9
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 194,
+      "count": 2,
+      "sharing": [3],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r194-overlap-0",
+          "length": 9,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 17
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r194-overlap-1",
+          "length": 11,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 10
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 195,
+      "count": 3,
+      "sharing": [3, 3, 4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r195-overlap-0",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 7
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r195-overlap-1",
+          "length": 9,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 16
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r195-overlap-2",
+          "length": 11,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 9
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 196,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r196-overlap-0",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 3
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r196-overlap-1",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 7
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 197,
+      "count": 2,
+      "sharing": [4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r197-overlap-0",
+          "length": 14,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 1,
+            "y": 10
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r197-overlap-1",
+          "length": 7,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "left",
+            "x": 17,
+            "y": 1
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 198,
+      "count": 3,
+      "sharing": [3, 3, 5],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r198-overlap-0",
+          "length": 11,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 14
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r198-overlap-1",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 3
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r198-overlap-2",
+          "length": 9,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 7
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 199,
+      "count": 2,
+      "sharing": [4],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r199-overlap-0",
+          "length": 10,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 6,
+            "y": 10
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r199-overlap-1",
+          "length": 12,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 17
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 200,
+      "count": 2,
+      "sharing": [2],
+      "ordinaryBlocked": true,
+      "initialOutcome": "blocked",
+      "arrows": [
+        {
+          "id": "r200-overlap-0",
+          "length": 12,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 17
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r200-overlap-1",
+          "length": 11,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 15,
+            "y": 6
+          },
+          "heading": "west"
+        }
+      ]
+    }
+  ]
+}

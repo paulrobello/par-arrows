@@ -1,4 +1,4 @@
-/** Text-only inspection of generated parking, rotor, flip, wormhole or double layouts.
+/** Text-only inspection of generated parking, rotor, flip, wormhole, double or overlap layouts.
  * Run: bun scripts/inspect-parking.ts [levelIds...]
  *      MECHANIC=rotor bun scripts/inspect-parking.ts 42 58 111 196 */
 import { generateLevel } from "../src/content/procedural";
@@ -12,7 +12,7 @@ import { cellKey, headingForPath } from "../src/core/topology";
 import type { FaceId } from "../src/core/types";
 import { solveLevelTargets } from "../src/core/validation";
 
-const mechanic = ["rotor", "flip", "wormhole", "double"].includes(
+const mechanic = ["rotor", "flip", "wormhole", "double", "overlap"].includes(
   process.env.MECHANIC ?? "",
 )
   ? process.env.MECHANIC!
@@ -125,13 +125,15 @@ for (const id of ids.length ? ids : [6, 17, 58, 150]) {
     );
   }
   console.log(
-    mechanic === "double"
-      ? "D two-headed opener; numbered grown contact bodies; O stop; . outside body; blank empty"
-      : mechanic === "wormhole"
-        ? "A/B first portal pair; U/V second pair; labelled grown core/blocker bodies; O stop; . outside body; blank empty"
-        : mechanic === "flip"
-          ? "F flip; A/B approachers; 0/1/2 lane contacts; X/Y grown seeded blockers; O stop; . outside body; blank empty"
-          : "R rotor; P parker; B continuation blocker; 0/1/2 followers; O stop; . outside body; blank empty",
+    mechanic === "overlap"
+      ? "0/1/2 shared-tail members (shared cells show the last member); O stop; . outside body; blank empty"
+      : mechanic === "double"
+        ? "D two-headed opener; numbered grown contact bodies; O stop; . outside body; blank empty"
+        : mechanic === "wormhole"
+          ? "A/B first portal pair; U/V second pair; labelled grown core/blocker bodies; O stop; . outside body; blank empty"
+          : mechanic === "flip"
+            ? "F flip; A/B approachers; 0/1/2 lane contacts; X/Y grown seeded blockers; O stop; . outside body; blank empty"
+            : "R rotor; P parker; B continuation blocker; 0/1/2 followers; O stop; . outside body; blank empty",
   );
   const faces: FaceId[] = ["front", "back", "left", "right", "top", "bottom"];
   console.log(
