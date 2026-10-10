@@ -1,0 +1,431 @@
+{
+  "generatorVersion": 11,
+  "construction": "rotor-topology-v1",
+  "range": [41, 200],
+  "planned": [
+    42, 46, 47, 58, 61, 68, 75, 78, 79, 82, 83, 99, 101, 102, 111, 112, 137,
+    139, 156, 167, 169, 177, 179, 196
+  ],
+  "placedCount": 22,
+  "placed": [
+    {
+      "id": 42,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r42-rotor-p",
+        "r42-rotor-b",
+        "r42-rotor-f2",
+        "r42-rotor-f1",
+        "r42-rotor-f0"
+      ],
+      "arrowLengths": [9, 30, 9, 3, 3],
+      "bodyFaces": ["top", "back", "left"],
+      "rotors": [
+        {
+          "cell": "top:7:11",
+          "heading": "north"
+        }
+      ],
+      "coreStops": ["top:7:2"]
+    },
+    {
+      "id": 46,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r46-rotor-p",
+        "r46-rotor-b",
+        "r46-rotor-f1",
+        "r46-rotor-f0"
+      ],
+      "arrowLengths": [6, 21, 7, 9],
+      "bodyFaces": ["left", "top"],
+      "rotors": [
+        {
+          "cell": "left:4:10",
+          "heading": "east"
+        }
+      ],
+      "coreStops": ["left:13:10"]
+    },
+    {
+      "id": 47,
+      "gridSize": 18,
+      "coreArrowIds": ["r47-rotor-p", "r47-rotor-b", "r47-rotor-f0"],
+      "arrowLengths": [9, 25, 9],
+      "bodyFaces": ["back", "right", "bottom"],
+      "rotors": [
+        {
+          "cell": "back:1:11",
+          "heading": "east"
+        }
+      ],
+      "coreStops": ["back:14:11"]
+    },
+    {
+      "id": 58,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r58-rotor-p",
+        "r58-rotor-b",
+        "r58-rotor-f1",
+        "r58-rotor-f0"
+      ],
+      "arrowLengths": [5, 27, 7, 6],
+      "bodyFaces": ["back", "right", "left"],
+      "rotors": [
+        {
+          "cell": "back:1:10",
+          "heading": "east"
+        }
+      ],
+      "coreStops": ["left:4:10"]
+    },
+    {
+      "id": 61,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r61-rotor-p",
+        "r61-rotor-b",
+        "r61-rotor-f1",
+        "r61-rotor-f0"
+      ],
+      "arrowLengths": [9, 27, 11, 6],
+      "bodyFaces": ["top", "front"],
+      "rotors": [
+        {
+          "cell": "top:6:6",
+          "heading": "south"
+        }
+      ],
+      "coreStops": ["top:6:15"]
+    },
+    {
+      "id": 68,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r68-rotor-p",
+        "r68-rotor-b",
+        "r68-rotor-f1",
+        "r68-rotor-f0"
+      ],
+      "arrowLengths": [8, 17, 9, 4],
+      "bodyFaces": ["front"],
+      "rotors": [
+        {
+          "cell": "front:11:10",
+          "heading": "north"
+        }
+      ],
+      "coreStops": ["front:11:2"]
+    },
+    {
+      "id": 75,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r75-rotor-p",
+        "r75-rotor-b",
+        "r75-rotor-f2",
+        "r75-rotor-f1",
+        "r75-rotor-f0"
+      ],
+      "arrowLengths": [9, 14, 6, 3, 3],
+      "bodyFaces": ["bottom"],
+      "rotors": [
+        {
+          "cell": "bottom:11:5",
+          "heading": "south"
+        }
+      ],
+      "coreStops": ["bottom:11:15"]
+    },
+    {
+      "id": 78,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r78-rotor-p",
+        "r78-rotor-b",
+        "r78-rotor-f2",
+        "r78-rotor-f1",
+        "r78-rotor-f0"
+      ],
+      "arrowLengths": [6, 20, 5, 7, 3],
+      "bodyFaces": ["left", "top"],
+      "rotors": [
+        {
+          "cell": "left:9:5",
+          "heading": "west"
+        }
+      ],
+      "coreStops": ["left:2:5"]
+    },
+    {
+      "id": 79,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r79-rotor-p",
+        "r79-rotor-b",
+        "r79-rotor-f1",
+        "r79-rotor-f0"
+      ],
+      "arrowLengths": [7, 29, 6, 6],
+      "bodyFaces": ["left", "back"],
+      "rotors": [
+        {
+          "cell": "left:8:11",
+          "heading": "west"
+        }
+      ],
+      "coreStops": ["back:7:11"]
+    },
+    {
+      "id": 82,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r82-rotor-p",
+        "r82-rotor-b",
+        "r82-rotor-f2",
+        "r82-rotor-f1",
+        "r82-rotor-f0"
+      ],
+      "arrowLengths": [6, 15, 8, 4, 7],
+      "bodyFaces": ["left"],
+      "rotors": [
+        {
+          "cell": "left:7:11",
+          "heading": "north"
+        }
+      ],
+      "coreStops": ["left:7:2"]
+    },
+    {
+      "id": 83,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r83-rotor-p",
+        "r83-rotor-b",
+        "r83-rotor-f2",
+        "r83-rotor-f1",
+        "r83-rotor-f0"
+      ],
+      "arrowLengths": [9, 20, 9, 7, 7],
+      "bodyFaces": ["right", "front", "top"],
+      "rotors": [
+        {
+          "cell": "right:4:5",
+          "heading": "south"
+        }
+      ],
+      "coreStops": ["right:4:14"]
+    },
+    {
+      "id": 99,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r99-rotor-p",
+        "r99-rotor-b",
+        "r99-rotor-f2",
+        "r99-rotor-f1",
+        "r99-rotor-f0"
+      ],
+      "arrowLengths": [6, 24, 4, 6, 4],
+      "bodyFaces": ["front", "left"],
+      "rotors": [
+        {
+          "cell": "front:5:4",
+          "heading": "south"
+        }
+      ],
+      "coreStops": ["front:5:15"]
+    },
+    {
+      "id": 101,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r101-rotor-p",
+        "r101-rotor-b",
+        "r101-rotor-f2",
+        "r101-rotor-f1",
+        "r101-rotor-f0"
+      ],
+      "arrowLengths": [9, 22, 11, 5, 3],
+      "bodyFaces": ["bottom", "front"],
+      "rotors": [
+        {
+          "cell": "bottom:5:3",
+          "heading": "south"
+        }
+      ],
+      "coreStops": ["bottom:5:15"]
+    },
+    {
+      "id": 102,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r102-rotor-p",
+        "r102-rotor-b",
+        "r102-rotor-f1",
+        "r102-rotor-f0"
+      ],
+      "arrowLengths": [8, 21, 3, 6],
+      "bodyFaces": ["left"],
+      "rotors": [
+        {
+          "cell": "left:13:11",
+          "heading": "north"
+        }
+      ],
+      "coreStops": ["left:13:2"]
+    },
+    {
+      "id": 111,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r111-rotor-p",
+        "r111-rotor-b",
+        "r111-rotor-f2",
+        "r111-rotor-f1",
+        "r111-rotor-f0"
+      ],
+      "arrowLengths": [10, 30, 6, 10, 6],
+      "bodyFaces": ["front", "left", "bottom"],
+      "rotors": [
+        {
+          "cell": "front:2:10",
+          "heading": "east"
+        }
+      ],
+      "coreStops": ["front:12:10"]
+    },
+    {
+      "id": 112,
+      "gridSize": 18,
+      "coreArrowIds": ["r112-rotor-p", "r112-rotor-b", "r112-rotor-f0"],
+      "arrowLengths": [7, 20, 4],
+      "bodyFaces": ["top", "front"],
+      "rotors": [
+        {
+          "cell": "top:13:13",
+          "heading": "west"
+        }
+      ],
+      "coreStops": ["top:5:13"]
+    },
+    {
+      "id": 137,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r137-rotor-p",
+        "r137-rotor-b",
+        "r137-rotor-f2",
+        "r137-rotor-f1",
+        "r137-rotor-f0"
+      ],
+      "arrowLengths": [6, 24, 10, 5, 4],
+      "bodyFaces": ["right", "back"],
+      "rotors": [
+        {
+          "cell": "right:6:2",
+          "heading": "south"
+        }
+      ],
+      "coreStops": ["right:6:11"]
+    },
+    {
+      "id": 156,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r156-rotor-p",
+        "r156-rotor-b",
+        "r156-rotor-f2",
+        "r156-rotor-f1",
+        "r156-rotor-f0"
+      ],
+      "arrowLengths": [7, 26, 4, 11, 7],
+      "bodyFaces": ["front", "top"],
+      "rotors": [
+        {
+          "cell": "front:11:7",
+          "heading": "west"
+        }
+      ],
+      "coreStops": ["front:3:7"]
+    },
+    {
+      "id": 167,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r167-rotor-p",
+        "r167-rotor-b",
+        "r167-rotor-f2",
+        "r167-rotor-f1",
+        "r167-rotor-f0"
+      ],
+      "arrowLengths": [9, 18, 8, 4, 8],
+      "bodyFaces": ["bottom"],
+      "rotors": [
+        {
+          "cell": "bottom:9:15",
+          "heading": "north"
+        }
+      ],
+      "coreStops": ["bottom:9:2"]
+    },
+    {
+      "id": 169,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r169-rotor-p",
+        "r169-rotor-b",
+        "r169-rotor-f1",
+        "r169-rotor-f0"
+      ],
+      "arrowLengths": [6, 23, 3, 5],
+      "bodyFaces": ["top", "right"],
+      "rotors": [
+        {
+          "cell": "top:13:15",
+          "heading": "north"
+        }
+      ],
+      "coreStops": ["top:13:8"]
+    },
+    {
+      "id": 179,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r179-rotor-p",
+        "r179-rotor-b",
+        "r179-rotor-f1",
+        "r179-rotor-f0"
+      ],
+      "arrowLengths": [9, 19, 5, 6],
+      "bodyFaces": ["right"],
+      "rotors": [
+        {
+          "cell": "right:14:4",
+          "heading": "west"
+        }
+      ],
+      "coreStops": ["right:2:4"]
+    },
+    {
+      "id": 196,
+      "gridSize": 18,
+      "coreArrowIds": [
+        "r196-rotor-p",
+        "r196-rotor-b",
+        "r196-rotor-f1",
+        "r196-rotor-f0"
+      ],
+      "arrowLengths": [10, 26, 7, 8],
+      "bodyFaces": ["top", "front"],
+      "rotors": [
+        {
+          "cell": "front:12:1",
+          "heading": "west"
+        }
+      ],
+      "coreStops": ["front:2:1"]
+    }
+  ]
+}

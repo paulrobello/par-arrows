@@ -13,22 +13,15 @@ import {
 } from "../src/core/game-state";
 import { cellKey, cellToWorld, faceNormal } from "../src/core/topology";
 import type { Cell, FaceId, Heading } from "../src/core/types";
+import { solveLevelTargets } from "../src/core/validation";
 import { waitForReady } from "./runtime-fixtures";
 
 const TURNER = "rotor-intro-turner";
 const BENDER = "rotor-intro-bender";
 const ROTOR: Cell = { face: "front", x: 2, y: 1 };
 const ROTOR_KEY = cellKey(ROTOR);
-/** Level 58 carries a lane-window rotor core, whose play cycles the rotor through all four headings. */
+/** Representative generated phased-lane circuit; its solver supplies the tap order. */
 const GENERATED_LEVEL = 58;
-const LANE_WINDOW_ORDER = [
-  "opener",
-  "riser",
-  "window",
-  "capper",
-  "latch",
-  "opener",
-] as const;
 
 interface DirectionalSpotText {
   cell: string;
@@ -676,10 +669,9 @@ async function assertSeenPlayAndReload(
 }
 
 /**
- * A generated lane-window rotor core plays through on the full board: the
- * opener reverses off the rotor and parks on the core's circle, a reload
- * keeps both the parked single's exact path and the turned rotor, and the
- * rest of the core cycles the rotor through every heading.
+ * A synthesized rotor circuit plays through on the full board: its parker
+ * passes the rotor and pauses, a reload keeps its exact path and the turned
+ * heading, and the remaining lane circuit clears without losing a life.
  */
 async function assertGeneratedCore(
   browser: Browser,
@@ -695,14 +687,13 @@ async function assertGeneratedCore(
   assert.ok(rotor);
   const rotorKey = cellKey(rotor.cell);
   const ids = rotorCoreIds(level.arrows);
-  const idFor = (name: string): string => {
-    const id = ids.find((candidate) =>
-      candidate.endsWith(`-lane-window-${name}`),
-    );
-    assert.ok(id, `Level ${GENERATED_LEVEL} has a lane-window ${name}`);
-    return id;
-  };
-  const order = LANE_WINDOW_ORDER.map(idFor);
+  const inside = new Set(ids);
+  const targets = solveLevelTargets({
+    ...level,
+    arrows: level.arrows.filter((arrow) => inside.has(arrow.id)),
+  });
+  assert.ok(targets, "The synthesized rotor circuit has a safe tap order");
+  const order = targets.map((target) => target.arrowId);
   const opener = order[0] as string;
 
   // Replay the core in Node on the full board to fix the expected headings.
@@ -727,10 +718,9 @@ async function assertGeneratedCore(
     simulateMove(level, createGameState(level), opener),
   ).settledPaths?.[opener];
   assert.ok(parkedPath, "A lone single on a rotor level parks by exact path");
-  assert.equal(
-    new Set([rotor.heading, ...expected.map((step) => step.heading)]).size,
-    4,
-    "The core turns the rotor through all four headings",
+  assert.ok(
+    new Set([rotor.heading, ...expected.map((step) => step.heading)]).size >= 3,
+    "The phased circuit settles multiple quarter-turns",
   );
 
   const context = await browser.newContext({

@@ -67,6 +67,7 @@ import { LOCK_INTRO_LEVEL } from "./lock-intro";
 import { MIRROR_INTRO_LEVEL } from "./mirror-intro";
 import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
 import { constructParking } from "./parking";
+import { constructRotor } from "./rotor";
 import { ROTOR_INTRO_LEVEL } from "./rotor-intro";
 import { STOP_INTRO_LEVEL } from "./stop-intro";
 import { WORMHOLE_INTRO_LEVEL } from "./wormhole-intro";
@@ -1672,106 +1673,6 @@ export function flipCoreIds(arrows: readonly ArrowDefinition[]): string[] {
     .map((arrow) => arrow.id);
 }
 
-/**
- * Rotor-core layouts relative to the rotor at (0, 0), authored pointing
- * east, with the pattern's own circle. A rotor core without a circle can
- * never require its rotor to turn: with no park, a frozen rotor is a static
- * spot, and a route an arrow has cleared stays clear because the board only
- * loses arrows. So every pattern parks its first arrow on its circle.
- * "cycle-gate": the opener runs head-on into the rotor, reverses back over
- * its own body and parks on the circle, turning the rotor south; the
- * dropper then passes straight south, which the east aim would bend into the
- * parked opener, and turns the rotor west; the latch, whose lane crossed the
- * dropper's body, leaves; and the opener resumes past the latch's tail.
- * "lane-window": the same opener; the riser bounces off the south aim and
- * turns it west; the window arrow's exit is clear only at that west aim
- * (north sends it back into its capper, south into the riser, east into
- * the parked opener) and turns the rotor north; the capper then bounces off
- * north; the latch and the opener finish.
- */
-export const ROTOR_PATTERNS: readonly {
-  readonly name: "cycle-gate" | "lane-window";
-  readonly heading: Heading;
-  readonly stop: readonly [number, number];
-  readonly arrows: readonly {
-    readonly name: string;
-    readonly cells: readonly (readonly [number, number])[];
-  }[];
-}[] = [
-  {
-    name: "cycle-gate",
-    heading: "east",
-    stop: [5, 0],
-    arrows: [
-      {
-        name: "opener",
-        cells: [
-          [2, 0],
-          [1, 0],
-        ],
-      },
-      {
-        name: "dropper",
-        cells: [
-          [0, -2],
-          [0, -1],
-        ],
-      },
-      {
-        name: "latch",
-        cells: [
-          [6, 0],
-          [6, -1],
-          [5, -1],
-        ],
-      },
-    ],
-  },
-  {
-    name: "lane-window",
-    heading: "east",
-    stop: [5, 0],
-    arrows: [
-      {
-        name: "opener",
-        cells: [
-          [2, 0],
-          [1, 0],
-        ],
-      },
-      {
-        name: "riser",
-        cells: [
-          [0, 2],
-          [0, 1],
-        ],
-      },
-      {
-        name: "window",
-        cells: [
-          [0, -2],
-          [0, -1],
-        ],
-      },
-      {
-        name: "capper",
-        cells: [
-          [0, -4],
-          [0, -3],
-        ],
-      },
-      {
-        name: "latch",
-        cells: [
-          [6, 0],
-          [6, -1],
-          [5, -1],
-        ],
-      },
-    ],
-  },
-];
-
 /** Every generated rotor-core arrow id carries this marker; seeds are found by it. */
 const ROTOR_CORE_MARKER = "-rotor-";
 
@@ -2938,85 +2839,27 @@ function rotorCore(
   parkTracks: ReadonlySet<string>,
   restart: number,
 ): FlipCore | undefined {
-  const size = level.gridSize;
-  const rng = coreStream(id, "rotor-core", restart);
-  const pattern = ROTOR_PATTERNS[
-    rng.int(ROTOR_PATTERNS.length)
-  ] as (typeof ROTOR_PATTERNS)[number];
-  const faces = shuffledFaces(rng);
-  const margin = 6;
-  const inBounds = (cell: Cell): boolean =>
-    cell.x >= 0 && cell.y >= 0 && cell.x < size && cell.y < size;
-  for (let attempt = 0; attempt < 64; attempt += 1) {
-    const face = faces[attempt % faces.length] as FaceId;
-    const rotation = rng.int(4);
-    const rotor: Cell = {
-      face,
-      x: margin + rng.int(Math.max(1, size - 2 * margin)),
-      y: margin + rng.int(Math.max(1, size - 2 * margin)),
-    };
-    const at = ([dx, dy]: readonly [number, number]): Cell =>
-      patternCell(rotor, dx, dy, rotation);
-    const spots: DirectionalSpotDefinition[] = [
-      {
-        cell: rotor,
-        heading: rotateHeading(pattern.heading, rotation),
-        kind: "rotor",
-      },
-    ];
-    const stop = at(pattern.stop);
-    const arrows: ArrowDefinition[] = pattern.arrows.map((entry) => ({
-      id: `r${id}${ROTOR_CORE_MARKER}${pattern.name}-${entry.name}`,
-      path: entry.cells.map(at),
-    }));
-    const cells = [...arrows.flatMap((arrow) => arrow.path), rotor, stop];
-    if (cells.some((cell) => !inBounds(cell) || occupied.has(cellKey(cell))))
-      continue;
-    const board = {
-      ...level,
-      directionals: [...(level.directionals ?? []), ...spots],
-    };
-    const rotorKey = cellKey(rotor);
-    const reach = new Set<string>([rotorKey, cellKey(stop)]);
-    let singlePass = true;
-    for (const probe of flipHeadingProbes(board)) {
-      for (const arrow of arrows) {
-        const keys = arrowTrack(probe, arrow).map(cellKey);
-        if (keys.filter((key) => key === rotorKey).length > 1)
-          singlePass = false;
-        for (const key of keys) reach.add(key);
-      }
-    }
-    if (
-      !singlePass ||
-      [...reach].some((key) => occupied.has(key) || parkTracks.has(key))
-    )
-      continue;
-    const coreLevel: LevelDefinition = {
-      ...level,
-      arrows,
-      directionals: spots,
-      stops: [stop],
-    };
-    if (!validateLevel(coreLevel).valid) continue;
-    if (!solveLevelTargets(coreLevel)) continue;
-    if (
-      solveLevelTargets({ ...coreLevel, directionals: frozenSpots(spots) }) !==
-      undefined
-    )
-      continue;
-    if (hasStrandingState(coreLevel) !== false) continue;
-    const verdict = acceptFlipRegion(
-      level,
-      [...level.arrows, ...arrows],
-      board.directionals,
-      [...(level.stops ?? []), stop],
-    );
-    if (!verdict.ok) continue;
+  const core = constructRotor(
+    level,
+    coreStream(id, "rotor-topology-v1", restart),
+    occupied,
+    parkTracks,
+    // Each level already has independent construction restarts. Keep this
+    // optional path search cheap when a prior mechanic closes its lanes.
+    32,
+  );
+  if (!core) return undefined;
+  const verdict = acceptFlipRegion(
+    level,
+    [...level.arrows, ...core.arrows],
+    [...(level.directionals ?? []), ...core.spots],
+    [...(level.stops ?? []), ...core.stops],
+  );
+  if (verdict.ok) {
     return {
-      arrows,
-      spots,
-      stops: [stop],
+      arrows: core.arrows,
+      spots: core.spots,
+      stops: core.stops,
       cells: verdict.cells,
       blockers: [],
       dance: [],

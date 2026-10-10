@@ -1,6 +1,6 @@
 # Parking topology audit and verification
 
-Generated standalone parking puzzles now grow from cube-surface paths and blocking relationships instead of repeated coordinate gadgets. This note records the focused scope, structural evidence, and release limits.
+Generated standalone parking puzzles now grow from cube-surface paths and blocking relationships instead of repeated coordinate gadgets. This note records the first parking batch, structural evidence, and release limits. The subsequent [rotor cleanup](2026-10-10-rotor-topology.md) removes the combined rotor catalogs listed in this initial audit.
 
 ## Contents
 
@@ -35,7 +35,7 @@ Seed/planning streams remain version 11 so unrelated plans and zero-parking boar
 
 ## Remaining parking gadgets
 
-The [exact generated audit](parking-combined-audit.json) lists region arrow IDs, template names and stop-cell coordinates for each remaining combined parking layout in levels 6–200.
+The [initial generated audit](parking-combined-audit.json), captured before rotor cleanup, lists region arrow IDs, template names and stop-cell coordinates for each remaining combined parking layout in levels 6–200.
 
 - `flipCore → FLIP_PATTERNS → pendingLanes / lanes → acceptFlipRegion`: variable circle placement inside a fixed six-pattern flip gadget. Affected levels: 41, 54, 59, 62, 65, 70, 84, 85, 87, 88, 89, 90, 92, 96, 100, 107, 108, 114, 115, 117, 119, 121, 124, 126, 127, 131, 142, 148, 151, 152, 157, 162, 163, 170, 176, 190, 191.
 - `rotorCore → ROTOR_PATTERNS → acceptFlipRegion`: the rotated/transplanted `cycle-gate` and `lane-window` parking gadgets. Both keep the opener at offsets `[2, 0] → [1, 0]` and the stop at `[5, 0]` relative to the rotor. Affected levels: 42, 46, 47, 58, 61, 68, 75, 78, 79, 82, 83, 99, 101, 102, 111, 137, 139, 156, 167, 169, 179, 196.
@@ -63,4 +63,4 @@ Validation: `make checkall` passed with **643 tests, zero failures**, production
 
 A CPU preflight of current browser selections passed: rotor level 58 replays its park and all four headings; fragile level 46 remains solver-solvable; the first cross-face lock is now level 200; pending-flip parking is found at level 70. This preflight checks selection and engine replay only.
 
-The cloud has no verified real-GPU browser acceptance. The stop tutorial, generated parking picking/animation/save/reload, and moved generated browser selections still need the repository's real-GPU browser suite before release. No UI or canvas-pixel validation is claimed. Scoped push approval was subsequently granted for verified mechanics batches; the fix branch runs Checks, while Pages deployment is configured only for main. No merge or manual deployment is authorized.
+The cloud has no verified real-GPU browser acceptance. The stop tutorial, generated parking picking/animation/save/reload, and moved generated browser selections still need the repository's real-GPU browser suite before release. No UI or canvas-pixel validation is claimed. Publication was subsequently authorized per verified mechanic: merge locally to main and push origin/main normally, then verify Checks and automatic Pages deployment. No manual deployment is requested.

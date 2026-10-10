@@ -5,20 +5,21 @@ import {
   generateLevel,
   getStopCount,
   isAuthoredLevel,
-  ROTOR_PATTERNS,
+  Rng,
   rotorCoreFrequency,
   rotorCoreIds,
   rotorCorePlanned,
 } from "../src/content/procedural";
+import { constructRotor } from "../src/content/rotor";
+import {
+  applyMove,
+  createGameState,
+  simulateMove,
+} from "../src/core/game-state";
 import { overlappingArrowIds } from "../src/core/overlap";
-import { createGameState } from "../src/core/game-state";
 import { arrowTrack } from "../src/core/stops";
 import { cellKey } from "../src/core/topology";
-import type {
-  Cell,
-  DirectionalSpotDefinition,
-  LevelDefinition,
-} from "../src/core/types";
+import type { Cell, LevelDefinition } from "../src/core/types";
 import {
   flipHeadingProbes,
   flipInterest,
@@ -30,6 +31,7 @@ import {
 } from "../src/core/validation";
 import { layoutFingerprint } from "../src/storage";
 import { cachedLevel } from "./generated-levels";
+import { blockingStructure, mechanicStructure } from "./mechanic-structure";
 
 const FIRST_ID = 41;
 const LAST_ID = 200;
@@ -75,10 +77,6 @@ describe("rotor generation", () => {
     expect(rotorCoreFrequency(70)).toBeCloseTo(0.25 + (0.3 * 29) / 49);
     expect(rotorCoreFrequency(90)).toBeCloseTo(0.55);
     expect(rotorCoreFrequency(500)).toBeCloseTo(0.55);
-    expect(ROTOR_PATTERNS.map((pattern) => pattern.name)).toEqual([
-      "cycle-gate",
-      "lane-window",
-    ]);
   });
 
   // The plan draws only on ids with no flip plan and a circle to give the
@@ -111,52 +109,95 @@ describe("rotor generation", () => {
     }
   });
 
-  // A rotor core that never parks cannot need its rotor to turn: frozen, it
-  // is a static spot, and a cleared route stays clear. Each pattern parks.
-  test("every pattern needs its rotor at all four rotations", () => {
-    const turn = (dx: number, dy: number, rotation: number): [number, number] =>
-      [
-        [dx, dy],
-        [-dy, dx],
-        [-dx, -dy],
-        [dy, -dx],
-      ][rotation] as [number, number];
-    const cycle = ["east", "south", "west", "north"] as const;
-    for (const pattern of ROTOR_PATTERNS) {
-      for (let rotation = 0; rotation < 4; rotation += 1) {
-        const place = ([dx, dy]: readonly [number, number]): Cell => {
-          const [x, y] = turn(dx, dy, rotation);
-          return { face: "front", x: 8 + x, y: 8 + y };
-        };
-        const spot: DirectionalSpotDefinition = {
-          cell: place([0, 0]),
-          heading: cycle[
-            (cycle.indexOf(pattern.heading as (typeof cycle)[number]) +
-              rotation) %
-              4
-          ] as (typeof cycle)[number],
-          kind: "rotor",
-        };
-        const core: LevelDefinition = {
-          id: 904,
-          title: pattern.name,
-          gridSize: 17,
-          lives: 3,
-          arrows: pattern.arrows.map((entry) => ({
-            id: entry.name,
-            path: entry.cells.map(place),
-          })),
-          directionals: [spot],
-          stops: [place(pattern.stop)],
-        };
-        expect(validateLevel(core).valid).toBe(true);
-        expect(solveLevelTargets(core)).toBeDefined();
-        expect(solveLevelTargets(frozen(core))).toBeUndefined();
-        expect(hasStrandingState(core)).toBe(false);
-        expect(flipInterest(core)).toBe(true);
+  test("independent seeds grow distinct, required and safe phased lane circuits", () => {
+    const empty: LevelDefinition = {
+      id: 90,
+      title: "rotor topology",
+      gridSize: 16,
+      lives: 3,
+      arrows: [],
+    };
+    const shapes = new Set<string>();
+    const laneShapes = new Set<string>();
+    const graphs = new Set<string>();
+    const sizes = new Set<number>();
+    let multiFace = 0;
+    for (let seed = 1; seed <= 64; seed += 1) {
+      const core = constructRotor(empty, new Rng(seed), new Set(), new Set());
+      expect(core, `seed ${seed}`).toBeDefined();
+      if (!core) continue;
+      const board = {
+        ...empty,
+        arrows: core.arrows,
+        stops: core.stops,
+        directionals: core.spots,
+      };
+      expect(validateLevel(board).valid).toBe(true);
+      expect(solveLevelTargets(frozen(board))).toBeUndefined();
+      expect(solveLevelTargets({ ...board, stops: [] })).toBeUndefined();
+      expect(hasStrandingState(board)).toBe(false);
+      shapes.add(mechanicStructure(board));
+      laneShapes.add(
+        mechanicStructure({
+          ...board,
+          arrows: board.arrows.map((a) => ({ ...a, path: a.path.slice(-2) })),
+        }),
+      );
+      sizes.add(core.arrows.length);
+      if (
+        new Set(core.arrows.flatMap((a) => a.path.map((c) => c.face))).size > 1
+      )
+        multiFace += 1;
+      const spot = core.spots[0]!;
+      const parker = core.arrows[0]!;
+      let state = createGameState(board);
+      const pause = simulateMove(board, state, parker.id);
+      expect(pause.kind).toBe("paused");
+      state = applyMove(board, state, pause);
+      graphs.add(blockingStructure(board, state));
+      const parked = new Set(state.settledPaths?.[parker.id]?.map(cellKey));
+      expect(parked.size).toBe(parker.path.length);
+      expect(parker.path.some((cell) => parked.has(cellKey(cell)))).toBe(false);
+      expect(parked.has(cellKey(spot.cell))).toBe(false);
+      expect(state.spotHeadings?.[cellKey(spot.cell)]).not.toBe(spot.heading);
+      let required = false;
+      for (const arrow of [...core.arrows.slice(1).reverse(), parker]) {
+        const move = simulateMove(board, state, arrow.id);
+        expect(move.kind).toBe("exit");
+        const held = simulateMove(
+          board,
+          {
+            ...state,
+            spotHeadings: {
+              ...state.spotHeadings,
+              [cellKey(spot.cell)]: spot.heading,
+            },
+          },
+          arrow.id,
+        );
+        if (held.kind === "blocked" && held.blockerId === parker.id)
+          required = true;
+        state = applyMove(board, state, move);
       }
+      expect(
+        required,
+        `seed ${seed} rotor lacks a real parked-body interaction`,
+      ).toBe(true);
+      expect(state.remainingIds).toEqual([]);
+      expect(state.lives).toBe(board.lives);
     }
-  });
+    expect(shapes.size).toBeGreaterThanOrEqual(64 * 0.95);
+    expect(laneShapes.size).toBeGreaterThanOrEqual(64 * 0.95);
+    expect(graphs.size).toBeGreaterThanOrEqual(6);
+    expect(sizes.size).toBe(3);
+    expect(multiFace).toBeGreaterThan(16);
+    const full = new Set<string>();
+    for (const face of ["front", "back", "left", "right", "top", "bottom"])
+      for (let x = 0; x < empty.gridSize; x++)
+        for (let y = 0; y < empty.gridSize; y++) full.add(`${face}:${x}:${y}`);
+    expect(constructRotor(empty, new Rng(1), full, new Set())).toBeUndefined();
+    expect(constructRotor(empty, new Rng(1), new Set(), full)).toBeUndefined();
+  }, 180_000);
 
   // One pass over ids 41-200 (levels shared with the other generation
   // sweeps). Every level validates; caps hold; a level carries rotors only
@@ -172,6 +213,7 @@ describe("rotor generation", () => {
       ),
     ) as Record<string, string>;
     const rotorLevels: number[] = [];
+    const shapes = new Set<string>();
     for (let id = FIRST_ID; id <= LAST_ID; id += 1) {
       if (isAuthoredLevel(id)) continue;
       const level = cachedLevel(id);
@@ -191,10 +233,6 @@ describe("rotor generation", () => {
       expect(rotors.length).toBeGreaterThanOrEqual(1);
       expect(rotors.length).toBeLessThanOrEqual(2);
       expect(spots.some((spot) => spot.kind === "flip")).toBe(false);
-      const patterns = new Set(
-        seeds.map((seed) => seed.split("-rotor-")[1]?.split("-")[0]),
-      );
-      expect(patterns.size).toBe(1);
 
       const region = interactionRegion(level, seeds);
       expect(region, `level ${id}`).toBeDefined();
@@ -229,12 +267,14 @@ describe("rotor generation", () => {
       }
 
       const core = coreBoard(level);
+      shapes.add(mechanicStructure(core));
       expect(core.stops?.length ?? 0).toBeGreaterThan(0);
       expect(solveLevelTargets(core)).toBeDefined();
       expect(solveLevelTargets(frozen(core))).toBeUndefined();
       expect(solveLevelTargets(level)).toBeDefined();
     }
-    expect(rotorLevels.length).toBeGreaterThan(0);
+    expect(rotorLevels.length).toBeGreaterThan(20);
+    expect(shapes.size / rotorLevels.length).toBeGreaterThanOrEqual(0.95);
   }, 600_000);
 
   test("rotor levels generate deterministically and within budget", () => {
@@ -249,4 +289,14 @@ describe("rotor generation", () => {
       );
     }
   }, 60_000);
+
+  test("an unplaceable far-ID circuit gives up within the generation budget", () => {
+    // The unconstrained path search took 42 seconds here, then still omitted
+    // the optional rotor. Exhaustion must preserve a fast, solvable board.
+    const started = performance.now();
+    const level = generateLevel(4_179_387_469_245_184);
+    expect(performance.now() - started).toBeLessThan(8000);
+    expect(validateLevel(level).valid).toBe(true);
+    expect(solveLevelTargets(level)).toBeDefined();
+  }, 30_000);
 });

@@ -7,7 +7,7 @@ import {
   simulateMove,
 } from "../src/core/game-state";
 import { arrowTrack } from "../src/core/stops";
-import { cellKey, cellToWorld } from "../src/core/topology";
+import { cellKey } from "../src/core/topology";
 import type { Cell, LevelDefinition } from "../src/core/types";
 import {
   hasStrandingState,
@@ -15,50 +15,7 @@ import {
   validateLevel,
 } from "../src/core/validation";
 import { cachedLevel } from "./generated-levels";
-
-/** Canonicalize ALL cells together under translation and the 48 cube isometries.
- * A rotated, mirrored or transplanted gadget counts as the same structure. */
-function structure(level: LevelDefinition): string {
-  const cells = [
-    ...level.arrows.flatMap((arrow) => arrow.path),
-    ...(level.stops ?? []),
-  ];
-  const axes = [
-    [0, 1, 2],
-    [0, 2, 1],
-    [1, 0, 2],
-    [1, 2, 0],
-    [2, 0, 1],
-    [2, 1, 0],
-  ];
-  const variants: string[] = [];
-  for (const axis of axes)
-    for (let mask = 0; mask < 8; mask += 1) {
-      const transformed = (cell: Cell): number[] => {
-        const world = cellToWorld(cell, level.gridSize);
-        return axis.map(
-          (a, i) =>
-            Math.round(world[a!]! * level.gridSize) *
-            (mask & (1 << i) ? -1 : 1),
-        );
-      };
-      const points = cells.map(transformed);
-      const origin = [0, 1, 2].map((i) =>
-        Math.min(...points.map((point) => point[i]!)),
-      );
-      const encode = (cell: Cell): string =>
-        transformed(cell)
-          .map((value, i) => value - origin[i]!)
-          .join(",");
-      variants.push(
-        JSON.stringify([
-          level.arrows.map((arrow) => arrow.path.map(encode).join(";")).sort(),
-          level.stops?.map(encode).sort(),
-        ]),
-      );
-    }
-  return variants.sort()[0]!;
-}
+import { mechanicStructure as structure } from "./mechanic-structure";
 
 const empty: LevelDefinition = {
   id: 6,

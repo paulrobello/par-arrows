@@ -1,5 +1,6 @@
-/** Text-only inspection of real generated parking layouts; no renderer required.
- * Run: bun scripts/inspect-parking.ts [levelIds...] */
+/** Text-only inspection of generated parking or rotor layouts.
+ * Run: bun scripts/inspect-parking.ts [levelIds...]
+ *      MECHANIC=rotor bun scripts/inspect-parking.ts 42 58 111 196 */
 import { generateLevel } from "../src/content/procedural";
 import {
   applyMove,
@@ -11,10 +12,12 @@ import { cellKey, headingForPath } from "../src/core/topology";
 import type { FaceId } from "../src/core/types";
 import { solveLevelTargets } from "../src/core/validation";
 
+const mechanic = process.env.MECHANIC === "rotor" ? "rotor" : "park";
+const marker = `-${mechanic}-`;
 const ids = process.argv.slice(2).map(Number);
 for (const id of ids.length ? ids : [6, 17, 58, 150]) {
   const level = generateLevel(id);
-  const core = level.arrows.filter((arrow) => arrow.id.includes("-park-"));
+  const core = level.arrows.filter((arrow) => arrow.id.includes(marker));
   const lanes = new Set(
     core.flatMap((arrow) =>
       arrowTrack(level, arrow).slice(arrow.path.length).map(cellKey),
@@ -33,15 +36,15 @@ for (const id of ids.length ? ids : [6, 17, 58, 150]) {
     const move = simulateMove(level, state, target.arrowId, target.endpoint);
     if (move.kind !== "exit" && move.kind !== "paused")
       throw new Error(`Unsafe certificate at ${target.arrowId}`);
-    if (move.kind === "paused" && target.arrowId.includes("-park-")) break;
+    if (move.kind === "paused" && target.arrowId.includes(marker)) break;
     state = applyMove(level, state, move);
     beforePark += 1;
   }
   console.log(
-    `\nCube ${id}: grid ${level.gridSize}, ${level.arrows.length} arrows, ${core.length} parking arrows`,
+    `\nCube ${id}: grid ${level.gridSize}, ${level.arrows.length} arrows, ${core.length} ${mechanic} arrows`,
   );
   console.log(
-    `Ordinary parking-lane blockers (${blockers.length}): ${blockers.map((arrow) => arrow.id).join(", ")}`,
+    `Ordinary ${mechanic}-lane blockers (${blockers.length}): ${blockers.map((arrow) => arrow.id).join(", ")}`.trimEnd(),
   );
   console.log(
     `Solver taps before first parking pause: ${beforePark}; total safe solution taps: ${solution.length}`,
@@ -50,9 +53,9 @@ for (const id of ids.length ? ids : [6, 17, 58, 150]) {
   for (const arrow of level.arrows)
     for (const cell of arrow.path) marks.set(cellKey(cell), ".");
   for (const arrow of core) {
-    const label = arrow.id.endsWith("-park-p")
+    const label = arrow.id.endsWith(`${marker}p`)
       ? "P"
-      : arrow.id.endsWith("-park-b")
+      : arrow.id.endsWith(`${marker}b`)
         ? "B"
         : arrow.id.slice(-1);
     for (const cell of arrow.path) marks.set(cellKey(cell), label);
@@ -61,8 +64,15 @@ for (const id of ids.length ? ids : [6, 17, 58, 150]) {
     );
   }
   for (const stop of level.stops ?? []) marks.set(cellKey(stop), "O");
+  for (const spot of level.directionals ?? []) {
+    if (spot.kind !== "rotor" || mechanic !== "rotor") continue;
+    marks.set(cellKey(spot.cell), "R");
+    console.log(
+      `R: rotor ${cellKey(spot.cell)}, initial heading ${spot.heading}`,
+    );
+  }
   console.log(
-    "P parker; B continuation blocker; 0/1/2 followers; O stop; . outside body; blank empty",
+    "R rotor; P parker; B continuation blocker; 0/1/2 followers; O stop; . outside body; blank empty",
   );
   const faces: FaceId[] = ["front", "back", "left", "right", "top", "bottom"];
   console.log(

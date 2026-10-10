@@ -1,3 +1,4 @@
+import { rotatedHeading } from "../core/directionals";
 import { applyMove, createGameState, simulateMove } from "../core/game-state";
 import { currentPath } from "../core/stops";
 import {
@@ -121,6 +122,7 @@ export function constructParking(
   rng: Rng,
   occupied: ReadonlySet<string>,
   budget: number,
+  rotorPhase = false,
 ): ParkingConstruction | undefined {
   if (budget < 1) return undefined;
   for (let attempt = 0; attempt < 96; attempt += 1) {
@@ -144,7 +146,14 @@ export function constructParking(
       continue;
     const own = new Set(path.map(cellKey));
     if (route.some((cell) => own.has(cellKey(cell)))) continue;
-    const travel = 1 + rng.int(Math.min(path.length - 1, route.length - 2));
+    // A rotor circuit needs the tail to pass its spot before the head parks,
+    // so the quarter-turn is settled while the parker still blocks a lane.
+    const minimumTravel = rotorPhase ? path.length + 1 : 1;
+    const maximumTravel = rotorPhase
+      ? route.length - 2
+      : Math.min(path.length - 1, route.length - 2);
+    if (maximumTravel < minimumTravel) continue;
+    const travel = minimumTravel + rng.int(maximumTravel - minimumTravel + 1);
     const stop = route[travel - 1]!;
     const parker: ArrowDefinition = { id: `r${level.id}-park-p`, path };
     const board = { ...level, arrows: [parker], stops: [stop] };
@@ -152,6 +161,32 @@ export function constructParking(
     const parkedKeys = new Set(parked.map(cellKey));
     const vacated = path.filter((cell) => !parkedKeys.has(cellKey(cell)));
     if (!vacated.length) continue;
+    // Select a phased contact before constructing followers. Searching
+    // complete circuits and only then looking for a compatible crossing
+    // wastes most work, especially beside earlier reserved mechanics.
+    const crossings: {
+      cell: Cell;
+      heading: (typeof HEADINGS)[number];
+      contacts: readonly Cell[];
+    }[] = [];
+    if (rotorPhase) {
+      const track = [...path, ...route];
+      const vacatedKeys = new Set(vacated.map(cellKey));
+      for (let at = path.length; at < travel; at += 1) {
+        const cell = track[at]!;
+        const incoming = headingForPath(
+          track.slice(at - 1, at + 1),
+          level.gridSize,
+        );
+        if (!incoming) continue;
+        const nextHeading = rotatedHeading(incoming);
+        const side = routeFrom(level, cell, nextHeading);
+        const contacts = side?.filter((next) => vacatedKeys.has(cellKey(next)));
+        if (contacts?.length)
+          crossings.push({ cell, heading: nextHeading, contacts });
+      }
+      if (!crossings.length) continue;
+    }
     const bodies = new Set([...occupied, ...path.map(cellKey), cellKey(stop)]);
     // Future bodies cannot intercept any earlier follower's exit or the park.
     const protectedRoutes = new Set(route.slice(0, travel).map(cellKey));
@@ -163,10 +198,21 @@ export function constructParking(
       const last = index === count;
       let placed: ArrowDefinition | undefined;
       for (let trial = 0; trial < 48; trial += 1) {
-        const contact = rng.pick(targets);
-        let candidateHead = contact;
-        const backwards = rng.pick(HEADINGS);
-        let previous = contact;
+        const crossing =
+          rotorPhase && index === 0 ? rng.pick(crossings) : undefined;
+        // Stateful circuits may branch from any earlier released body,
+        // rather than reproducing a single fixed dependency chain. The
+        // emission order still clears every possible parent before its child.
+        const parents =
+          rotorPhase && index > 0
+            ? rng.pick([vacated, ...followers.map((arrow) => arrow.path)])
+            : targets;
+        const contact = rng.pick(crossing?.contacts ?? parents);
+        let candidateHead = crossing?.cell ?? contact;
+        const backwards = crossing
+          ? oppositeHeading(crossing.heading)
+          : rng.pick(HEADINGS);
+        let previous = candidateHead;
         const gap = 1 + rng.int(Math.min(5, level.gridSize - 1));
         for (let step = 0; step < gap; step += 1) {
           previous = candidateHead;
