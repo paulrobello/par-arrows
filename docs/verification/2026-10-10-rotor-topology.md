@@ -1,6 +1,6 @@
 # Rotor topology audit and verification
 
-Generated rotor parking circuits now synthesize surface paths and phased lane contacts. This follows the [standalone parking cleanup](2026-10-10-parking-topology.md); fixed flip regions and the authored stop lesson remain.
+Generated rotor parking circuits now synthesize surface paths and phased lane contacts. This follows the [standalone parking cleanup](2026-10-10-parking-topology.md); the authored stop lesson remains. The [flip follow-up](2026-10-10-flip-topology.md) removes the fixed flip regions.
 
 ## Contents
 
@@ -13,7 +13,7 @@ Generated rotor parking circuits now synthesize surface paths and phased lane co
 
 `rotorCore → ROTOR_PATTERNS → acceptFlipRegion` selected and rigidly transformed two complete coordinate gadgets: `cycle-gate` and `lane-window`. Both kept the opener at offsets `[2, 0] → [1, 0]` and stop at `[5, 0]` relative to the rotor. The catalog and its placement code are removed. `constructRotor` uses the existing parking path search in a separate long-travel mode. The path search selects a compatible phased contact before constructing followers, then the rotor constructor proves the complete state transition. This early constraint avoids repeatedly building whole circuits that cannot use a rotor. Exhaustion returns no optional circuit; it never stamps a fallback.
 
-Authored level 40 remains the rotor introduction with its guided tap order, help capture and browser assertions. It has no stop circle and was not a generated source. The level-5 stop lesson also remains; its fixed three-arrow layout requires coordinated walkthrough/help/browser work. `FLIP_PATTERNS` still generates fixed combined flip parking regions. Other mechanic catalogs are outside this batch.
+Authored level 40 remains the rotor introduction with its guided tap order, help capture and browser assertions. It has no stop circle and was not a generated source. The level-5 stop lesson also remains; its fixed three-arrow layout requires coordinated walkthrough/help/browser work. `FLIP_PATTERNS` still generated fixed combined flip parking regions when this rotor batch shipped; the linked flip follow-up replaces them. Other mechanic catalogs are outside this batch.
 
 ## Required interaction
 

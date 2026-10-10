@@ -210,8 +210,8 @@ describe("generated interaction regions", () => {
 
   // A region circle may park an arrow with its body still on a flip spot,
   // leaving that flip pending; the region's enumeration is what keeps such a
-  // park strand-free. Re-rolled for generator v11: level 62 parks a relay arrow
-  // with its tail on a flip spot.
+  // park strand-free. The sampled board is selected by behavior rather than
+  // pinning the layout of a former stamped relay.
   test("some region parks leave a flip pending", () => {
     const pendingOf = (level: LevelDefinition, state: GameState): string[] => {
       const flips = (level.directionals ?? [])
@@ -261,7 +261,7 @@ describe("generated interaction regions", () => {
       expect(hasStrandingState(regionBoard(level, region))).toBe(false);
     }
     console.log(`pending-flip parks: ${pending.join(",")}`);
-    expect(pending).toContain(62);
+    expect(pending.length).toBeGreaterThan(0);
   }, 240_000);
 
   // The prover treats outside arrows as static blockers. Its region-first

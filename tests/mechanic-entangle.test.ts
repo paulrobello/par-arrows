@@ -26,7 +26,7 @@ const LANE_MARKERS = {
   leap: "-leap-",
 } as const;
 
-// Every mechanic's blockers are two-cell arrows whose tail sits on their own
+// Flip blockers have grown bodies; other mechanic blockers are two-cell arrows whose tail sits on their own
 // core's body or track, and the assembled level stays solvable. Flip blockers
 // are absorbed into the core's interaction region; rotor cores carry none (a
 // multi-leg certificate the removal graph cannot express).
@@ -51,10 +51,13 @@ test("entangled blockers sit on their core lanes and keep the level solvable", (
         ]),
       );
       for (const blocker of blockers) {
-        expect(blocker.path.length, `${kind} blocker ${blocker.id}`).toBe(2);
+        if (kind === "flip") {
+          expect(blocker.path.length).toBeGreaterThanOrEqual(3);
+          expect(blocker.path.length).toBeLessThanOrEqual(10);
+        } else expect(blocker.path.length).toBe(2);
         expect(
-          lane.has(cellKey(blocker.path[0] as ArrowDefinition["path"][number])),
-          `${kind} blocker ${blocker.id} tail off its core lanes`,
+          blocker.path.some((cell) => lane.has(cellKey(cell))),
+          `${kind} blocker ${blocker.id} body off its core lanes`,
         ).toBe(true);
       }
     };

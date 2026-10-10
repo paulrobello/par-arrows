@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import {
-  FLIP_PATTERNS,
   flipBlockFrequency,
   flipCoreFrequency,
   flipCoreIds,
@@ -9,12 +8,17 @@ import {
   Rng,
   seedForLevel,
 } from "../src/content/procedural";
-import { createGameState, simulateMove } from "../src/core/game-state";
+import {
+  applyMove,
+  createGameState,
+  simulateMove,
+} from "../src/core/game-state";
 import { arrowTrack } from "../src/core/stops";
-import { cellKey } from "../src/core/topology";
+import { cellKey, oppositeHeading } from "../src/core/topology";
 import type {
   ArrowDefinition,
   DirectionalSpotDefinition,
+  GameState,
   LevelDefinition,
 } from "../src/core/types";
 import {
@@ -25,6 +29,8 @@ import {
   proveRegion,
   solveLevelTargets,
 } from "../src/core/validation";
+import { constructFlip } from "../src/content/flip";
+import { mechanicStructure, blockingStructure } from "./mechanic-structure";
 import { layoutFingerprint } from "../src/storage";
 import { cachedLevel } from "./generated-levels";
 
@@ -43,6 +49,52 @@ const planDraw = (id: number, stream: string): number =>
 const trackKeys = (level: LevelDefinition, arrow: ArrowDefinition): string[] =>
   arrowTrack(level, arrow).map(cellKey);
 
+/** Actual reachable states; change only one heading in each counterfactual. */
+function safetyWitnesses(level: LevelDefinition): Map<string, Set<string>> {
+  const pending: GameState[] = [createGameState(level)];
+  const seen = new Set<string>();
+  const witnesses = new Map(
+    (level.directionals ?? []).map((s) => [cellKey(s.cell), new Set<string>()]),
+  );
+  const safe = (kind: string) => kind === "exit" || kind === "paused";
+  while (pending.length) {
+    const state = pending.pop()!;
+    const key = JSON.stringify([
+      state.remainingIds,
+      state.spotHeadings,
+      state.offsets,
+      state.settledPaths,
+    ]);
+    if (seen.has(key)) continue;
+    expect(seen.size).toBeLessThan(5000);
+    seen.add(key);
+    for (const id of state.remainingIds) {
+      const move = simulateMove(level, state, id);
+      for (const spot of level.directionals ?? []) {
+        const key = cellKey(spot.cell);
+        const other = simulateMove(
+          level,
+          {
+            ...state,
+            spotHeadings: {
+              ...state.spotHeadings,
+              [key]: oppositeHeading(state.spotHeadings?.[key] ?? spot.heading),
+            },
+          },
+          id,
+        );
+        if (
+          safe(move.kind) !== safe(other.kind) &&
+          (move.kind === "blocked" || other.kind === "blocked")
+        )
+          witnesses.get(key)!.add(id);
+      }
+      if (safe(move.kind)) pending.push(applyMove(level, state, move));
+    }
+  }
+  return witnesses;
+}
+
 describe("generated flip cores", () => {
   test("flip blocker frequency ramps from level 31 to 90", () => {
     expect(flipBlockFrequency(30)).toBe(0);
@@ -58,159 +110,100 @@ describe("generated flip cores", () => {
     expect(flipCoreFrequency(70)).toBeCloseTo(0.25 + (0.4 * 39) / 59);
     expect(flipCoreFrequency(90)).toBeCloseTo(0.65);
     expect(flipCoreFrequency(500)).toBeCloseTo(0.65);
-    expect(FLIP_PATTERNS.map((pattern) => pattern.name)).toEqual([
-      "gate",
-      "bounce",
-      "relay",
-      "relay2",
-      "lane",
-      "weave",
-    ]);
   });
 
-  test("every flip pattern places at least once over 31-200", () => {
-    const placed = new Set<string>();
-    for (let id = 31; id <= 200; id += 1) {
-      if (isAuthoredLevel(id)) continue;
-      const level = cachedLevel(id);
-      for (const coreId of flipCoreIds(level.arrows)) {
-        const match = /-flip-([a-z0-9]+)-/.exec(coreId);
-        if (match?.[1]) placed.add(match[1] as string);
-      }
-    }
-    for (const pattern of FLIP_PATTERNS)
-      expect(placed.has(pattern.name)).toBe(true);
-  }, 600_000);
-
-  test("every pattern keeps its properties at all four rotations", () => {
-    const at = (x: number, y: number) => ({ face: "front" as const, x, y });
-    const turn = (dx: number, dy: number, rotation: number): [number, number] =>
-      [
-        [dx, dy],
-        [-dy, dx],
-        [-dx, -dy],
-        [dy, -dx],
-      ][rotation] as [number, number];
-    const cycle = ["east", "south", "west", "north"] as const;
-    for (const pattern of FLIP_PATTERNS) {
-      for (let rotation = 0; rotation < 4; rotation += 1) {
-        const place = ([dx, dy]: readonly [number, number]) => {
-          const [x, y] = turn(dx - 2, dy - 2, rotation);
-          return at(4 + x, 4 + y);
-        };
-        const core: LevelDefinition = {
-          id: 902,
-          title: "Rotated core",
-          gridSize: 9,
-          lives: 3,
-          arrows: pattern.arrows.map((entry) => ({
-            id: entry.name,
-            path: entry.cells.map(place),
-          })),
-          directionals: [
-            { cell: [2, 2] as const, heading: pattern.heading },
-            ...(pattern.extraSpots ?? []),
-          ].map((spot) => ({
-            cell: place(spot.cell),
-            heading: cycle[
-              (cycle.indexOf(spot.heading) + rotation) % 4
-            ] as (typeof cycle)[number],
-            kind: "flip" as const,
-          })),
-        };
-        expect(hasStrandingState(core)).toBe(false);
-        expect(flipInterest(core)).toBe(true);
-      }
-    }
-  });
-
-  // The relay2 chain's point: the lid's safety depends on each of the two
-  // spots on its own. For each spot there is a state pair differing only in
-  // that spot's heading where the lid's tap flips between exit and blocked.
-  test("relay2's lid depends on each spot independently", () => {
-    const pattern = FLIP_PATTERNS.find((entry) => entry.name === "relay2");
-    expect(pattern).toBeDefined();
-    if (!pattern) return;
-    const at = ([x, y]: readonly [number, number]) => ({
-      face: "front" as const,
-      x: x + 2,
-      y: y + 2,
-    });
-    const spots: DirectionalSpotDefinition[] = [
-      { cell: [2, 2] as const, heading: pattern.heading },
-      ...(pattern.extraSpots ?? []),
-    ].map((spot) => ({
-      cell: at(spot.cell),
-      heading: spot.heading,
-      kind: "flip" as const,
-    }));
-    expect(spots).toHaveLength(2);
-    const level: LevelDefinition = {
-      id: 903,
-      title: "relay2",
-      gridSize: 9,
+  test("independent seeds grow varied circuits with meaningful one- and two-spot interactions", () => {
+    const empty: LevelDefinition = {
+      id: 90,
+      title: "flip topology",
+      gridSize: 16,
       lives: 3,
-      arrows: pattern.arrows.map((entry) => ({
-        id: entry.name,
-        path: entry.cells.map(at),
-      })),
-      directionals: spots,
+      arrows: [],
     };
-    const flipped = {
-      east: "west",
-      west: "east",
-      north: "south",
-      south: "north",
-    } as const;
-    const combos = [
-      [false, false],
-      [true, false],
-      [false, true],
-      [true, true],
-    ] as const;
-    const lidKind = (
-      remainingIds: readonly string[],
-      reversed: readonly boolean[],
-    ): string => {
-      const spotHeadings = Object.fromEntries(
-        spots.map((spot, index) => [
-          cellKey(spot.cell),
-          reversed[index] ? flipped[spot.heading] : spot.heading,
-        ]),
+    const shapes = new Set<string>();
+    const lanes = new Set<string>();
+    const graphs = new Set<string>();
+    const counts = new Set<number>();
+    let two = 0;
+    let multiFace = 0;
+    let reversals = 0;
+    for (let seed = 1; seed <= 64; seed++) {
+      const core = constructFlip(
+        empty,
+        new Rng(Math.imul(seed, 0x9e3779b9) >>> 0),
+        new Set(),
+        new Set(),
       );
-      return simulateMove(
-        level,
-        { ...createGameState(level), remainingIds, spotHeadings },
-        "lid",
-      ).kind;
-    };
-    const safe = (kind: string) => kind === "exit" || kind === "paused";
-    // Every subset of the other arrows, so the witness can come from any
-    // board the lid might face.
-    const others = level.arrows
-      .map((arrow) => arrow.id)
-      .filter((id) => id !== "lid");
-    const boards = Array.from({ length: 1 << others.length }, (_, mask) => [
-      "lid",
-      ...others.filter((_, bit) => mask & (1 << bit)),
-    ]);
-    spots.forEach((_, spotIndex) => {
-      const witnessed = boards.some((board) =>
-        combos.some((combo) => {
-          const other = combo.map((value, index) =>
-            index === spotIndex ? !value : value,
-          );
-          const first = lidKind(board, combo);
-          const second = lidKind(board, other);
-          return (
-            safe(first) !== safe(second) &&
-            (first === "blocked" || second === "blocked")
-          );
+      expect(core, `seed ${seed}`).toBeDefined();
+      if (!core) continue;
+      expect(hasStrandingState(core)).toBe(false);
+      expect(flipInterest(core)).toBe(true);
+      expect(solveLevelTargets(core)).toBeDefined();
+      shapes.add(mechanicStructure(core));
+      lanes.add(
+        mechanicStructure({
+          ...core,
+          arrows: core.arrows.map((a) => ({ ...a, path: a.path.slice(-2) })),
         }),
       );
-      expect(witnessed, `spot ${spotIndex}`).toBe(true);
-    });
-  });
+      graphs.add(blockingStructure(core, createGameState(core)));
+      counts.add(core.arrows.length);
+      if (
+        new Set(core.arrows.flatMap((a) => a.path.map((c) => c.face))).size > 1
+      )
+        multiFace++;
+      for (const probe of flipHeadingProbes(core))
+        for (const arrow of core.arrows) {
+          const keys = arrowTrack(probe, arrow).map(cellKey);
+          for (const spot of core.directionals ?? [])
+            expect(
+              keys.filter((key) => key === cellKey(spot.cell)).length,
+            ).toBeLessThanOrEqual(1);
+        }
+      const witnesses = safetyWitnesses(core);
+      expect(
+        [...witnesses.values()].every((ids) => ids.size > 0),
+        `seed ${seed}: every spot must change safe choices`,
+      ).toBe(true);
+      if (witnesses.size === 2) {
+        two++;
+        const [first, second] = [...witnesses.values()];
+        expect(
+          [...first!].some((id) => second!.has(id)),
+          `seed ${seed}: both spots must matter to one shared arrow`,
+        ).toBe(true);
+      }
+      let state = createGameState(core);
+      for (const target of solveLevelTargets(core) ?? []) {
+        const move = simulateMove(core, state, target.arrowId);
+        if (
+          move.route?.some(
+            (cell, i, route) =>
+              i > 1 && cellKey(cell) === cellKey(route[i - 2]!),
+          )
+        )
+          reversals++;
+        expect(move.kind).toBe("exit");
+        state = applyMove(core, state, move);
+      }
+      expect(state.remainingIds).toEqual([]);
+      expect(state.lives).toBe(core.lives);
+    }
+    expect(shapes.size).toBeGreaterThanOrEqual(64 * 0.95);
+    expect(lanes.size).toBeGreaterThanOrEqual(64 * 0.95);
+    expect(graphs.size).toBeGreaterThanOrEqual(6);
+    expect(counts.size).toBeGreaterThanOrEqual(3);
+    expect(multiFace).toBeGreaterThan(16);
+    expect(two).toBeGreaterThan(8);
+    expect(two).toBeLessThan(48);
+    expect(reversals).toBeGreaterThan(0);
+    const full = new Set<string>();
+    for (const face of ["front", "back", "left", "right", "top", "bottom"])
+      for (let x = 0; x < empty.gridSize; x++)
+        for (let y = 0; y < empty.gridSize; y++) full.add(`${face}:${x}:${y}`);
+    expect(constructFlip(empty, new Rng(1), full, new Set())).toBeUndefined();
+    expect(constructFlip(empty, new Rng(1), new Set(), full)).toBeUndefined();
+  }, 60_000);
 
   // One pass over ids 2-200: every level matches the committed v8 baseline;
   // a level with a flip core carries a proven interaction region that no
@@ -224,6 +217,10 @@ describe("generated flip cores", () => {
       ),
     ) as Record<string, string>;
     const coreIds: number[] = [];
+    const shapes = new Set<string>();
+    const lanes = new Set<string>();
+    const graphs = new Set<string>();
+    let two = 0;
     for (let id = 2; id <= 200; id += 1) {
       const level = cachedLevel(id);
       expect(layoutFingerprint(level)).toBe(baseline[id] as string);
@@ -245,6 +242,21 @@ describe("generated flip cores", () => {
       };
       expect(hasStrandingState(coreLevel)).toBe(false);
       expect(flipInterest(coreLevel)).toBe(true);
+      shapes.add(mechanicStructure(coreLevel));
+      lanes.add(
+        mechanicStructure({
+          ...coreLevel,
+          arrows: core.map((a) => ({ ...a, path: a.path.slice(-2) })),
+        }),
+      );
+      graphs.add(blockingStructure(coreLevel, createGameState(coreLevel)));
+      const witnesses = safetyWitnesses(coreLevel);
+      expect([...witnesses.values()].every((ids) => ids.size > 0)).toBe(true);
+      if (witnesses.size === 2) {
+        two++;
+        const [first, second] = [...witnesses.values()];
+        expect([...first!].some((id) => second!.has(id))).toBe(true);
+      }
       // What makes the core-only checks above sound: each core arrow's
       // track on the assembled level equals its track on the core board,
       // which for arrowTrack (grid, seams and spots only) is a probe
@@ -299,6 +311,10 @@ describe("generated flip cores", () => {
       }
     }
     expect(coreIds.length).toBeGreaterThanOrEqual(40);
+    expect(shapes.size / coreIds.length).toBeGreaterThanOrEqual(0.95);
+    expect(lanes.size / coreIds.length).toBeGreaterThanOrEqual(0.95);
+    expect(graphs.size).toBeGreaterThanOrEqual(6);
+    expect(two).toBeGreaterThan(5);
   }, 600_000);
   test("entangled flip cores carry well-formed blockers on their lanes", () => {
     let found = 0;
@@ -332,7 +348,8 @@ describe("generated flip cores", () => {
         }
       }
       for (const blocker of blockers) {
-        expect(blocker.path.length).toBe(2);
+        expect(blocker.path.length).toBeGreaterThanOrEqual(3);
+        expect(blocker.path.length).toBeLessThanOrEqual(10);
         const onTrack = blocker.path.some((cell) =>
           coreTrack.has(cellKey(cell)),
         );

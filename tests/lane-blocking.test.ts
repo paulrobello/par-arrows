@@ -58,9 +58,14 @@ const LANE_MECHANICS = [
     name: "mirror",
     firstLevel: 56,
     marker: MIRROR_CORE_MARKER,
-    ids: [57, 67, 69],
+    ids: [57, 67, 198],
   },
-  { name: "leap", firstLevel: 61, marker: LEAP_CORE_MARKER, ids: [61, 64, 69] },
+  {
+    name: "leap",
+    firstLevel: 61,
+    marker: LEAP_CORE_MARKER,
+    ids: [61, 64, 198],
+  },
   { name: "double", firstLevel: 26, marker: "-double-", ids: [34, 41, 51, 68] },
   {
     name: "directional",

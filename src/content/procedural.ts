@@ -59,6 +59,7 @@ import {
 import { clearShare, closureStats, meetsDepthGate } from "./difficulty";
 import { DIRECTIONAL_INTRO_LEVEL } from "./directional-intro";
 import { DOUBLE_INTRO_LEVEL } from "./double-intro";
+import { constructFlip, growFlipLaneBlocker } from "./flip";
 import { FLIP_INTRO_LEVEL } from "./flip-intro";
 import { FRAGILE_INTRO_LEVEL } from "./fragile-intro";
 import { LEVEL_ONE, WRAP_INTRO_LEVEL } from "./intro";
@@ -1448,220 +1449,6 @@ function wormholeCore(
   return undefined;
 }
 
-/**
- * Flip-core layouts relative to the spot cell at (2, 2). Every arrow's head
- * aims at the spot or passes it, so all of the core's routes run through or
- * beside it; the proven interaction region is reserved before other arrows
- * are placed. "gate": the opener turns north and flips the spot south, which
- * frees the waiter. "bounce": the reverser U-turns out of the spot, after
- * which the runner turns into the cap until it is cleared. "relay": two
- * passes in a row, so the east arrow's safety depends on the pass count.
- * "relay2": the traverser bends through two flip spots in sequence; the lid's
- * safety depends on both spots' states and the two lane arrows' on the
- * second's.
- */
-export const FLIP_PATTERNS: readonly {
-  readonly name: "gate" | "bounce" | "relay" | "relay2" | "lane" | "weave";
-  readonly heading: Heading;
-  /** Further flip spots beyond the one at (2, 2), in the same pattern frame. */
-  readonly extraSpots?: readonly {
-    readonly cell: readonly [number, number];
-    readonly heading: Heading;
-  }[];
-  readonly arrows: readonly {
-    readonly name: string;
-    readonly cells: readonly (readonly [number, number])[];
-  }[];
-}[] = [
-  {
-    name: "gate",
-    heading: "north",
-    arrows: [
-      {
-        name: "opener",
-        cells: [
-          [0, 2],
-          [1, 2],
-        ],
-      },
-      {
-        name: "waiter",
-        cells: [
-          [4, 2],
-          [3, 2],
-        ],
-      },
-      {
-        name: "lid",
-        cells: [
-          [2, 1],
-          [2, 0],
-        ],
-      },
-    ],
-  },
-  {
-    name: "bounce",
-    heading: "south",
-    arrows: [
-      {
-        name: "reverser",
-        cells: [
-          [2, 4],
-          [2, 3],
-        ],
-      },
-      {
-        name: "runner",
-        cells: [
-          [4, 2],
-          [3, 2],
-        ],
-      },
-      {
-        name: "cap",
-        cells: [
-          [1, 0],
-          [2, 0],
-        ],
-      },
-    ],
-  },
-  {
-    name: "relay",
-    heading: "north",
-    arrows: [
-      {
-        name: "west",
-        cells: [
-          [0, 2],
-          [1, 2],
-        ],
-      },
-      {
-        name: "east",
-        cells: [
-          [4, 2],
-          [3, 2],
-        ],
-      },
-      {
-        name: "northcap",
-        cells: [
-          [1, 0],
-          [2, 0],
-        ],
-      },
-      {
-        name: "southcap",
-        cells: [
-          [3, 4],
-          [2, 4],
-        ],
-      },
-    ],
-  },
-  {
-    name: "relay2",
-    heading: "south",
-    extraSpots: [{ cell: [2, 4], heading: "east" }],
-    arrows: [
-      {
-        name: "traverser",
-        cells: [
-          [0, 2],
-          [1, 2],
-        ],
-      },
-      {
-        name: "lid",
-        cells: [
-          [2, 0],
-          [2, 1],
-        ],
-      },
-      {
-        name: "west",
-        cells: [
-          [0, 4],
-          [1, 4],
-        ],
-      },
-      {
-        name: "east",
-        cells: [
-          [4, 4],
-          [3, 4],
-        ],
-      },
-    ],
-  },
-  {
-    // The gate with four-cell bent packer and waiter lanes, so a blocker can
-    // be seeded on either lane.
-    name: "lane",
-    heading: "north",
-    arrows: [
-      {
-        name: "packer",
-        cells: [
-          [0, 0],
-          [0, 1],
-          [0, 2],
-          [1, 2],
-        ],
-      },
-      {
-        name: "waiter",
-        cells: [
-          [4, 4],
-          [4, 3],
-          [4, 2],
-          [3, 2],
-        ],
-      },
-      {
-        name: "lid",
-        cells: [
-          [2, 1],
-          [2, 0],
-        ],
-      },
-    ],
-  },
-  {
-    // The bounce with a four-cell bent runner, so the runner's lane has room
-    // for a blocker seeded on it.
-    name: "weave",
-    heading: "south",
-    arrows: [
-      {
-        name: "reverser",
-        cells: [
-          [2, 4],
-          [2, 3],
-        ],
-      },
-      {
-        name: "runner",
-        cells: [
-          [4, 4],
-          [4, 3],
-          [4, 2],
-          [3, 2],
-        ],
-      },
-      {
-        name: "cap",
-        cells: [
-          [1, 0],
-          [2, 0],
-        ],
-      },
-    ],
-  },
-];
-
 /** Every generated flip-core arrow id carries this marker; seeds are found by it. */
 const FLIP_CORE_MARKER = "-flip-";
 const FLIP_BLOCK_MARKER = "-flipb-";
@@ -1706,8 +1493,8 @@ interface FlipCore {
 
 /**
  * Place a flip core on its own seeded streams and prove its interaction
- * region. The pattern rotates about its first spot, which keeps a two-cell
- * margin from every face edge so each rotation fits. Every cell a core arrow
+ * region. Paths, contact gaps and shared spot traversals grow before the
+ * stateful proof; no coordinate catalog is used. Every cell a core arrow
  * can reach under any flip state must avoid every reserved cell and the
  * parking core's tracks, so the cores placed before it play exactly as they
  * were proven; the caller reserves the region's cells so nothing placed later
@@ -1728,156 +1515,98 @@ function flipCore(
   restart: number,
 ): FlipCore | undefined {
   const size = level.gridSize;
-  const rng = coreStream(id, "flip-core", restart);
-  const pattern = FLIP_PATTERNS[
-    rng.int(FLIP_PATTERNS.length)
-  ] as (typeof FLIP_PATTERNS)[number];
-  const faces = shuffledFaces(rng);
+  const rng = coreStream(id, "flip-topology-v1", restart);
+  const core = constructFlip(level, rng, occupied, parkTracks, 32);
+  if (!core) return undefined;
+  const arrows = core.arrows;
+  const spots = core.directionals ?? [];
+  const board = {
+    ...level,
+    directionals: [...(level.directionals ?? []), ...spots],
+  };
+  const spotKeys = spots.map((spot) => cellKey(spot.cell));
+  const coreLevel = { ...core, directionals: spots };
   const inBounds = (cell: Cell): boolean =>
     cell.x >= 0 && cell.y >= 0 && cell.x < size && cell.y < size;
-  for (let attempt = 0; attempt < 64; attempt += 1) {
-    const face = faces[attempt % faces.length] as FaceId;
-    const rotation = rng.int(4);
-    const spotCell: Cell = {
-      face,
-      x: 2 + rng.int(Math.max(1, size - 4)),
-      y: 2 + rng.int(Math.max(1, size - 4)),
-    };
-    const at = ([dx, dy]: readonly [number, number]): Cell =>
-      patternCell(spotCell, dx - 2, dy - 2, rotation);
-    const spots: DirectionalSpotDefinition[] = [
-      {
-        cell: spotCell,
-        heading: rotateHeading(pattern.heading, rotation),
-        kind: "flip",
-      },
-      ...(pattern.extraSpots ?? []).map((extra) => ({
-        cell: at(extra.cell),
-        heading: rotateHeading(extra.heading, rotation),
-        kind: "flip" as const,
-      })),
-    ];
-    const arrows: ArrowDefinition[] = pattern.arrows.map((entry) => ({
-      id: `r${id}${FLIP_CORE_MARKER}${pattern.name}-${entry.name}`,
-      path: entry.cells.map(at),
-    }));
-    const cells = [
-      ...arrows.flatMap((arrow) => arrow.path),
-      ...spots.map((spot) => spot.cell),
-    ];
-    if (cells.some((cell) => !inBounds(cell) || occupied.has(cellKey(cell))))
-      continue;
-    const board = {
-      ...level,
-      directionals: [...(level.directionals ?? []), ...spots],
-    };
-    const spotKeys = spots.map((spot) => cellKey(spot.cell));
-    const reach = new Set<string>(spotKeys);
-    let singlePass = true;
-    for (const probe of flipHeadingProbes(board)) {
-      for (const arrow of arrows) {
-        const keys = arrowTrack(probe, arrow).map(cellKey);
-        if (
-          spotKeys.some(
-            (spotKey) => keys.filter((key) => key === spotKey).length > 1,
-          )
-        )
-          singlePass = false;
-        for (const key of keys) reach.add(key);
+  const bodies = new Set(arrows.flatMap((arrow) => arrow.path.map(cellKey)));
+  const lanes: Cell[] = [];
+  const pendingLanes: Cell[] = [];
+  if (stopBudget > 0) {
+    const seen = new Set<string>();
+    for (const arrow of arrows) {
+      for (const cell of arrowTrack(board, arrow).slice(arrow.path.length)) {
+        const key = cellKey(cell);
+        if (seen.has(key) || bodies.has(key) || spotKeys.includes(key))
+          continue;
+        seen.add(key);
+        if (!inBounds(cell)) continue;
+        const withStop: LevelDefinition = { ...coreLevel, stops: [cell] };
+        if (!validateLevel(withStop).valid) continue;
+        if (parksOnFlipSpot(withStop, cell)) {
+          pendingLanes.push(cell);
+          continue;
+        }
+        if (parkCrossesTrack(withStop, cell)) continue;
+        lanes.push(cell);
       }
     }
-    if (
-      !singlePass ||
-      [...reach].some((key) => occupied.has(key) || parkTracks.has(key))
-    )
-      continue;
-    const coreLevel: LevelDefinition = {
-      ...board,
+    for (const list of [lanes, pendingLanes]) {
+      for (let index = list.length - 1; index > 0; index -= 1) {
+        const replacement = rng.int(index + 1);
+        const current = list[index] as Cell;
+        list[index] = list[replacement] as Cell;
+        list[replacement] = current;
+      }
+    }
+  }
+  const planned: (readonly Cell[])[] = [
+    ...pendingLanes.slice(0, 2).map((cell) => [cell]),
+    ...lanes.slice(0, 2).map((cell) => [cell]),
+    [],
+  ];
+  const placed = [...level.arrows, ...arrows];
+  for (const stops of planned) {
+    const verdict = acceptFlipRegion(level, placed, board.directionals, [
+      ...(level.stops ?? []),
+      ...stops,
+    ]);
+    if (!verdict.ok) continue;
+    const seeded = flipBlockers(
+      id,
+      restart,
+      level,
+      board,
       arrows,
-      stops: [],
+      stops,
+      verdict.cells,
+      occupied,
+      parkTracks,
+      inBounds,
+    );
+    const dance = regionDanceOrder(level, board.directionals, stops, [
+      ...placed,
+      ...seeded.blockers,
+    ]);
+    return {
+      arrows,
+      spots,
+      stops,
+      cells: seeded.cells,
+      blockers: seeded.blockers,
+      dance,
     };
-    if (!validateLevel(coreLevel).valid) continue;
-    const bodies = new Set(arrows.flatMap((arrow) => arrow.path.map(cellKey)));
-    const lanes: Cell[] = [];
-    const pendingLanes: Cell[] = [];
-    if (stopBudget > 0) {
-      const seen = new Set<string>();
-      for (const arrow of arrows) {
-        for (const cell of arrowTrack(board, arrow).slice(arrow.path.length)) {
-          const key = cellKey(cell);
-          if (seen.has(key) || bodies.has(key) || spotKeys.includes(key))
-            continue;
-          seen.add(key);
-          if (!inBounds(cell) || cell.face !== face) continue;
-          const withStop: LevelDefinition = { ...coreLevel, stops: [cell] };
-          if (!validateLevel(withStop).valid) continue;
-          if (parksOnFlipSpot(withStop, cell)) {
-            pendingLanes.push(cell);
-            continue;
-          }
-          if (parkCrossesTrack(withStop, cell)) continue;
-          lanes.push(cell);
-        }
-      }
-      for (const list of [lanes, pendingLanes]) {
-        for (let index = list.length - 1; index > 0; index -= 1) {
-          const replacement = rng.int(index + 1);
-          const current = list[index] as Cell;
-          list[index] = list[replacement] as Cell;
-          list[replacement] = current;
-        }
-      }
-    }
-    const planned: (readonly Cell[])[] = [
-      ...pendingLanes.slice(0, 2).map((cell) => [cell]),
-      ...lanes.slice(0, 2).map((cell) => [cell]),
-      [],
-    ];
-    const placed = [...level.arrows, ...arrows];
-    for (const stops of planned) {
-      const verdict = acceptFlipRegion(level, placed, board.directionals, [
-        ...(level.stops ?? []),
-        ...stops,
-      ]);
-      if (!verdict.ok) continue;
-      const seeded = flipBlockers(
-        id,
-        restart,
-        level,
-        board,
-        arrows,
-        stops,
-        verdict.cells,
-        occupied,
-        parkTracks,
-        inBounds,
-      );
-      const dance = regionDanceOrder(level, board.directionals, stops, [
-        ...placed,
-        ...seeded.blockers,
-      ]);
-      return {
-        arrows,
-        spots,
-        stops,
-        cells: seeded.cells,
-        blockers: seeded.blockers,
-        dance,
-      };
-    }
   }
   return undefined;
 }
 
 /**
- * Seed blocker arrows on the core's lanes. Each blocker is a two-cell arrow
- * whose tail covers a late track cell of some core arrow and whose head
- * points off the lane, so that core arrow cannot move until the blocker
- * leaves. Fill arrows interleave around the region while the blocker's own
+ * Grow blockers from sampled core-lane contacts, seeded stems and
+ * self-avoiding tails. Their heads point off the lane, so that core arrow
+ * cannot move until the blocker leaves. Fill arrows interleave around the region while the blocker's own
  * route stays reserved like the core's lanes, so the dance sits behind the
- * board's opening moves rather than an isolated vignette. Every placement re-proves the interaction region
- * with the blockers as members — closure absorbs them — and a failed
- * re-proof keeps the proven prefix. The returned cells are the last
+ * board's opening moves rather than an isolated vignette. Every placement
+ * re-proves the interaction region with the blockers as members; closure
+ * absorbs them. A failed re-proof keeps the proven prefix. The returned cells are the last
  * accepted region's cells.
  */
 function flipBlockers(
@@ -1907,12 +1636,12 @@ function flipBlockers(
   const blockerKeys = new Set<string>();
   for (
     let attempt = 0;
-    attempt < 6 && blockers.length < maxBlockers;
+    attempt < 48 && blockers.length < maxBlockers;
     attempt += 1
   ) {
     const owner = coreArrows[rng.int(coreArrows.length)] as ArrowDefinition;
     const track = arrowTrack(board, owner).slice(owner.path.length);
-    const candidates = track.slice(Math.max(0, track.length - 4));
+    const candidates = track;
     if (candidates.length === 0) continue;
     const entangle = candidates[rng.int(candidates.length)] as Cell;
     const entangleKey = cellKey(entangle);
@@ -1954,12 +1683,34 @@ function flipBlockers(
         cell: stepSurface(entangle, heading, size),
       }))
       .filter(({ cell }) => !trackKeysSet.has(cellKey(cell)) && !offLane(cell))
-      .map(({ cell }) => ({
-        id: `r${id}${FLIP_BLOCK_MARKER}${blockers.length}`,
-        path: [entangle, cell],
-      }))
+      .map(({ cell, heading }) => {
+        const path = [entangle, cell];
+        for (let step = 0, gap = rng.int(3); step < gap; step++) {
+          const next = stepSurface(path.at(-1)!, heading, size);
+          if (offLane(next) || path.some((c) => cellKey(c) === cellKey(next)))
+            break;
+          path.push(next);
+        }
+        return {
+          id: `r${id}${FLIP_BLOCK_MARKER}${blockers.length}`,
+          path: growFlipLaneBlocker(
+            level,
+            rng,
+            path,
+            new Set([
+              ...occupied,
+              ...parkTracks,
+              ...stopKeys,
+              ...spotKeys,
+              ...cells,
+              ...blockerKeys,
+            ]),
+          ),
+        };
+      })
       .filter(
         (candidate) =>
+          candidate.path.length >= 3 &&
           !arrowTrack(board, candidate)
             .slice(candidate.path.length)
             .some((cell) => routeBlocked(cellKey(cell))),
@@ -1972,7 +1723,7 @@ function flipBlockers(
       board.directionals ?? [],
       [...(level.stops ?? []), ...stops],
     );
-    if (!verdict.ok) break;
+    if (!verdict.ok) continue;
     blockers.push(blocker);
     for (const cell of blocker.path) blockerKeys.add(cellKey(cell));
     cells = verdict.cells;
@@ -2021,7 +1772,17 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
   if (new Set(chain).size !== chain.length) return [];
   const rng = coreStream(id, `${kind}-block`, restart);
   const frequency = BLOCK_FREQUENCY[kind];
-  if (frequency(id) === 0 || rng.next() >= frequency(id)) return [];
+  const grownFlip = (input.board.directionals ?? []).some(
+    (spot) => spot.kind === "flip",
+  );
+  if (frequency(id) === 0) return [];
+  const placementDraw = rng.next();
+  // A new flip layout may need more construction restarts. Preserve the
+  // original blocker-presence plan; only its placement geometry retries.
+  const planDraw = grownFlip
+    ? coreStream(id, `${kind}-block`, 0).next()
+    : placementDraw;
+  if (planDraw >= frequency(id)) return [];
   const first = { wormhole: 36, fragile: 46, lock: 51, mirror: 56, leap: 61 }[
     kind
   ] as number;
@@ -2067,16 +1828,25 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
     input.reservedCells.has(key) ||
     blockerKeys.has(key) ||
     (input.occupied.has(key) && !input.crossable.has(key));
+  // On changed flip boards, search the whole lane instead of repeatedly
+  // sampling a fenced final four-cell window. Unrelated boards retain their
+  // original draws and bounds; every candidate still replays the certificate.
   for (
     let attempt = 0;
-    attempt < 6 && blockers.length < maxBlockers;
+    attempt < (grownFlip ? 24 : 6) && blockers.length < maxBlockers;
     attempt += 1
   ) {
+    // Keep the original successful prefix. Broader contacts are a fallback
+    // for an empty result, not another way to crowd later mechanic lanes.
+    const broader = grownFlip && attempt >= 6;
+    if (broader && blockers.length > 0) break;
     const owner = input.coreArrows[
       rng.int(input.coreArrows.length)
     ] as ArrowDefinition;
     const track = arrowTrack(input.board, owner).slice(owner.path.length);
-    const candidates = track.slice(Math.max(0, track.length - 4));
+    const candidates = broader
+      ? track.filter((cell) => !bannedEntangle(cellKey(cell)))
+      : track.slice(Math.max(0, track.length - 4));
     if (candidates.length === 0) continue;
     const entangle = candidates[rng.int(candidates.length)] as Cell;
     if (!input.inBounds(entangle) || bannedEntangle(cellKey(entangle)))
@@ -2094,7 +1864,39 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
           !bannedKey(cellKey(cell)),
       );
     if (options.length === 0) continue;
-    const choice = options[rng.int(options.length)] as {
+    const clearOptions = broader
+      ? options.filter(
+          (option) =>
+            !arrowTrack(input.board, {
+              id: "candidate",
+              path: [entangle, option.cell],
+            })
+              .slice(2)
+              .some((cell) => bannedRoute(cellKey(cell))),
+        )
+      : options;
+    if (!clearOptions.length) continue;
+    const shortest = broader
+      ? Math.min(
+          ...clearOptions.map(
+            (option) =>
+              arrowTrack(input.board, {
+                id: "candidate",
+                path: [entangle, option.cell],
+              }).length,
+          ),
+        )
+      : undefined;
+    const choices = broader
+      ? clearOptions.filter(
+          (option) =>
+            arrowTrack(input.board, {
+              id: "candidate",
+              path: [entangle, option.cell],
+            }).length === shortest,
+        )
+      : clearOptions;
+    const choice = choices[rng.int(choices.length)] as {
       heading: Heading;
       cell: Cell;
     };
@@ -2119,7 +1921,10 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
       blocker.id,
       ...input.certificate,
     ];
-    if (!validateGenerated(proofBoard, proofCertificate)) break;
+    if (!validateGenerated(proofBoard, proofCertificate)) {
+      if (grownFlip) continue;
+      break;
+    }
     blockers.push(blocker);
     for (const cell of blocker.path) blockerKeys.add(cellKey(cell));
   }
@@ -3956,14 +3761,22 @@ export function generateLevel(id: number): LevelDefinition {
       // without the retry, blocker-fenced restarts failed coverage or depth
       // and the next restart dropped its wormholes, 0.789 to 0.706 placed).
       let lanesOff = false;
+      let lanesSingle = false;
       let lanesSeeded = false;
       let restart = 0;
       const nextRestart = (): void => {
         if (lanesSeeded && !lanesOff) {
+          // Grown flip regions can crowd a second optional blocker. Keep
+          // one proven blocker per mechanic before dropping every lane.
+          if (flipPass && !lanesSingle) {
+            lanesSingle = true;
+            return;
+          }
           lanesOff = true;
           return;
         }
         lanesOff = false;
+        lanesSingle = false;
         restart += 1;
       };
       construction: for (; restart < 8; nextRestart()) {
@@ -4637,7 +4450,7 @@ export function generateLevel(id: number): LevelDefinition {
               : {}),
             ...(core ? { stops: core.stops } : {}),
           };
-          const blockers = lanesOff
+          const seededBlockers = lanesOff
             ? []
             : seedLaneBlockers({
                 kind: lane.kind,
@@ -4673,6 +4486,9 @@ export function generateLevel(id: number): LevelDefinition {
                   cell.x < candidateLevel.gridSize &&
                   cell.y < candidateLevel.gridSize,
               });
+          const blockers = lanesSingle
+            ? seededBlockers.slice(0, 1)
+            : seededBlockers;
           for (const blocker of blockers) {
             for (const cell of blocker.path)
               priorBlockerKeys.add(cellKey(cell));
@@ -4718,6 +4534,17 @@ export function generateLevel(id: number): LevelDefinition {
         const entangledKinds = new Set(entangled.map((entry) => entry.kind));
         const flipEntangled = entangledKinds.has("region");
         const entangledBlockers = entangled.flatMap((entry) => entry.blockers);
+        // Grown blockers can have capped shapes too; account for them before
+        // ordinary fill chooses its bodies. The old two-cell blockers had no
+        // canonical shape and did not expose this omission.
+        for (const blocker of entangledBlockers) countShape(blocker.path);
+        if (
+          tier.certificate &&
+          [...shapeCounts.values()].some((count) => count > cap)
+        ) {
+          skip = "shape";
+          continue;
+        }
         const emissionExcluded = new Set(
           entangled.flatMap((entry) => entry.arrows.map((arrow) => arrow.id)),
         );

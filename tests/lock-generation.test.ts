@@ -33,15 +33,8 @@ const LAST_ID = 200;
 // PRE_LOCK parity retired at v11: the version bump re-rolls every id; the
 // fixture pins determinism.
 
-/**
- * Ids whose lock core placed the cross-face variant: the key cell sits on a
- * neighboring face across a seam from its gate, so the key's flight crosses
- * faces. The seeded coin prefers cross on every lock id; a cross aspirant
- * whose geometry cannot fit falls back to the same-face pattern, so this set
- * is the measured share of the placed cores that fit cross-face (flip-core
- * blockers and parking topology re-rolled which ids place cross-face).
- */
-const CROSS_FACE: ReadonlySet<number> = new Set([200]);
+// Verify both variants in the sweep rather than pinning optional placements
+// to a former coordinate gadget's accepted restart.
 
 /** The core's two arrows and its lock, alone on the level's cube. */
 function coreBoard(level: LevelDefinition): LevelDefinition {
@@ -152,6 +145,8 @@ describe("lock generation", () => {
       ),
     ) as Record<string, string>;
     const lockLevels: number[] = [];
+    let crossFace = 0;
+    let sameFace = 0;
     for (let id = FIRST_ID; id <= LAST_ID; id += 1) {
       if (isAuthoredLevel(id)) continue;
       const level = cachedLevel(id);
@@ -167,7 +162,8 @@ describe("lock generation", () => {
       expect(lockCorePlanned(id)).toBe(true);
       expect(locks).toHaveLength(1);
       const lock = locks[0] as (typeof locks)[number];
-      expect(lock.key.face !== lock.lock.face).toBe(CROSS_FACE.has(id));
+      if (lock.key.face !== lock.lock.face) crossFace += 1;
+      else sameFace += 1;
       const keys = [cellKey(lock.lock), cellKey(lock.key)];
       for (const arrow of level.arrows) {
         if (arrow.id.includes(LOCK_CORE_MARKER)) continue;
@@ -218,10 +214,12 @@ describe("lock generation", () => {
       expect(state.lives).toBe(core.lives);
     }
     expect(lockLevels.length).toBeGreaterThan(0);
+    expect(crossFace).toBeGreaterThan(0);
+    expect(sameFace).toBeGreaterThan(0);
   }, 600_000);
 
   test("lock levels generate deterministically and within budget", () => {
-    for (const id of [64, 104, 160, 199]) {
+    for (const id of [64, 70, 160, 199]) {
       const started = performance.now();
       const level = generateLevel(id);
       // The leap pass is a third copy of the first pass on certificate tiers,
