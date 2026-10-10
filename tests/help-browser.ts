@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import type { Browser } from "playwright";
+import type { Browser, Page } from "playwright";
 
 /**
  * The settings guide lists exactly the mechanics whose introduction cubes
@@ -11,6 +11,7 @@ export async function assertMechanicsGuide(
   url: string,
   output: string,
 ): Promise<void> {
+  await assertLazyThumbnails(browser);
   const { mkdir } = await import("node:fs/promises");
   await mkdir(`${output}/help`, { recursive: true });
 
@@ -65,11 +66,7 @@ export async function assertMechanicsGuide(
       false,
       "Nothing is hidden once every mechanic has been met",
     );
-    await page.waitForFunction(() =>
-      [
-        ...document.querySelectorAll<HTMLImageElement>("#mechanics-list img"),
-      ].every((image) => image.complete && image.naturalWidth > 0),
-    );
+    await waitForThumbnails(page);
     assert.deepEqual(failures, [], "Every thumbnail must load");
     await page
       .locator("#settings-panel")
@@ -98,6 +95,103 @@ export async function assertMechanicsGuide(
     assert.equal(await page.locator("#mechanics-dialog[open]").count(), 0);
     console.log("PASS settings mechanics guide");
   } finally {
+    await context.close();
+  }
+}
+
+async function waitForThumbnails(page: Page): Promise<void> {
+  const images = page.locator("#mechanics-list img");
+  // The guide scrolls independently of the page. Lazy images outside it may
+  // never start loading until brought into view, even after network idle.
+  for (let index = 0; index < (await images.count()); index++) {
+    await images.nth(index).scrollIntoViewIfNeeded();
+    await page.waitForFunction((index) => {
+      const image = document.querySelectorAll<HTMLImageElement>(
+        "#mechanics-list img",
+      )[index];
+      return image !== undefined && image.complete && image.naturalWidth > 0;
+    }, index);
+  }
+  await page.waitForFunction(() =>
+    [
+      ...document.querySelectorAll<HTMLImageElement>("#mechanics-list img"),
+    ].every((image) => image.complete && image.naturalWidth > 0),
+  );
+  // Keep the existing overview screenshot and first-entry tap at the top.
+  await images.first().scrollIntoViewIfNeeded();
+}
+
+/** Exercise native lazy loading independently of cache and GPU behavior. */
+async function assertLazyThumbnails(browser: Browser): Promise<void> {
+  const context = await browser.newContext({
+    viewport: { width: 400, height: 300 },
+  });
+  const page = await context.newPage();
+  let releaseImage = () => {};
+  const imageReleased = new Promise<void>((resolve) => {
+    releaseImage = resolve;
+  });
+  try {
+    await page.route("http://mechanics-guide.test/**", async (route) => {
+      if (route.request().url().endsWith("/far.svg")) await imageReleased;
+      await route.fulfill({
+        contentType: "image/svg+xml",
+        body: '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="24"/>',
+      });
+    });
+    await page.setContent(`
+      <ul id="mechanics-list" style="height:120px;overflow:auto;margin:0">
+        <li><img width="32" height="24" loading="lazy"
+          src="http://mechanics-guide.test/first.svg"></li>
+        <li style="height:12000px" aria-hidden="true"></li>
+        <li><img width="32" height="24" loading="lazy"
+          src="http://mechanics-guide.test/far.svg"></li>
+      </ul>
+    `);
+    await page.waitForFunction(
+      () =>
+        document.querySelector<HTMLImageElement>("img")?.naturalWidth === 32,
+    );
+    assert.equal(
+      await page
+        .locator("img")
+        .last()
+        .evaluate((image: HTMLImageElement) => image.naturalWidth),
+      0,
+      "The distant thumbnail must start unloaded",
+    );
+    const farRequested = page.waitForRequest(
+      "http://mechanics-guide.test/far.svg",
+    );
+    await Promise.all([
+      waitForThumbnails(page),
+      farRequested.then(async () => {
+        assert.ok(
+          await page
+            .locator("#mechanics-list")
+            .evaluate((list) => list.scrollTop > 0),
+          "Thumbnail synchronization must scroll the nested guide",
+        );
+        releaseImage();
+      }),
+    ]);
+    assert.deepEqual(
+      await page
+        .locator("img")
+        .evaluateAll((images: HTMLImageElement[]) =>
+          images.map((image) => image.naturalWidth),
+        ),
+      [32, 32],
+      "Synchronization waits for the delayed offscreen response",
+    );
+    assert.equal(
+      await page.locator("#mechanics-list").evaluate((list) => list.scrollTop),
+      0,
+      "The overview returns to its first entry",
+    );
+    console.log("PASS lazy mechanics thumbnails in a nested scroll container");
+  } finally {
+    releaseImage();
     await context.close();
   }
 }
