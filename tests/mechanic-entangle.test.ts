@@ -31,7 +31,7 @@ const LANE_MARKERS = {
   leap: "-leap-",
 } as const;
 
-// Flip, wormhole and fragile blockers have grown bodies; other mechanic blockers are two-cell arrows whose tail sits on their own
+// Flip, wormhole, fragile and lock blockers have grown bodies; other mechanic blockers are two-cell arrows whose tail sits on their own
 // core's body or track, and the assembled level stays solvable. Flip blockers
 // are absorbed into the core's interaction region; rotor cores carry none (a
 // multi-leg certificate the removal graph cannot express).
@@ -59,7 +59,7 @@ test("entangled blockers sit on their core lanes and keep the level solvable", (
         if (kind === "flip" || kind === "wormhole") {
           expect(blocker.path.length).toBeGreaterThanOrEqual(3);
           expect(blocker.path.length).toBeLessThanOrEqual(10);
-        } else if (kind === "fragile") {
+        } else if (kind === "fragile" || kind === "lock") {
           expect(blocker.path.length).toBeGreaterThanOrEqual(3);
           expect(blocker.path.length).toBeLessThanOrEqual(8);
         } else expect(blocker.path.length).toBe(2);

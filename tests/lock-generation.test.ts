@@ -4,7 +4,6 @@ import {
   generateLevel,
   isAuthoredLevel,
   LOCK_CORE_MARKER,
-  LOCK_PATTERN,
   lockCoreFrequency,
   lockCorePlanned,
 } from "../src/content/procedural";
@@ -36,7 +35,7 @@ const LAST_ID = 200;
 // Verify both variants in the sweep rather than pinning optional placements
 // to a former coordinate gadget's accepted restart.
 
-/** The core's two arrows and its lock, alone on the level's cube. */
+/** The core's grown arrows and its lock, alone on the level's cube. */
 function coreBoard(level: LevelDefinition): LevelDefinition {
   const {
     stops: _stops,
@@ -86,48 +85,6 @@ describe("lock generation", () => {
         if (lockCorePlanned(id)) planned += 1;
       }
       expect(Math.abs(planned - expected) / eligible).toBeLessThan(0.2);
-    }
-  });
-
-  test("the pattern needs its key first at all four rotations", () => {
-    const turn = (dx: number, dy: number, rotation: number): [number, number] =>
-      [
-        [dx, dy],
-        [-dy, dx],
-        [-dx, -dy],
-        [dy, -dx],
-      ][rotation] as [number, number];
-    for (let rotation = 0; rotation < 4; rotation += 1) {
-      const at = ([dx, dy]: readonly [number, number]) => {
-        const [x, y] = turn(dx, dy, rotation);
-        return { face: "front" as const, x: 6 + x, y: 6 + y };
-      };
-      const level: LevelDefinition = {
-        id: 905,
-        title: "Lock pattern",
-        gridSize: 13,
-        lives: 3,
-        locks: [
-          { id: "lock", key: at(LOCK_PATTERN.keyCell), lock: at([0, 0]) },
-        ],
-        arrows: [
-          { id: "opener", path: LOCK_PATTERN.opener.map(at) },
-          { id: "key", path: LOCK_PATTERN.key.map(at) },
-        ],
-      };
-      expect(validateLevel(level).errors).toEqual([]);
-      const initial = createGameState(level);
-      expect(simulateMove(level, initial, "opener").kind).toBe("gated");
-      const stripped = { ...level, locks: [] };
-      expect(
-        simulateMove(stripped, createGameState(stripped), "opener").kind,
-      ).toBe("exit");
-      expect(solveLevelTargets(level)).toEqual([
-        { arrowId: "key", endpoint: "head" },
-        { arrowId: "opener", endpoint: "head" },
-      ]);
-      expect(hasStrandingState(level)).toBe(false);
-      expect(hasSoftLockState(level)).toBe(false);
     }
   });
 
@@ -258,7 +215,8 @@ describe("lock generation", () => {
         // Blocker ids end "-xblock-lock<n>", so the "-lock-" core filter never
         // picks a blocker up as a core arrow.
         expect(blocker.id.includes("-lock-")).toBe(false);
-        expect(blocker.path.length).toBe(2);
+        expect(blocker.path.length).toBeGreaterThanOrEqual(3);
+        expect(blocker.path.length).toBeLessThanOrEqual(8);
         expect(blocker.path.some((cell) => coreTrack.has(cellKey(cell)))).toBe(
           true,
         );

@@ -1,13 +1,10 @@
 import { constructFragile } from "./fragile";
+import { constructLock } from "./lock";
 import { constructOverlap } from "./overlap";
 import { constructDouble } from "./double";
 import { constructWormhole } from "./wormhole";
 import { growMechanicBody } from "./mechanic-body";
-import {
-  advancedSpotHeading,
-  hasStatefulSpots,
-  rotatedHeading,
-} from "../core/directionals";
+import { advancedSpotHeading, hasStatefulSpots } from "../core/directionals";
 import {
   applyMove,
   createGameState,
@@ -1052,8 +1049,8 @@ interface LaneBlockerInput {
 
 /**
  * Seed blocker arrows on a certificate-led core's lanes: the per-lane
- * sibling of `flipBlockers`. Wormhole and fragile blockers grow their bodies; the other
- * lane mechanics still use two-cell arrows whose tail
+ * sibling of `flipBlockers`. Wormhole, Fragile and Lock blockers grow their
+ * bodies. Mirror and Leap still use two-cell arrows whose tail
  * covers a late track cell of some core arrow and whose head points off the
  * lane; the mechanic's certificate must still replay on the core board with
  * the blockers as members. A failed replay keeps the proven prefix. Blocker
@@ -1071,7 +1068,8 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
   const grownFlip = (input.board.directionals ?? []).some(
     (spot) => spot.kind === "flip",
   );
-  const grownLane = kind === "wormhole" || kind === "fragile";
+  const grownLane =
+    kind === "wormhole" || kind === "fragile" || kind === "lock";
   if (frequency(id) === 0) return [];
   const placementDraw = rng.next();
   // A grown layout may need more construction restarts. Preserve the
@@ -1377,27 +1375,6 @@ function fragileCore(
   return { arrows, cell, certificate, cells };
 }
 
-/**
- * The level-50 geometry relative to the gate at (0, 0), rotated per
- * placement attempt. The opener's lane runs east straight into the gate.
- * The key arrow bends up and runs north over the key at (1, -2), crossing
- * the opener's lane one cell past the gate, so the only order is the key
- * arrow first, then the opener through the open gate.
- */
-export const LOCK_PATTERN = {
-  opener: [
-    [-2, 0],
-    [-1, 0],
-  ],
-  key: [
-    [-1, 2],
-    [0, 2],
-    [1, 2],
-    [1, 1],
-  ],
-  keyCell: [1, -2],
-} as const;
-
 /** Every generated lock-core arrow id carries this marker. */
 export const LOCK_CORE_MARKER = "-lock-";
 
@@ -1410,20 +1387,9 @@ interface LockCore {
   readonly cells: ReadonlySet<string>;
 }
 
-/**
- * Place a lock core on its own seeded stream. Every lane the two arrows can
- * travel (under every flip and rotor state), the gate and the key must avoid
- * every reserved cell and the parking core's and groups' tracks, and no
- * arrow already placed may reach any core cell, so the core plays alone.
- * The key arrow's lane must cross the key and never the gate, and the
- * opener's lane must reach the gate and never the key. On the core board by
- * itself the opener's first tap must meet the closed gate, the same board
- * with the lock stripped must let the opener leave first, the solver's
- * certificate must send the key arrow before the opener, and no order may
- * strand or soft-lock it. A seeded coin prefers the cross-face variant, which
- * routes the key lane across a seam so the key cell lands on a neighboring
- * face; a cross aspirant that cannot fit falls back to the same-face pattern.
- */
+/** Reserve a grown keyed dependency circuit under every spot state.
+ * Ordinary fill remains free to block these lanes; keys and gates remain
+ * body/ray forbidden. Earlier complete reaches constrain actual geometry. */
 function lockCore(
   id: number,
   level: LevelDefinition,
@@ -1431,167 +1397,53 @@ function lockCore(
   forbiddenTracks: ReadonlySet<string>,
   restart: number,
 ): LockCore | undefined {
-  const size = level.gridSize;
-  const rng = coreStream(id, "lock-core", restart);
-  const faces = shuffledFaces(rng);
-  const margin = 4;
-  const inBounds = (cell: Cell): boolean =>
-    cell.x >= 0 && cell.y >= 0 && cell.x < size && cell.y < size;
-  const existing = level.arrows.map((arrow) => occupancyKeys(level, arrow));
-  const openerId = `r${id}${LOCK_CORE_MARKER}opener`;
-  const keyId = `r${id}${LOCK_CORE_MARKER}key`;
-  // A seeded coin on its own stream PREFERS the cross-face variant: each
-  // attempt evaluates the cross geometry first and falls back to the
-  // same-face pattern through the full validation chain, so placement never
-  // regresses and only ids that actually place cross-face change fingerprint.
-  const crossRng = coreStream(id, "lock-core-cross", restart);
-  const crossFace = crossRng.int(2) === 0;
-  const parkingPresent = level.arrows.some((arrow) =>
-    arrow.id.includes("-park-"),
+  const earlierReach = new Set(
+    level.arrows.flatMap((arrow) => [...occupancyKeys(level, arrow)]),
   );
-  const axis = HEADINGS[crossRng.int(4)]!;
-  const side = rotatedHeading(axis);
-  /** Build one variant's geometry for this attempt's face, gate, rotation. */
-  const buildVariant = (
-    cross: boolean,
-    face: FaceId,
-    gate: Cell,
-    at: (delta: readonly [number, number]) => Cell,
-  ): { arrows: readonly ArrowDefinition[]; key: Cell } | undefined => {
-    if (!cross) {
-      return {
-        arrows: [
-          { id: openerId, path: LOCK_PATTERN.opener.map(at) },
-          { id: keyId, path: LOCK_PATTERN.key.map(at) },
-        ],
-        key: at(LOCK_PATTERN.keyCell),
-      };
-    }
-    // The key lane runs from the gate's side across a seam, putting the key
-    // cell on the neighbor face two cells past the seam; the opener sits
-    // opposite the lane, aimed at the gate.
-    const laneBase = stepSurface(gate, side, size);
-    let edge = laneBase;
-    let depth = 0;
-    while (depth < size) {
-      if (stepSurface(edge, axis, size).face !== edge.face) break;
-      edge = stepSurface(edge, axis, size);
-      depth += 1;
-    }
-    if (depth < 3) return undefined;
-    const lane: Cell[] = [edge];
-    for (let back = 0; back < 3; back += 1) {
-      lane.unshift(stepSurface(lane[0]!, oppositeHeading(axis), size));
-    }
-    const keyCandidate = stepSurface(stepSurface(edge, axis, size), axis, size);
-    const o1 = stepSurface(gate, oppositeHeading(side), size);
-    const o2 = stepSurface(o1, oppositeHeading(side), size);
-    if (o2.face !== face || keyCandidate.face === face) return undefined;
-    return {
-      arrows: [
-        { id: openerId, path: [o2, o1] },
-        { id: keyId, path: lane },
-      ],
-      key: keyCandidate,
-    };
-  };
-  for (let attempt = 0; attempt < 64; attempt += 1) {
-    const face = faces[attempt % faces.length] as FaceId;
-    const rotation = rng.int(4);
-    const gate: Cell = {
-      face,
-      x: margin + rng.int(Math.max(1, size - 2 * margin)),
-      y: margin + rng.int(Math.max(1, size - 2 * margin)),
-    };
-    const at = ([dx, dy]: readonly [number, number]): Cell =>
-      patternCell(gate, dx, dy, rotation);
-    const variants: {
-      arrows: readonly ArrowDefinition[];
-      key: Cell;
-    }[] = [];
-    const cross = buildVariant(true, face, gate, at);
-    if (cross) variants.push(cross);
-    const same = buildVariant(false, face, gate, at);
-    // Parking walks occupy more varied topology than the old small stamps.
-    // Give the existing cross-face geometry a bounded placement search before
-    // accepting the same-face fallback; otherwise its first miss erases it.
-    // Grown shared-tail groups reserve wider tracks too, so use the first
-    // 24 of the existing 64 attempts.
-    if (same && !(parkingPresent && crossFace && attempt < 24))
-      variants.push(same);
-    for (const { arrows, key } of variants) {
-      const bodies = arrows.flatMap((arrow) => arrow.path);
+  const candidate = constructLock(
+    level,
+    coreStream(id, "lock-topology-v1", restart),
+    new Set([...occupied, ...forbiddenTracks, ...earlierReach]),
+    32,
+  );
+  if (!candidate) return undefined;
+  const { arrows, lock, certificate } = candidate;
+  const gateKey = cellKey(lock.lock);
+  const keyKey = cellKey(lock.key);
+  const cells = new Set([
+    gateKey,
+    keyKey,
+    ...arrows.flatMap((a) => a.path.map(cellKey)),
+  ]);
+  for (const probe of flipHeadingProbes(level)) {
+    const board = { ...probe, locks: [lock] };
+    for (const arrow of arrows) {
+      const keys = arrowTrack(board, arrow).map(cellKey);
       if (
-        [...bodies, gate, key].some(
-          (cell) => !inBounds(cell) || occupied.has(cellKey(cell)),
-        )
+        arrow.id.endsWith("-opener") &&
+        (!keys.includes(gateKey) || keys.includes(keyKey))
       )
-        continue;
-      const gateKey = cellKey(gate);
-      const keyKey = cellKey(key);
-      const cells = new Set<string>([gateKey, keyKey, ...bodies.map(cellKey)]);
-      let lanesFit = true;
-      for (const probe of flipHeadingProbes(level)) {
-        for (const arrow of arrows) {
-          const keys = arrowTrack(probe, arrow).map(cellKey);
-          const [wanted, banned] =
-            arrow.id === keyId ? [keyKey, gateKey] : [gateKey, keyKey];
-          if (!keys.includes(wanted) || keys.includes(banned)) lanesFit = false;
-          for (const entry of keys) cells.add(entry);
-        }
-      }
+        return undefined;
       if (
-        !lanesFit ||
-        [...cells].some(
-          (entry) => occupied.has(entry) || forbiddenTracks.has(entry),
-        ) ||
-        existing.some((keys) => [...cells].some((entry) => keys.has(entry)))
+        arrow.id.endsWith("-key") &&
+        (!keys.includes(keyKey) || keys.includes(gateKey))
       )
-        continue;
-      const lock: LockDefinition = { id: `r${id}-lock`, key, lock: gate };
-      const coreLevel: LevelDefinition = {
-        id: level.id,
-        title: level.title,
-        gridSize: level.gridSize,
-        lives: level.lives,
-        ...(level.edgePolicies ? { edgePolicies: level.edgePolicies } : {}),
-        arrows,
-        locks: [lock],
-      };
-      if (!validateLevel(coreLevel).valid) continue;
-      const initial = createGameState(coreLevel);
-      if (simulateGameMove(coreLevel, initial, openerId).kind !== "gated")
-        continue;
-      const stripped: LevelDefinition = { ...coreLevel, locks: [] };
+        return undefined;
       if (
-        simulateGameMove(stripped, createGameState(stripped), openerId).kind !==
-        "exit"
+        !arrow.id.endsWith("-opener") &&
+        !arrow.id.endsWith("-key") &&
+        (keys.includes(gateKey) || keys.includes(keyKey))
       )
-        continue;
-      const certificate = solveLevelTargets(coreLevel);
-      if (!certificate) continue;
-      const order = certificate.map((target) => target.arrowId);
-      if (
-        order.indexOf(keyId) < 0 ||
-        order.indexOf(keyId) > order.indexOf(openerId)
-      )
-        continue;
-      let state = initial;
-      for (const target of certificate) {
-        state = applyMove(
-          coreLevel,
-          state,
-          simulateGameMove(coreLevel, state, target.arrowId, target.endpoint),
-        );
-      }
-      if (state.status !== "won" || !state.unlocked?.includes(lock.id))
-        continue;
-      if (hasStrandingState(coreLevel) !== false) continue;
-      if (hasSoftLockState(coreLevel) !== false) continue;
-      return { arrows, lock, certificate, cells };
+        return undefined;
+      for (const key of keys) cells.add(key);
     }
   }
-  return undefined;
+  if ([...cells].some((key) => occupied.has(key) || forbiddenTracks.has(key)))
+    return undefined;
+  const existing = level.arrows.map((arrow) => occupancyKeys(level, arrow));
+  if (existing.some((reach) => [...cells].some((key) => reach.has(key))))
+    return undefined;
+  return { arrows, lock, certificate, cells };
 }
 
 /**
@@ -3065,7 +2917,11 @@ export function generateLevel(id: number): LevelDefinition {
         lanesSingle = false;
         restart += 1;
       };
-      construction: for (; restart < 8; nextRestart()) {
+      // Larger keyed circuits can exhaust the coupled mirror pass on
+      // starter/wrap reservations. Four additional independent assemblies
+      // keep its placement floor; neither constructor nor proofs change.
+      const restartLimit = lockPass && mirrorPass ? 12 : 8;
+      construction: for (; restart < restartLimit; nextRestart()) {
         lanesSeeded = false;
         // Tier 0 keeps the unsalted construction seeds; each later tier salts
         // the construction RNG so it never replays a rejected earlier tier.
@@ -4014,12 +3870,13 @@ export function generateLevel(id: number): LevelDefinition {
           ...(mirror ? { mirrors: [mirror.mirror] } : {}),
           ...(leap ? { leaps: [leap.pad] } : {}),
         };
-        // New wormhole boards reserve the proved stateful region first.
-        // Its heading-dependent internal edges are one atomic multi-leg node,
-        // not a union of mutually exclusive static dependencies. Unplanned
-        // wormhole boards keep their preceding generator construction exactly.
+        // Wormhole and grown Lock passes reserve the proved stateful region
+        // first. Its heading-dependent internal edges form one atomic
+        // multi-leg node. A union of mutually exclusive headings can falsely
+        // close a cycle; the actual certificate still proves every leg.
+        // Other construction contexts retain their preceding node model.
         const atomicMembers =
-          slots > 0 && flipEntangled && flip
+          (slots > 0 || lockPass) && flipEntangled && flip
             ? [...flip.arrows, ...flip.blockers]
             : [];
         const atomicIds = new Set(atomicMembers.map((a) => a.id));
@@ -4059,7 +3916,7 @@ export function generateLevel(id: number): LevelDefinition {
             routeKeys: new Set(nodeRoute(arrow)),
           })),
           ...entangled.flatMap((entry) =>
-            slots > 0 && entry.kind === "region"
+            (slots > 0 || lockPass) && entry.kind === "region"
               ? [
                   {
                     id: atomicMembers[0]!.id,

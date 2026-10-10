@@ -1,0 +1,4570 @@
+{
+  "baseline": "ea95d4d897f94111cf5ce6146984dab0a2b9e3c1",
+  "planned": 73,
+  "placed": 66,
+  "changed": 67,
+  "unrelated": [],
+  "ordinaryBlocked": 66,
+  "multiFace": 61,
+  "rows": [
+    {
+      "id": 63,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r63-lock",
+          "key": {
+            "face": "left",
+            "x": 6,
+            "y": 0
+          },
+          "lock": {
+            "face": "left",
+            "x": 0,
+            "y": 15
+          }
+        }
+      ],
+      "ordinaryBlockers": ["r63-60", "r63-52", "r63-47", "r63-175"],
+      "seededBlockers": [
+        {
+          "id": "r63-xblock-lock0",
+          "length": 6
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r63-lock-opener",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 0,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r63-lock-key",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r63-lock-c0",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 3
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 64,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r64-lock",
+          "key": {
+            "face": "right",
+            "x": 13,
+            "y": 11
+          },
+          "lock": {
+            "face": "back",
+            "x": 13,
+            "y": 14
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r64-113",
+        "r64-85",
+        "r64-181",
+        "r64-159",
+        "r64-155",
+        "r64-69",
+        "r64-56"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r64-xblock-lock0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r64-lock-opener",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 13,
+            "y": 12
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r64-lock-key",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 11
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r64-lock-c0",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 12
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 67,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r67-lock",
+          "key": {
+            "face": "bottom",
+            "x": 4,
+            "y": 3
+          },
+          "lock": {
+            "face": "right",
+            "x": 7,
+            "y": 8
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r67-181",
+        "r67-24",
+        "r67-167",
+        "r67-61",
+        "r67-91",
+        "r67-128",
+        "r67-45",
+        "r67-93",
+        "r67-27",
+        "r67-53",
+        "r67-78",
+        "r67-76",
+        "r67-29",
+        "r67-94",
+        "r67-32",
+        "r67-120",
+        "r67-103",
+        "r67-64",
+        "r67-89",
+        "r67-107",
+        "r67-71",
+        "r67-168",
+        "r67-187",
+        "r67-67",
+        "r67-58",
+        "r67-22",
+        "r67-131",
+        "r67-153",
+        "r67-163",
+        "r67-77",
+        "r67-81",
+        "r67-63"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r67-lock-opener",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 5,
+            "y": 8
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r67-lock-key",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 14,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r67-lock-c0",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 6
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r67-lock-c1",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 15
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 70,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r70-lock",
+          "key": {
+            "face": "top",
+            "x": 2,
+            "y": 6
+          },
+          "lock": {
+            "face": "left",
+            "x": 6,
+            "y": 17
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r70-149",
+        "r70-43",
+        "r70-56",
+        "r70-79",
+        "r70-129",
+        "r70-68",
+        "r70-123",
+        "r70-159",
+        "r70-150",
+        "r70-40",
+        "r70-33"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r70-lock-opener",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 14,
+            "y": 17
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r70-lock-key",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 9
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r70-lock-c0",
+          "length": 6,
+          "faces": ["back", "top"],
+          "head": {
+            "face": "top",
+            "x": 4,
+            "y": 0
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 73,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r73-lock",
+          "key": {
+            "face": "back",
+            "x": 9,
+            "y": 9
+          },
+          "lock": {
+            "face": "left",
+            "x": 0,
+            "y": 17
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r73-42",
+        "r73-68",
+        "r73-130",
+        "r73-114",
+        "r73-74",
+        "r73-101",
+        "r73-131"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r73-xblock-lock0",
+          "length": 6
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r73-lock-opener",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 0,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r73-lock-key",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 4
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r73-lock-c0",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 16
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 74,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r74-lock",
+          "key": {
+            "face": "top",
+            "x": 5,
+            "y": 8
+          },
+          "lock": {
+            "face": "right",
+            "x": 0,
+            "y": 1
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r74-44",
+        "r74-197",
+        "r74-186",
+        "r74-157",
+        "r74-142",
+        "r74-99"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r74-lock-opener",
+          "length": 7,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "right",
+            "x": 0,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r74-lock-key",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r74-lock-c0",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 13
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 75,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r75-lock",
+          "key": {
+            "face": "back",
+            "x": 8,
+            "y": 2
+          },
+          "lock": {
+            "face": "front",
+            "x": 14,
+            "y": 0
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r75-85",
+        "r75-90",
+        "r75-58",
+        "r75-145",
+        "r75-50",
+        "r75-105"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r75-xblock-lock0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r75-lock-opener",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 4
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r75-lock-key",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 8,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r75-lock-c0",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 1
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 76,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r76-lock",
+          "key": {
+            "face": "left",
+            "x": 9,
+            "y": 8
+          },
+          "lock": {
+            "face": "front",
+            "x": 15,
+            "y": 9
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r76-110",
+        "r76-89",
+        "r76-81",
+        "r76-43",
+        "r76-27",
+        "r76-52",
+        "r76-56",
+        "r76-74",
+        "r76-158",
+        "r76-91",
+        "r76-112",
+        "r76-45",
+        "r76-154",
+        "r76-76"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r76-xblock-lock0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r76-lock-opener",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 13
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r76-lock-key",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 12,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r76-lock-c1",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 9
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r76-lock-c0",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 11
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 82,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r82-lock",
+          "key": {
+            "face": "front",
+            "x": 4,
+            "y": 0
+          },
+          "lock": {
+            "face": "right",
+            "x": 11,
+            "y": 13
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r82-146",
+        "r82-44",
+        "r82-179",
+        "r82-164",
+        "r82-129",
+        "r82-170",
+        "r82-30"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r82-lock-opener",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r82-lock-key",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 0
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 83,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r83-lock",
+          "key": {
+            "face": "top",
+            "x": 11,
+            "y": 13
+          },
+          "lock": {
+            "face": "right",
+            "x": 15,
+            "y": 7
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r83-40",
+        "r83-193",
+        "r83-43",
+        "r83-67",
+        "r83-102",
+        "r83-96",
+        "r83-141",
+        "r83-117"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r83-xblock-lock1",
+          "length": 4
+        },
+        {
+          "id": "r83-xblock-lock0",
+          "length": 8
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r83-lock-opener",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 15,
+            "y": 6
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r83-lock-key",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 5
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r83-lock-c0",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 6
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 86,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r86-lock",
+          "key": {
+            "face": "bottom",
+            "x": 13,
+            "y": 0
+          },
+          "lock": {
+            "face": "right",
+            "x": 15,
+            "y": 7
+          }
+        }
+      ],
+      "ordinaryBlockers": ["r86-90", "r86-70", "r86-112", "r86-157", "r86-160"],
+      "seededBlockers": [
+        {
+          "id": "r86-xblock-lock0",
+          "length": 7
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r86-lock-opener",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 7
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r86-lock-key",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 9
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 87,
+      "placed": false
+    },
+    {
+      "id": 88,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r88-lock",
+          "key": {
+            "face": "bottom",
+            "x": 5,
+            "y": 4
+          },
+          "lock": {
+            "face": "right",
+            "x": 10,
+            "y": 13
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r88-110",
+        "r88-102",
+        "r88-158",
+        "r88-42",
+        "r88-99",
+        "r88-95",
+        "r88-171"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r88-xblock-lock1",
+          "length": 5
+        },
+        {
+          "id": "r88-xblock-lock0",
+          "length": 7
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r88-lock-opener",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 10,
+            "y": 12
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r88-lock-key",
+          "length": 3,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 17
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 91,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r91-lock",
+          "key": {
+            "face": "back",
+            "x": 2,
+            "y": 14
+          },
+          "lock": {
+            "face": "right",
+            "x": 0,
+            "y": 3
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r91-144",
+        "r91-129",
+        "r91-95",
+        "r91-154",
+        "r91-165",
+        "r91-77",
+        "r91-158"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r91-xblock-lock0",
+          "length": 7
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r91-lock-opener",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 4,
+            "y": 3
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r91-lock-key",
+          "length": 8,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "back",
+            "x": 2,
+            "y": 17
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r91-lock-c0",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 0,
+            "y": 12
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 92,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r92-lock",
+          "key": {
+            "face": "right",
+            "x": 4,
+            "y": 9
+          },
+          "lock": {
+            "face": "back",
+            "x": 9,
+            "y": 16
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r92-120",
+        "r92-163",
+        "r92-159",
+        "r92-194",
+        "r92-110",
+        "r92-84",
+        "r92-51",
+        "r92-117",
+        "r92-170",
+        "r92-175",
+        "r92-75",
+        "r92-127",
+        "r92-83"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r92-xblock-lock0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r92-lock-opener",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r92-lock-key",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r92-lock-c1",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r92-lock-c0",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 7
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 93,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r93-lock",
+          "key": {
+            "face": "left",
+            "x": 12,
+            "y": 10
+          },
+          "lock": {
+            "face": "bottom",
+            "x": 2,
+            "y": 2
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r93-42",
+        "r93-121",
+        "r93-93",
+        "r93-180",
+        "r93-120",
+        "r93-161",
+        "r93-21",
+        "r93-91",
+        "r93-107"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r93-xblock-lock1",
+          "length": 8
+        },
+        {
+          "id": "r93-xblock-lock0",
+          "length": 8
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r93-lock-opener",
+          "length": 6,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 17,
+            "y": 2
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r93-lock-key",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 12,
+            "y": 9
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r93-lock-c0",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 15,
+            "y": 14
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 96,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r96-lock",
+          "key": {
+            "face": "left",
+            "x": 4,
+            "y": 14
+          },
+          "lock": {
+            "face": "bottom",
+            "x": 2,
+            "y": 13
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r96-122",
+        "r96-131",
+        "r96-191",
+        "r96-69",
+        "r96-140"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r96-lock-opener",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 13
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r96-lock-key",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 9
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 98,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r98-lock",
+          "key": {
+            "face": "back",
+            "x": 7,
+            "y": 9
+          },
+          "lock": {
+            "face": "front",
+            "x": 7,
+            "y": 2
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r98-24",
+        "r98-136",
+        "r98-44",
+        "r98-56",
+        "r98-38",
+        "r98-127",
+        "r98-112"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r98-xblock-lock1",
+          "length": 4
+        },
+        {
+          "id": "r98-xblock-lock0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r98-lock-opener",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 12
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r98-lock-key",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r98-lock-c0",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 3,
+            "y": 9
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 100,
+      "placed": false
+    },
+    {
+      "id": 103,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r103-lock",
+          "key": {
+            "face": "bottom",
+            "x": 14,
+            "y": 2
+          },
+          "lock": {
+            "face": "top",
+            "x": 0,
+            "y": 8
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r103-191",
+        "r103-128",
+        "r103-72",
+        "r103-47",
+        "r103-93",
+        "r103-116",
+        "r103-135",
+        "r103-107",
+        "r103-102"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r103-xblock-lock1",
+          "length": 8
+        },
+        {
+          "id": "r103-xblock-lock0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r103-lock-opener",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 4,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r103-lock-key",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 2
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r103-lock-c0",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 1
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r103-lock-c1",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 0
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 104,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r104-lock",
+          "key": {
+            "face": "bottom",
+            "x": 3,
+            "y": 0
+          },
+          "lock": {
+            "face": "right",
+            "x": 0,
+            "y": 3
+          }
+        }
+      ],
+      "ordinaryBlockers": ["r104-50", "r104-148", "r104-82"],
+      "seededBlockers": [
+        {
+          "id": "r104-xblock-lock0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r104-lock-opener",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 0,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r104-lock-key",
+          "length": 5,
+          "faces": ["left", "front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 2,
+            "y": 0
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r104-lock-c0",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 0
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "placed": false
+    },
+    {
+      "id": 111,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r111-lock",
+          "key": {
+            "face": "bottom",
+            "x": 11,
+            "y": 13
+          },
+          "lock": {
+            "face": "back",
+            "x": 16,
+            "y": 17
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r111-100",
+        "r111-52",
+        "r111-90",
+        "r111-159",
+        "r111-155",
+        "r111-34",
+        "r111-45"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r111-lock-opener",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 16,
+            "y": 13
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r111-lock-key",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 9
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r111-lock-c0",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 11
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 113,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r113-lock",
+          "key": {
+            "face": "top",
+            "x": 4,
+            "y": 7
+          },
+          "lock": {
+            "face": "back",
+            "x": 15,
+            "y": 6
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r113-48",
+        "r113-38",
+        "r113-29",
+        "r113-185",
+        "r113-64",
+        "r113-123"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r113-xblock-lock0",
+          "length": 8
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r113-lock-opener",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 13,
+            "y": 6
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r113-lock-key",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 7
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 114,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r114-lock",
+          "key": {
+            "face": "left",
+            "x": 16,
+            "y": 1
+          },
+          "lock": {
+            "face": "bottom",
+            "x": 1,
+            "y": 6
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r114-65",
+        "r114-175",
+        "r114-34",
+        "r114-147",
+        "r114-56"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r114-xblock-lock1",
+          "length": 5
+        },
+        {
+          "id": "r114-xblock-lock0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r114-lock-opener",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 1,
+            "y": 10
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r114-lock-key",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 1
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 116,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r116-lock",
+          "key": {
+            "face": "top",
+            "x": 13,
+            "y": 3
+          },
+          "lock": {
+            "face": "front",
+            "x": 16,
+            "y": 17
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r116-62",
+        "r116-90",
+        "r116-50",
+        "r116-55",
+        "r116-108",
+        "r116-61"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r116-xblock-lock1",
+          "length": 4
+        },
+        {
+          "id": "r116-xblock-lock0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r116-lock-opener",
+          "length": 4,
+          "faces": ["bottom", "front"],
+          "head": {
+            "face": "front",
+            "x": 13,
+            "y": 17
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r116-lock-key",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 3
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r116-lock-c0",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 3
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r116-lock-c1",
+          "length": 7,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 7,
+            "y": 0
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 117,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r117-lock",
+          "key": {
+            "face": "bottom",
+            "x": 15,
+            "y": 13
+          },
+          "lock": {
+            "face": "right",
+            "x": 2,
+            "y": 1
+          }
+        }
+      ],
+      "ordinaryBlockers": ["r117-199", "r117-105"],
+      "seededBlockers": [
+        {
+          "id": "r117-xblock-lock0",
+          "length": 3
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r117-lock-opener",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 5,
+            "y": 1
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r117-lock-key",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 15,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r117-lock-c1",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 12
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r117-lock-c0",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 15,
+            "y": 17
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 119,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r119-lock",
+          "key": {
+            "face": "left",
+            "x": 6,
+            "y": 7
+          },
+          "lock": {
+            "face": "right",
+            "x": 13,
+            "y": 16
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r119-35",
+        "r119-155",
+        "r119-114",
+        "r119-45",
+        "r119-129",
+        "r119-180",
+        "r119-165",
+        "r119-72"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r119-lock-opener",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 5
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r119-lock-key",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 9
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 120,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r120-lock",
+          "key": {
+            "face": "top",
+            "x": 6,
+            "y": 13
+          },
+          "lock": {
+            "face": "back",
+            "x": 6,
+            "y": 13
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r120-135",
+        "r120-33",
+        "r120-82",
+        "r120-137",
+        "r120-28",
+        "r120-138"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r120-lock-opener",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 13
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r120-lock-key",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 9
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 122,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r122-lock",
+          "key": {
+            "face": "top",
+            "x": 10,
+            "y": 15
+          },
+          "lock": {
+            "face": "right",
+            "x": 3,
+            "y": 7
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r122-37",
+        "r122-191",
+        "r122-175",
+        "r122-40",
+        "r122-71",
+        "r122-121",
+        "r122-169",
+        "r122-96"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r122-lock-opener",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 3,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r122-lock-key",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 10
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 123,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r123-lock",
+          "key": {
+            "face": "right",
+            "x": 6,
+            "y": 9
+          },
+          "lock": {
+            "face": "top",
+            "x": 12,
+            "y": 16
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r123-36",
+        "r123-68",
+        "r123-163",
+        "r123-55",
+        "r123-50",
+        "r123-142",
+        "r123-43",
+        "r123-79",
+        "r123-123",
+        "r123-74"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r123-xblock-lock1",
+          "length": 4
+        },
+        {
+          "id": "r123-xblock-lock0",
+          "length": 8
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r123-lock-opener",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 6
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r123-lock-key",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 13
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r123-lock-c0",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 4,
+            "y": 6
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 126,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r126-lock",
+          "key": {
+            "face": "left",
+            "x": 3,
+            "y": 7
+          },
+          "lock": {
+            "face": "right",
+            "x": 3,
+            "y": 8
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r126-87",
+        "r126-95",
+        "r126-97",
+        "r126-161",
+        "r126-91",
+        "r126-113"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r126-xblock-lock0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r126-lock-opener",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 4,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r126-lock-key",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 7
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r126-lock-c1",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 2,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r126-lock-c0",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 1,
+            "y": 4
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 127,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r127-lock",
+          "key": {
+            "face": "front",
+            "x": 17,
+            "y": 3
+          },
+          "lock": {
+            "face": "right",
+            "x": 0,
+            "y": 4
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r127-67",
+        "r127-106",
+        "r127-193",
+        "r127-112",
+        "r127-65",
+        "r127-58",
+        "r127-93",
+        "r127-145",
+        "r127-56"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r127-xblock-lock0",
+          "length": 7
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r127-lock-opener",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 0,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r127-lock-key",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 3
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r127-lock-c1",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 5
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r127-lock-c0",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 0
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 130,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r130-lock",
+          "key": {
+            "face": "left",
+            "x": 8,
+            "y": 14
+          },
+          "lock": {
+            "face": "bottom",
+            "x": 16,
+            "y": 8
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r130-106",
+        "r130-181",
+        "r130-150",
+        "r130-192",
+        "r130-155",
+        "r130-52",
+        "r130-179",
+        "r130-104",
+        "r130-25",
+        "r130-178",
+        "r130-138",
+        "r130-156",
+        "r130-146",
+        "r130-133",
+        "r130-43"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r130-lock-opener",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r130-lock-key",
+          "length": 8,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 15
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r130-lock-c0",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 12
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r130-lock-c1",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 14,
+            "y": 12
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 131,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r131-lock",
+          "key": {
+            "face": "front",
+            "x": 1,
+            "y": 8
+          },
+          "lock": {
+            "face": "left",
+            "x": 17,
+            "y": 17
+          }
+        }
+      ],
+      "ordinaryBlockers": ["r131-169", "r131-129", "r131-126", "r131-71"],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r131-lock-opener",
+          "length": 8,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "left",
+            "x": 17,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r131-lock-key",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r131-lock-c0",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 14
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 132,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r132-lock",
+          "key": {
+            "face": "top",
+            "x": 14,
+            "y": 8
+          },
+          "lock": {
+            "face": "right",
+            "x": 10,
+            "y": 8
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r132-139",
+        "r132-199",
+        "r132-134",
+        "r132-133",
+        "r132-33",
+        "r132-122",
+        "r132-26",
+        "r132-103",
+        "r132-105",
+        "r132-37"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r132-xblock-lock1",
+          "length": 3
+        },
+        {
+          "id": "r132-xblock-lock0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r132-lock-opener",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 10,
+            "y": 9
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r132-lock-key",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 8
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 134,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r134-lock",
+          "key": {
+            "face": "right",
+            "x": 16,
+            "y": 10
+          },
+          "lock": {
+            "face": "back",
+            "x": 16,
+            "y": 6
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r134-109",
+        "r134-106",
+        "r134-86",
+        "r134-42",
+        "r134-62",
+        "r134-46",
+        "r134-104",
+        "r134-181",
+        "r134-38",
+        "r134-134",
+        "r134-94",
+        "r134-68",
+        "r134-69",
+        "r134-123"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r134-lock-opener",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 16,
+            "y": 14
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r134-lock-key",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 16,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r134-lock-c0",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 9
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 136,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r136-lock",
+          "key": {
+            "face": "front",
+            "x": 3,
+            "y": 4
+          },
+          "lock": {
+            "face": "top",
+            "x": 12,
+            "y": 10
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r136-130",
+        "r136-128",
+        "r136-98",
+        "r136-194",
+        "r136-61",
+        "r136-97",
+        "r136-90",
+        "r136-66",
+        "r136-100",
+        "r136-150"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r136-xblock-lock0",
+          "length": 7
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r136-lock-opener",
+          "length": 7,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r136-lock-key",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 4
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r136-lock-c1",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 10,
+            "y": 2
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r136-lock-c0",
+          "length": 5,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "front",
+            "x": 0,
+            "y": 3
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 137,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r137-lock",
+          "key": {
+            "face": "right",
+            "x": 13,
+            "y": 15
+          },
+          "lock": {
+            "face": "bottom",
+            "x": 11,
+            "y": 13
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r137-159",
+        "r137-61",
+        "r137-103",
+        "r137-59",
+        "r137-143",
+        "r137-86",
+        "r137-69"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r137-lock-opener",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 13
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r137-lock-key",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 9
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r137-lock-c0",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 10,
+            "y": 17
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 140,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r140-lock",
+          "key": {
+            "face": "front",
+            "x": 2,
+            "y": 13
+          },
+          "lock": {
+            "face": "bottom",
+            "x": 0,
+            "y": 11
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r140-195",
+        "r140-88",
+        "r140-113",
+        "r140-179",
+        "r140-91",
+        "r140-180",
+        "r140-125",
+        "r140-151",
+        "r140-90",
+        "r140-141",
+        "r140-154",
+        "r140-96",
+        "r140-94"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r140-xblock-lock0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r140-lock-opener",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 14
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r140-lock-key",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 1
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r140-lock-c0",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 15
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 146,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r146-lock",
+          "key": {
+            "face": "bottom",
+            "x": 14,
+            "y": 15
+          },
+          "lock": {
+            "face": "bottom",
+            "x": 7,
+            "y": 16
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r146-94",
+        "r146-61",
+        "r146-198",
+        "r146-43",
+        "r146-35",
+        "r146-107",
+        "r146-47",
+        "r146-162",
+        "r146-65",
+        "r146-70",
+        "r146-32"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r146-lock-opener",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 5
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r146-lock-key",
+          "length": 6,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "bottom",
+            "x": 14,
+            "y": 17
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 148,
+      "placed": false
+    },
+    {
+      "id": 149,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r149-lock",
+          "key": {
+            "face": "back",
+            "x": 7,
+            "y": 10
+          },
+          "lock": {
+            "face": "front",
+            "x": 0,
+            "y": 7
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r149-65",
+        "r149-137",
+        "r149-69",
+        "r149-94",
+        "r149-42",
+        "r149-157",
+        "r149-147",
+        "r149-101",
+        "r149-100"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r149-xblock-lock0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r149-lock-opener",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 0,
+            "y": 14
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r149-lock-key",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 11
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 151,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r151-lock",
+          "key": {
+            "face": "left",
+            "x": 11,
+            "y": 11
+          },
+          "lock": {
+            "face": "front",
+            "x": 5,
+            "y": 11
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r151-70",
+        "r151-120",
+        "r151-108",
+        "r151-63",
+        "r151-86",
+        "r151-42",
+        "r151-31",
+        "r151-68",
+        "r151-35",
+        "r151-153",
+        "r151-74",
+        "r151-43",
+        "r151-93",
+        "r151-115"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r151-xblock-lock0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r151-lock-opener",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 5
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r151-lock-key",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 11
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r151-lock-c0",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 9
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 153,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r153-lock",
+          "key": {
+            "face": "top",
+            "x": 8,
+            "y": 7
+          },
+          "lock": {
+            "face": "top",
+            "x": 6,
+            "y": 11
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r153-77",
+        "r153-64",
+        "r153-170",
+        "r153-143",
+        "r153-57"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r153-lock-opener",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 12
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r153-lock-key",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 8,
+            "y": 5
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 154,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r154-lock",
+          "key": {
+            "face": "right",
+            "x": 17,
+            "y": 11
+          },
+          "lock": {
+            "face": "back",
+            "x": 11,
+            "y": 16
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r154-174",
+        "r154-194",
+        "r154-192",
+        "r154-114",
+        "r154-102",
+        "r154-35",
+        "r154-158",
+        "r154-92"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r154-lock-opener",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 8,
+            "y": 16
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r154-lock-key",
+          "length": 5,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 17,
+            "y": 3
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 155,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r155-lock",
+          "key": {
+            "face": "bottom",
+            "x": 8,
+            "y": 10
+          },
+          "lock": {
+            "face": "top",
+            "x": 4,
+            "y": 3
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r155-127",
+        "r155-44",
+        "r155-152",
+        "r155-125",
+        "r155-59"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r155-xblock-lock0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r155-lock-opener",
+          "length": 7,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 3
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r155-lock-key",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 14,
+            "y": 10
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 157,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r157-lock",
+          "key": {
+            "face": "right",
+            "x": 6,
+            "y": 7
+          },
+          "lock": {
+            "face": "top",
+            "x": 0,
+            "y": 10
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r157-124",
+        "r157-37",
+        "r157-192",
+        "r157-173",
+        "r157-88",
+        "r157-53",
+        "r157-51",
+        "r157-44",
+        "r157-81",
+        "r157-83",
+        "r157-47",
+        "r157-48",
+        "r157-29",
+        "r157-79"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r157-xblock-lock0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r157-lock-opener",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 10
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r157-lock-key",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 15,
+            "y": 7
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r157-lock-c0",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 10
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 158,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r158-lock",
+          "key": {
+            "face": "left",
+            "x": 12,
+            "y": 9
+          },
+          "lock": {
+            "face": "top",
+            "x": 6,
+            "y": 17
+          }
+        }
+      ],
+      "ordinaryBlockers": ["r158-119", "r158-133"],
+      "seededBlockers": [
+        {
+          "id": "r158-xblock-lock1",
+          "length": 3
+        },
+        {
+          "id": "r158-xblock-lock0",
+          "length": 8
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r158-lock-opener",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r158-lock-key",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 9
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r158-lock-c0",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 16,
+            "y": 9
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 159,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r159-lock",
+          "key": {
+            "face": "top",
+            "x": 17,
+            "y": 6
+          },
+          "lock": {
+            "face": "bottom",
+            "x": 4,
+            "y": 10
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r159-36",
+        "r159-73",
+        "r159-145",
+        "r159-169",
+        "r159-84",
+        "r159-108",
+        "r159-56",
+        "r159-72",
+        "r159-120"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r159-xblock-lock0",
+          "length": 7
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r159-lock-opener",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 10
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r159-lock-key",
+          "length": 7,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 17,
+            "y": 13
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 160,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r160-lock",
+          "key": {
+            "face": "top",
+            "x": 17,
+            "y": 5
+          },
+          "lock": {
+            "face": "top",
+            "x": 17,
+            "y": 2
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r160-141",
+        "r160-167",
+        "r160-56",
+        "r160-61",
+        "r160-108",
+        "r160-119",
+        "r160-149",
+        "r160-49"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r160-lock-opener",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 2
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r160-lock-key",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 7,
+            "y": 5
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r160-lock-c0",
+          "length": 7,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 6
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r160-lock-c1",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 16
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 162,
+      "placed": false
+    },
+    {
+      "id": 163,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r163-lock",
+          "key": {
+            "face": "bottom",
+            "x": 11,
+            "y": 16
+          },
+          "lock": {
+            "face": "front",
+            "x": 16,
+            "y": 0
+          }
+        }
+      ],
+      "ordinaryBlockers": ["r163-83", "r163-122", "r163-73", "r163-95"],
+      "seededBlockers": [
+        {
+          "id": "r163-xblock-lock0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r163-lock-opener",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 0
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r163-lock-key",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 16
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 164,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r164-lock",
+          "key": {
+            "face": "bottom",
+            "x": 9,
+            "y": 11
+          },
+          "lock": {
+            "face": "right",
+            "x": 17,
+            "y": 12
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r164-100",
+        "r164-124",
+        "r164-66",
+        "r164-62",
+        "r164-95",
+        "r164-162",
+        "r164-64",
+        "r164-39",
+        "r164-118",
+        "r164-70",
+        "r164-184",
+        "r164-136",
+        "r164-108"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r164-lock-opener",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 12
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r164-lock-key",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r164-lock-c0",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 12
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 168,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r168-lock",
+          "key": {
+            "face": "right",
+            "x": 7,
+            "y": 7
+          },
+          "lock": {
+            "face": "right",
+            "x": 3,
+            "y": 9
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r168-49",
+        "r168-72",
+        "r168-177",
+        "r168-112",
+        "r168-172",
+        "r168-96"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r168-xblock-lock0",
+          "length": 7
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r168-lock-opener",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 5,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r168-lock-key",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r168-lock-c1",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 2
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r168-lock-c0",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 1
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 169,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r169-lock",
+          "key": {
+            "face": "bottom",
+            "x": 17,
+            "y": 13
+          },
+          "lock": {
+            "face": "left",
+            "x": 7,
+            "y": 4
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r169-97",
+        "r169-127",
+        "r169-173",
+        "r169-192",
+        "r169-123",
+        "r169-27",
+        "r169-102"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r169-lock-opener",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 4
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r169-lock-key",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 13
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 171,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r171-lock",
+          "key": {
+            "face": "back",
+            "x": 1,
+            "y": 17
+          },
+          "lock": {
+            "face": "top",
+            "x": 1,
+            "y": 17
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r171-53",
+        "r171-169",
+        "r171-127",
+        "r171-74",
+        "r171-178",
+        "r171-137",
+        "r171-158"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r171-xblock-lock1",
+          "length": 3
+        },
+        {
+          "id": "r171-xblock-lock0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r171-lock-opener",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 1,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r171-lock-key",
+          "length": 5,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 17
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r171-lock-c0",
+          "length": 6,
+          "faces": ["right", "back"],
+          "head": {
+            "face": "back",
+            "x": 0,
+            "y": 14
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r171-lock-c1",
+          "length": 4,
+          "faces": ["right", "back"],
+          "head": {
+            "face": "back",
+            "x": 0,
+            "y": 7
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 173,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r173-lock",
+          "key": {
+            "face": "top",
+            "x": 10,
+            "y": 11
+          },
+          "lock": {
+            "face": "left",
+            "x": 14,
+            "y": 10
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r173-61",
+        "r173-40",
+        "r173-140",
+        "r173-43",
+        "r173-26",
+        "r173-83"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r173-xblock-lock0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r173-lock-opener",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 10
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r173-lock-key",
+          "length": 3,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 16
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r173-lock-c0",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 3
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r173-lock-c1",
+          "length": 7,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 0
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 174,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r174-lock",
+          "key": {
+            "face": "back",
+            "x": 11,
+            "y": 1
+          },
+          "lock": {
+            "face": "front",
+            "x": 1,
+            "y": 5
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r174-78",
+        "r174-156",
+        "r174-190",
+        "r174-30",
+        "r174-164",
+        "r174-63",
+        "r174-49",
+        "r174-32",
+        "r174-42",
+        "r174-150",
+        "r174-122",
+        "r174-165",
+        "r174-69",
+        "r174-74",
+        "r174-87",
+        "r174-101",
+        "r174-50",
+        "r174-83",
+        "r174-137",
+        "r174-86",
+        "r174-116"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r174-xblock-lock1",
+          "length": 3
+        },
+        {
+          "id": "r174-xblock-lock0",
+          "length": 6
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r174-lock-opener",
+          "length": 8,
+          "faces": ["bottom", "left", "front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 16
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r174-lock-key",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 13
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r174-lock-c0",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 3
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r174-lock-c1",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 6
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 175,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r175-lock",
+          "key": {
+            "face": "top",
+            "x": 1,
+            "y": 6
+          },
+          "lock": {
+            "face": "back",
+            "x": 17,
+            "y": 6
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r175-91",
+        "r175-122",
+        "r175-117",
+        "r175-99",
+        "r175-69",
+        "r175-92"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r175-xblock-lock0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r175-lock-opener",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r175-lock-key",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 6
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 179,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r179-lock",
+          "key": {
+            "face": "left",
+            "x": 17,
+            "y": 13
+          },
+          "lock": {
+            "face": "right",
+            "x": 3,
+            "y": 17
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r179-189",
+        "r179-140",
+        "r179-139",
+        "r179-55",
+        "r179-106",
+        "r179-34",
+        "r179-71",
+        "r179-54",
+        "r179-111",
+        "r179-26"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r179-lock-opener",
+          "length": 6,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 17
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r179-lock-key",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 17,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r179-lock-c0",
+          "length": 5,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 14,
+            "y": 17
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 180,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r180-lock",
+          "key": {
+            "face": "front",
+            "x": 2,
+            "y": 3
+          },
+          "lock": {
+            "face": "back",
+            "x": 17,
+            "y": 2
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r180-83",
+        "r180-96",
+        "r180-64",
+        "r180-196",
+        "r180-181",
+        "r180-98",
+        "r180-166",
+        "r180-162",
+        "r180-52",
+        "r180-153",
+        "r180-65",
+        "r180-123",
+        "r180-117"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r180-xblock-lock0",
+          "length": 7
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r180-lock-opener",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 6,
+            "y": 2
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r180-lock-key",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 3
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r180-lock-c0",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 3,
+            "y": 2
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r180-lock-c1",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 13
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 181,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r181-lock",
+          "key": {
+            "face": "right",
+            "x": 9,
+            "y": 2
+          },
+          "lock": {
+            "face": "right",
+            "x": 15,
+            "y": 15
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r181-70",
+        "r181-120",
+        "r181-195",
+        "r181-75",
+        "r181-105",
+        "r181-174"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r181-xblock-lock0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r181-lock-opener",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 15,
+            "y": 12
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r181-lock-key",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 2
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 182,
+      "placed": false
+    },
+    {
+      "id": 186,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r186-lock",
+          "key": {
+            "face": "right",
+            "x": 1,
+            "y": 7
+          },
+          "lock": {
+            "face": "back",
+            "x": 4,
+            "y": 15
+          }
+        }
+      ],
+      "ordinaryBlockers": ["r186-138", "r186-53", "r186-50"],
+      "seededBlockers": [
+        {
+          "id": "r186-xblock-lock0",
+          "length": 6
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r186-lock-opener",
+          "length": 7,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 15
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r186-lock-key",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 7
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 187,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r187-lock",
+          "key": {
+            "face": "front",
+            "x": 4,
+            "y": 2
+          },
+          "lock": {
+            "face": "top",
+            "x": 3,
+            "y": 3
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r187-166",
+        "r187-79",
+        "r187-136",
+        "r187-111",
+        "r187-81"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r187-xblock-lock0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r187-lock-opener",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r187-lock-key",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 4,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r187-lock-c1",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 1
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r187-lock-c0",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 5
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 190,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r190-lock",
+          "key": {
+            "face": "top",
+            "x": 8,
+            "y": 9
+          },
+          "lock": {
+            "face": "right",
+            "x": 1,
+            "y": 4
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r190-47",
+        "r190-137",
+        "r190-51",
+        "r190-156",
+        "r190-88",
+        "r190-81",
+        "r190-185",
+        "r190-127",
+        "r190-56"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r190-xblock-lock0",
+          "length": 4
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r190-lock-opener",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 4
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r190-lock-key",
+          "length": 7,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 9
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 191,
+      "placed": false
+    },
+    {
+      "id": 194,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r194-lock",
+          "key": {
+            "face": "back",
+            "x": 1,
+            "y": 13
+          },
+          "lock": {
+            "face": "front",
+            "x": 2,
+            "y": 10
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r194-183",
+        "r194-117",
+        "r194-51",
+        "r194-45",
+        "r194-62",
+        "r194-179",
+        "r194-77",
+        "r194-136",
+        "r194-118"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r194-xblock-lock1",
+          "length": 4
+        },
+        {
+          "id": "r194-xblock-lock0",
+          "length": 5
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r194-lock-opener",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 10
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r194-lock-key",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 1,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r194-lock-c0",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 1,
+            "y": 15
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r194-lock-c1",
+          "length": 8,
+          "faces": ["right", "bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 1,
+            "y": 17
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 196,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r196-lock",
+          "key": {
+            "face": "back",
+            "x": 1,
+            "y": 1
+          },
+          "lock": {
+            "face": "back",
+            "x": 5,
+            "y": 10
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r196-26",
+        "r196-189",
+        "r196-188",
+        "r196-123",
+        "r196-75",
+        "r196-48",
+        "r196-71"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r196-lock-opener",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 10
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r196-lock-key",
+          "length": 7,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 6,
+            "y": 1
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 198,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r198-lock",
+          "key": {
+            "face": "bottom",
+            "x": 13,
+            "y": 0
+          },
+          "lock": {
+            "face": "front",
+            "x": 6,
+            "y": 16
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r198-99",
+        "r198-125",
+        "r198-59",
+        "r198-29",
+        "r198-117",
+        "r198-73",
+        "r198-81",
+        "r198-40",
+        "r198-187",
+        "r198-174",
+        "r198-57",
+        "r198-115",
+        "r198-80"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r198-lock-opener",
+          "length": 6,
+          "faces": ["top", "front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 1
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r198-lock-key",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r198-lock-c0",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 1
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r198-lock-c1",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 17,
+            "y": 2
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 199,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r199-lock",
+          "key": {
+            "face": "left",
+            "x": 7,
+            "y": 6
+          },
+          "lock": {
+            "face": "right",
+            "x": 0,
+            "y": 15
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r199-61",
+        "r199-119",
+        "r199-182",
+        "r199-71",
+        "r199-121",
+        "r199-135",
+        "r199-153"
+      ],
+      "seededBlockers": [],
+      "arrows": [
+        {
+          "id": "r199-lock-opener",
+          "length": 7,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "right",
+            "x": 0,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r199-lock-key",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 9
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r199-lock-c0",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 1
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r199-lock-c1",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 2,
+            "y": 0
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 200,
+      "placed": true,
+      "lock": [
+        {
+          "id": "r200-lock",
+          "key": {
+            "face": "right",
+            "x": 12,
+            "y": 13
+          },
+          "lock": {
+            "face": "front",
+            "x": 11,
+            "y": 3
+          }
+        }
+      ],
+      "ordinaryBlockers": [
+        "r200-176",
+        "r200-120",
+        "r200-182",
+        "r200-53",
+        "r200-99",
+        "r200-160",
+        "r200-107",
+        "r200-188",
+        "r200-177"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r200-xblock-lock0",
+          "length": 6
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r200-lock-opener",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r200-lock-key",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 13
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r200-lock-c0",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 11
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r200-lock-c1",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 7
+          },
+          "heading": "north"
+        }
+      ]
+    }
+  ]
+}

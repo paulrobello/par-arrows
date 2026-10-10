@@ -1,4 +1,4 @@
-/** Text-only inspection of generated parking, rotor, flip, wormhole, double, overlap or fragile layouts.
+/** Text-only inspection of generated parking, rotor, flip, wormhole, double, overlap, fragile or lock layouts.
  * Run: bun scripts/inspect-parking.ts [levelIds...]
  *      MECHANIC=rotor bun scripts/inspect-parking.ts 42 58 111 196 */
 import { generateLevel } from "../src/content/procedural";
@@ -19,6 +19,7 @@ const mechanic = [
   "double",
   "overlap",
   "fragile",
+  "lock",
 ].includes(process.env.MECHANIC ?? "")
   ? process.env.MECHANIC!
   : "park";
@@ -31,7 +32,8 @@ for (const id of ids.length ? ids : [6, 17, 58, 150]) {
       arrow.id.includes(marker) ||
       (mechanic === "flip" && arrow.id.includes("-flipb-")) ||
       (mechanic === "wormhole" && arrow.id.includes("-xblock-wormhole")) ||
-      (mechanic === "fragile" && arrow.id.includes("-xblock-fragile")),
+      (mechanic === "fragile" && arrow.id.includes("-xblock-fragile")) ||
+      (mechanic === "lock" && arrow.id.includes("-xblock-lock")),
   );
   const solution = solveLevelTargets(level);
   if (!solution) throw new Error(`No solution for level ${id}`);
@@ -92,23 +94,25 @@ for (const id of ids.length ? ids : [6, 17, 58, 150]) {
   const wormLabels = "PCDEQHIKXYZ0123456789";
   for (const [index, arrow] of core.entries()) {
     const label =
-      mechanic === "double" || mechanic === "fragile"
-        ? arrow.kind === "double"
-          ? "D"
-          : String(index)
-        : mechanic === "wormhole"
-          ? wormLabels[index % wormLabels.length]!
-          : mechanic === "flip" && arrow.id.includes("-flipb-")
-            ? arrow.id.endsWith("0")
-              ? "X"
-              : "Y"
-            : mechanic === "flip" && arrow.id.endsWith(`${marker}a`)
-              ? "A"
-              : arrow.id.endsWith(`${marker}p`)
-                ? "P"
-                : arrow.id.endsWith(`${marker}b`)
-                  ? "B"
-                  : arrow.id.slice(-1);
+      mechanic === "lock"
+        ? String(index)
+        : mechanic === "double" || mechanic === "fragile"
+          ? arrow.kind === "double"
+            ? "D"
+            : String(index)
+          : mechanic === "wormhole"
+            ? wormLabels[index % wormLabels.length]!
+            : mechanic === "flip" && arrow.id.includes("-flipb-")
+              ? arrow.id.endsWith("0")
+                ? "X"
+                : "Y"
+              : mechanic === "flip" && arrow.id.endsWith(`${marker}a`)
+                ? "A"
+                : arrow.id.endsWith(`${marker}p`)
+                  ? "P"
+                  : arrow.id.endsWith(`${marker}b`)
+                    ? "B"
+                    : arrow.id.slice(-1);
     for (const cell of arrow.path) marks.set(cellKey(cell), label);
     console.log(
       `${label}: ${arrow.id}, ${arrow.path.length} cells, ${[...new Set(arrow.path.map((cell) => cell.face))].join("/")}, head ${cellKey(arrow.path[arrow.path.length - 1]!)}, heading ${headingForPath(arrow.path, level.gridSize)}`,
@@ -126,6 +130,18 @@ for (const id of ids.length ? ids : [6, 17, 58, 150]) {
       marks.set(cellKey(cell), "#");
       console.log(`#: crack ${cellKey(cell)}`);
     }
+  if (mechanic === "lock")
+    for (const lock of level.locks ?? []) {
+      marks.set(cellKey(lock.lock), "G");
+      marks.set(cellKey(lock.key), "K");
+      console.log(
+        lock.id +
+          ": key " +
+          cellKey(lock.key) +
+          " -> gate " +
+          cellKey(lock.lock),
+      );
+    }
   for (const stop of level.stops ?? []) marks.set(cellKey(stop), "O");
   for (const spot of level.directionals ?? []) {
     if (spot.kind !== mechanic) continue;
@@ -136,17 +152,19 @@ for (const id of ids.length ? ids : [6, 17, 58, 150]) {
     );
   }
   console.log(
-    mechanic === "fragile"
-      ? "# crack; D double; numbered grown crosser, dependencies and seeded blockers; O stop; . outside body; blank empty"
-      : mechanic === "overlap"
-        ? "0/1/2 shared-tail members (shared cells show the last member); O stop; . outside body; blank empty"
-        : mechanic === "double"
-          ? "D two-headed opener; numbered grown contact bodies; O stop; . outside body; blank empty"
-          : mechanic === "wormhole"
-            ? "A/B first portal pair; U/V second pair; labelled grown core/blocker bodies; O stop; . outside body; blank empty"
-            : mechanic === "flip"
-              ? "F flip; A/B approachers; 0/1/2 lane contacts; X/Y grown seeded blockers; O stop; . outside body; blank empty"
-              : "R rotor; P parker; B continuation blocker; 0/1/2 followers; O stop; . outside body; blank empty",
+    mechanic === "lock"
+      ? "K key; G gate; numbered grown opener, key, dependencies and seeded blockers; O stop; . outside body; blank empty"
+      : mechanic === "fragile"
+        ? "# crack; D double; numbered grown crosser, dependencies and seeded blockers; O stop; . outside body; blank empty"
+        : mechanic === "overlap"
+          ? "0/1/2 shared-tail members (shared cells show the last member); O stop; . outside body; blank empty"
+          : mechanic === "double"
+            ? "D two-headed opener; numbered grown contact bodies; O stop; . outside body; blank empty"
+            : mechanic === "wormhole"
+              ? "A/B first portal pair; U/V second pair; labelled grown core/blocker bodies; O stop; . outside body; blank empty"
+              : mechanic === "flip"
+                ? "F flip; A/B approachers; 0/1/2 lane contacts; X/Y grown seeded blockers; O stop; . outside body; blank empty"
+                : "R rotor; P parker; B continuation blocker; 0/1/2 followers; O stop; . outside body; blank empty",
   );
   const faces: FaceId[] = ["front", "back", "left", "right", "top", "bottom"];
   console.log(
