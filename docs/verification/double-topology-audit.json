@@ -1,0 +1,3549 @@
+{
+  "baseline": "34cdef05740f2a7a21dbdfa15099db1291b125ba",
+  "changed": 80,
+  "unrelated": [],
+  "planned": 80,
+  "placed": 80,
+  "bent": 80,
+  "medianLength": 8,
+  "rows": [
+    {
+      "id": 34,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r34-double-c1",
+          "kind": "single",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 11
+          }
+        },
+        {
+          "id": "r34-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "front",
+            "x": 0,
+            "y": 13
+          }
+        },
+        {
+          "id": "r34-double-double",
+          "kind": "double",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 4,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r41-double-c1",
+          "kind": "single",
+          "length": 13,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 6
+          }
+        },
+        {
+          "id": "r41-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 9
+          }
+        },
+        {
+          "id": "r41-double-double",
+          "kind": "double",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 0,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r43-double-c1",
+          "kind": "single",
+          "length": 9,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 4,
+            "y": 10
+          }
+        },
+        {
+          "id": "r43-double-c2",
+          "kind": "single",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 8
+          }
+        },
+        {
+          "id": "r43-double-double",
+          "kind": "double",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 3,
+            "y": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": 48,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r48-double-c1",
+          "kind": "single",
+          "length": 16,
+          "faces": ["bottom", "front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 16
+          }
+        },
+        {
+          "id": "r48-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 14,
+            "y": 2
+          }
+        },
+        {
+          "id": "r48-double-double",
+          "kind": "double",
+          "length": 9,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r51-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 17,
+            "y": 9
+          }
+        },
+        {
+          "id": "r51-double-c3",
+          "kind": "single",
+          "length": 6,
+          "faces": ["top", "right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 1
+          }
+        },
+        {
+          "id": "r51-double-c1",
+          "kind": "single",
+          "length": 12,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 3
+          }
+        },
+        {
+          "id": "r51-double-double",
+          "kind": "double",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": 52,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r52-double-c1",
+          "kind": "single",
+          "length": 22,
+          "faces": ["left", "top", "back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 5
+          }
+        },
+        {
+          "id": "r52-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 0,
+            "y": 8
+          }
+        },
+        {
+          "id": "r52-double-c3",
+          "kind": "single",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 2,
+            "y": 10
+          }
+        },
+        {
+          "id": "r52-double-double",
+          "kind": "double",
+          "length": 9,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": 53,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r53-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 8
+          }
+        },
+        {
+          "id": "r53-double-c1",
+          "kind": "single",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 12
+          }
+        },
+        {
+          "id": "r53-double-c3",
+          "kind": "single",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 13,
+            "y": 8
+          }
+        },
+        {
+          "id": "r53-double-double",
+          "kind": "double",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": 54,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r54-double-c1",
+          "kind": "single",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 5
+          }
+        },
+        {
+          "id": "r54-double-c3",
+          "kind": "single",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 8
+          }
+        },
+        {
+          "id": "r54-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 5,
+            "y": 9
+          }
+        },
+        {
+          "id": "r54-double-double",
+          "kind": "double",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": 56,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r56-double-c1",
+          "kind": "single",
+          "length": 10,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 12
+          }
+        },
+        {
+          "id": "r56-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 13
+          }
+        },
+        {
+          "id": "r56-double-double",
+          "kind": "double",
+          "length": 9,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 1,
+            "y": 11
+          }
+        }
+      ]
+    },
+    {
+      "id": 58,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r58-double-c3",
+          "kind": "single",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 15,
+            "y": 12
+          }
+        },
+        {
+          "id": "r58-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 13
+          }
+        },
+        {
+          "id": "r58-double-c1",
+          "kind": "single",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 15,
+            "y": 14
+          }
+        },
+        {
+          "id": "r58-double-double",
+          "kind": "double",
+          "length": 8,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "left",
+            "x": 16,
+            "y": 14
+          }
+        }
+      ]
+    },
+    {
+      "id": 59,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r59-double-c1",
+          "kind": "single",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 12
+          }
+        },
+        {
+          "id": "r59-double-c3",
+          "kind": "single",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 14
+          }
+        },
+        {
+          "id": "r59-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 13
+          }
+        },
+        {
+          "id": "r59-double-double",
+          "kind": "double",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 10,
+            "y": 15
+          }
+        }
+      ]
+    },
+    {
+      "id": 62,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r62-double-c1",
+          "kind": "single",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 3
+          }
+        },
+        {
+          "id": "r62-double-c3",
+          "kind": "single",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 3
+          }
+        },
+        {
+          "id": "r62-double-c2",
+          "kind": "single",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 3
+          }
+        },
+        {
+          "id": "r62-double-double",
+          "kind": "double",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": 65,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r65-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 5
+          }
+        },
+        {
+          "id": "r65-double-c1",
+          "kind": "single",
+          "length": 16,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 4
+          }
+        },
+        {
+          "id": "r65-double-double",
+          "kind": "double",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": 68,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r68-double-c1",
+          "kind": "single",
+          "length": 18,
+          "faces": ["right", "bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 16
+          }
+        },
+        {
+          "id": "r68-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 17
+          }
+        },
+        {
+          "id": "r68-double-double",
+          "kind": "double",
+          "length": 6,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 17,
+            "y": 16
+          }
+        }
+      ]
+    },
+    {
+      "id": 69,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r69-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 1
+          }
+        },
+        {
+          "id": "r69-double-c3",
+          "kind": "single",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 1
+          }
+        },
+        {
+          "id": "r69-double-c1",
+          "kind": "single",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 3
+          }
+        },
+        {
+          "id": "r69-double-double",
+          "kind": "double",
+          "length": 9,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": 71,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r71-double-c1",
+          "kind": "single",
+          "length": 9,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 8
+          }
+        },
+        {
+          "id": "r71-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 10
+          }
+        },
+        {
+          "id": "r71-double-double",
+          "kind": "double",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "id": 72,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r72-double-c1",
+          "kind": "single",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 13
+          }
+        },
+        {
+          "id": "r72-double-c3",
+          "kind": "single",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 13
+          }
+        },
+        {
+          "id": "r72-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 10
+          }
+        },
+        {
+          "id": "r72-double-double",
+          "kind": "double",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 11
+          }
+        }
+      ]
+    },
+    {
+      "id": 73,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r73-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 6,
+            "y": 3
+          }
+        },
+        {
+          "id": "r73-double-c1",
+          "kind": "single",
+          "length": 13,
+          "faces": ["back", "top"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 1
+          }
+        },
+        {
+          "id": "r73-double-c3",
+          "kind": "single",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 6,
+            "y": 4
+          }
+        },
+        {
+          "id": "r73-double-double",
+          "kind": "double",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 3,
+            "y": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": 75,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r75-double-c1",
+          "kind": "single",
+          "length": 15,
+          "faces": ["top", "left"],
+          "head": {
+            "face": "top",
+            "x": 0,
+            "y": 7
+          }
+        },
+        {
+          "id": "r75-double-c3",
+          "kind": "single",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 7,
+            "y": 6
+          }
+        },
+        {
+          "id": "r75-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 7,
+            "y": 7
+          }
+        },
+        {
+          "id": "r75-double-double",
+          "kind": "double",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 8,
+            "y": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": 76,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r76-double-c1",
+          "kind": "single",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 1
+          }
+        },
+        {
+          "id": "r76-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 0
+          }
+        },
+        {
+          "id": "r76-double-c3",
+          "kind": "single",
+          "length": 6,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 0
+          }
+        },
+        {
+          "id": "r76-double-double",
+          "kind": "double",
+          "length": 8,
+          "faces": ["back", "top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": 78,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r78-double-c1",
+          "kind": "single",
+          "length": 7,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 13
+          }
+        },
+        {
+          "id": "r78-double-c2",
+          "kind": "single",
+          "length": 4,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 17,
+            "y": 13
+          }
+        },
+        {
+          "id": "r78-double-double",
+          "kind": "double",
+          "length": 10,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 17,
+            "y": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": 80,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r80-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 13
+          }
+        },
+        {
+          "id": "r80-double-c1",
+          "kind": "single",
+          "length": 16,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 10
+          }
+        },
+        {
+          "id": "r80-double-double",
+          "kind": "double",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 13
+          }
+        }
+      ]
+    },
+    {
+      "id": 81,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r81-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 5
+          }
+        },
+        {
+          "id": "r81-double-c1",
+          "kind": "single",
+          "length": 15,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 13,
+            "y": 4
+          }
+        },
+        {
+          "id": "r81-double-double",
+          "kind": "double",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": 83,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r83-double-c1",
+          "kind": "single",
+          "length": 22,
+          "faces": ["back", "top"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 8
+          }
+        },
+        {
+          "id": "r83-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 6
+          }
+        },
+        {
+          "id": "r83-double-c3",
+          "kind": "single",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 5,
+            "y": 5
+          }
+        },
+        {
+          "id": "r83-double-double",
+          "kind": "double",
+          "length": 9,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 3,
+            "y": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": 87,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r87-double-c1",
+          "kind": "single",
+          "length": 16,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 5,
+            "y": 9
+          }
+        },
+        {
+          "id": "r87-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 9
+          }
+        },
+        {
+          "id": "r87-double-c3",
+          "kind": "single",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 8
+          }
+        },
+        {
+          "id": "r87-double-double",
+          "kind": "double",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": 91,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r91-double-c1",
+          "kind": "single",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 1,
+            "y": 11
+          }
+        },
+        {
+          "id": "r91-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 2,
+            "y": 8
+          }
+        },
+        {
+          "id": "r91-double-c3",
+          "kind": "single",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 8
+          }
+        },
+        {
+          "id": "r91-double-double",
+          "kind": "double",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 9
+          }
+        }
+      ]
+    },
+    {
+      "id": 92,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r92-double-c1",
+          "kind": "single",
+          "length": 10,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 16
+          }
+        },
+        {
+          "id": "r92-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 3,
+            "y": 12
+          }
+        },
+        {
+          "id": "r92-double-double",
+          "kind": "double",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 3,
+            "y": 15
+          }
+        }
+      ]
+    },
+    {
+      "id": 94,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r94-double-c1",
+          "kind": "single",
+          "length": 20,
+          "faces": ["back", "bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 14
+          }
+        },
+        {
+          "id": "r94-double-c3",
+          "kind": "single",
+          "length": 3,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 17
+          }
+        },
+        {
+          "id": "r94-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["left", "back"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 14
+          }
+        },
+        {
+          "id": "r94-double-double",
+          "kind": "double",
+          "length": 9,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 15
+          }
+        }
+      ]
+    },
+    {
+      "id": 96,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r96-double-c1",
+          "kind": "single",
+          "length": 15,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 13
+          }
+        },
+        {
+          "id": "r96-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 13
+          }
+        },
+        {
+          "id": "r96-double-double",
+          "kind": "double",
+          "length": 9,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 11
+          }
+        }
+      ]
+    },
+    {
+      "id": 100,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r100-double-c1",
+          "kind": "single",
+          "length": 12,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 12
+          }
+        },
+        {
+          "id": "r100-double-c2",
+          "kind": "single",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 14
+          }
+        },
+        {
+          "id": "r100-double-double",
+          "kind": "double",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 15
+          }
+        }
+      ]
+    },
+    {
+      "id": 102,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r102-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 7
+          }
+        },
+        {
+          "id": "r102-double-c1",
+          "kind": "single",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 8
+          }
+        },
+        {
+          "id": "r102-double-c3",
+          "kind": "single",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 10
+          }
+        },
+        {
+          "id": "r102-double-double",
+          "kind": "double",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 9
+          }
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r105-double-c1",
+          "kind": "single",
+          "length": 11,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 11
+          }
+        },
+        {
+          "id": "r105-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 12
+          }
+        },
+        {
+          "id": "r105-double-double",
+          "kind": "double",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 11
+          }
+        }
+      ]
+    },
+    {
+      "id": 108,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r108-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 10
+          }
+        },
+        {
+          "id": "r108-double-c1",
+          "kind": "single",
+          "length": 20,
+          "faces": ["left", "bottom"],
+          "head": {
+            "face": "left",
+            "x": 12,
+            "y": 14
+          }
+        },
+        {
+          "id": "r108-double-double",
+          "kind": "double",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 9,
+            "y": 15
+          }
+        }
+      ]
+    },
+    {
+      "id": 112,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r112-double-c1",
+          "kind": "single",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 1
+          }
+        },
+        {
+          "id": "r112-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 2
+          }
+        },
+        {
+          "id": "r112-double-double",
+          "kind": "double",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 12,
+            "y": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": 115,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r115-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 1
+          }
+        },
+        {
+          "id": "r115-double-c3",
+          "kind": "single",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 4
+          }
+        },
+        {
+          "id": "r115-double-c1",
+          "kind": "single",
+          "length": 11,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 5
+          }
+        },
+        {
+          "id": "r115-double-double",
+          "kind": "double",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": 116,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r116-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 7
+          }
+        },
+        {
+          "id": "r116-double-c1",
+          "kind": "single",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 9
+          }
+        },
+        {
+          "id": "r116-double-c3",
+          "kind": "single",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 9
+          }
+        },
+        {
+          "id": "r116-double-double",
+          "kind": "double",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 11
+          }
+        }
+      ]
+    },
+    {
+      "id": 117,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r117-double-c1",
+          "kind": "single",
+          "length": 16,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 9,
+            "y": 1
+          }
+        },
+        {
+          "id": "r117-double-c2",
+          "kind": "single",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 1
+          }
+        },
+        {
+          "id": "r117-double-double",
+          "kind": "double",
+          "length": 8,
+          "faces": ["top", "left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": 122,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r122-double-c1",
+          "kind": "single",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 1
+          }
+        },
+        {
+          "id": "r122-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 1
+          }
+        },
+        {
+          "id": "r122-double-double",
+          "kind": "double",
+          "length": 9,
+          "faces": ["right", "top", "front"],
+          "head": {
+            "face": "front",
+            "x": 17,
+            "y": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": 123,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r123-double-c1",
+          "kind": "single",
+          "length": 12,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 15,
+            "y": 10
+          }
+        },
+        {
+          "id": "r123-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 15,
+            "y": 13
+          }
+        },
+        {
+          "id": "r123-double-double",
+          "kind": "double",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 14
+          }
+        }
+      ]
+    },
+    {
+      "id": 124,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r124-double-c1",
+          "kind": "single",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 16
+          }
+        },
+        {
+          "id": "r124-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 15
+          }
+        },
+        {
+          "id": "r124-double-c3",
+          "kind": "single",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 8,
+            "y": 15
+          }
+        },
+        {
+          "id": "r124-double-double",
+          "kind": "double",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 8,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "id": 126,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r126-double-c1",
+          "kind": "single",
+          "length": 30,
+          "faces": ["bottom", "right", "back"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 16
+          }
+        },
+        {
+          "id": "r126-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 14
+          }
+        },
+        {
+          "id": "r126-double-c3",
+          "kind": "single",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 12
+          }
+        },
+        {
+          "id": "r126-double-double",
+          "kind": "double",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 11
+          }
+        }
+      ]
+    },
+    {
+      "id": 127,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r127-double-c1",
+          "kind": "single",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 14
+          }
+        },
+        {
+          "id": "r127-double-c3",
+          "kind": "single",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 17
+          }
+        },
+        {
+          "id": "r127-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 16
+          }
+        },
+        {
+          "id": "r127-double-double",
+          "kind": "double",
+          "length": 6,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 15
+          }
+        }
+      ]
+    },
+    {
+      "id": 128,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r128-double-c3",
+          "kind": "single",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 12
+          }
+        },
+        {
+          "id": "r128-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 17,
+            "y": 15
+          }
+        },
+        {
+          "id": "r128-double-c1",
+          "kind": "single",
+          "length": 14,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 13
+          }
+        },
+        {
+          "id": "r128-double-double",
+          "kind": "double",
+          "length": 10,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "id": 133,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r133-double-c1",
+          "kind": "single",
+          "length": 7,
+          "faces": ["top", "right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 0
+          }
+        },
+        {
+          "id": "r133-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 17,
+            "y": 7
+          }
+        },
+        {
+          "id": "r133-double-double",
+          "kind": "double",
+          "length": 10,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": 134,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r134-double-c2",
+          "kind": "single",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 4,
+            "y": 11
+          }
+        },
+        {
+          "id": "r134-double-c1",
+          "kind": "single",
+          "length": 9,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 8
+          }
+        },
+        {
+          "id": "r134-double-double",
+          "kind": "double",
+          "length": 9,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": 136,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r136-double-c1",
+          "kind": "single",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 13,
+            "y": 7
+          }
+        },
+        {
+          "id": "r136-double-c3",
+          "kind": "single",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 13,
+            "y": 5
+          }
+        },
+        {
+          "id": "r136-double-c2",
+          "kind": "single",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 4
+          }
+        },
+        {
+          "id": "r136-double-double",
+          "kind": "double",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": 138,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r138-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 16
+          }
+        },
+        {
+          "id": "r138-double-c1",
+          "kind": "single",
+          "length": 18,
+          "faces": ["left", "bottom"],
+          "head": {
+            "face": "left",
+            "x": 12,
+            "y": 17
+          }
+        },
+        {
+          "id": "r138-double-double",
+          "kind": "double",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 15
+          }
+        }
+      ]
+    },
+    {
+      "id": 139,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r139-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 17,
+            "y": 14
+          }
+        },
+        {
+          "id": "r139-double-c1",
+          "kind": "single",
+          "length": 18,
+          "faces": ["right", "back", "bottom"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 17
+          }
+        },
+        {
+          "id": "r139-double-c3",
+          "kind": "single",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 13
+          }
+        },
+        {
+          "id": "r139-double-double",
+          "kind": "double",
+          "length": 10,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 11
+          }
+        }
+      ]
+    },
+    {
+      "id": 141,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r141-double-c1",
+          "kind": "single",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 17,
+            "y": 5
+          }
+        },
+        {
+          "id": "r141-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 16,
+            "y": 6
+          }
+        },
+        {
+          "id": "r141-double-double",
+          "kind": "double",
+          "length": 10,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": 144,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r144-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 16
+          }
+        },
+        {
+          "id": "r144-double-c1",
+          "kind": "single",
+          "length": 10,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 15
+          }
+        },
+        {
+          "id": "r144-double-c3",
+          "kind": "single",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 14
+          }
+        },
+        {
+          "id": "r144-double-double",
+          "kind": "double",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 11
+          }
+        }
+      ]
+    },
+    {
+      "id": 145,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r145-double-c1",
+          "kind": "single",
+          "length": 11,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 5
+          }
+        },
+        {
+          "id": "r145-double-c2",
+          "kind": "single",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 7,
+            "y": 4
+          }
+        },
+        {
+          "id": "r145-double-double",
+          "kind": "double",
+          "length": 9,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": 146,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r146-double-c1",
+          "kind": "single",
+          "length": 27,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 7
+          }
+        },
+        {
+          "id": "r146-double-c3",
+          "kind": "single",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 7
+          }
+        },
+        {
+          "id": "r146-double-c2",
+          "kind": "single",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 4,
+            "y": 6
+          }
+        },
+        {
+          "id": "r146-double-double",
+          "kind": "double",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 4,
+            "y": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": 148,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r148-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 17,
+            "y": 1
+          }
+        },
+        {
+          "id": "r148-double-c1",
+          "kind": "single",
+          "length": 9,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 2
+          }
+        },
+        {
+          "id": "r148-double-double",
+          "kind": "double",
+          "length": 9,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 16,
+            "y": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": 149,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r149-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 15
+          }
+        },
+        {
+          "id": "r149-double-c1",
+          "kind": "single",
+          "length": 11,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 12
+          }
+        },
+        {
+          "id": "r149-double-double",
+          "kind": "double",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 13
+          }
+        }
+      ]
+    },
+    {
+      "id": 150,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r150-double-c1",
+          "kind": "single",
+          "length": 15,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 11
+          }
+        },
+        {
+          "id": "r150-double-c2",
+          "kind": "single",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 12
+          }
+        },
+        {
+          "id": "r150-double-c3",
+          "kind": "single",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 4,
+            "y": 12
+          }
+        },
+        {
+          "id": "r150-double-double",
+          "kind": "double",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 3,
+            "y": 14
+          }
+        }
+      ]
+    },
+    {
+      "id": 153,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r153-double-c1",
+          "kind": "single",
+          "length": 15,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 1
+          }
+        },
+        {
+          "id": "r153-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 3,
+            "y": 1
+          }
+        },
+        {
+          "id": "r153-double-c3",
+          "kind": "single",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 0
+          }
+        },
+        {
+          "id": "r153-double-double",
+          "kind": "double",
+          "length": 9,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": 154,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r154-double-c2",
+          "kind": "single",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 14,
+            "y": 3
+          }
+        },
+        {
+          "id": "r154-double-c1",
+          "kind": "single",
+          "length": 21,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 1
+          }
+        },
+        {
+          "id": "r154-double-double",
+          "kind": "double",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": 155,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r155-double-c1",
+          "kind": "single",
+          "length": 10,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 16
+          }
+        },
+        {
+          "id": "r155-double-c2",
+          "kind": "single",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 17
+          }
+        },
+        {
+          "id": "r155-double-c3",
+          "kind": "single",
+          "length": 3,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 13,
+            "y": 17
+          }
+        },
+        {
+          "id": "r155-double-double",
+          "kind": "double",
+          "length": 9,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 14
+          }
+        }
+      ]
+    },
+    {
+      "id": 158,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r158-double-c1",
+          "kind": "single",
+          "length": 19,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 4
+          }
+        },
+        {
+          "id": "r158-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 3
+          }
+        },
+        {
+          "id": "r158-double-c3",
+          "kind": "single",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 3
+          }
+        },
+        {
+          "id": "r158-double-double",
+          "kind": "double",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": 160,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r160-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 3
+          }
+        },
+        {
+          "id": "r160-double-c1",
+          "kind": "single",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 1
+          }
+        },
+        {
+          "id": "r160-double-double",
+          "kind": "double",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": 161,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r161-double-c1",
+          "kind": "single",
+          "length": 21,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 12
+          }
+        },
+        {
+          "id": "r161-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 9
+          }
+        },
+        {
+          "id": "r161-double-c3",
+          "kind": "single",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 9
+          }
+        },
+        {
+          "id": "r161-double-double",
+          "kind": "double",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 7
+          }
+        }
+      ]
+    },
+    {
+      "id": 170,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r170-double-c1",
+          "kind": "single",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 12,
+            "y": 9
+          }
+        },
+        {
+          "id": "r170-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 12,
+            "y": 7
+          }
+        },
+        {
+          "id": "r170-double-double",
+          "kind": "double",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": 172,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r172-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 12
+          }
+        },
+        {
+          "id": "r172-double-c1",
+          "kind": "single",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 16
+          }
+        },
+        {
+          "id": "r172-double-double",
+          "kind": "double",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 17
+          }
+        }
+      ]
+    },
+    {
+      "id": 174,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r174-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 3,
+            "y": 7
+          }
+        },
+        {
+          "id": "r174-double-c1",
+          "kind": "single",
+          "length": 13,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 4,
+            "y": 10
+          }
+        },
+        {
+          "id": "r174-double-double",
+          "kind": "double",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 3,
+            "y": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": 175,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r175-double-c1",
+          "kind": "single",
+          "length": 10,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 4
+          }
+        },
+        {
+          "id": "r175-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 4
+          }
+        },
+        {
+          "id": "r175-double-double",
+          "kind": "double",
+          "length": 7,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": 176,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r176-double-c1",
+          "kind": "single",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 9
+          }
+        },
+        {
+          "id": "r176-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 7
+          }
+        },
+        {
+          "id": "r176-double-c3",
+          "kind": "single",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 8
+          }
+        },
+        {
+          "id": "r176-double-double",
+          "kind": "double",
+          "length": 10,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 9
+          }
+        }
+      ]
+    },
+    {
+      "id": 177,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r177-double-c1",
+          "kind": "single",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 1
+          }
+        },
+        {
+          "id": "r177-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 3
+          }
+        },
+        {
+          "id": "r177-double-double",
+          "kind": "double",
+          "length": 9,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": 179,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r179-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 3
+          }
+        },
+        {
+          "id": "r179-double-c1",
+          "kind": "single",
+          "length": 11,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 0
+          }
+        },
+        {
+          "id": "r179-double-c3",
+          "kind": "single",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 2
+          }
+        },
+        {
+          "id": "r179-double-double",
+          "kind": "double",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 13,
+            "y": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": 180,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r180-double-c1",
+          "kind": "single",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 11
+          }
+        },
+        {
+          "id": "r180-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 11
+          }
+        },
+        {
+          "id": "r180-double-double",
+          "kind": "double",
+          "length": 9,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 13
+          }
+        }
+      ]
+    },
+    {
+      "id": 182,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r182-double-c1",
+          "kind": "single",
+          "length": 19,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 9
+          }
+        },
+        {
+          "id": "r182-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 6
+          }
+        },
+        {
+          "id": "r182-double-double",
+          "kind": "double",
+          "length": 8,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": 183,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r183-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 12
+          }
+        },
+        {
+          "id": "r183-double-c1",
+          "kind": "single",
+          "length": 15,
+          "faces": ["top", "front"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 13
+          }
+        },
+        {
+          "id": "r183-double-double",
+          "kind": "double",
+          "length": 10,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 15
+          }
+        }
+      ]
+    },
+    {
+      "id": 187,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r187-double-c1",
+          "kind": "single",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 11
+          }
+        },
+        {
+          "id": "r187-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 14
+          }
+        },
+        {
+          "id": "r187-double-c3",
+          "kind": "single",
+          "length": 4,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 1
+          }
+        },
+        {
+          "id": "r187-double-double",
+          "kind": "double",
+          "length": 10,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 17
+          }
+        }
+      ]
+    },
+    {
+      "id": 189,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r189-double-c1",
+          "kind": "single",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 10
+          }
+        },
+        {
+          "id": "r189-double-c3",
+          "kind": "single",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 7,
+            "y": 10
+          }
+        },
+        {
+          "id": "r189-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 8,
+            "y": 10
+          }
+        },
+        {
+          "id": "r189-double-double",
+          "kind": "double",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 13
+          }
+        }
+      ]
+    },
+    {
+      "id": 191,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r191-double-c1",
+          "kind": "single",
+          "length": 18,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 8
+          }
+        },
+        {
+          "id": "r191-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 8,
+            "y": 8
+          }
+        },
+        {
+          "id": "r191-double-double",
+          "kind": "double",
+          "length": 10,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": 193,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r193-double-c1",
+          "kind": "single",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 11
+          }
+        },
+        {
+          "id": "r193-double-c3",
+          "kind": "single",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 9
+          }
+        },
+        {
+          "id": "r193-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 11
+          }
+        },
+        {
+          "id": "r193-double-double",
+          "kind": "double",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 9
+          }
+        }
+      ]
+    },
+    {
+      "id": 195,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r195-double-c1",
+          "kind": "single",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 0,
+            "y": 15
+          }
+        },
+        {
+          "id": "r195-double-c2",
+          "kind": "single",
+          "length": 6,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 12
+          }
+        },
+        {
+          "id": "r195-double-double",
+          "kind": "double",
+          "length": 9,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 3,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "id": 196,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r196-double-c1",
+          "kind": "single",
+          "length": 12,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 1
+          }
+        },
+        {
+          "id": "r196-double-c2",
+          "kind": "single",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 2
+          }
+        },
+        {
+          "id": "r196-double-c3",
+          "kind": "single",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 5
+          }
+        },
+        {
+          "id": "r196-double-double",
+          "kind": "double",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 7
+          }
+        }
+      ]
+    },
+    {
+      "id": 198,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r198-double-c1",
+          "kind": "single",
+          "length": 9,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 4
+          }
+        },
+        {
+          "id": "r198-double-c2",
+          "kind": "single",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 8,
+            "y": 5
+          }
+        },
+        {
+          "id": "r198-double-double",
+          "kind": "double",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 8,
+            "y": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": 199,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r199-double-c2",
+          "kind": "single",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 4
+          }
+        },
+        {
+          "id": "r199-double-c1",
+          "kind": "single",
+          "length": 12,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 6
+          }
+        },
+        {
+          "id": "r199-double-double",
+          "kind": "double",
+          "length": 9,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": 200,
+      "placed": true,
+      "arrows": [
+        {
+          "id": "r200-double-c1",
+          "kind": "single",
+          "length": 7,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 13
+          }
+        },
+        {
+          "id": "r200-double-c2",
+          "kind": "single",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 13
+          }
+        },
+        {
+          "id": "r200-double-double",
+          "kind": "double",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 11
+          }
+        }
+      ]
+    }
+  ]
+}

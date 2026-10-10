@@ -94,8 +94,8 @@ function connect(
  * sampled body contact; one to three followers unwind; a routed last arrow
  * occupies the parker's continuation. No catalog or stamped fallback exists.
  * Proofs use the movement engine and bounded enumeration, never global search.
- * Portal mode builds a native body cycle released by removing the whole opener,
- * with no installed circle; the wormhole constructor proves the actual jump.
+ * Native-cycle mode releases the whole opener body and installs no circle.
+ * Portal and double constructors prove the actual jump or tail-end exit.
  */
 export function constructParking(
   level: LevelDefinition,
@@ -315,8 +315,8 @@ export function constructParking(
       continue;
     let state = createGameState(coreLevel);
     if (portalCycle) {
-      // A portal removes the whole opener. Prove the native body's unwind
-      // here; the portal constructor proves the actual jump and safe choices.
+      // Prove the native body's unwind after releasing the whole opener.
+      // The consuming mechanic proves its actual jump or endpoint exit.
       state = {
         ...state,
         remainingIds: state.remainingIds.filter((id) => id !== parker.id),

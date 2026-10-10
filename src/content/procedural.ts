@@ -1,3 +1,4 @@
+import { constructDouble } from "./double";
 import { constructWormhole } from "./wormhole";
 import { growMechanicBody } from "./mechanic-body";
 import {
@@ -1153,13 +1154,7 @@ interface DoubleCore {
   readonly certificate: readonly MoveTarget[];
 }
 
-/**
- * A required-use two-headed core on one face. The double is a 5-10 cell
- * self-avoiding walk that turns like a fill arrow. Blocker `b` occupies the
- * two cells directly past its head and faces it, so the head end and `b`
- * block each other; blocker `a` aims from the side at a non-head body cell.
- * Only the tail end can move first, which the core's certificate must show.
- */
+/** A grown required-use endpoint circuit on its independent stream. */
 function doubleCore(
   id: number,
   level: LevelDefinition,
@@ -1168,89 +1163,11 @@ function doubleCore(
 ): DoubleCore | undefined {
   const planned = coreStream(id, "double-plan", 0).next();
   if (id < 26 || planned >= doubleArrowFrequency(id)) return undefined;
-  const rng = coreStream(id, "double-core", restart);
-  const size = level.gridSize;
-  const inBounds = (cell: Cell): boolean =>
-    cell.x >= 0 && cell.y >= 0 && cell.x < size && cell.y < size;
-  const offset = (cell: Cell, heading: Heading, steps: number): Cell => ({
-    face: cell.face,
-    x: cell.x + HEADING_VECTORS[heading].dx * steps,
-    y: cell.y + HEADING_VECTORS[heading].dy * steps,
-  });
-  const faces = shuffledFaces(rng);
-  for (let attempt = 0; attempt < 96; attempt += 1) {
-    const face = faces[attempt % faces.length] as FaceId;
-    const length = 5 + rng.int(6);
-    const tail: Cell = { face, x: rng.int(size), y: rng.int(size) };
-    if (occupied.has(cellKey(tail))) continue;
-    const body: Cell[] = [tail];
-    const used = new Set([cellKey(tail)]);
-    let previous: Heading | undefined;
-    for (let step = 1; step < length; step += 1) {
-      const current = body[body.length - 1] as Cell;
-      const options = HEADINGS.filter(
-        (heading) => !previous || heading !== oppositeHeading(previous),
-      )
-        .map((heading) => ({ heading, cell: offset(current, heading, 1) }))
-        .filter(
-          ({ cell }) =>
-            inBounds(cell) &&
-            !used.has(cellKey(cell)) &&
-            !occupied.has(cellKey(cell)),
-        );
-      if (options.length === 0) break;
-      const turn = previous
-        ? options.filter(({ heading }) => heading !== previous)
-        : [];
-      const pool = turn.length > 0 && rng.next() < 0.7 ? turn : options;
-      const choice = rng.pick(pool);
-      body.push(choice.cell);
-      used.add(cellKey(choice.cell));
-      previous = choice.heading;
-    }
-    if (body.length < length || !previous) continue;
-    const head = body[body.length - 1] as Cell;
-    const blockerB = [offset(head, previous, 2), offset(head, previous, 1)];
-    const target = rng.int(body.length - 1);
-    const aimed = body[target] as Cell;
-    const link = headingBetween(aimed, body[target + 1] as Cell, size);
-    if (!link) continue;
-    const side = rng.pick(
-      HEADINGS.filter(
-        (heading) => heading !== link && heading !== oppositeHeading(link),
-      ),
-    );
-    const blockerA = [offset(aimed, side, 2), offset(aimed, side, 1)];
-    const arrows: ArrowDefinition[] = [
-      { id: `r${id}-double-double`, kind: "double", path: body },
-      { id: `r${id}-double-a`, path: blockerA },
-      { id: `r${id}-double-b`, path: blockerB },
-    ];
-    const cells = arrows.flatMap((arrow) => arrow.path);
-    const keys = cells.map(cellKey);
-    if (
-      new Set(keys).size !== keys.length ||
-      cells.some((cell) => !inBounds(cell) || occupied.has(cellKey(cell)))
-    )
-      continue;
-    const coreLevel: LevelDefinition = { ...level, arrows };
-    if (!validateLevel(coreLevel).valid) continue;
-    const certificate = solveLevelTargets(coreLevel);
-    const doubleId = `r${id}-double-double`;
-    if (
-      !certificate ||
-      !certificate.some(
-        (target) => target.arrowId === doubleId && target.endpoint === "tail",
-      )
-    )
-      continue;
-    const coreIds = new Set(arrows.map((arrow) => arrow.id));
-    return {
-      arrows,
-      certificate: certificate.filter((target) => coreIds.has(target.arrowId)),
-    };
-  }
-  return undefined;
+  return constructDouble(
+    level,
+    coreStream(id, "double-topology-v1", restart),
+    occupied,
+  );
 }
 
 /** Grow a required portal circuit on its independent construction stream. */
@@ -3784,7 +3701,12 @@ export function generateLevel(id: number): LevelDefinition {
           }
         }
         double = tier.certificate
-          ? doubleCore(id, { ...candidateLevel, arrows }, occupied, restart)
+          ? doubleCore(
+              id,
+              { ...candidateLevel, arrows },
+              new Set([...occupied, ...parkTrackKeys, ...groupTracks]),
+              restart,
+            )
           : undefined;
         if (double) {
           for (const arrow of double.arrows) {

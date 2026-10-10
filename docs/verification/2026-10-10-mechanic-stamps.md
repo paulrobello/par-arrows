@@ -16,13 +16,13 @@ This audit covers production `generateLevel`, campaign and preview resolution, a
 | Parking | Eight complete coordinate patterns and fallback bodies. | Replaced by grown required-use topology; published `cac2a6c` with evidence follow-up `a8a33a0`. |
 | Rotor | `cycle-gate` and `lane-window` coordinate patterns. | Replaced by grown phased body circuits; published `40f442d`. |
 | Flip | Six coordinate patterns (`gate`, `bounce`, `relay`, `relay2`, `lane`, `weave`) and fixed two-cell attached blockers. | Replaced by grown circuits and blockers; published `34c5997`. |
-| Wormhole | `WORMHOLE_PATTERN` copied the level-35 portal/gate layout; fixed far blocker adjacent to B; two-cell lane blockers. | Replaced by grown required-use circuits and contact blockers in this batch; full canonical gate and 500-seed stress pass. |
+| Wormhole | `WORMHOLE_PATTERN` copied the level-35 portal/gate layout; fixed far blocker adjacent to B; two-cell lane blockers. | Replaced by grown required-use circuits and contact blockers; published `34cdef0`, canonical gate and 500-seed stress pass. |
 | Overlap | `PAIR_PATTERNS` and `TRIO_PATTERNS` choose complete member leg plans: classic, staggered, lanes, seam, wrap, fork and related variants. | Remains. Seam crossing and random orientation do not remove the catalog. |
 | Fragile | `FRAGILE_PATTERN` fixes the crosser and double body around one crack, copying the introductory geometry. | Remains. |
 | Lock | `LOCK_PATTERN` fixes opener/key geometry; the cross-face variant moves the same construction across a seam. | Remains. |
 | Mirror | `MIRROR_PATTERN` fixes two opposite two-cell approaches around the mirror. | Remains. |
 | Leap | `LEAP_PATTERN` fixes the two-cell leaper and bent blocker around the pad. | Remains. |
-| Double | The double body grows, but `doubleCore` attaches fixed two-cell A/B blockers at the body and immediately beyond the head. | Partially grown; these blocker gadgets remain. |
+| Double | The double body grows, but `doubleCore` attaches fixed two-cell A/B blockers at the body and immediately beyond the head. | Replaced by grown required-use endpoint circuits in this batch; canonical gate, all 80 assembled endpoint proofs and 500-seed stress pass. |
 | Static directional core | `directionalCore` varies short tail lengths, one-/two-cell gaps and optional single bends in an opposed-flanker construction. | Limited procedural motif remains; it needs stronger topology variation. |
 | Other seeded lane blockers | Fragile, lock, mirror and leap still receive two-cell contact arrows from `seedLaneBlockers`. | Remain. They must be included in their mechanic batches. |
 
