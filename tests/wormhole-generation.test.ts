@@ -7,9 +7,14 @@ import {
   wormholeFrequency,
   wormholePlan,
 } from "../src/content/procedural";
-import { createGameState } from "../src/core/game-state";
+import {
+  applyMove,
+  createGameState,
+  simulateMove,
+} from "../src/core/game-state";
 import {
   flipHeadingProbes,
+  hasStrandingState,
   interactionRegion,
   proveRegion,
   solveLevelTargets,
@@ -54,20 +59,51 @@ describe("wormhole generation", () => {
         continue;
       }
       withHoles += 1;
-      // Every hole ships with its far-side blocker: a core arrow whose body
-      // stands on the corridor cell adjacent to end B, so the far end starts
-      // blocked like the near one.
+      // The actual engine checks the sampled contact anywhere on the exit
+      // corridor. No fixed adjacent-to-B body layout is part of the contract.
       for (const hole of holes) {
-        const far = level.arrows.find(
-          (arrow) =>
-            arrow.id.includes("wormhole-far") &&
-            arrow.path.some(
-              (cell) =>
-                cell.face === hole.b.face &&
-                Math.abs(cell.x - hole.b.x) + Math.abs(cell.y - hole.b.y) === 1,
-            ),
-        );
+        const second = hole.id === "w2";
+        const coreBoard = {
+          ...level,
+          stops: [],
+          directionals: [],
+          fragile: [],
+          locks: [],
+          mirrors: [],
+          leaps: [],
+          wormholes: [hole],
+          arrows: level.arrows.filter(
+            (a) =>
+              a.id.includes("-wormhole-") && a.id.endsWith("-2") === second,
+          ),
+        };
+        const suffix = second ? "-2" : "";
+        const portal = coreBoard.arrows.find((a) =>
+          a.id.endsWith(`-portal${suffix}`),
+        )!;
+        const far = coreBoard.arrows.find((a) =>
+          a.id.endsWith(`-far${suffix}`),
+        )!;
+        expect(portal).toBeDefined();
         expect(far).toBeDefined();
+        const initial = createGameState(coreBoard);
+        const blocked = simulateMove(coreBoard, initial, portal.id);
+        expect(blocked.kind).toBe("blocked");
+        expect(blocked.blockerId).toBe(far.id);
+        expect(blocked.portals).toHaveLength(1);
+        const first = simulateMove(coreBoard, initial, far.id);
+        expect(first.kind).toBe("exit");
+        const jump = simulateMove(
+          coreBoard,
+          applyMove(coreBoard, initial, first),
+          portal.id,
+        );
+        expect(jump.kind).toBe("exit");
+        expect(jump.portals).toHaveLength(1);
+        expect(
+          solveLevelTargets({ ...coreBoard, wormholes: [] }),
+        ).toBeUndefined();
+        expect(hasStrandingState(coreBoard)).toBe(false);
       }
       const ends = new Set(
         holes.flatMap((hole) => [cellKey(hole.a), cellKey(hole.b)]),
@@ -134,7 +170,8 @@ describe("wormhole generation", () => {
           ]),
       );
       for (const blocker of blockers) {
-        expect(blocker.path.length).toBe(2);
+        expect(blocker.path.length).toBeGreaterThanOrEqual(3);
+        expect(blocker.path.length).toBeLessThanOrEqual(8);
         expect(blocker.path.some((cell) => coreTrack.has(cellKey(cell)))).toBe(
           true,
         );

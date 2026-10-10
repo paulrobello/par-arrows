@@ -1,3 +1,5 @@
+import { constructWormhole } from "./wormhole";
+import { growMechanicBody } from "./mechanic-body";
 import {
   advancedSpotHeading,
   hasStatefulSpots,
@@ -1138,8 +1140,7 @@ function overlapStarter(
 const PARK_CERTIFICATE_PREFIX = "park:";
 
 /**
- * A required-use wormhole core: portal and gate plus the wormhole that
- * frees them, with the core-only certificate that leads the replay.
+ * A grown required-use wormhole circuit and its actual engine certificate.
  */
 interface WormholeCore {
   readonly arrows: readonly ArrowDefinition[];
@@ -1252,201 +1253,19 @@ function doubleCore(
   return undefined;
 }
 
-/**
- * Level-35's two-arrow geometry relative to end A. The portal's lane runs
- * into A, so with the rings it jumps to B and exits along its entry heading
- * while its body vacates; without them the lane ends on the gate's body. The
- * gate's lane ends on the portal's head, so both deadlock until the portal
- * leaves. One quarter turn about A per placement attempt.
- */
-const WORMHOLE_PATTERN = {
-  portal: [
-    [-2, 0],
-    [-1, 0],
-  ],
-  gate: [
-    [1, 0],
-    [1, -1],
-    [1, -2],
-    [0, -2],
-    [-1, -2],
-    [-1, -1],
-  ],
-} as const;
-
-/**
- * Place a required-use wormhole core on its own seeded stream, modeled on
- * `doubleCore`. The level-35 pattern — portal, gate and a far-side blocker —
- * rotates about end A on a candidate face; end B lands on a random other
- * face, and the corridor ahead of B must run straight off that face through
- * a non-wrapping edge, clear of every reserved cell, with the blocker's body
- * on its first cell. The core proves required use on the core board alone
- * (solvable with the wormhole, deadlocked without it), every arrow already
- * on board keeps its route off both ends so only the portal ever jumps, and
- * no earlier body may sit on a core track, so the core's certificate
- * replays against the assembled cube. Undefined drops the core; the level
- * never restarts for a wormhole placement that fails.
- */
+/** Grow a required portal circuit on its independent construction stream. */
 function wormholeCore(
   id: number,
   level: LevelDefinition,
   occupied: ReadonlySet<string>,
   restart: number,
 ): WormholeCore | undefined {
-  const size = level.gridSize;
-  const rng = coreStream(id, "wormhole-core", restart);
-  const inBounds = (cell: Cell): boolean =>
-    cell.x >= 0 && cell.y >= 0 && cell.x < size && cell.y < size;
-  const suffix = level.arrows.some((arrow) => arrow.id.includes("-wormhole-"))
-    ? "-2"
-    : "";
-  for (let attempt = 0; attempt < 48; attempt += 1) {
-    const face = rng.pick(FACES);
-    const rotation = rng.int(4);
-    const a: Cell = {
-      face,
-      x: 2 + rng.int(size - 3),
-      y: 2 + rng.int(size - 3),
-    };
-    const bFace = rng.pick(FACES.filter((entry) => entry !== face));
-    const b: Cell = { face: bFace, x: rng.int(size), y: rng.int(size) };
-    const arrows: ArrowDefinition[] = [
-      {
-        id: `r${id}-wormhole-portal${suffix}`,
-        path: WORMHOLE_PATTERN.portal.map(([dx, dy]) =>
-          patternCell(a, dx, dy, rotation),
-        ),
-      },
-      {
-        id: `r${id}-wormhole-gate${suffix}`,
-        path: WORMHOLE_PATTERN.gate.map(([dx, dy]) =>
-          patternCell(a, dx, dy, rotation),
-        ),
-      },
-    ];
-    const cells = arrows.flatMap((arrow) => arrow.path);
-    if (
-      cells.some((cell) => !inBounds(cell) || occupied.has(cellKey(cell))) ||
-      occupied.has(cellKey(a)) ||
-      occupied.has(cellKey(b))
-    )
-      continue;
-    // The portal leaves B along its entry heading, so the corridor ahead of
-    // B must run straight off the face through a non-wrapping edge and
-    // dodge every reserved cell.
-    const corridor: Cell[] = [];
-    let corridorExits = false;
-    let cursor = b;
-    for (let step = 0; step <= size; step += 1) {
-      const forward = advanceHead(
-        level,
-        cursor,
-        rotateHeading("east", rotation),
-      );
-      if (forward.exits) {
-        corridorExits = true;
-        break;
-      }
-      const next = forward.next;
-      if (!next || next.face !== b.face || occupied.has(cellKey(next))) break;
-      corridor.push(next);
-      cursor = next;
-    }
-    if (!corridorExits) continue;
-    // A far-side blocker occupies the corridor's first cell, so the far end
-    // starts blocked like the near one. Its own exit runs perpendicular to
-    // the corridor and must leave the face clear of every placed body, so
-    // it always leaves before the portal runs.
-    const first = corridor[0];
-    if (!first) continue;
-    const northSide = rotateHeading("north", rotation);
-    let farBlocker: ArrowDefinition | undefined;
-    for (const side of [oppositeHeading(northSide), northSide]) {
-      const step = HEADING_VECTORS[side];
-      const tail = { face: b.face, x: first.x + step.dx, y: first.y + step.dy };
-      if (!inBounds(tail) || occupied.has(cellKey(tail))) continue;
-      let clear = true;
-      let exited = false;
-      const visited = new Set([cellKey(tail), cellKey(first)]);
-      let cursor = first;
-      for (let walk = 0; walk < size; walk += 1) {
-        const forward = advanceHead(level, cursor, oppositeHeading(side));
-        if (forward.exits) {
-          exited = true;
-          break;
-        }
-        const next = forward.next;
-        if (
-          !next ||
-          next.face !== b.face ||
-          visited.has(cellKey(next)) ||
-          occupied.has(cellKey(next)) ||
-          cellKey(next) === cellKey(a) ||
-          cellKey(next) === cellKey(b)
-        ) {
-          clear = false;
-          break;
-        }
-        visited.add(cellKey(next));
-        cursor = next;
-      }
-      if (clear && exited) {
-        farBlocker = {
-          id: `r${id}-wormhole-far${suffix}`,
-          path: [tail, first],
-        };
-        break;
-      }
-    }
-    if (!farBlocker) continue;
-    arrows.push(farBlocker);
-    const wormhole: WormholeDefinition = {
-      id: suffix ? "w2" : "w1",
-      a,
-      b,
-    };
-    const board: LevelDefinition = { ...level, arrows, wormholes: [wormhole] };
-    if (!validateLevel(board).valid) continue;
-    const certificate = solveLevelTargets(board);
-    if (
-      !certificate ||
-      solveLevelTargets({ ...board, wormholes: [] }) !== undefined
-    )
-      continue;
-    // Only the portal may ever jump: every arrow already on board keeps its
-    // full route (both ends of a double) off both wormhole ends.
-    const endKeys = new Set([cellKey(a), cellKey(b)]);
-    const routesClear = level.arrows.every((arrow) => {
-      const paths =
-        arrow.kind === "double"
-          ? [arrow.path, [...arrow.path].reverse()]
-          : [arrow.path];
-      return paths.every((path) =>
-        arrowTrack(level, { ...arrow, path }).every(
-          (cell) => !endKeys.has(cellKey(cell)),
-        ),
-      );
-    });
-    // No earlier body may sit on a core track, so the core's certificate
-    // replays with every earlier arrow as a static blocker.
-    const bodyKeys = new Set(
-      level.arrows.flatMap((arrow) => arrow.path.map(cellKey)),
-    );
-    if (
-      !routesClear ||
-      arrows.some((arrow) =>
-        arrowTrack(board, arrow).some((cell) => bodyKeys.has(cellKey(cell))),
-      )
-    )
-      continue;
-    const coreIds = new Set(arrows.map((arrow) => arrow.id));
-    return {
-      arrows,
-      wormhole,
-      certificate: certificate.filter((target) => coreIds.has(target.arrowId)),
-    };
-  }
-  return undefined;
+  return constructWormhole(
+    level,
+    coreStream(id, "wormhole-topology-v1", restart),
+    occupied,
+    level.arrows.some((a) => a.id.includes("-wormhole-")) ? "-2" : "",
+  );
 }
 
 /** Every generated flip-core arrow id carries this marker; seeds are found by it. */
@@ -1757,7 +1576,8 @@ interface LaneBlockerInput {
 
 /**
  * Seed blocker arrows on a certificate-led core's lanes: the per-lane
- * sibling of `flipBlockers`. Each blocker is a two-cell arrow whose tail
+ * sibling of `flipBlockers`. Wormhole blockers grow their bodies; the other
+ * lane mechanics still use two-cell arrows whose tail
  * covers a late track cell of some core arrow and whose head points off the
  * lane; the mechanic's certificate must still replay on the core board with
  * the blockers as members. A failed replay keeps the proven prefix. Blocker
@@ -1775,13 +1595,15 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
   const grownFlip = (input.board.directionals ?? []).some(
     (spot) => spot.kind === "flip",
   );
+  const grownWormhole = kind === "wormhole";
   if (frequency(id) === 0) return [];
   const placementDraw = rng.next();
-  // A new flip layout may need more construction restarts. Preserve the
+  // A grown layout may need more construction restarts. Preserve the
   // original blocker-presence plan; only its placement geometry retries.
-  const planDraw = grownFlip
-    ? coreStream(id, `${kind}-block`, 0).next()
-    : placementDraw;
+  const planDraw =
+    grownFlip || grownWormhole
+      ? coreStream(id, `${kind}-block`, 0).next()
+      : placementDraw;
   if (planDraw >= frequency(id)) return [];
   const first = { wormhole: 36, fragile: 46, lock: 51, mirror: 56, leap: 61 }[
     kind
@@ -1833,13 +1655,14 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
   // original draws and bounds; every candidate still replays the certificate.
   for (
     let attempt = 0;
-    attempt < (grownFlip ? 24 : 6) && blockers.length < maxBlockers;
+    attempt < (grownFlip || grownWormhole ? 24 : 6) &&
+    blockers.length < maxBlockers;
     attempt += 1
   ) {
     // Keep the original successful prefix. Broader contacts are a fallback
     // for an empty result, not another way to crowd later mechanic lanes.
-    const broader = grownFlip && attempt >= 6;
-    if (broader && blockers.length > 0) break;
+    const broader = grownWormhole || (grownFlip && attempt >= 6);
+    if (broader && !grownWormhole && blockers.length > 0) break;
     const owner = input.coreArrows[
       rng.int(input.coreArrows.length)
     ] as ArrowDefinition;
@@ -1900,9 +1723,46 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
       heading: Heading;
       cell: Cell;
     };
+    let path = [entangle, choice.cell];
+    if (grownWormhole) {
+      let stemFits = true;
+      for (let step = 0, gap = rng.int(3); step < gap; step++) {
+        const heading = headingForPath(path, size);
+        if (!heading) {
+          stemFits = false;
+          break;
+        }
+        const next = stepSurface(path[path.length - 1]!, heading, size);
+        if (
+          bannedKey(cellKey(next)) ||
+          path.some((c) => cellKey(c) === cellKey(next))
+        ) {
+          stemFits = false;
+          break;
+        }
+        path.push(next);
+      }
+      if (!stemFits) continue;
+      path = growMechanicBody(
+        input.board,
+        rng,
+        path,
+        new Set([
+          ...input.occupied,
+          ...input.parkTracks,
+          ...input.reservedCells,
+          ...spotKeys,
+          ...stopKeys,
+          ...blockerKeys,
+          ...laneKeys,
+        ]),
+        Math.max(path.length, 3 + rng.int(6)),
+      );
+      if (path.length < 3) continue;
+    }
     const blocker: ArrowDefinition = {
       id: `r${id}${XBLOCK_MARKER}${kind}${blockers.length}`,
-      path: [entangle, choice.cell],
+      path,
     };
     const routeKeys = arrowTrack(input.board, blocker)
       .slice(blocker.path.length)
@@ -1922,7 +1782,7 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
       ...input.certificate,
     ];
     if (!validateGenerated(proofBoard, proofCertificate)) {
-      if (grownFlip) continue;
+      if (grownFlip || grownWormhole) continue;
       break;
     }
     blockers.push(blocker);
@@ -3939,59 +3799,6 @@ export function generateLevel(id: number): LevelDefinition {
             }
           }
         }
-        // A planned wormhole core gets its slots right after the double
-        // core, on its own stream. A placement that fails drops the hole
-        // and never restarts the level.
-        const wormholes: WormholeCore[] = [];
-        const wormholeExempt = new Set<string>();
-        for (let slot = 0; slot < slots; slot += 1) {
-          const spotsSoFar = [
-            ...(directionalSpot ? [directionalSpot.spot] : []),
-            ...parkSpots,
-          ];
-          const coreBoard = {
-            ...candidateLevel,
-            arrows,
-            ...(spotsSoFar.length > 0 ? { directionals: spotsSoFar } : {}),
-          };
-          const wormhole = wormholeCore(id, coreBoard, occupied, restart);
-          if (!wormhole) break;
-          const holeBoard = { ...coreBoard, wormholes: [wormhole.wormhole] };
-          const reserved = new Set<string>([
-            cellKey(wormhole.wormhole.a),
-            cellKey(wormhole.wormhole.b),
-          ]);
-          for (const arrow of wormhole.arrows) {
-            for (const cell of arrowTrack(holeBoard, arrow)) {
-              reserved.add(cellKey(cell));
-            }
-          }
-          // The reservation must stay off the shared-tail groups' tracks.
-          if ([...reserved].some((key) => groupTracks.has(key))) break;
-          wormholes.push(wormhole);
-          for (const key of reserved) occupied.add(key);
-          // Every core track cell is vacated before any plain arrow flies
-          // (the core's certificate leads the replay), so later exit rays
-          // may cross them the way they cross the directional corridor.
-          for (const key of reserved) wormholeExempt.add(key);
-          for (const arrow of wormhole.arrows) arrows.push(arrow);
-        }
-        // The ends themselves must never be crossed by a route — entering
-        // one teleports — so they stay ray-forbidden and are the ends the
-        // route-vetting passes below keep off every later arrow's route.
-        const portalKeys = new Set(
-          wormholes.flatMap((entry) => [
-            cellKey(entry.wormhole.a),
-            cellKey(entry.wormhole.b),
-          ]),
-        );
-        for (const key of portalKeys) wormholeExempt.delete(key);
-        const rayExemptCells: ReadonlySet<string> | undefined =
-          wormholes.length > 0
-            ? new Set([...dirCells, ...wormholeExempt])
-            : directional
-              ? dirCells
-              : undefined;
         // The flip or rotor core, whichever this pass plans. Both are
         // stateful-spot regions and every step below treats them alike:
         // proven region, reserved cells, region circles, certificate lead.
@@ -4036,6 +3843,64 @@ export function generateLevel(id: number): LevelDefinition {
           for (const arrow of flip.arrows) arrows.push(arrow);
           for (const key of flip.cells) occupied.add(key);
         }
+        // A planned wormhole core searches around the proved stateful region
+        // on its own stream. A placement that fails drops the hole
+        // and never restarts the level.
+        const wormholes: WormholeCore[] = [];
+        const wormholeExempt = new Set<string>();
+        for (let slot = 0; slot < slots; slot += 1) {
+          const spotsSoFar = [
+            ...(directionalSpot ? [directionalSpot.spot] : []),
+            ...parkSpots,
+          ];
+          const coreBoard = {
+            ...candidateLevel,
+            arrows,
+            ...(spotsSoFar.length > 0 ? { directionals: spotsSoFar } : {}),
+          };
+          const wormhole = wormholeCore(
+            id,
+            coreBoard,
+            new Set([...occupied, ...groupTracks]),
+            restart,
+          );
+          if (!wormhole) break;
+          const holeBoard = { ...coreBoard, wormholes: [wormhole.wormhole] };
+          const reserved = new Set<string>([
+            cellKey(wormhole.wormhole.a),
+            cellKey(wormhole.wormhole.b),
+          ]);
+          for (const arrow of wormhole.arrows) {
+            for (const cell of arrowTrack(holeBoard, arrow)) {
+              reserved.add(cellKey(cell));
+            }
+          }
+          // The reservation must stay off the shared-tail groups' tracks.
+          if ([...reserved].some((key) => groupTracks.has(key))) break;
+          wormholes.push(wormhole);
+          for (const key of reserved) occupied.add(key);
+          // Every core track cell is vacated before any plain arrow flies
+          // (the core's certificate leads the replay), so later exit rays
+          // may cross them the way they cross the directional corridor.
+          for (const key of reserved) wormholeExempt.add(key);
+          for (const arrow of wormhole.arrows) arrows.push(arrow);
+        }
+        // The ends themselves must never be crossed by a route — entering
+        // one teleports — so they stay ray-forbidden and are the ends the
+        // route-vetting passes below keep off every later arrow's route.
+        const portalKeys = new Set(
+          wormholes.flatMap((entry) => [
+            cellKey(entry.wormhole.a),
+            cellKey(entry.wormhole.b),
+          ]),
+        );
+        for (const key of portalKeys) wormholeExempt.delete(key);
+        const rayExemptCells: ReadonlySet<string> | undefined =
+          wormholes.length > 0
+            ? new Set([...dirCells, ...wormholeExempt])
+            : directional
+              ? dirCells
+              : undefined;
         // The fragile core comes after every other core, so their reserved
         // cells and any stateful-spot region fence it, and its own lanes and
         // cell are reserved from everything placed after it.
@@ -4714,6 +4579,26 @@ export function generateLevel(id: number): LevelDefinition {
           ...(mirror ? { mirrors: [mirror.mirror] } : {}),
           ...(leap ? { leaps: [leap.pad] } : {}),
         };
+        // New wormhole boards reserve the proved stateful region first.
+        // Its heading-dependent internal edges are one atomic multi-leg node,
+        // not a union of mutually exclusive static dependencies. Unplanned
+        // wormhole boards keep their preceding generator construction exactly.
+        const atomicMembers =
+          slots > 0 && flipEntangled && flip
+            ? [...flip.arrows, ...flip.blockers]
+            : [];
+        const atomicIds = new Set(atomicMembers.map((a) => a.id));
+        const atomicLead = atomicMembers.length
+          ? flipRegionLead({
+              ...entangledBoard,
+              arrows: atomicMembers,
+              stops: flip?.stops ?? [],
+            })
+          : [];
+        if (atomicMembers.length && !atomicLead) {
+          skip = "region-certificate";
+          continue;
+        }
         const graphNodes: FillNode[] = [
           ...(core
             ? [
@@ -4738,33 +4623,51 @@ export function generateLevel(id: number): LevelDefinition {
             arrows: [arrow],
             routeKeys: new Set(nodeRoute(arrow)),
           })),
-          ...entangled.flatMap((entry) => [
-            ...entry.arrows.map((arrow) => ({
-              id: arrow.id,
-              arrows: [arrow],
-              routeKeys: new Set(
-                (arrow.kind === "double"
-                  ? entangledTargets.get(arrow.id)?.endpoint === "tail"
-                    ? [[...arrow.path].reverse()]
-                    : entangledTargets.get(arrow.id)?.endpoint === "head"
-                      ? [arrow.path]
-                      : [arrow.path, [...arrow.path].reverse()]
-                  : [arrow.path]
-                ).flatMap((path) =>
-                  flipHeadingProbes(entangledBoard).flatMap((probe) =>
-                    arrowTrack(probe, { ...arrow, path })
-                      .slice(path.length)
-                      .map(cellKey),
-                  ),
-                ),
-              ),
-            })),
-            ...entry.blockers.map((arrow) => ({
-              id: arrow.id,
-              arrows: [arrow],
-              routeKeys: new Set(nodeRoute(arrow)),
-            })),
-          ]),
+          ...entangled.flatMap((entry) =>
+            slots > 0 && entry.kind === "region"
+              ? [
+                  {
+                    id: atomicMembers[0]!.id,
+                    arrows: atomicMembers,
+                    routeKeys: new Set(
+                      atomicMembers.flatMap((arrow) =>
+                        flipHeadingProbes(entangledBoard).flatMap((probe) =>
+                          arrowTrack(probe, arrow)
+                            .slice(arrow.path.length)
+                            .map(cellKey),
+                        ),
+                      ),
+                    ),
+                  },
+                ]
+              : [
+                  ...entry.arrows.map((arrow) => ({
+                    id: arrow.id,
+                    arrows: [arrow],
+                    routeKeys: new Set(
+                      (arrow.kind === "double"
+                        ? entangledTargets.get(arrow.id)?.endpoint === "tail"
+                          ? [[...arrow.path].reverse()]
+                          : entangledTargets.get(arrow.id)?.endpoint === "head"
+                            ? [arrow.path]
+                            : [arrow.path, [...arrow.path].reverse()]
+                        : [arrow.path]
+                      ).flatMap((path) =>
+                        flipHeadingProbes(entangledBoard).flatMap((probe) =>
+                          arrowTrack(probe, { ...arrow, path })
+                            .slice(path.length)
+                            .map(cellKey),
+                        ),
+                      ),
+                    ),
+                  })),
+                  ...entry.blockers.map((arrow) => ({
+                    id: arrow.id,
+                    arrows: [arrow],
+                    routeKeys: new Set(nodeRoute(arrow)),
+                  })),
+                ],
+          ),
         ];
         const nodeIds = new Set(graphNodes.map((node) => node.id));
         // Blockers enter the board as graph nodes, so they spend the budget.
@@ -5065,12 +4968,18 @@ export function generateLevel(id: number): LevelDefinition {
           ...[...arrows]
             .reverse()
             .filter((arrow) => !emissionLeads.has(arrow.id))
-            .flatMap((arrow): CertificateEntry[] => [
-              ...(core && arrow.id === core.arrows[core.arrows.length - 1]!.id
-                ? core.parkLegs
-                : []),
-              entangledTargets.get(arrow.id) ?? arrow.id,
-            ]),
+            .flatMap((arrow): CertificateEntry[] => {
+              if (atomicIds.has(arrow.id))
+                return arrow.id === atomicMembers[atomicMembers.length - 1]?.id
+                  ? [...(atomicLead ?? [])]
+                  : [];
+              return [
+                ...(core && arrow.id === core.arrows[core.arrows.length - 1]!.id
+                  ? core.parkLegs
+                  : []),
+                entangledTargets.get(arrow.id) ?? arrow.id,
+              ];
+            }),
         ];
         const accepted =
           flipLead !== undefined &&

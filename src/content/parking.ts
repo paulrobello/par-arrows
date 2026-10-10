@@ -17,6 +17,7 @@ import type {
 import { hasStrandingState, validateLevel } from "../core/validation";
 import { routeFrom } from "./dependency-fill";
 import type { Rng } from "./procedural";
+import { growMechanicBody as growTail } from "./mechanic-body";
 
 const FACES = ["front", "back", "left", "right", "top", "bottom"] as const;
 
@@ -25,29 +26,6 @@ export interface ParkingConstruction {
   readonly stops: readonly Cell[];
   readonly parkLegs: readonly string[];
   readonly spots: readonly DirectionalSpotDefinition[];
-}
-
-/** Grow a surface walk backwards from its head; no relative-coordinate gadget. */
-function growTail(
-  level: LevelDefinition,
-  rng: Rng,
-  path: Cell[],
-  forbidden: ReadonlySet<string>,
-  length: number,
-): Cell[] {
-  const seen = new Set(path.map(cellKey));
-  while (path.length < length) {
-    const choices = HEADINGS.map((heading) =>
-      stepSurface(path[0]!, heading, level.gridSize),
-    ).filter(
-      (cell) => !seen.has(cellKey(cell)) && !forbidden.has(cellKey(cell)),
-    );
-    if (!choices.length) break;
-    const next = rng.pick(choices);
-    path.unshift(next);
-    seen.add(cellKey(next));
-  }
-  return path;
 }
 
 /** Connect a lane contact to a chosen neck on the surface, with seeded detours. */
@@ -116,6 +94,8 @@ function connect(
  * sampled body contact; one to three followers unwind; a routed last arrow
  * occupies the parker's continuation. No catalog or stamped fallback exists.
  * Proofs use the movement engine and bounded enumeration, never global search.
+ * Portal mode builds a native body cycle released by removing the whole opener,
+ * with no installed circle; the wormhole constructor proves the actual jump.
  */
 export function constructParking(
   level: LevelDefinition,
@@ -123,6 +103,7 @@ export function constructParking(
   occupied: ReadonlySet<string>,
   budget: number,
   rotorPhase = false,
+  portalCycle = false,
 ): ParkingConstruction | undefined {
   if (budget < 1) return undefined;
   for (let attempt = 0; attempt < 96; attempt += 1) {
@@ -134,7 +115,13 @@ export function constructParking(
     const heading = rng.pick(HEADINGS);
     const neck = stepSurface(head, oppositeHeading(heading), level.gridSize);
     if ([head, neck].some((cell) => occupied.has(cellKey(cell)))) continue;
-    const path = growTail(level, rng, [neck, head], occupied, 3 + rng.int(8));
+    const path = growTail(
+      level,
+      rng,
+      [neck, head],
+      occupied,
+      3 + rng.int(portalCycle ? 4 : 8),
+    );
     const actualHeading = headingForPath(path, level.gridSize);
     if (!actualHeading) continue;
     const route = routeFrom(level, head, actualHeading);
@@ -158,8 +145,12 @@ export function constructParking(
     const parker: ArrowDefinition = { id: `r${level.id}-park-p`, path };
     const board = { ...level, arrows: [parker], stops: [stop] };
     const parked = currentPath(board, parker, travel);
-    const parkedKeys = new Set(parked.map(cellKey));
-    const vacated = path.filter((cell) => !parkedKeys.has(cellKey(cell)));
+    const parkedKeys = portalCycle
+      ? new Set<string>()
+      : new Set(parked.map(cellKey));
+    const vacated = portalCycle
+      ? path
+      : path.filter((cell) => !parkedKeys.has(cellKey(cell)));
     if (!vacated.length) continue;
     // Select a phased contact before constructing followers. Searching
     // complete circuits and only then looking for a compatible crossing
@@ -192,7 +183,7 @@ export function constructParking(
     const protectedRoutes = new Set(route.slice(0, travel).map(cellKey));
     const followers: ArrowDefinition[] = [];
     let targets: readonly Cell[] = vacated;
-    const count = 1 + rng.int(3);
+    const count = 1 + rng.int(portalCycle ? 2 : 3);
     let failed = false;
     for (let index = 0; index <= count; index += 1) {
       const last = index === count;
@@ -204,7 +195,7 @@ export function constructParking(
         // rather than reproducing a single fixed dependency chain. The
         // emission order still clears every possible parent before its child.
         const parents =
-          rotorPhase && index > 0
+          (rotorPhase || portalCycle) && index > 0
             ? rng.pick([vacated, ...followers.map((arrow) => arrow.path)])
             : targets;
         const contact = rng.pick(crossing?.contacts ?? parents);
@@ -213,7 +204,8 @@ export function constructParking(
           ? oppositeHeading(crossing.heading)
           : rng.pick(HEADINGS);
         let previous = candidateHead;
-        const gap = 1 + rng.int(Math.min(5, level.gridSize - 1));
+        const gap =
+          1 + rng.int(Math.min(portalCycle ? 3 : 5, level.gridSize - 1));
         for (let step = 0; step < gap; step += 1) {
           previous = candidateHead;
           candidateHead = stepSurface(candidateHead, backwards, level.gridSize);
@@ -256,7 +248,7 @@ export function constructParking(
         let candidatePath: Cell[];
         if (last) {
           const anchors = route
-            .slice(travel)
+            .slice(travel, portalCycle ? travel + 4 : undefined)
             .filter(
               (cell) =>
                 !forbidden.has(cellKey(cell)) &&
@@ -279,7 +271,7 @@ export function constructParking(
             rng,
             [candidateNeck, candidateHead],
             forbidden,
-            3 + rng.int(9),
+            3 + rng.int(portalCycle ? 4 : 9),
           );
         }
         const arrow = {
@@ -310,7 +302,7 @@ export function constructParking(
     // Emission is reversed by the generator's replay: followers leave first,
     // then the continuation blocker, then the parker.
     const arrows = [parker, ...followers.reverse()];
-    const coreLevel = { ...level, arrows, stops: [stop] };
+    const coreLevel = { ...level, arrows, stops: portalCycle ? [] : [stop] };
     if (!validateLevel(coreLevel).valid) continue;
     const stripped = { ...coreLevel, stops: [] };
     if (
@@ -322,11 +314,22 @@ export function constructParking(
     )
       continue;
     let state = createGameState(coreLevel);
-    const park = simulateMove(coreLevel, state, parker.id);
-    if (park.kind !== "paused") continue;
-    state = applyMove(coreLevel, state, park);
+    if (portalCycle) {
+      // A portal removes the whole opener. Prove the native body's unwind
+      // here; the portal constructor proves the actual jump and safe choices.
+      state = {
+        ...state,
+        remainingIds: state.remainingIds.filter((id) => id !== parker.id),
+      };
+    } else {
+      const park = simulateMove(coreLevel, state, parker.id);
+      if (park.kind !== "paused") continue;
+      state = applyMove(coreLevel, state, park);
+    }
     let clears = true;
-    for (const arrow of [...arrows].reverse()) {
+    for (const arrow of [...arrows]
+      .reverse()
+      .filter((a) => !portalCycle || a.id !== parker.id)) {
       const move = simulateMove(coreLevel, state, arrow.id);
       if (move.kind !== "exit") {
         clears = false;
@@ -334,12 +337,13 @@ export function constructParking(
       }
       state = applyMove(coreLevel, state, move);
     }
-    if (!clears || hasStrandingState(coreLevel) !== false) continue;
+    if (!clears || (!portalCycle && hasStrandingState(coreLevel) !== false))
+      continue;
     return {
       arrows,
       stops: [stop],
       spots: [],
-      parkLegs: [`park:${parker.id}`],
+      parkLegs: portalCycle ? [] : [`park:${parker.id}`],
     };
   }
   return undefined;

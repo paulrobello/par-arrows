@@ -49,6 +49,7 @@ export function mechanicStructure(level: LevelDefinition): string {
   const cells = [
     ...level.arrows.flatMap((arrow) => arrow.path),
     ...(level.stops ?? []),
+    ...(level.wormholes ?? []).flatMap((w) => [w.a, w.b]),
     ...(level.directionals ?? []).map((spot) => spot.cell),
   ];
   const axes = [
@@ -82,6 +83,9 @@ export function mechanicStructure(level: LevelDefinition): string {
         JSON.stringify([
           level.arrows.map((arrow) => arrow.path.map(encode).join(";")).sort(),
           level.stops?.map(encode).sort(),
+          level.wormholes
+            ?.map((w) => [encode(w.a), encode(w.b)].sort().join(";"))
+            .sort(),
           level.directionals
             ?.map((spot) => {
               const start = transformed(spot.cell);

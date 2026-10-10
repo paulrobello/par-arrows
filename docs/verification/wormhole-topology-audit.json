@@ -1,0 +1,8011 @@
+{
+  "baseline": "34c5997c3f5ae62f6e197ab5c72fd51a7640d988",
+  "changed": 88,
+  "unrelated": [],
+  "planned": 88,
+  "placed": 88,
+  "pairs": 113,
+  "rows": [
+    {
+      "id": 44,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "front",
+            "x": 6,
+            "y": 0
+          },
+          "b": {
+            "face": "top",
+            "x": 8,
+            "y": 10
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r44-wormhole-gate2",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 5
+          }
+        },
+        {
+          "id": "r44-wormhole-gate1",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 4,
+            "y": 2
+          }
+        },
+        {
+          "id": "r44-wormhole-gate3",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 2
+          }
+        },
+        {
+          "id": "r44-wormhole-portal",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 0
+          }
+        },
+        {
+          "id": "r44-wormhole-far",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 16,
+            "y": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": 48,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "right",
+            "x": 15,
+            "y": 6
+          },
+          "b": {
+            "face": "left",
+            "x": 14,
+            "y": 17
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r48-wormhole-gate1",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 8
+          }
+        },
+        {
+          "id": "r48-wormhole-gate3",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 16,
+            "y": 13
+          }
+        },
+        {
+          "id": "r48-wormhole-gate2",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 10
+          }
+        },
+        {
+          "id": "r48-wormhole-portal",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 15,
+            "y": 9
+          }
+        },
+        {
+          "id": "r48-wormhole-far",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 16,
+            "y": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": 49,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "top",
+            "x": 8,
+            "y": 8
+          },
+          "b": {
+            "face": "bottom",
+            "x": 13,
+            "y": 15
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r49-wormhole-gate2",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 7
+          }
+        },
+        {
+          "id": "r49-wormhole-gate3",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 10
+          }
+        },
+        {
+          "id": "r49-wormhole-gate1",
+          "length": 25,
+          "faces": ["top", "front"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 11
+          }
+        },
+        {
+          "id": "r49-wormhole-portal",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 8
+          }
+        },
+        {
+          "id": "r49-wormhole-far",
+          "length": 8,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 17
+          }
+        }
+      ]
+    },
+    {
+      "id": 53,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "top",
+            "x": 10,
+            "y": 8
+          },
+          "b": {
+            "face": "bottom",
+            "x": 16,
+            "y": 15
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r53-wormhole-gate1",
+          "length": 12,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 4
+          }
+        },
+        {
+          "id": "r53-wormhole-gate2",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 3
+          }
+        },
+        {
+          "id": "r53-wormhole-portal",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 4
+          }
+        },
+        {
+          "id": "r53-wormhole-far",
+          "length": 7,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 16
+          }
+        }
+      ]
+    },
+    {
+      "id": 58,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "back",
+            "x": 4,
+            "y": 5
+          },
+          "b": {
+            "face": "front",
+            "x": 5,
+            "y": 1
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r58-wormhole-gate2",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 6,
+            "y": 10
+          }
+        },
+        {
+          "id": "r58-wormhole-gate3",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 6,
+            "y": 6
+          }
+        },
+        {
+          "id": "r58-wormhole-gate1",
+          "length": 25,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 8
+          }
+        },
+        {
+          "id": "r58-wormhole-portal",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 6,
+            "y": 5
+          }
+        },
+        {
+          "id": "r58-wormhole-far",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 3,
+            "y": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": 59,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "bottom",
+            "x": 8,
+            "y": 3
+          },
+          "b": {
+            "face": "back",
+            "x": 1,
+            "y": 9
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "front",
+            "x": 11,
+            "y": 15
+          },
+          "b": {
+            "face": "back",
+            "x": 5,
+            "y": 5
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r59-wormhole-gate1-2",
+          "length": 29,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 2
+          }
+        },
+        {
+          "id": "r59-wormhole-gate2-2",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 10,
+            "y": 4
+          }
+        },
+        {
+          "id": "r59-wormhole-gate3-2",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 5
+          }
+        },
+        {
+          "id": "r59-wormhole-portal-2",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 10
+          }
+        },
+        {
+          "id": "r59-wormhole-far-2",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 12
+          }
+        },
+        {
+          "id": "r59-wormhole-gate1",
+          "length": 9,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 5
+          }
+        },
+        {
+          "id": "r59-wormhole-gate2",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 8
+          }
+        },
+        {
+          "id": "r59-wormhole-portal",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 5
+          }
+        },
+        {
+          "id": "r59-wormhole-far",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 0,
+            "y": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": 62,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "top",
+            "x": 16,
+            "y": 7
+          },
+          "b": {
+            "face": "bottom",
+            "x": 10,
+            "y": 10
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r62-wormhole-gate1",
+          "length": 17,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "top",
+            "x": 17,
+            "y": 0
+          }
+        },
+        {
+          "id": "r62-wormhole-gate2",
+          "length": 6,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 17,
+            "y": 3
+          }
+        },
+        {
+          "id": "r62-wormhole-portal",
+          "length": 6,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 16,
+            "y": 5
+          }
+        },
+        {
+          "id": "r62-wormhole-far",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 13
+          }
+        },
+        {
+          "id": "r62-xblock-wormhole0",
+          "length": 8,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 16
+          }
+        }
+      ]
+    },
+    {
+      "id": 63,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "back",
+            "x": 13,
+            "y": 8
+          },
+          "b": {
+            "face": "bottom",
+            "x": 5,
+            "y": 17
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r63-wormhole-gate2",
+          "length": 6,
+          "faces": ["left", "back"],
+          "head": {
+            "face": "back",
+            "x": 16,
+            "y": 7
+          }
+        },
+        {
+          "id": "r63-wormhole-gate1",
+          "length": 11,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 5
+          }
+        },
+        {
+          "id": "r63-wormhole-portal",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 8
+          }
+        },
+        {
+          "id": "r63-wormhole-far",
+          "length": 8,
+          "faces": ["left", "back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 16
+          }
+        }
+      ]
+    },
+    {
+      "id": 66,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "right",
+            "x": 4,
+            "y": 9
+          },
+          "b": {
+            "face": "back",
+            "x": 10,
+            "y": 5
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r66-wormhole-gate1",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 8
+          }
+        },
+        {
+          "id": "r66-wormhole-gate2",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 5,
+            "y": 8
+          }
+        },
+        {
+          "id": "r66-wormhole-portal",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 9
+          }
+        },
+        {
+          "id": "r66-wormhole-far",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 9
+          }
+        },
+        {
+          "id": "r66-xblock-wormhole0",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "id": 68,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "left",
+            "x": 17,
+            "y": 10
+          },
+          "b": {
+            "face": "bottom",
+            "x": 7,
+            "y": 12
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r68-wormhole-gate2",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 3,
+            "y": 14
+          }
+        },
+        {
+          "id": "r68-wormhole-gate1",
+          "length": 4,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "front",
+            "x": 0,
+            "y": 11
+          }
+        },
+        {
+          "id": "r68-wormhole-portal",
+          "length": 4,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "left",
+            "x": 17,
+            "y": 13
+          }
+        },
+        {
+          "id": "r68-wormhole-far",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": 70,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "front",
+            "x": 13,
+            "y": 13
+          },
+          "b": {
+            "face": "left",
+            "x": 15,
+            "y": 10
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r70-wormhole-gate1",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 12
+          }
+        },
+        {
+          "id": "r70-wormhole-gate3",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 15
+          }
+        },
+        {
+          "id": "r70-wormhole-gate2",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 14
+          }
+        },
+        {
+          "id": "r70-wormhole-portal",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 13,
+            "y": 14
+          }
+        },
+        {
+          "id": "r70-wormhole-far",
+          "length": 8,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "front",
+            "x": 0,
+            "y": 7
+          }
+        },
+        {
+          "id": "r70-xblock-wormhole0",
+          "length": 5,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 17,
+            "y": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": 71,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "right",
+            "x": 9,
+            "y": 9
+          },
+          "b": {
+            "face": "bottom",
+            "x": 1,
+            "y": 6
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r71-wormhole-gate2",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 13
+          }
+        },
+        {
+          "id": "r71-wormhole-gate1",
+          "length": 31,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 14
+          }
+        },
+        {
+          "id": "r71-wormhole-gate3",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 12
+          }
+        },
+        {
+          "id": "r71-wormhole-portal",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 9
+          }
+        },
+        {
+          "id": "r71-wormhole-far",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 3
+          }
+        },
+        {
+          "id": "r71-xblock-wormhole0",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 10,
+            "y": 7
+          }
+        }
+      ]
+    },
+    {
+      "id": 75,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "back",
+            "x": 6,
+            "y": 5
+          },
+          "b": {
+            "face": "top",
+            "x": 9,
+            "y": 5
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "bottom",
+            "x": 0,
+            "y": 5
+          },
+          "b": {
+            "face": "top",
+            "x": 7,
+            "y": 4
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r75-wormhole-gate1-2",
+          "length": 13,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 6
+          }
+        },
+        {
+          "id": "r75-wormhole-gate3-2",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 2,
+            "y": 8
+          }
+        },
+        {
+          "id": "r75-wormhole-gate2-2",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 2,
+            "y": 7
+          }
+        },
+        {
+          "id": "r75-wormhole-portal-2",
+          "length": 4,
+          "faces": ["left", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 7
+          }
+        },
+        {
+          "id": "r75-wormhole-far-2",
+          "length": 8,
+          "faces": ["back", "top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 0
+          }
+        },
+        {
+          "id": "r75-wormhole-gate1",
+          "length": 9,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 10
+          }
+        },
+        {
+          "id": "r75-wormhole-gate2",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 8,
+            "y": 6
+          }
+        },
+        {
+          "id": "r75-wormhole-gate3",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 6,
+            "y": 6
+          }
+        },
+        {
+          "id": "r75-wormhole-portal",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 5,
+            "y": 5
+          }
+        },
+        {
+          "id": "r75-wormhole-far",
+          "length": 7,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 17,
+            "y": 7
+          }
+        },
+        {
+          "id": "r75-xblock-wormhole0",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 1,
+            "y": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": 76,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "bottom",
+            "x": 12,
+            "y": 9
+          },
+          "b": {
+            "face": "top",
+            "x": 3,
+            "y": 7
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r76-wormhole-gate2",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 11
+          }
+        },
+        {
+          "id": "r76-wormhole-gate1",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 10
+          }
+        },
+        {
+          "id": "r76-wormhole-portal",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 11
+          }
+        },
+        {
+          "id": "r76-wormhole-far",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 4,
+            "y": 4
+          }
+        },
+        {
+          "id": "r76-xblock-wormhole0",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": 77,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "left",
+            "x": 3,
+            "y": 8
+          },
+          "b": {
+            "face": "bottom",
+            "x": 7,
+            "y": 0
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r77-wormhole-gate1",
+          "length": 30,
+          "faces": ["left", "bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 5
+          }
+        },
+        {
+          "id": "r77-wormhole-gate2",
+          "length": 3,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 0,
+            "y": 5
+          }
+        },
+        {
+          "id": "r77-wormhole-gate3",
+          "length": 3,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 1,
+            "y": 6
+          }
+        },
+        {
+          "id": "r77-wormhole-portal",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 6
+          }
+        },
+        {
+          "id": "r77-wormhole-far",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 13
+          }
+        }
+      ]
+    },
+    {
+      "id": 80,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "back",
+            "x": 16,
+            "y": 7
+          },
+          "b": {
+            "face": "top",
+            "x": 7,
+            "y": 7
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r80-wormhole-gate2",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 8,
+            "y": 10
+          }
+        },
+        {
+          "id": "r80-wormhole-gate3",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 9
+          }
+        },
+        {
+          "id": "r80-wormhole-gate1",
+          "length": 19,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 12
+          }
+        },
+        {
+          "id": "r80-wormhole-portal",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 16,
+            "y": 8
+          }
+        },
+        {
+          "id": "r80-wormhole-far",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": 82,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "left",
+            "x": 10,
+            "y": 2
+          },
+          "b": {
+            "face": "top",
+            "x": 2,
+            "y": 10
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r82-wormhole-gate1",
+          "length": 2,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 9,
+            "y": 3
+          }
+        },
+        {
+          "id": "r82-wormhole-gate2",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 5
+          }
+        },
+        {
+          "id": "r82-wormhole-gate3",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 12,
+            "y": 5
+          }
+        },
+        {
+          "id": "r82-wormhole-portal",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 2
+          }
+        },
+        {
+          "id": "r82-wormhole-far",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 1,
+            "y": 14
+          }
+        },
+        {
+          "id": "r82-xblock-wormhole1",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 10
+          }
+        },
+        {
+          "id": "r82-xblock-wormhole0",
+          "length": 6,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "top",
+            "x": 0,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "id": 86,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "back",
+            "x": 12,
+            "y": 8
+          },
+          "b": {
+            "face": "left",
+            "x": 8,
+            "y": 12
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "bottom",
+            "x": 3,
+            "y": 8
+          },
+          "b": {
+            "face": "back",
+            "x": 1,
+            "y": 10
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r86-wormhole-gate2-2",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 16
+          }
+        },
+        {
+          "id": "r86-wormhole-gate3-2",
+          "length": 6,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 4
+          }
+        },
+        {
+          "id": "r86-wormhole-gate1-2",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 6
+          }
+        },
+        {
+          "id": "r86-wormhole-portal-2",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 8
+          }
+        },
+        {
+          "id": "r86-wormhole-far-2",
+          "length": 6,
+          "faces": ["right", "back"],
+          "head": {
+            "face": "back",
+            "x": 0,
+            "y": 13
+          }
+        },
+        {
+          "id": "r86-wormhole-gate1",
+          "length": 28,
+          "faces": ["back", "left", "top"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 0
+          }
+        },
+        {
+          "id": "r86-wormhole-gate3",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 3
+          }
+        },
+        {
+          "id": "r86-wormhole-gate2",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 5
+          }
+        },
+        {
+          "id": "r86-wormhole-portal",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 5
+          }
+        },
+        {
+          "id": "r86-wormhole-far",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 16
+          }
+        },
+        {
+          "id": "r86-xblock-wormhole0",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 2,
+            "y": 11
+          }
+        }
+      ]
+    },
+    {
+      "id": 87,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "bottom",
+            "x": 11,
+            "y": 13
+          },
+          "b": {
+            "face": "left",
+            "x": 10,
+            "y": 11
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r87-wormhole-gate2",
+          "length": 4,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "bottom",
+            "x": 17,
+            "y": 14
+          }
+        },
+        {
+          "id": "r87-wormhole-gate1",
+          "length": 13,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 11
+          }
+        },
+        {
+          "id": "r87-wormhole-gate3",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 15,
+            "y": 14
+          }
+        },
+        {
+          "id": "r87-wormhole-portal",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 13
+          }
+        },
+        {
+          "id": "r87-wormhole-far",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 15
+          }
+        }
+      ]
+    },
+    {
+      "id": 88,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "bottom",
+            "x": 15,
+            "y": 11
+          },
+          "b": {
+            "face": "top",
+            "x": 14,
+            "y": 13
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r88-wormhole-gate1",
+          "length": 13,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 8
+          }
+        },
+        {
+          "id": "r88-wormhole-gate2",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 10
+          }
+        },
+        {
+          "id": "r88-wormhole-portal",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 11
+          }
+        },
+        {
+          "id": "r88-wormhole-far",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 14
+          }
+        }
+      ]
+    },
+    {
+      "id": 89,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "right",
+            "x": 17,
+            "y": 15
+          },
+          "b": {
+            "face": "left",
+            "x": 14,
+            "y": 6
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r89-wormhole-gate1",
+          "length": 10,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 14
+          }
+        },
+        {
+          "id": "r89-wormhole-gate2",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 16,
+            "y": 12
+          }
+        },
+        {
+          "id": "r89-wormhole-portal",
+          "length": 4,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 17,
+            "y": 12
+          }
+        },
+        {
+          "id": "r89-wormhole-far",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 11
+          }
+        },
+        {
+          "id": "r89-xblock-wormhole0",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 14
+          }
+        }
+      ]
+    },
+    {
+      "id": 90,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "back",
+            "x": 3,
+            "y": 2
+          },
+          "b": {
+            "face": "top",
+            "x": 8,
+            "y": 10
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r90-wormhole-gate2",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 6,
+            "y": 7
+          }
+        },
+        {
+          "id": "r90-wormhole-gate1",
+          "length": 24,
+          "faces": ["back", "top", "right"],
+          "head": {
+            "face": "back",
+            "x": 4,
+            "y": 9
+          }
+        },
+        {
+          "id": "r90-wormhole-gate3",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 4,
+            "y": 6
+          }
+        },
+        {
+          "id": "r90-wormhole-portal",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 3,
+            "y": 3
+          }
+        },
+        {
+          "id": "r90-wormhole-far",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 9
+          }
+        },
+        {
+          "id": "r90-xblock-wormhole0",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 2,
+            "y": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": 91,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "bottom",
+            "x": 3,
+            "y": 0
+          },
+          "b": {
+            "face": "front",
+            "x": 5,
+            "y": 1
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r91-wormhole-gate2",
+          "length": 4,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 0
+          }
+        },
+        {
+          "id": "r91-wormhole-gate1",
+          "length": 19,
+          "faces": ["bottom", "front"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 2
+          }
+        },
+        {
+          "id": "r91-wormhole-gate3",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 2
+          }
+        },
+        {
+          "id": "r91-wormhole-portal",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 0
+          }
+        },
+        {
+          "id": "r91-wormhole-far",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 0
+          }
+        },
+        {
+          "id": "r91-xblock-wormhole0",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 11
+          }
+        }
+      ]
+    },
+    {
+      "id": 92,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "back",
+            "x": 4,
+            "y": 0
+          },
+          "b": {
+            "face": "right",
+            "x": 7,
+            "y": 14
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "back",
+            "x": 15,
+            "y": 12
+          },
+          "b": {
+            "face": "bottom",
+            "x": 1,
+            "y": 3
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r92-wormhole-gate1-2",
+          "length": 9,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 12
+          }
+        },
+        {
+          "id": "r92-wormhole-gate2-2",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 13,
+            "y": 14
+          }
+        },
+        {
+          "id": "r92-wormhole-gate3-2",
+          "length": 5,
+          "faces": ["left", "back"],
+          "head": {
+            "face": "back",
+            "x": 16,
+            "y": 14
+          }
+        },
+        {
+          "id": "r92-wormhole-portal-2",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 14
+          }
+        },
+        {
+          "id": "r92-wormhole-far-2",
+          "length": 4,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 14,
+            "y": 17
+          }
+        },
+        {
+          "id": "r92-wormhole-gate1",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 0
+          }
+        },
+        {
+          "id": "r92-wormhole-gate2",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 1
+          }
+        },
+        {
+          "id": "r92-wormhole-portal",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 0
+          }
+        },
+        {
+          "id": "r92-wormhole-far",
+          "length": 8,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 16
+          }
+        }
+      ]
+    },
+    {
+      "id": 95,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "front",
+            "x": 5,
+            "y": 15
+          },
+          "b": {
+            "face": "right",
+            "x": 4,
+            "y": 16
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r95-wormhole-gate1",
+          "length": 15,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 10
+          }
+        },
+        {
+          "id": "r95-wormhole-gate2",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 15
+          }
+        },
+        {
+          "id": "r95-wormhole-gate3",
+          "length": 6,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 0
+          }
+        },
+        {
+          "id": "r95-wormhole-portal",
+          "length": 6,
+          "faces": ["bottom", "front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 15
+          }
+        },
+        {
+          "id": "r95-wormhole-far",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 1,
+            "y": 14
+          }
+        },
+        {
+          "id": "r95-xblock-wormhole0",
+          "length": 6,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": 96,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "right",
+            "x": 13,
+            "y": 12
+          },
+          "b": {
+            "face": "left",
+            "x": 7,
+            "y": 14
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "bottom",
+            "x": 17,
+            "y": 14
+          },
+          "b": {
+            "face": "top",
+            "x": 11,
+            "y": 11
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r96-wormhole-gate2-2",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 12
+          }
+        },
+        {
+          "id": "r96-wormhole-gate3-2",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 16
+          }
+        },
+        {
+          "id": "r96-wormhole-gate1-2",
+          "length": 5,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 17
+          }
+        },
+        {
+          "id": "r96-wormhole-portal-2",
+          "length": 6,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 17,
+            "y": 10
+          }
+        },
+        {
+          "id": "r96-wormhole-far-2",
+          "length": 7,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 17
+          }
+        },
+        {
+          "id": "r96-xblock-wormhole1",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 1,
+            "y": 15
+          }
+        },
+        {
+          "id": "r96-xblock-wormhole0",
+          "length": 8,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 14
+          }
+        },
+        {
+          "id": "r96-wormhole-gate2",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 10
+          }
+        },
+        {
+          "id": "r96-wormhole-gate1",
+          "length": 14,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 10,
+            "y": 7
+          }
+        },
+        {
+          "id": "r96-wormhole-portal",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 11
+          }
+        },
+        {
+          "id": "r96-wormhole-far",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 15
+          }
+        }
+      ]
+    },
+    {
+      "id": 100,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "left",
+            "x": 3,
+            "y": 5
+          },
+          "b": {
+            "face": "bottom",
+            "x": 11,
+            "y": 6
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r100-wormhole-gate1",
+          "length": 19,
+          "faces": ["left", "back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 7
+          }
+        },
+        {
+          "id": "r100-wormhole-gate3",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 7
+          }
+        },
+        {
+          "id": "r100-wormhole-gate2",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 6
+          }
+        },
+        {
+          "id": "r100-wormhole-portal",
+          "length": 5,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 0,
+            "y": 5
+          }
+        },
+        {
+          "id": "r100-xblock-wormhole1",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 15,
+            "y": 3
+          }
+        },
+        {
+          "id": "r100-wormhole-far",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 7
+          }
+        },
+        {
+          "id": "r100-xblock-wormhole0",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": 102,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "bottom",
+            "x": 16,
+            "y": 5
+          },
+          "b": {
+            "face": "top",
+            "x": 2,
+            "y": 6
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r102-wormhole-gate1",
+          "length": 15,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 3
+          }
+        },
+        {
+          "id": "r102-wormhole-gate2",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 3
+          }
+        },
+        {
+          "id": "r102-wormhole-gate3",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 15,
+            "y": 2
+          }
+        },
+        {
+          "id": "r102-wormhole-portal",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 4
+          }
+        },
+        {
+          "id": "r102-wormhole-far",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "right",
+            "x": 14,
+            "y": 15
+          },
+          "b": {
+            "face": "bottom",
+            "x": 3,
+            "y": 0
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "back",
+            "x": 15,
+            "y": 16
+          },
+          "b": {
+            "face": "bottom",
+            "x": 5,
+            "y": 4
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r103-wormhole-gate2-2",
+          "length": 4,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 17
+          }
+        },
+        {
+          "id": "r103-wormhole-gate1-2",
+          "length": 9,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 15
+          }
+        },
+        {
+          "id": "r103-wormhole-portal-2",
+          "length": 5,
+          "faces": ["left", "back"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 16
+          }
+        },
+        {
+          "id": "r103-wormhole-far-2",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 3,
+            "y": 8
+          }
+        },
+        {
+          "id": "r103-wormhole-gate1",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 14
+          }
+        },
+        {
+          "id": "r103-wormhole-gate2",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 15,
+            "y": 14
+          }
+        },
+        {
+          "id": "r103-wormhole-portal",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 16,
+            "y": 15
+          }
+        },
+        {
+          "id": "r103-wormhole-far",
+          "length": 7,
+          "faces": ["bottom", "front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 14
+          }
+        }
+      ]
+    },
+    {
+      "id": 104,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "right",
+            "x": 12,
+            "y": 12
+          },
+          "b": {
+            "face": "bottom",
+            "x": 17,
+            "y": 9
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "top",
+            "x": 8,
+            "y": 10
+          },
+          "b": {
+            "face": "front",
+            "x": 2,
+            "y": 0
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r104-wormhole-gate2-2",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 7,
+            "y": 8
+          }
+        },
+        {
+          "id": "r104-wormhole-gate1-2",
+          "length": 13,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 9
+          }
+        },
+        {
+          "id": "r104-wormhole-portal-2",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 7,
+            "y": 10
+          }
+        },
+        {
+          "id": "r104-wormhole-far-2",
+          "length": 5,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 14
+          }
+        },
+        {
+          "id": "r104-wormhole-gate1",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 12
+          }
+        },
+        {
+          "id": "r104-wormhole-gate2",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 14
+          }
+        },
+        {
+          "id": "r104-wormhole-portal",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 13
+          }
+        },
+        {
+          "id": "r104-wormhole-far",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 3
+          }
+        },
+        {
+          "id": "r104-xblock-wormhole0",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 17,
+            "y": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "right",
+            "x": 8,
+            "y": 10
+          },
+          "b": {
+            "face": "bottom",
+            "x": 4,
+            "y": 9
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "top",
+            "x": 13,
+            "y": 17
+          },
+          "b": {
+            "face": "right",
+            "x": 6,
+            "y": 15
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r105-wormhole-gate1-2",
+          "length": 10,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 13
+          }
+        },
+        {
+          "id": "r105-wormhole-gate2-2",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 15
+          }
+        },
+        {
+          "id": "r105-wormhole-portal-2",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 17
+          }
+        },
+        {
+          "id": "r105-wormhole-far-2",
+          "length": 6,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 17,
+            "y": 14
+          }
+        },
+        {
+          "id": "r105-wormhole-gate1",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 8
+          }
+        },
+        {
+          "id": "r105-wormhole-gate3",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 3,
+            "y": 8
+          }
+        },
+        {
+          "id": "r105-wormhole-gate2",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 4,
+            "y": 9
+          }
+        },
+        {
+          "id": "r105-wormhole-portal",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 4,
+            "y": 10
+          }
+        },
+        {
+          "id": "r105-wormhole-far",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 8
+          }
+        },
+        {
+          "id": "r105-xblock-wormhole1",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 10
+          }
+        },
+        {
+          "id": "r105-xblock-wormhole0",
+          "length": 4,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": 107,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "top",
+            "x": 11,
+            "y": 8
+          },
+          "b": {
+            "face": "left",
+            "x": 3,
+            "y": 4
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r107-wormhole-gate1",
+          "length": 10,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 5
+          }
+        },
+        {
+          "id": "r107-wormhole-gate2",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 8,
+            "y": 7
+          }
+        },
+        {
+          "id": "r107-wormhole-gate3",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 8,
+            "y": 10
+          }
+        },
+        {
+          "id": "r107-wormhole-portal",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 11
+          }
+        },
+        {
+          "id": "r107-wormhole-far",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 2
+          }
+        },
+        {
+          "id": "r107-xblock-wormhole1",
+          "length": 7,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 17
+          }
+        },
+        {
+          "id": "r107-xblock-wormhole0",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": 108,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "right",
+            "x": 6,
+            "y": 12
+          },
+          "b": {
+            "face": "front",
+            "x": 13,
+            "y": 7
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r108-wormhole-gate1",
+          "length": 14,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 0,
+            "y": 14
+          }
+        },
+        {
+          "id": "r108-wormhole-gate2",
+          "length": 3,
+          "faces": ["front", "right"],
+          "head": {
+            "face": "right",
+            "x": 0,
+            "y": 11
+          }
+        },
+        {
+          "id": "r108-wormhole-portal",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 4,
+            "y": 12
+          }
+        },
+        {
+          "id": "r108-wormhole-far",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 17,
+            "y": 3
+          }
+        },
+        {
+          "id": "r108-xblock-wormhole1",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 9
+          }
+        },
+        {
+          "id": "r108-xblock-wormhole0",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 16,
+            "y": 14
+          }
+        }
+      ]
+    },
+    {
+      "id": 110,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "back",
+            "x": 12,
+            "y": 3
+          },
+          "b": {
+            "face": "bottom",
+            "x": 6,
+            "y": 12
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r110-wormhole-gate1",
+          "length": 19,
+          "faces": ["back", "top", "left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 3
+          }
+        },
+        {
+          "id": "r110-wormhole-gate2",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 2,
+            "y": 6
+          }
+        },
+        {
+          "id": "r110-wormhole-gate3",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 5
+          }
+        },
+        {
+          "id": "r110-wormhole-portal",
+          "length": 6,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 3
+          }
+        },
+        {
+          "id": "r110-wormhole-far",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 16
+          }
+        }
+      ]
+    },
+    {
+      "id": 111,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "bottom",
+            "x": 9,
+            "y": 0
+          },
+          "b": {
+            "face": "right",
+            "x": 7,
+            "y": 15
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "right",
+            "x": 13,
+            "y": 1
+          },
+          "b": {
+            "face": "bottom",
+            "x": 16,
+            "y": 13
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r111-wormhole-gate1-2",
+          "length": 27,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 0
+          }
+        },
+        {
+          "id": "r111-wormhole-gate3-2",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 3
+          }
+        },
+        {
+          "id": "r111-wormhole-gate2-2",
+          "length": 3,
+          "faces": ["top", "right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 0
+          }
+        },
+        {
+          "id": "r111-wormhole-portal-2",
+          "length": 6,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 1
+          }
+        },
+        {
+          "id": "r111-wormhole-far-2",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 17,
+            "y": 17
+          }
+        },
+        {
+          "id": "r111-wormhole-gate1",
+          "length": 14,
+          "faces": ["bottom", "front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 15
+          }
+        },
+        {
+          "id": "r111-wormhole-gate2",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 16
+          }
+        },
+        {
+          "id": "r111-wormhole-gate3",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 16
+          }
+        },
+        {
+          "id": "r111-wormhole-portal",
+          "length": 5,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 0
+          }
+        },
+        {
+          "id": "r111-xblock-wormhole0",
+          "length": 7,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 17,
+            "y": 2
+          }
+        },
+        {
+          "id": "r111-wormhole-far",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 16
+          }
+        }
+      ]
+    },
+    {
+      "id": 112,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "right",
+            "x": 14,
+            "y": 7
+          },
+          "b": {
+            "face": "left",
+            "x": 11,
+            "y": 11
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r112-wormhole-gate1",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 3
+          }
+        },
+        {
+          "id": "r112-wormhole-gate2",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 3
+          }
+        },
+        {
+          "id": "r112-wormhole-portal",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 7
+          }
+        },
+        {
+          "id": "r112-wormhole-far",
+          "length": 5,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "left",
+            "x": 17,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "id": 114,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "back",
+            "x": 2,
+            "y": 17
+          },
+          "b": {
+            "face": "top",
+            "x": 8,
+            "y": 17
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r114-wormhole-gate2",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 15
+          }
+        },
+        {
+          "id": "r114-wormhole-gate1",
+          "length": 9,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 4,
+            "y": 15
+          }
+        },
+        {
+          "id": "r114-wormhole-portal",
+          "length": 6,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 4,
+            "y": 17
+          }
+        },
+        {
+          "id": "r114-wormhole-far",
+          "length": 6,
+          "faces": ["left", "top", "front"],
+          "head": {
+            "face": "front",
+            "x": 0,
+            "y": 2
+          }
+        },
+        {
+          "id": "r114-xblock-wormhole0",
+          "length": 7,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "front",
+            "x": 3,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "id": 115,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "front",
+            "x": 3,
+            "y": 4
+          },
+          "b": {
+            "face": "bottom",
+            "x": 2,
+            "y": 11
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r115-wormhole-gate2",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 7
+          }
+        },
+        {
+          "id": "r115-wormhole-gate1",
+          "length": 16,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 10
+          }
+        },
+        {
+          "id": "r115-wormhole-gate3",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 12
+          }
+        },
+        {
+          "id": "r115-wormhole-portal",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 17
+          }
+        },
+        {
+          "id": "r115-wormhole-far",
+          "length": 6,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 17
+          }
+        },
+        {
+          "id": "r115-xblock-wormhole0",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": 116,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "left",
+            "x": 14,
+            "y": 0
+          },
+          "b": {
+            "face": "back",
+            "x": 2,
+            "y": 11
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r116-wormhole-gate1",
+          "length": 9,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 1
+          }
+        },
+        {
+          "id": "r116-wormhole-gate2",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 9,
+            "y": 1
+          }
+        },
+        {
+          "id": "r116-wormhole-portal",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 0
+          }
+        },
+        {
+          "id": "r116-wormhole-far",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 3,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "id": 117,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "bottom",
+            "x": 8,
+            "y": 0
+          },
+          "b": {
+            "face": "right",
+            "x": 7,
+            "y": 4
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r117-wormhole-gate2",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 5
+          }
+        },
+        {
+          "id": "r117-wormhole-gate1",
+          "length": 12,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 3
+          }
+        },
+        {
+          "id": "r117-wormhole-portal",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 0
+          }
+        },
+        {
+          "id": "r117-wormhole-far",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 0,
+            "y": 5
+          }
+        },
+        {
+          "id": "r117-xblock-wormhole0",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 15,
+            "y": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": 118,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "bottom",
+            "x": 15,
+            "y": 15
+          },
+          "b": {
+            "face": "front",
+            "x": 1,
+            "y": 9
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "left",
+            "x": 15,
+            "y": 11
+          },
+          "b": {
+            "face": "back",
+            "x": 6,
+            "y": 7
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r118-wormhole-gate2-2",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 10
+          }
+        },
+        {
+          "id": "r118-wormhole-gate1-2",
+          "length": 15,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 12,
+            "y": 7
+          }
+        },
+        {
+          "id": "r118-wormhole-portal-2",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 11
+          }
+        },
+        {
+          "id": "r118-wormhole-far-2",
+          "length": 8,
+          "faces": ["left", "back"],
+          "head": {
+            "face": "back",
+            "x": 16,
+            "y": 8
+          }
+        },
+        {
+          "id": "r118-wormhole-gate1",
+          "length": 11,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 14
+          }
+        },
+        {
+          "id": "r118-wormhole-gate2",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 14
+          }
+        },
+        {
+          "id": "r118-wormhole-gate3",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 14,
+            "y": 14
+          }
+        },
+        {
+          "id": "r118-wormhole-portal",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 15,
+            "y": 14
+          }
+        },
+        {
+          "id": "r118-xblock-wormhole0",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 12
+          }
+        },
+        {
+          "id": "r118-wormhole-far",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 0,
+            "y": 16
+          }
+        }
+      ]
+    },
+    {
+      "id": 119,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "top",
+            "x": 14,
+            "y": 15
+          },
+          "b": {
+            "face": "left",
+            "x": 1,
+            "y": 16
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r119-wormhole-gate1",
+          "length": 20,
+          "faces": ["top", "front"],
+          "head": {
+            "face": "front",
+            "x": 10,
+            "y": 4
+          }
+        },
+        {
+          "id": "r119-wormhole-gate2",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 0
+          }
+        },
+        {
+          "id": "r119-wormhole-portal",
+          "length": 4,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 16
+          }
+        },
+        {
+          "id": "r119-wormhole-far",
+          "length": 5,
+          "faces": ["left", "back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 11
+          }
+        },
+        {
+          "id": "r119-xblock-wormhole0",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": 120,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "front",
+            "x": 12,
+            "y": 12
+          },
+          "b": {
+            "face": "back",
+            "x": 16,
+            "y": 12
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r120-wormhole-gate2",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 9
+          }
+        },
+        {
+          "id": "r120-wormhole-gate1",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 11
+          }
+        },
+        {
+          "id": "r120-wormhole-portal",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 9
+          }
+        },
+        {
+          "id": "r120-wormhole-far",
+          "length": 8,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 17
+          }
+        },
+        {
+          "id": "r120-xblock-wormhole1",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 6
+          }
+        },
+        {
+          "id": "r120-xblock-wormhole0",
+          "length": 7,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "id": 121,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "left",
+            "x": 2,
+            "y": 7
+          },
+          "b": {
+            "face": "front",
+            "x": 17,
+            "y": 9
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r121-wormhole-gate1",
+          "length": 9,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 2
+          }
+        },
+        {
+          "id": "r121-wormhole-gate2",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 3
+          }
+        },
+        {
+          "id": "r121-wormhole-portal",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 7
+          }
+        },
+        {
+          "id": "r121-wormhole-far",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 8
+          }
+        },
+        {
+          "id": "r121-xblock-wormhole0",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 13
+          }
+        }
+      ]
+    },
+    {
+      "id": 126,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "left",
+            "x": 14,
+            "y": 15
+          },
+          "b": {
+            "face": "back",
+            "x": 1,
+            "y": 14
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r126-wormhole-gate2",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 16,
+            "y": 11
+          }
+        },
+        {
+          "id": "r126-wormhole-gate1",
+          "length": 11,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 15,
+            "y": 11
+          }
+        },
+        {
+          "id": "r126-wormhole-gate3",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 15,
+            "y": 14
+          }
+        },
+        {
+          "id": "r126-wormhole-portal",
+          "length": 6,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "left",
+            "x": 15,
+            "y": 15
+          }
+        },
+        {
+          "id": "r126-wormhole-far",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 0,
+            "y": 13
+          }
+        },
+        {
+          "id": "r126-xblock-wormhole0",
+          "length": 3,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "front",
+            "x": 0,
+            "y": 16
+          }
+        }
+      ]
+    },
+    {
+      "id": 128,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "left",
+            "x": 11,
+            "y": 17
+          },
+          "b": {
+            "face": "bottom",
+            "x": 7,
+            "y": 14
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r128-wormhole-gate1",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 14
+          }
+        },
+        {
+          "id": "r128-wormhole-gate2",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 15
+          }
+        },
+        {
+          "id": "r128-wormhole-portal",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 17
+          }
+        },
+        {
+          "id": "r128-wormhole-far",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 10
+          }
+        },
+        {
+          "id": "r128-xblock-wormhole0",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 15,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "id": 129,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "front",
+            "x": 12,
+            "y": 10
+          },
+          "b": {
+            "face": "top",
+            "x": 8,
+            "y": 7
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "back",
+            "x": 10,
+            "y": 10
+          },
+          "b": {
+            "face": "left",
+            "x": 7,
+            "y": 6
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r129-wormhole-gate2-2",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 14
+          }
+        },
+        {
+          "id": "r129-wormhole-gate3-2",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 13,
+            "y": 12
+          }
+        },
+        {
+          "id": "r129-wormhole-gate1-2",
+          "length": 14,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 7
+          }
+        },
+        {
+          "id": "r129-wormhole-portal-2",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 10
+          }
+        },
+        {
+          "id": "r129-wormhole-far-2",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 3
+          }
+        },
+        {
+          "id": "r129-wormhole-gate1",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 8
+          }
+        },
+        {
+          "id": "r129-wormhole-gate2",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 10
+          }
+        },
+        {
+          "id": "r129-wormhole-portal",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 11
+          }
+        },
+        {
+          "id": "r129-wormhole-far",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 4,
+            "y": 3
+          }
+        },
+        {
+          "id": "r129-xblock-wormhole0",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 1,
+            "y": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": 132,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "bottom",
+            "x": 14,
+            "y": 13
+          },
+          "b": {
+            "face": "top",
+            "x": 4,
+            "y": 4
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r132-wormhole-gate1",
+          "length": 20,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 10,
+            "y": 14
+          }
+        },
+        {
+          "id": "r132-wormhole-gate2",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 17
+          }
+        },
+        {
+          "id": "r132-wormhole-portal",
+          "length": 6,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "bottom",
+            "x": 17,
+            "y": 13
+          }
+        },
+        {
+          "id": "r132-wormhole-far",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 6
+          }
+        },
+        {
+          "id": "r132-xblock-wormhole0",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 0,
+            "y": 11
+          }
+        }
+      ]
+    },
+    {
+      "id": 133,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "back",
+            "x": 12,
+            "y": 11
+          },
+          "b": {
+            "face": "front",
+            "x": 1,
+            "y": 15
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r133-wormhole-gate1",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 10
+          }
+        },
+        {
+          "id": "r133-wormhole-gate2",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 10
+          }
+        },
+        {
+          "id": "r133-wormhole-portal",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 11
+          }
+        },
+        {
+          "id": "r133-xblock-wormhole0",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 13,
+            "y": 13
+          }
+        },
+        {
+          "id": "r133-wormhole-far",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 4,
+            "y": 17
+          }
+        }
+      ]
+    },
+    {
+      "id": 134,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "front",
+            "x": 13,
+            "y": 4
+          },
+          "b": {
+            "face": "bottom",
+            "x": 1,
+            "y": 16
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "top",
+            "x": 6,
+            "y": 0
+          },
+          "b": {
+            "face": "left",
+            "x": 10,
+            "y": 9
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r134-wormhole-gate1-2",
+          "length": 20,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 7
+          }
+        },
+        {
+          "id": "r134-wormhole-gate2-2",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 3
+          }
+        },
+        {
+          "id": "r134-wormhole-portal-2",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 0
+          }
+        },
+        {
+          "id": "r134-wormhole-far-2",
+          "length": 7,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 1,
+            "y": 7
+          }
+        },
+        {
+          "id": "r134-xblock-wormhole1",
+          "length": 8,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 0
+          }
+        },
+        {
+          "id": "r134-wormhole-gate3",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 2
+          }
+        },
+        {
+          "id": "r134-wormhole-gate2",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 1,
+            "y": 3
+          }
+        },
+        {
+          "id": "r134-wormhole-gate1",
+          "length": 11,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 17,
+            "y": 7
+          }
+        },
+        {
+          "id": "r134-wormhole-portal",
+          "length": 5,
+          "faces": ["front", "right"],
+          "head": {
+            "face": "front",
+            "x": 17,
+            "y": 4
+          }
+        },
+        {
+          "id": "r134-xblock-wormhole0",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 0
+          }
+        },
+        {
+          "id": "r134-wormhole-far",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 17
+          }
+        }
+      ]
+    },
+    {
+      "id": 137,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "right",
+            "x": 4,
+            "y": 6
+          },
+          "b": {
+            "face": "top",
+            "x": 15,
+            "y": 14
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r137-wormhole-gate1",
+          "length": 10,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 3,
+            "y": 3
+          }
+        },
+        {
+          "id": "r137-wormhole-gate3",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 5,
+            "y": 7
+          }
+        },
+        {
+          "id": "r137-wormhole-gate2",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 8
+          }
+        },
+        {
+          "id": "r137-wormhole-portal",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 3,
+            "y": 6
+          }
+        },
+        {
+          "id": "r137-xblock-wormhole1",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 0,
+            "y": 4
+          }
+        },
+        {
+          "id": "r137-xblock-wormhole0",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 0,
+            "y": 17
+          }
+        },
+        {
+          "id": "r137-wormhole-far",
+          "length": 5,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 17,
+            "y": 17
+          }
+        }
+      ]
+    },
+    {
+      "id": 138,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "left",
+            "x": 14,
+            "y": 5
+          },
+          "b": {
+            "face": "front",
+            "x": 7,
+            "y": 7
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r138-wormhole-gate1",
+          "length": 23,
+          "faces": ["left", "front", "top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 10
+          }
+        },
+        {
+          "id": "r138-wormhole-gate2",
+          "length": 4,
+          "faces": ["top", "left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 0
+          }
+        },
+        {
+          "id": "r138-wormhole-gate3",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 3
+          }
+        },
+        {
+          "id": "r138-wormhole-portal",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 14,
+            "y": 4
+          }
+        },
+        {
+          "id": "r138-wormhole-far",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 10,
+            "y": 12
+          }
+        },
+        {
+          "id": "r138-xblock-wormhole0",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 14
+          }
+        }
+      ]
+    },
+    {
+      "id": 139,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "back",
+            "x": 14,
+            "y": 15
+          },
+          "b": {
+            "face": "left",
+            "x": 7,
+            "y": 10
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "front",
+            "x": 3,
+            "y": 4
+          },
+          "b": {
+            "face": "back",
+            "x": 16,
+            "y": 6
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r139-wormhole-gate1-2",
+          "length": 25,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 6
+          }
+        },
+        {
+          "id": "r139-wormhole-gate2-2",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 5
+          }
+        },
+        {
+          "id": "r139-wormhole-portal-2",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 4
+          }
+        },
+        {
+          "id": "r139-wormhole-far-2",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 4
+          }
+        },
+        {
+          "id": "r139-wormhole-gate2",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 13
+          }
+        },
+        {
+          "id": "r139-wormhole-gate1",
+          "length": 20,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "back",
+            "x": 13,
+            "y": 12
+          }
+        },
+        {
+          "id": "r139-wormhole-portal",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 14
+          }
+        },
+        {
+          "id": "r139-wormhole-far",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 15
+          }
+        },
+        {
+          "id": "r139-xblock-wormhole0",
+          "length": 6,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": 140,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "bottom",
+            "x": 9,
+            "y": 14
+          },
+          "b": {
+            "face": "right",
+            "x": 5,
+            "y": 4
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r140-wormhole-gate2",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 13
+          }
+        },
+        {
+          "id": "r140-wormhole-gate1",
+          "length": 31,
+          "faces": ["bottom", "right", "back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 16
+          }
+        },
+        {
+          "id": "r140-wormhole-gate3",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 17
+          }
+        },
+        {
+          "id": "r140-wormhole-portal",
+          "length": 4,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 17
+          }
+        },
+        {
+          "id": "r140-wormhole-far",
+          "length": 8,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": 141,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "top",
+            "x": 14,
+            "y": 11
+          },
+          "b": {
+            "face": "front",
+            "x": 8,
+            "y": 13
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r141-wormhole-gate1",
+          "length": 28,
+          "faces": ["top", "right"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 4
+          }
+        },
+        {
+          "id": "r141-wormhole-gate3",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 7
+          }
+        },
+        {
+          "id": "r141-wormhole-gate2",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 6
+          }
+        },
+        {
+          "id": "r141-wormhole-portal",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 9
+          }
+        },
+        {
+          "id": "r141-wormhole-far",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 14
+          }
+        }
+      ]
+    },
+    {
+      "id": 146,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "back",
+            "x": 16,
+            "y": 15
+          },
+          "b": {
+            "face": "front",
+            "x": 6,
+            "y": 4
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "bottom",
+            "x": 0,
+            "y": 7
+          },
+          "b": {
+            "face": "top",
+            "x": 10,
+            "y": 12
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r146-wormhole-gate1-2",
+          "length": 16,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 5
+          }
+        },
+        {
+          "id": "r146-wormhole-gate2-2",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 5
+          }
+        },
+        {
+          "id": "r146-wormhole-portal-2",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 6
+          }
+        },
+        {
+          "id": "r146-wormhole-far-2",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 13
+          }
+        },
+        {
+          "id": "r146-wormhole-gate2",
+          "length": 6,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 17
+          }
+        },
+        {
+          "id": "r146-xblock-wormhole0",
+          "length": 5,
+          "faces": ["back", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 16
+          }
+        },
+        {
+          "id": "r146-wormhole-gate1",
+          "length": 11,
+          "faces": ["left", "back"],
+          "head": {
+            "face": "back",
+            "x": 13,
+            "y": 14
+          }
+        },
+        {
+          "id": "r146-wormhole-portal",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 15
+          }
+        },
+        {
+          "id": "r146-wormhole-far",
+          "length": 7,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": 147,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "front",
+            "x": 11,
+            "y": 14
+          },
+          "b": {
+            "face": "left",
+            "x": 13,
+            "y": 12
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "bottom",
+            "x": 15,
+            "y": 13
+          },
+          "b": {
+            "face": "right",
+            "x": 9,
+            "y": 11
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r147-wormhole-gate2-2",
+          "length": 5,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 11
+          }
+        },
+        {
+          "id": "r147-wormhole-gate3-2",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 14,
+            "y": 11
+          }
+        },
+        {
+          "id": "r147-wormhole-gate1-2",
+          "length": 22,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 12
+          }
+        },
+        {
+          "id": "r147-wormhole-portal-2",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 14,
+            "y": 13
+          }
+        },
+        {
+          "id": "r147-wormhole-far-2",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 15
+          }
+        },
+        {
+          "id": "r147-wormhole-gate1",
+          "length": 18,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 2
+          }
+        },
+        {
+          "id": "r147-wormhole-gate2",
+          "length": 6,
+          "faces": ["front", "bottom"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 17
+          }
+        },
+        {
+          "id": "r147-wormhole-portal",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 13,
+            "y": 14
+          }
+        },
+        {
+          "id": "r147-wormhole-far",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 14
+          }
+        }
+      ]
+    },
+    {
+      "id": 148,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "right",
+            "x": 12,
+            "y": 3
+          },
+          "b": {
+            "face": "left",
+            "x": 13,
+            "y": 13
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "right",
+            "x": 2,
+            "y": 12
+          },
+          "b": {
+            "face": "left",
+            "x": 7,
+            "y": 1
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r148-wormhole-gate1-2",
+          "length": 14,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 5,
+            "y": 5
+          }
+        },
+        {
+          "id": "r148-wormhole-gate3-2",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 10
+          }
+        },
+        {
+          "id": "r148-wormhole-gate2-2",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 5,
+            "y": 9
+          }
+        },
+        {
+          "id": "r148-wormhole-portal-2",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 4,
+            "y": 12
+          }
+        },
+        {
+          "id": "r148-wormhole-far-2",
+          "length": 6,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "top",
+            "x": 0,
+            "y": 1
+          }
+        },
+        {
+          "id": "r148-wormhole-gate2",
+          "length": 4,
+          "faces": ["top", "right"],
+          "head": {
+            "face": "right",
+            "x": 14,
+            "y": 1
+          }
+        },
+        {
+          "id": "r148-wormhole-gate1",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 10,
+            "y": 2
+          }
+        },
+        {
+          "id": "r148-wormhole-portal",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 1
+          }
+        },
+        {
+          "id": "r148-wormhole-far",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 16
+          }
+        }
+      ]
+    },
+    {
+      "id": 149,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "right",
+            "x": 13,
+            "y": 9
+          },
+          "b": {
+            "face": "left",
+            "x": 12,
+            "y": 10
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r149-wormhole-gate2",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 6
+          }
+        },
+        {
+          "id": "r149-wormhole-gate1",
+          "length": 11,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 7
+          }
+        },
+        {
+          "id": "r149-wormhole-portal",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 9
+          }
+        },
+        {
+          "id": "r149-wormhole-far",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 17,
+            "y": 14
+          }
+        }
+      ]
+    },
+    {
+      "id": 152,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "bottom",
+            "x": 7,
+            "y": 7
+          },
+          "b": {
+            "face": "back",
+            "x": 0,
+            "y": 9
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "front",
+            "x": 8,
+            "y": 11
+          },
+          "b": {
+            "face": "left",
+            "x": 16,
+            "y": 1
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r152-wormhole-gate1-2",
+          "length": 13,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 13
+          }
+        },
+        {
+          "id": "r152-wormhole-gate2-2",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 13
+          }
+        },
+        {
+          "id": "r152-wormhole-portal-2",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 13
+          }
+        },
+        {
+          "id": "r152-wormhole-far-2",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 12,
+            "y": 0
+          }
+        },
+        {
+          "id": "r152-wormhole-gate1",
+          "length": 15,
+          "faces": ["bottom", "front"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 0
+          }
+        },
+        {
+          "id": "r152-wormhole-gate2",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 4
+          }
+        },
+        {
+          "id": "r152-wormhole-portal",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 7
+          }
+        },
+        {
+          "id": "r152-wormhole-far",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": 153,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "left",
+            "x": 3,
+            "y": 4
+          },
+          "b": {
+            "face": "bottom",
+            "x": 0,
+            "y": 4
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r153-wormhole-gate2",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 2
+          }
+        },
+        {
+          "id": "r153-wormhole-gate1",
+          "length": 9,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 3
+          }
+        },
+        {
+          "id": "r153-wormhole-portal",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 3
+          }
+        },
+        {
+          "id": "r153-wormhole-far",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 16
+          }
+        }
+      ]
+    },
+    {
+      "id": 155,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "top",
+            "x": 3,
+            "y": 16
+          },
+          "b": {
+            "face": "front",
+            "x": 14,
+            "y": 4
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "bottom",
+            "x": 3,
+            "y": 16
+          },
+          "b": {
+            "face": "left",
+            "x": 6,
+            "y": 2
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r155-wormhole-gate1-2",
+          "length": 20,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 13
+          }
+        },
+        {
+          "id": "r155-wormhole-gate2-2",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 14
+          }
+        },
+        {
+          "id": "r155-wormhole-gate3-2",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 14
+          }
+        },
+        {
+          "id": "r155-wormhole-portal-2",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 16
+          }
+        },
+        {
+          "id": "r155-wormhole-far-2",
+          "length": 7,
+          "faces": ["top", "left"],
+          "head": {
+            "face": "left",
+            "x": 2,
+            "y": 4
+          }
+        },
+        {
+          "id": "r155-wormhole-gate2",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 3
+          }
+        },
+        {
+          "id": "r155-wormhole-gate1",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 0
+          }
+        },
+        {
+          "id": "r155-wormhole-gate3",
+          "length": 3,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 17
+          }
+        },
+        {
+          "id": "r155-xblock-wormhole0",
+          "length": 6,
+          "faces": ["top", "left"],
+          "head": {
+            "face": "left",
+            "x": 12,
+            "y": 0
+          }
+        },
+        {
+          "id": "r155-wormhole-portal",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 15
+          }
+        },
+        {
+          "id": "r155-wormhole-far",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 13,
+            "y": 9
+          }
+        },
+        {
+          "id": "r155-xblock-wormhole1",
+          "length": 3,
+          "faces": ["bottom", "front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 17
+          }
+        }
+      ]
+    },
+    {
+      "id": 156,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "back",
+            "x": 2,
+            "y": 13
+          },
+          "b": {
+            "face": "left",
+            "x": 7,
+            "y": 15
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "top",
+            "x": 4,
+            "y": 14
+          },
+          "b": {
+            "face": "bottom",
+            "x": 17,
+            "y": 2
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r156-wormhole-gate1-2",
+          "length": 16,
+          "faces": ["top", "left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 0
+          }
+        },
+        {
+          "id": "r156-wormhole-gate2-2",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 14,
+            "y": 1
+          }
+        },
+        {
+          "id": "r156-wormhole-portal-2",
+          "length": 5,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "top",
+            "x": 1,
+            "y": 14
+          }
+        },
+        {
+          "id": "r156-wormhole-far-2",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 5
+          }
+        },
+        {
+          "id": "r156-wormhole-gate1",
+          "length": 6,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 17,
+            "y": 15
+          }
+        },
+        {
+          "id": "r156-wormhole-gate2",
+          "length": 4,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 17,
+            "y": 11
+          }
+        },
+        {
+          "id": "r156-wormhole-portal",
+          "length": 5,
+          "faces": ["right", "back"],
+          "head": {
+            "face": "back",
+            "x": 2,
+            "y": 11
+          }
+        },
+        {
+          "id": "r156-xblock-wormhole0",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 16
+          }
+        },
+        {
+          "id": "r156-wormhole-far",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 17
+          }
+        }
+      ]
+    },
+    {
+      "id": 157,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "right",
+            "x": 4,
+            "y": 5
+          },
+          "b": {
+            "face": "front",
+            "x": 9,
+            "y": 14
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r157-wormhole-gate1",
+          "length": 10,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 3
+          }
+        },
+        {
+          "id": "r157-wormhole-gate2",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 5,
+            "y": 6
+          }
+        },
+        {
+          "id": "r157-wormhole-portal",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 4,
+            "y": 6
+          }
+        },
+        {
+          "id": "r157-wormhole-far",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 10,
+            "y": 11
+          }
+        },
+        {
+          "id": "r157-xblock-wormhole1",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 8
+          }
+        },
+        {
+          "id": "r157-xblock-wormhole0",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 1,
+            "y": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": 159,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "right",
+            "x": 12,
+            "y": 15
+          },
+          "b": {
+            "face": "left",
+            "x": 16,
+            "y": 15
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r159-wormhole-gate1",
+          "length": 16,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 5,
+            "y": 14
+          }
+        },
+        {
+          "id": "r159-wormhole-gate3",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 16
+          }
+        },
+        {
+          "id": "r159-wormhole-gate2",
+          "length": 5,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 17
+          }
+        },
+        {
+          "id": "r159-wormhole-portal",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 15
+          }
+        },
+        {
+          "id": "r159-wormhole-far",
+          "length": 5,
+          "faces": ["left", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": 160,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "front",
+            "x": 10,
+            "y": 10
+          },
+          "b": {
+            "face": "left",
+            "x": 11,
+            "y": 13
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r160-wormhole-gate1",
+          "length": 15,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 13,
+            "y": 14
+          }
+        },
+        {
+          "id": "r160-wormhole-gate2",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 14
+          }
+        },
+        {
+          "id": "r160-wormhole-portal",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 10,
+            "y": 13
+          }
+        },
+        {
+          "id": "r160-wormhole-far",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 12,
+            "y": 2
+          }
+        },
+        {
+          "id": "r160-xblock-wormhole1",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 17,
+            "y": 0
+          }
+        },
+        {
+          "id": "r160-xblock-wormhole0",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 4,
+            "y": 16
+          }
+        }
+      ]
+    },
+    {
+      "id": 162,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "left",
+            "x": 1,
+            "y": 0
+          },
+          "b": {
+            "face": "back",
+            "x": 6,
+            "y": 15
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r162-wormhole-gate1",
+          "length": 5,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "top",
+            "x": 0,
+            "y": 6
+          }
+        },
+        {
+          "id": "r162-wormhole-gate2",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 1,
+            "y": 4
+          }
+        },
+        {
+          "id": "r162-wormhole-portal",
+          "length": 5,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 0
+          }
+        },
+        {
+          "id": "r162-wormhole-far",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 11
+          }
+        },
+        {
+          "id": "r162-xblock-wormhole0",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": 163,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "back",
+            "x": 6,
+            "y": 8
+          },
+          "b": {
+            "face": "right",
+            "x": 9,
+            "y": 9
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r163-wormhole-gate2",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 8,
+            "y": 2
+          }
+        },
+        {
+          "id": "r163-wormhole-gate1",
+          "length": 22,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "back",
+            "x": 4,
+            "y": 1
+          }
+        },
+        {
+          "id": "r163-wormhole-portal",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 6,
+            "y": 3
+          }
+        },
+        {
+          "id": "r163-wormhole-far",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 16
+          }
+        },
+        {
+          "id": "r163-xblock-wormhole0",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 16,
+            "y": 17
+          }
+        }
+      ]
+    },
+    {
+      "id": 165,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "bottom",
+            "x": 8,
+            "y": 3
+          },
+          "b": {
+            "face": "back",
+            "x": 16,
+            "y": 15
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r165-wormhole-gate1",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 5
+          }
+        },
+        {
+          "id": "r165-wormhole-gate2",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 1
+          }
+        },
+        {
+          "id": "r165-wormhole-portal",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 1
+          }
+        },
+        {
+          "id": "r165-wormhole-far",
+          "length": 5,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 17
+          }
+        }
+      ]
+    },
+    {
+      "id": 166,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "top",
+            "x": 13,
+            "y": 8
+          },
+          "b": {
+            "face": "back",
+            "x": 13,
+            "y": 5
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r166-wormhole-gate2",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 14
+          }
+        },
+        {
+          "id": "r166-wormhole-gate1",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 12
+          }
+        },
+        {
+          "id": "r166-wormhole-gate3",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 11
+          }
+        },
+        {
+          "id": "r166-wormhole-portal",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 8
+          }
+        },
+        {
+          "id": "r166-wormhole-far",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 8
+          }
+        },
+        {
+          "id": "r166-xblock-wormhole0",
+          "length": 6,
+          "faces": ["back", "right"],
+          "head": {
+            "face": "right",
+            "x": 17,
+            "y": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": 167,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "back",
+            "x": 13,
+            "y": 13
+          },
+          "b": {
+            "face": "right",
+            "x": 1,
+            "y": 4
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r167-wormhole-gate1",
+          "length": 9,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 16
+          }
+        },
+        {
+          "id": "r167-wormhole-gate2",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 14
+          }
+        },
+        {
+          "id": "r167-wormhole-portal",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 13
+          }
+        },
+        {
+          "id": "r167-wormhole-far",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 5
+          }
+        },
+        {
+          "id": "r167-xblock-wormhole1",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 0
+          }
+        },
+        {
+          "id": "r167-xblock-wormhole0",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 8,
+            "y": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": 171,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "back",
+            "x": 10,
+            "y": 9
+          },
+          "b": {
+            "face": "bottom",
+            "x": 14,
+            "y": 8
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r171-wormhole-gate2",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 5
+          }
+        },
+        {
+          "id": "r171-wormhole-gate1",
+          "length": 12,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 13,
+            "y": 6
+          }
+        },
+        {
+          "id": "r171-wormhole-portal",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 8
+          }
+        },
+        {
+          "id": "r171-wormhole-far",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 16
+          }
+        },
+        {
+          "id": "r171-xblock-wormhole0",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 17
+          }
+        }
+      ]
+    },
+    {
+      "id": 176,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "right",
+            "x": 5,
+            "y": 16
+          },
+          "b": {
+            "face": "back",
+            "x": 8,
+            "y": 2
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r176-wormhole-gate2",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 3,
+            "y": 15
+          }
+        },
+        {
+          "id": "r176-wormhole-gate1",
+          "length": 17,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 16
+          }
+        },
+        {
+          "id": "r176-wormhole-portal",
+          "length": 6,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "right",
+            "x": 0,
+            "y": 16
+          }
+        },
+        {
+          "id": "r176-wormhole-far",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 16,
+            "y": 5
+          }
+        },
+        {
+          "id": "r176-xblock-wormhole0",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 13
+          }
+        }
+      ]
+    },
+    {
+      "id": 177,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "top",
+            "x": 12,
+            "y": 11
+          },
+          "b": {
+            "face": "front",
+            "x": 15,
+            "y": 6
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "bottom",
+            "x": 11,
+            "y": 15
+          },
+          "b": {
+            "face": "left",
+            "x": 13,
+            "y": 13
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r177-wormhole-gate1-2",
+          "length": 30,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 6
+          }
+        },
+        {
+          "id": "r177-wormhole-gate2-2",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 9,
+            "y": 10
+          }
+        },
+        {
+          "id": "r177-wormhole-gate3-2",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 13
+          }
+        },
+        {
+          "id": "r177-wormhole-portal-2",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 14
+          }
+        },
+        {
+          "id": "r177-wormhole-far-2",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 17
+          }
+        },
+        {
+          "id": "r177-wormhole-gate2",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 9
+          }
+        },
+        {
+          "id": "r177-wormhole-gate1",
+          "length": 23,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 8,
+            "y": 12
+          }
+        },
+        {
+          "id": "r177-wormhole-portal",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 11
+          }
+        },
+        {
+          "id": "r177-wormhole-far",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 5
+          }
+        },
+        {
+          "id": "r177-xblock-wormhole0",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 15
+          }
+        }
+      ]
+    },
+    {
+      "id": 180,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "front",
+            "x": 12,
+            "y": 0
+          },
+          "b": {
+            "face": "top",
+            "x": 9,
+            "y": 2
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r180-wormhole-gate2",
+          "length": 5,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 17,
+            "y": 3
+          }
+        },
+        {
+          "id": "r180-wormhole-gate3",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 3
+          }
+        },
+        {
+          "id": "r180-wormhole-gate1",
+          "length": 5,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 17
+          }
+        },
+        {
+          "id": "r180-wormhole-portal",
+          "length": 3,
+          "faces": ["top", "front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 0
+          }
+        },
+        {
+          "id": "r180-wormhole-far",
+          "length": 3,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 8,
+            "y": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": 182,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "left",
+            "x": 12,
+            "y": 0
+          },
+          "b": {
+            "face": "front",
+            "x": 2,
+            "y": 6
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r182-wormhole-gate2",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 3
+          }
+        },
+        {
+          "id": "r182-wormhole-gate1",
+          "length": 19,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 5
+          }
+        },
+        {
+          "id": "r182-wormhole-gate3",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 9,
+            "y": 2
+          }
+        },
+        {
+          "id": "r182-wormhole-portal",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 0
+          }
+        },
+        {
+          "id": "r182-wormhole-far",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 4,
+            "y": 4
+          }
+        },
+        {
+          "id": "r182-xblock-wormhole0",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 2,
+            "y": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": 183,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "left",
+            "x": 6,
+            "y": 17
+          },
+          "b": {
+            "face": "right",
+            "x": 3,
+            "y": 11
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r183-wormhole-gate1",
+          "length": 16,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 9,
+            "y": 10
+          }
+        },
+        {
+          "id": "r183-wormhole-gate2",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 13
+          }
+        },
+        {
+          "id": "r183-wormhole-portal",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 17
+          }
+        },
+        {
+          "id": "r183-wormhole-far",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 7
+          }
+        },
+        {
+          "id": "r183-xblock-wormhole1",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 0
+          }
+        },
+        {
+          "id": "r183-xblock-wormhole0",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 9
+          }
+        }
+      ]
+    },
+    {
+      "id": 186,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "back",
+            "x": 4,
+            "y": 1
+          },
+          "b": {
+            "face": "right",
+            "x": 13,
+            "y": 9
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r186-wormhole-gate1",
+          "length": 9,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 4
+          }
+        },
+        {
+          "id": "r186-wormhole-gate2",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 3,
+            "y": 4
+          }
+        },
+        {
+          "id": "r186-wormhole-portal",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 1,
+            "y": 1
+          }
+        },
+        {
+          "id": "r186-wormhole-far",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 15,
+            "y": 11
+          }
+        },
+        {
+          "id": "r186-xblock-wormhole1",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 2,
+            "y": 2
+          }
+        },
+        {
+          "id": "r186-xblock-wormhole0",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 6,
+            "y": 1
+          }
+        }
+      ]
+    },
+    {
+      "id": 187,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "bottom",
+            "x": 5,
+            "y": 10
+          },
+          "b": {
+            "face": "top",
+            "x": 7,
+            "y": 5
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "left",
+            "x": 8,
+            "y": 16
+          },
+          "b": {
+            "face": "front",
+            "x": 15,
+            "y": 1
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r187-wormhole-gate1-2",
+          "length": 13,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 2,
+            "y": 15
+          }
+        },
+        {
+          "id": "r187-wormhole-gate2-2",
+          "length": 5,
+          "faces": ["back", "bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 2,
+            "y": 17
+          }
+        },
+        {
+          "id": "r187-wormhole-portal-2",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 16
+          }
+        },
+        {
+          "id": "r187-wormhole-far-2",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 3
+          }
+        },
+        {
+          "id": "r187-wormhole-gate3",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 8
+          }
+        },
+        {
+          "id": "r187-wormhole-gate2",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 7
+          }
+        },
+        {
+          "id": "r187-wormhole-gate1",
+          "length": 15,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 6,
+            "y": 5
+          }
+        },
+        {
+          "id": "r187-wormhole-portal",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 7
+          }
+        },
+        {
+          "id": "r187-wormhole-far",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 7
+          }
+        },
+        {
+          "id": "r187-xblock-wormhole1",
+          "length": 3,
+          "faces": ["front", "right"],
+          "head": {
+            "face": "right",
+            "x": 0,
+            "y": 1
+          }
+        },
+        {
+          "id": "r187-xblock-wormhole0",
+          "length": 6,
+          "faces": ["front", "right"],
+          "head": {
+            "face": "right",
+            "x": 1,
+            "y": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": 189,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "front",
+            "x": 11,
+            "y": 3
+          },
+          "b": {
+            "face": "back",
+            "x": 16,
+            "y": 11
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "front",
+            "x": 0,
+            "y": 13
+          },
+          "b": {
+            "face": "back",
+            "x": 2,
+            "y": 13
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r189-wormhole-gate1-2",
+          "length": 11,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 12
+          }
+        },
+        {
+          "id": "r189-wormhole-gate2-2",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 12
+          }
+        },
+        {
+          "id": "r189-wormhole-portal-2",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 0,
+            "y": 12
+          }
+        },
+        {
+          "id": "r189-wormhole-far-2",
+          "length": 6,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 3,
+            "y": 17
+          }
+        },
+        {
+          "id": "r189-wormhole-gate2",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 11
+          }
+        },
+        {
+          "id": "r189-wormhole-gate1",
+          "length": 19,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 9
+          }
+        },
+        {
+          "id": "r189-wormhole-gate3",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 9
+          }
+        },
+        {
+          "id": "r189-wormhole-portal",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 6
+          }
+        },
+        {
+          "id": "r189-wormhole-far",
+          "length": 7,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 0,
+            "y": 1
+          }
+        },
+        {
+          "id": "r189-xblock-wormhole0",
+          "length": 3,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 0,
+            "y": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": 191,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "front",
+            "x": 17,
+            "y": 14
+          },
+          "b": {
+            "face": "left",
+            "x": 3,
+            "y": 0
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "bottom",
+            "x": 3,
+            "y": 1
+          },
+          "b": {
+            "face": "back",
+            "x": 4,
+            "y": 4
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r191-wormhole-gate1-2",
+          "length": 21,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 7
+          }
+        },
+        {
+          "id": "r191-wormhole-gate2-2",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 5
+          }
+        },
+        {
+          "id": "r191-wormhole-gate3-2",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 4
+          }
+        },
+        {
+          "id": "r191-wormhole-portal-2",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 4,
+            "y": 1
+          }
+        },
+        {
+          "id": "r191-wormhole-far-2",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "id": "r191-wormhole-gate2",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 12,
+            "y": 10
+          }
+        },
+        {
+          "id": "r191-wormhole-gate1",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 13
+          }
+        },
+        {
+          "id": "r191-wormhole-portal",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 17,
+            "y": 13
+          }
+        },
+        {
+          "id": "r191-wormhole-far",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 1,
+            "y": 2
+          }
+        },
+        {
+          "id": "r191-xblock-wormhole0",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 0,
+            "y": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": 192,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "bottom",
+            "x": 9,
+            "y": 7
+          },
+          "b": {
+            "face": "top",
+            "x": 5,
+            "y": 8
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r192-wormhole-gate2",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 6
+          }
+        },
+        {
+          "id": "r192-wormhole-gate1",
+          "length": 28,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 4
+          }
+        },
+        {
+          "id": "r192-wormhole-portal",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 7
+          }
+        },
+        {
+          "id": "r192-wormhole-far",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": 193,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "right",
+            "x": 15,
+            "y": 16
+          },
+          "b": {
+            "face": "front",
+            "x": 4,
+            "y": 10
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "back",
+            "x": 5,
+            "y": 15
+          },
+          "b": {
+            "face": "top",
+            "x": 6,
+            "y": 5
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r193-wormhole-gate1-2",
+          "length": 15,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 14
+          }
+        },
+        {
+          "id": "r193-wormhole-gate2-2",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 8,
+            "y": 12
+          }
+        },
+        {
+          "id": "r193-wormhole-portal-2",
+          "length": 3,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 5,
+            "y": 13
+          }
+        },
+        {
+          "id": "r193-wormhole-far-2",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 4,
+            "y": 10
+          }
+        },
+        {
+          "id": "r193-wormhole-gate2",
+          "length": 4,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 17
+          }
+        },
+        {
+          "id": "r193-wormhole-gate1",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 15
+          }
+        },
+        {
+          "id": "r193-wormhole-portal",
+          "length": 4,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 16
+          }
+        },
+        {
+          "id": "r193-wormhole-far",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 7,
+            "y": 12
+          }
+        }
+      ]
+    },
+    {
+      "id": 194,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "top",
+            "x": 12,
+            "y": 2
+          },
+          "b": {
+            "face": "right",
+            "x": 13,
+            "y": 9
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r194-wormhole-gate1",
+          "length": 15,
+          "faces": ["top", "right"],
+          "head": {
+            "face": "top",
+            "x": 17,
+            "y": 8
+          }
+        },
+        {
+          "id": "r194-wormhole-gate2",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 7
+          }
+        },
+        {
+          "id": "r194-wormhole-portal",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 6
+          }
+        },
+        {
+          "id": "r194-wormhole-far",
+          "length": 8,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 6
+          }
+        },
+        {
+          "id": "r194-xblock-wormhole0",
+          "length": 5,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "top",
+            "x": 0,
+            "y": 4
+          }
+        }
+      ]
+    },
+    {
+      "id": 195,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "top",
+            "x": 16,
+            "y": 6
+          },
+          "b": {
+            "face": "left",
+            "x": 13,
+            "y": 12
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r195-wormhole-gate1",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 6
+          }
+        },
+        {
+          "id": "r195-wormhole-gate2",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 9
+          }
+        },
+        {
+          "id": "r195-wormhole-portal",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 16,
+            "y": 9
+          }
+        },
+        {
+          "id": "r195-xblock-wormhole0",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 7
+          }
+        },
+        {
+          "id": "r195-wormhole-far",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 17,
+            "y": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": 198,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "left",
+            "x": 6,
+            "y": 14
+          },
+          "b": {
+            "face": "top",
+            "x": 2,
+            "y": 11
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r198-wormhole-gate1",
+          "length": 16,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 12,
+            "y": 11
+          }
+        },
+        {
+          "id": "r198-wormhole-gate2",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 13
+          }
+        },
+        {
+          "id": "r198-wormhole-portal",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 14
+          }
+        },
+        {
+          "id": "r198-wormhole-far",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 0,
+            "y": 7
+          }
+        },
+        {
+          "id": "r198-xblock-wormhole0",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 1,
+            "y": 13
+          }
+        }
+      ]
+    },
+    {
+      "id": 199,
+      "planned": 2,
+      "placed": 2,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "left",
+            "x": 13,
+            "y": 11
+          },
+          "b": {
+            "face": "top",
+            "x": 6,
+            "y": 12
+          }
+        },
+        {
+          "id": "w2",
+          "a": {
+            "face": "top",
+            "x": 15,
+            "y": 2
+          },
+          "b": {
+            "face": "bottom",
+            "x": 14,
+            "y": 9
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r199-wormhole-gate1-2",
+          "length": 11,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 2
+          }
+        },
+        {
+          "id": "r199-wormhole-gate2-2",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 4
+          }
+        },
+        {
+          "id": "r199-wormhole-portal-2",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 2
+          }
+        },
+        {
+          "id": "r199-wormhole-far-2",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 17,
+            "y": 13
+          }
+        },
+        {
+          "id": "r199-wormhole-gate1",
+          "length": 9,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 10
+          }
+        },
+        {
+          "id": "r199-wormhole-gate2",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 7
+          }
+        },
+        {
+          "id": "r199-wormhole-gate3",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 6
+          }
+        },
+        {
+          "id": "r199-wormhole-portal",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 6
+          }
+        },
+        {
+          "id": "r199-wormhole-far",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 5,
+            "y": 15
+          }
+        }
+      ]
+    },
+    {
+      "id": 200,
+      "planned": 1,
+      "placed": 1,
+      "holes": [
+        {
+          "id": "w1",
+          "a": {
+            "face": "back",
+            "x": 5,
+            "y": 14
+          },
+          "b": {
+            "face": "left",
+            "x": 2,
+            "y": 5
+          }
+        }
+      ],
+      "arrows": [
+        {
+          "id": "r200-wormhole-gate1",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 7,
+            "y": 13
+          }
+        },
+        {
+          "id": "r200-wormhole-gate2",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 13
+          }
+        },
+        {
+          "id": "r200-wormhole-portal",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 6,
+            "y": 14
+          }
+        },
+        {
+          "id": "r200-wormhole-far",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 0,
+            "y": 8
+          }
+        },
+        {
+          "id": "r200-xblock-wormhole0",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 14
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -20,28 +20,9 @@ import {
 } from "../core/validation";
 import { routeFrom } from "./dependency-fill";
 import type { Rng } from "./procedural";
+import { growMechanicBody as growTail } from "./mechanic-body";
 
 const FACES = ["front", "back", "left", "right", "top", "bottom"] as const;
-
-function growTail(
-  level: LevelDefinition,
-  rng: Rng,
-  path: Cell[],
-  forbidden: ReadonlySet<string>,
-  length: number,
-): Cell[] {
-  const seen = new Set(path.map(cellKey));
-  while (path.length < length) {
-    const choices = HEADINGS.map((h) =>
-      stepSurface(path[0]!, h, level.gridSize),
-    ).filter((c) => !seen.has(cellKey(c)) && !forbidden.has(cellKey(c)));
-    if (!choices.length) break;
-    const cell = rng.pick(choices);
-    path.unshift(cell);
-    seen.add(cellKey(cell));
-  }
-  return path;
-}
 
 /** Extend a sampled contact stem into a seeded self-avoiding body. */
 export function growFlipLaneBlocker(

@@ -1,4 +1,4 @@
-/** Text-only inspection of generated parking, rotor or flip layouts.
+/** Text-only inspection of generated parking, rotor, flip or wormhole layouts.
  * Run: bun scripts/inspect-parking.ts [levelIds...]
  *      MECHANIC=rotor bun scripts/inspect-parking.ts 42 58 111 196 */
 import { generateLevel } from "../src/content/procedural";
@@ -12,7 +12,9 @@ import { cellKey, headingForPath } from "../src/core/topology";
 import type { FaceId } from "../src/core/types";
 import { solveLevelTargets } from "../src/core/validation";
 
-const mechanic = ["rotor", "flip"].includes(process.env.MECHANIC ?? "")
+const mechanic = ["rotor", "flip", "wormhole"].includes(
+  process.env.MECHANIC ?? "",
+)
   ? process.env.MECHANIC!
   : "park";
 const marker = `-${mechanic}-`;
@@ -22,7 +24,8 @@ for (const id of ids.length ? ids : [6, 17, 58, 150]) {
   const core = level.arrows.filter(
     (arrow) =>
       arrow.id.includes(marker) ||
-      (mechanic === "flip" && arrow.id.includes("-flipb-")),
+      (mechanic === "flip" && arrow.id.includes("-flipb-")) ||
+      (mechanic === "wormhole" && arrow.id.includes("-xblock-wormhole")),
   );
   const lanes = new Set(
     core.flatMap((arrow) =>
@@ -62,24 +65,34 @@ for (const id of ids.length ? ids : [6, 17, 58, 150]) {
   const marks = new Map<string, string>();
   for (const arrow of level.arrows)
     for (const cell of arrow.path) marks.set(cellKey(cell), ".");
-  for (const arrow of core) {
+  const wormLabels = "PCDEQHIKXYZ0123456789";
+  for (const [index, arrow] of core.entries()) {
     const label =
-      mechanic === "flip" && arrow.id.includes("-flipb-")
-        ? arrow.id.endsWith("0")
-          ? "X"
-          : "Y"
-        : mechanic === "flip" && arrow.id.endsWith(`${marker}a`)
-          ? "A"
-          : arrow.id.endsWith(`${marker}p`)
-            ? "P"
-            : arrow.id.endsWith(`${marker}b`)
-              ? "B"
-              : arrow.id.slice(-1);
+      mechanic === "wormhole"
+        ? wormLabels[index % wormLabels.length]!
+        : mechanic === "flip" && arrow.id.includes("-flipb-")
+          ? arrow.id.endsWith("0")
+            ? "X"
+            : "Y"
+          : mechanic === "flip" && arrow.id.endsWith(`${marker}a`)
+            ? "A"
+            : arrow.id.endsWith(`${marker}p`)
+              ? "P"
+              : arrow.id.endsWith(`${marker}b`)
+                ? "B"
+                : arrow.id.slice(-1);
     for (const cell of arrow.path) marks.set(cellKey(cell), label);
     console.log(
       `${label}: ${arrow.id}, ${arrow.path.length} cells, ${[...new Set(arrow.path.map((cell) => cell.face))].join("/")}, head ${cellKey(arrow.path[arrow.path.length - 1]!)}, heading ${headingForPath(arrow.path, level.gridSize)}`,
     );
   }
+  if (mechanic === "wormhole")
+    for (const hole of level.wormholes ?? []) {
+      const marksForHole = hole.id === "w2" ? ["U", "V"] : ["A", "B"];
+      marks.set(cellKey(hole.a), marksForHole[0]!);
+      marks.set(cellKey(hole.b), marksForHole[1]!);
+      console.log(`${hole.id}: ${cellKey(hole.a)} <-> ${cellKey(hole.b)}`);
+    }
   for (const stop of level.stops ?? []) marks.set(cellKey(stop), "O");
   for (const spot of level.directionals ?? []) {
     if (spot.kind !== mechanic) continue;
@@ -90,9 +103,11 @@ for (const id of ids.length ? ids : [6, 17, 58, 150]) {
     );
   }
   console.log(
-    mechanic === "flip"
-      ? "F flip; A/B approachers; 0/1/2 lane contacts; X/Y grown seeded blockers; O stop; . outside body; blank empty"
-      : "R rotor; P parker; B continuation blocker; 0/1/2 followers; O stop; . outside body; blank empty",
+    mechanic === "wormhole"
+      ? "A/B first portal pair; U/V second pair; labelled grown core/blocker bodies; O stop; . outside body; blank empty"
+      : mechanic === "flip"
+        ? "F flip; A/B approachers; 0/1/2 lane contacts; X/Y grown seeded blockers; O stop; . outside body; blank empty"
+        : "R rotor; P parker; B continuation blocker; 0/1/2 followers; O stop; . outside body; blank empty",
   );
   const faces: FaceId[] = ["front", "back", "left", "right", "top", "bottom"];
   console.log(
