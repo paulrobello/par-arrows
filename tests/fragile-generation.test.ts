@@ -2,7 +2,6 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import {
   FRAGILE_CORE_MARKER,
-  FRAGILE_PATTERN,
   fragileCoreFrequency,
   fragileCorePlanned,
   generateLevel,
@@ -32,7 +31,7 @@ const LAST_ID = 200;
 // PRE_FRAGILE parity retired at v11: the version bump re-rolls every id; the
 // fixture pins determinism.
 
-/** The core's two arrows and its fragile cell, alone on the level's cube. */
+/** The core's grown arrows and its fragile cell, alone on the level's cube. */
 function coreBoard(level: LevelDefinition): LevelDefinition {
   const {
     stops: _stops,
@@ -78,46 +77,6 @@ describe("fragile generation", () => {
         if (fragileCorePlanned(id)) planned += 1;
       }
       expect(Math.abs(planned - expected) / eligible).toBeLessThan(0.2);
-    }
-  });
-
-  test("the pattern needs its crossing order at all four rotations", () => {
-    const turn = (dx: number, dy: number, rotation: number): [number, number] =>
-      [
-        [dx, dy],
-        [-dy, dx],
-        [-dx, -dy],
-        [dy, -dx],
-      ][rotation] as [number, number];
-    for (let rotation = 0; rotation < 4; rotation += 1) {
-      const at = ([dx, dy]: readonly [number, number]) => {
-        const [x, y] = turn(dx, dy, rotation);
-        return { face: "front" as const, x: 6 + x, y: 6 + y };
-      };
-      const level: LevelDefinition = {
-        id: 904,
-        title: "Fragile pattern",
-        gridSize: 13,
-        lives: 3,
-        fragile: [at([0, 0])],
-        arrows: [
-          { id: "crosser", path: FRAGILE_PATTERN.crosser.map(at) },
-          {
-            id: "double",
-            kind: "double",
-            path: FRAGILE_PATTERN.double.map(at),
-          },
-        ],
-      };
-      expect(validateLevel(level).errors).toEqual([]);
-      expect(solveLevelTargets(level)).toEqual([
-        { arrowId: "crosser", endpoint: "head" },
-        { arrowId: "double", endpoint: "tail" },
-      ]);
-      expect(hasSoftLockState(level)).toBe(false);
-      let state = createGameState(level);
-      state = applyMove(level, state, simulateMove(level, state, "double"));
-      expect(simulateMove(level, state, "crosser").kind).toBe("fall");
     }
   });
 
@@ -211,14 +170,20 @@ describe("fragile generation", () => {
           .filter((arrow) => arrow.id.includes("-fragile-"))
           .flatMap((core) => [
             ...core.path.map(cellKey),
-            ...trackKeys(level, core),
+            ...trackKeys(
+              level,
+              core.kind === "double"
+                ? { ...core, path: [...core.path].reverse() }
+                : core,
+            ),
           ]),
       );
       for (const blocker of blockers) {
         // Blocker ids end "-xblock-fragile<n>", so the "-fragile-" core filter never
         // picks a blocker up as a core arrow.
         expect(blocker.id.includes("-fragile-")).toBe(false);
-        expect(blocker.path.length).toBe(2);
+        expect(blocker.path.length).toBeGreaterThanOrEqual(3);
+        expect(blocker.path.length).toBeLessThanOrEqual(8);
         expect(blocker.path.some((cell) => coreTrack.has(cellKey(cell)))).toBe(
           true,
         );

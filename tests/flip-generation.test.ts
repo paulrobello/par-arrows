@@ -206,6 +206,22 @@ describe("generated flip cores", () => {
   }, 60_000);
 
   // One pass over ids 2-200: every level matches the committed v8 baseline;
+  test("a later fragile reroll preserves shared two-spot safety", () => {
+    const level = cachedLevel(124);
+    const ids = new Set(flipCoreIds(level.arrows));
+    const core = {
+      ...level,
+      arrows: level.arrows.filter((arrow) => ids.has(arrow.id)),
+      stops: [],
+      directionals: (level.directionals ?? []).filter(
+        (spot) => spot.kind === "flip",
+      ),
+    };
+    expect(core.directionals.length).toBe(2);
+    const [first, second] = [...safetyWitnesses(core).values()];
+    expect([...first!].some((id) => second!.has(id))).toBe(true);
+  });
+
   // a level with a flip core carries a proven interaction region that no
   // outside track ever enters, whose flip matters, and whose core is itself
   // strand-free and flip-interesting.
@@ -255,7 +271,10 @@ describe("generated flip cores", () => {
       if (witnesses.size === 2) {
         two++;
         const [first, second] = [...witnesses.values()];
-        expect([...first!].some((id) => second!.has(id))).toBe(true);
+        expect(
+          [...first!].some((arrowId) => second!.has(arrowId)),
+          "level " + id + ": both spots must affect one shared arrow",
+        ).toBe(true);
       }
       // What makes the core-only checks above sound: each core arrow's
       // track on the assembled level equals its track on the core board,

@@ -1,0 +1,3967 @@
+{
+  "baseline": "e26583b0a804028150f74f64f18c80bfd1aff7f2",
+  "planned": 78,
+  "placed": 72,
+  "changed": 75,
+  "unrelated": [],
+  "ordinaryBlocked": 68,
+  "multiFace": 33,
+  "rows": [
+    {
+      "id": 46,
+      "placed": true,
+      "crack": [
+        {
+          "face": "top",
+          "x": 6,
+          "y": 4
+        }
+      ],
+      "ordinaryBlockers": ["r46-81", "r46-89"],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r46-fragile-double",
+          "length": 9,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 1,
+            "y": 4
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r46-fragile-crosser",
+          "length": 13,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 6,
+            "y": 9
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 52,
+      "placed": true,
+      "crack": [
+        {
+          "face": "left",
+          "x": 13,
+          "y": 13
+        }
+      ],
+      "ordinaryBlockers": [
+        "r52-44",
+        "r52-79",
+        "r52-72",
+        "r52-165",
+        "r52-27",
+        "r52-164",
+        "r52-92",
+        "r52-114",
+        "r52-75",
+        "r52-158"
+      ],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r52-fragile-double",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 13
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r52-fragile-crosser",
+          "length": 13,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 15
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r52-fragile-c0",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 15
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 57,
+      "placed": true,
+      "crack": [
+        {
+          "face": "left",
+          "x": 9,
+          "y": 10
+        }
+      ],
+      "ordinaryBlockers": ["r57-101", "r57-110", "r57-43"],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r57-fragile-double",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 10
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r57-fragile-crosser",
+          "length": 29,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "left",
+            "x": 9,
+            "y": 6
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r57-fragile-c0",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 15
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 63,
+      "placed": true,
+      "crack": [
+        {
+          "face": "front",
+          "x": 6,
+          "y": 12
+        }
+      ],
+      "ordinaryBlockers": [
+        "r63-35",
+        "r63-103",
+        "r63-169",
+        "r63-188",
+        "r63-172",
+        "r63-82",
+        "r63-31",
+        "r63-59"
+      ],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r63-fragile-double",
+          "length": 7,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 9,
+            "y": 12
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r63-fragile-crosser",
+          "length": 19,
+          "faces": ["right", "front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 10
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 64,
+      "placed": true,
+      "crack": [
+        {
+          "face": "bottom",
+          "x": 7,
+          "y": 17
+        }
+      ],
+      "ordinaryBlockers": ["r64-35", "r64-63", "r64-93", "r64-135"],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r64-fragile-double",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r64-fragile-crosser",
+          "length": 26,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 17
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r64-fragile-c0",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 1,
+            "y": 4
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 65,
+      "placed": true,
+      "crack": [
+        {
+          "face": "left",
+          "x": 8,
+          "y": 3
+        }
+      ],
+      "ordinaryBlockers": ["r65-136", "r65-92", "r65-76", "r65-153", "r65-104"],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r65-fragile-double",
+          "length": 8,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 1,
+            "y": 3
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r65-fragile-crosser",
+          "length": 17,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 7
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 66,
+      "placed": true,
+      "crack": [
+        {
+          "face": "top",
+          "x": 16,
+          "y": 12
+        }
+      ],
+      "ordinaryBlockers": [
+        "r66-151",
+        "r66-39",
+        "r66-27",
+        "r66-162",
+        "r66-85",
+        "r66-105",
+        "r66-120"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r66-xblock-fragile0",
+          "length": 8
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r66-fragile-double",
+          "length": 9,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 8,
+            "y": 12
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r66-fragile-crosser",
+          "length": 20,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 16,
+            "y": 11
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 68,
+      "placed": true,
+      "crack": [
+        {
+          "face": "left",
+          "x": 16,
+          "y": 16
+        }
+      ],
+      "ordinaryBlockers": ["r68-84", "r68-82", "r68-70", "r68-154"],
+      "seededBlockers": [
+        {
+          "id": "r68-xblock-fragile0",
+          "length": 5
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r68-fragile-double",
+          "length": 9,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 14,
+            "y": 16
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r68-fragile-crosser",
+          "length": 17,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 16,
+            "y": 12
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 72,
+      "placed": true,
+      "crack": [
+        {
+          "face": "front",
+          "x": 11,
+          "y": 1
+        }
+      ],
+      "ordinaryBlockers": [
+        "r72-63",
+        "r72-89",
+        "r72-145",
+        "r72-87",
+        "r72-168",
+        "r72-157",
+        "r72-79",
+        "r72-74",
+        "r72-37",
+        "r72-33"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r72-xblock-fragile0",
+          "length": 7
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r72-fragile-double",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r72-fragile-crosser",
+          "length": 24,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 1
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r72-fragile-c0",
+          "length": 6,
+          "faces": ["front", "right"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 10
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r72-fragile-c1",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 10
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 73,
+      "placed": true,
+      "crack": [
+        {
+          "face": "right",
+          "x": 12,
+          "y": 15
+        }
+      ],
+      "ordinaryBlockers": [
+        "r73-119",
+        "r73-108",
+        "r73-65",
+        "r73-162",
+        "r73-138",
+        "r73-132",
+        "r73-23",
+        "r73-92",
+        "r73-41"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r73-xblock-fragile0",
+          "length": 5
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r73-fragile-double",
+          "length": 6,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 8,
+            "y": 15
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r73-fragile-crosser",
+          "length": 9,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 12,
+            "y": 11
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 75,
+      "placed": true,
+      "crack": [
+        {
+          "face": "bottom",
+          "x": 11,
+          "y": 4
+        }
+      ],
+      "ordinaryBlockers": ["r75-51"],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r75-fragile-double",
+          "length": 10,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 13
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r75-fragile-crosser",
+          "length": 31,
+          "faces": ["bottom", "right", "front"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 4
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 76,
+      "placed": true,
+      "crack": [
+        {
+          "face": "left",
+          "x": 16,
+          "y": 4
+        }
+      ],
+      "ordinaryBlockers": ["r76-63", "r76-39", "r76-31"],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r76-fragile-double",
+          "length": 5,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 0,
+            "y": 4
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r76-fragile-crosser",
+          "length": 27,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 16,
+            "y": 5
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 81,
+      "placed": true,
+      "crack": [
+        {
+          "face": "top",
+          "x": 2,
+          "y": 10
+        }
+      ],
+      "ordinaryBlockers": [],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r81-fragile-double",
+          "length": 9,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 7,
+            "y": 10
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r81-fragile-crosser",
+          "length": 28,
+          "faces": ["top", "front", "left"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 9
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r81-fragile-c0",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 1,
+            "y": 15
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 82,
+      "placed": true,
+      "crack": [
+        {
+          "face": "right",
+          "x": 1,
+          "y": 4
+        }
+      ],
+      "ordinaryBlockers": [
+        "r82-110",
+        "r82-196",
+        "r82-81",
+        "r82-183",
+        "r82-134",
+        "r82-160",
+        "r82-84",
+        "r82-76"
+      ],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r82-fragile-double",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 4
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r82-fragile-crosser",
+          "length": 20,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 1,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r82-fragile-c0",
+          "length": 3,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 7,
+            "y": 16
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 83,
+      "placed": true,
+      "crack": [
+        {
+          "face": "front",
+          "x": 4,
+          "y": 7
+        }
+      ],
+      "ordinaryBlockers": ["r83-102", "r83-107", "r83-25", "r83-36", "r83-126"],
+      "seededBlockers": [
+        {
+          "id": "r83-xblock-fragile0",
+          "length": 4
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r83-fragile-double",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 7
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r83-fragile-crosser",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 4,
+            "y": 9
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r83-fragile-c0",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 3,
+            "y": 8
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 84,
+      "placed": true,
+      "crack": [
+        {
+          "face": "top",
+          "x": 17,
+          "y": 5
+        }
+      ],
+      "ordinaryBlockers": [
+        "r84-106",
+        "r84-105",
+        "r84-39",
+        "r84-62",
+        "r84-102",
+        "r84-196",
+        "r84-115",
+        "r84-108",
+        "r84-72",
+        "r84-81",
+        "r84-141",
+        "r84-116",
+        "r84-87"
+      ],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r84-fragile-double",
+          "length": 8,
+          "faces": ["top", "right"],
+          "head": {
+            "face": "top",
+            "x": 17,
+            "y": 7
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r84-fragile-crosser",
+          "length": 10,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 13,
+            "y": 5
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r84-fragile-c0",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 7
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 85,
+      "placed": true,
+      "crack": [
+        {
+          "face": "right",
+          "x": 13,
+          "y": 1
+        }
+      ],
+      "ordinaryBlockers": [
+        "r85-188",
+        "r85-93",
+        "r85-157",
+        "r85-110",
+        "r85-109",
+        "r85-64",
+        "r85-142",
+        "r85-107",
+        "r85-117",
+        "r85-22",
+        "r85-25",
+        "r85-140",
+        "r85-173",
+        "r85-94",
+        "r85-48",
+        "r85-160",
+        "r85-50"
+      ],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r85-fragile-double",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 11,
+            "y": 1
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r85-fragile-crosser",
+          "length": 28,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "right",
+            "x": 13,
+            "y": 6
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r85-fragile-c0",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r85-fragile-c1",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 10
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 86,
+      "placed": true,
+      "crack": [
+        {
+          "face": "top",
+          "x": 17,
+          "y": 10
+        }
+      ],
+      "ordinaryBlockers": [
+        "r86-38",
+        "r86-174",
+        "r86-145",
+        "r86-83",
+        "r86-82",
+        "r86-61",
+        "r86-49",
+        "r86-121",
+        "r86-88",
+        "r86-67",
+        "r86-46"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r86-xblock-fragile0",
+          "length": 8
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r86-fragile-double",
+          "length": 7,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 11,
+            "y": 10
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r86-fragile-crosser",
+          "length": 19,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 17,
+            "y": 13
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r86-fragile-c0",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 7
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 87,
+      "placed": false
+    },
+    {
+      "id": 88,
+      "placed": true,
+      "crack": [
+        {
+          "face": "back",
+          "x": 14,
+          "y": 14
+        }
+      ],
+      "ordinaryBlockers": ["r88-195", "r88-163", "r88-186", "r88-160"],
+      "seededBlockers": [
+        {
+          "id": "r88-xblock-fragile1",
+          "length": 6
+        },
+        {
+          "id": "r88-xblock-fragile0",
+          "length": 5
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r88-fragile-double",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 9
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r88-fragile-crosser",
+          "length": 18,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 14
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r88-fragile-c0",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r88-fragile-c1",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 16,
+            "y": 0
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 89,
+      "placed": true,
+      "crack": [
+        {
+          "face": "back",
+          "x": 5,
+          "y": 10
+        }
+      ],
+      "ordinaryBlockers": [
+        "r89-144",
+        "r89-185",
+        "r89-40",
+        "r89-43",
+        "r89-94",
+        "r89-98",
+        "r89-165",
+        "r89-65",
+        "r89-121",
+        "r89-74",
+        "r89-190",
+        "r89-122"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r89-xblock-fragile0",
+          "length": 5
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r89-fragile-double",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 9,
+            "y": 10
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r89-fragile-crosser",
+          "length": 11,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 5,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r89-fragile-c0",
+          "length": 5,
+          "faces": ["back", "top"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 0
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 92,
+      "placed": true,
+      "crack": [
+        {
+          "face": "front",
+          "x": 13,
+          "y": 17
+        }
+      ],
+      "ordinaryBlockers": [
+        "r92-139",
+        "r92-176",
+        "r92-88",
+        "r92-156",
+        "r92-153"
+      ],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r92-fragile-double",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 13,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r92-fragile-crosser",
+          "length": 22,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 17
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 96,
+      "placed": true,
+      "crack": [
+        {
+          "face": "bottom",
+          "x": 16,
+          "y": 1
+        }
+      ],
+      "ordinaryBlockers": [],
+      "seededBlockers": [
+        {
+          "id": "r96-xblock-fragile0",
+          "length": 4
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r96-fragile-double",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 1
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r96-fragile-crosser",
+          "length": 8,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 2
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 102,
+      "placed": true,
+      "crack": [
+        {
+          "face": "left",
+          "x": 10,
+          "y": 2
+        }
+      ],
+      "ordinaryBlockers": [
+        "r102-193",
+        "r102-160",
+        "r102-152",
+        "r102-151",
+        "r102-145",
+        "r102-129"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r102-xblock-fragile0",
+          "length": 5
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r102-fragile-double",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 10,
+            "y": 4
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r102-fragile-crosser",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 15,
+            "y": 2
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "placed": true,
+      "crack": [
+        {
+          "face": "back",
+          "x": 4,
+          "y": 0
+        }
+      ],
+      "ordinaryBlockers": ["r103-123"],
+      "seededBlockers": [
+        {
+          "id": "r103-xblock-fragile0",
+          "length": 4
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r103-fragile-double",
+          "length": 10,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 4,
+            "y": 10
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r103-fragile-crosser",
+          "length": 22,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 8,
+            "y": 0
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "placed": false
+    },
+    {
+      "id": 106,
+      "placed": true,
+      "crack": [
+        {
+          "face": "back",
+          "x": 17,
+          "y": 2
+        }
+      ],
+      "ordinaryBlockers": [
+        "r106-133",
+        "r106-188",
+        "r106-68",
+        "r106-46",
+        "r106-24",
+        "r106-187",
+        "r106-132",
+        "r106-84"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r106-xblock-fragile1",
+          "length": 6
+        },
+        {
+          "id": "r106-xblock-fragile0",
+          "length": 3
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r106-fragile-double",
+          "length": 9,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 2
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r106-fragile-crosser",
+          "length": 18,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 3
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r106-fragile-c0",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 0,
+            "y": 3
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 108,
+      "placed": true,
+      "crack": [
+        {
+          "face": "top",
+          "x": 7,
+          "y": 10
+        }
+      ],
+      "ordinaryBlockers": [
+        "r108-180",
+        "r108-176",
+        "r108-125",
+        "r108-39",
+        "r108-54",
+        "r108-84",
+        "r108-92",
+        "r108-170",
+        "r108-163",
+        "r108-80",
+        "r108-49",
+        "r108-72"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r108-xblock-fragile0",
+          "length": 3
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r108-fragile-double",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 10
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r108-fragile-crosser",
+          "length": 9,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 7,
+            "y": 5
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r108-fragile-c0",
+          "length": 5,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 6
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 109,
+      "placed": true,
+      "crack": [
+        {
+          "face": "bottom",
+          "x": 10,
+          "y": 5
+        }
+      ],
+      "ordinaryBlockers": ["r109-41", "r109-111", "r109-145"],
+      "seededBlockers": [
+        {
+          "id": "r109-xblock-fragile0",
+          "length": 3
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r109-fragile-double",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 14,
+            "y": 5
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r109-fragile-crosser",
+          "length": 17,
+          "faces": ["bottom", "right"],
+          "head": {
+            "face": "bottom",
+            "x": 10,
+            "y": 8
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 111,
+      "placed": true,
+      "crack": [
+        {
+          "face": "top",
+          "x": 1,
+          "y": 2
+        }
+      ],
+      "ordinaryBlockers": [
+        "r111-197",
+        "r111-86",
+        "r111-75",
+        "r111-148",
+        "r111-68",
+        "r111-156",
+        "r111-126",
+        "r111-186",
+        "r111-109"
+      ],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r111-fragile-double",
+          "length": 9,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "top",
+            "x": 1,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r111-fragile-crosser",
+          "length": 24,
+          "faces": ["left", "top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 2
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r111-fragile-c0",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 11,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r111-fragile-c1",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 14,
+            "y": 10
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 115,
+      "placed": false
+    },
+    {
+      "id": 116,
+      "placed": true,
+      "crack": [
+        {
+          "face": "front",
+          "x": 15,
+          "y": 5
+        }
+      ],
+      "ordinaryBlockers": [
+        "r116-79",
+        "r116-169",
+        "r116-55",
+        "r116-59",
+        "r116-176",
+        "r116-72"
+      ],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r116-fragile-double",
+          "length": 9,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 11,
+            "y": 5
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r116-fragile-crosser",
+          "length": 20,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 15,
+            "y": 10
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 118,
+      "placed": true,
+      "crack": [
+        {
+          "face": "right",
+          "x": 2,
+          "y": 9
+        }
+      ],
+      "ordinaryBlockers": ["r118-100", "r118-49"],
+      "seededBlockers": [
+        {
+          "id": "r118-xblock-fragile0",
+          "length": 7
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r118-fragile-double",
+          "length": 5,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 2,
+            "y": 5
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r118-fragile-crosser",
+          "length": 15,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "right",
+            "x": 3,
+            "y": 9
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 123,
+      "placed": true,
+      "crack": [
+        {
+          "face": "left",
+          "x": 5,
+          "y": 17
+        }
+      ],
+      "ordinaryBlockers": [
+        "r123-197",
+        "r123-165",
+        "r123-199",
+        "r123-37",
+        "r123-29",
+        "r123-83",
+        "r123-95"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r123-xblock-fragile0",
+          "length": 7
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r123-fragile-double",
+          "length": 10,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r123-fragile-crosser",
+          "length": 14,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 17
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r123-fragile-c0",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 16,
+            "y": 9
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r123-fragile-c1",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 17,
+            "y": 11
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 124,
+      "placed": true,
+      "crack": [
+        {
+          "face": "bottom",
+          "x": 11,
+          "y": 16
+        }
+      ],
+      "ordinaryBlockers": [
+        "r124-109",
+        "r124-133",
+        "r124-124",
+        "r124-145",
+        "r124-72"
+      ],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r124-fragile-double",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 14,
+            "y": 16
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r124-fragile-crosser",
+          "length": 10,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 11,
+            "y": 12
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r124-fragile-c0",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 17,
+            "y": 6
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 125,
+      "placed": true,
+      "crack": [
+        {
+          "face": "top",
+          "x": 9,
+          "y": 17
+        }
+      ],
+      "ordinaryBlockers": [
+        "r125-102",
+        "r125-72",
+        "r125-173",
+        "r125-152",
+        "r125-159",
+        "r125-96",
+        "r125-180",
+        "r125-49"
+      ],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r125-fragile-double",
+          "length": 9,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 17
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r125-fragile-crosser",
+          "length": 17,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 9,
+            "y": 14
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 127,
+      "placed": true,
+      "crack": [
+        {
+          "face": "top",
+          "x": 4,
+          "y": 17
+        }
+      ],
+      "ordinaryBlockers": [
+        "r127-95",
+        "r127-68",
+        "r127-89",
+        "r127-101",
+        "r127-54",
+        "r127-41",
+        "r127-143"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r127-xblock-fragile1",
+          "length": 7
+        },
+        {
+          "id": "r127-xblock-fragile0",
+          "length": 6
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r127-fragile-double",
+          "length": 10,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 4,
+            "y": 10
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r127-fragile-crosser",
+          "length": 19,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 7,
+            "y": 17
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r127-fragile-c0",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 16,
+            "y": 7
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 128,
+      "placed": true,
+      "crack": [
+        {
+          "face": "top",
+          "x": 16,
+          "y": 2
+        }
+      ],
+      "ordinaryBlockers": [
+        "r128-57",
+        "r128-69",
+        "r128-143",
+        "r128-163",
+        "r128-76"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r128-xblock-fragile0",
+          "length": 4
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r128-fragile-double",
+          "length": 10,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 14,
+            "y": 2
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r128-fragile-crosser",
+          "length": 10,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 16,
+            "y": 4
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r128-fragile-c0",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 8
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 129,
+      "placed": true,
+      "crack": [
+        {
+          "face": "front",
+          "x": 5,
+          "y": 5
+        }
+      ],
+      "ordinaryBlockers": ["r129-78", "r129-188", "r129-94", "r129-89"],
+      "seededBlockers": [
+        {
+          "id": "r129-xblock-fragile0",
+          "length": 8
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r129-fragile-double",
+          "length": 9,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 5,
+            "y": 10
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r129-fragile-crosser",
+          "length": 11,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 5
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r129-fragile-c1",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 3
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r129-fragile-c0",
+          "length": 4,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 8,
+            "y": 0
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 131,
+      "placed": true,
+      "crack": [
+        {
+          "face": "back",
+          "x": 2,
+          "y": 17
+        }
+      ],
+      "ordinaryBlockers": ["r131-92", "r131-87", "r131-34", "r131-55"],
+      "seededBlockers": [
+        {
+          "id": "r131-xblock-fragile0",
+          "length": 6
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r131-fragile-double",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 2,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r131-fragile-crosser",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 4,
+            "y": 17
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 133,
+      "placed": true,
+      "crack": [
+        {
+          "face": "top",
+          "x": 0,
+          "y": 10
+        }
+      ],
+      "ordinaryBlockers": [
+        "r133-35",
+        "r133-79",
+        "r133-85",
+        "r133-41",
+        "r133-54",
+        "r133-48",
+        "r133-127",
+        "r133-86"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r133-xblock-fragile0",
+          "length": 3
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r133-fragile-double",
+          "length": 10,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 3,
+            "y": 10
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r133-fragile-crosser",
+          "length": 13,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 0,
+            "y": 5
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 134,
+      "placed": true,
+      "crack": [
+        {
+          "face": "left",
+          "x": 3,
+          "y": 0
+        }
+      ],
+      "ordinaryBlockers": [
+        "r134-76",
+        "r134-59",
+        "r134-160",
+        "r134-171",
+        "r134-129",
+        "r134-117",
+        "r134-73"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r134-xblock-fragile0",
+          "length": 4
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r134-fragile-double",
+          "length": 5,
+          "faces": ["top", "left"],
+          "head": {
+            "face": "left",
+            "x": 7,
+            "y": 0
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r134-fragile-crosser",
+          "length": 13,
+          "faces": ["top", "back", "left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 3
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r134-fragile-c0",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 7
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r134-fragile-c1",
+          "length": 7,
+          "faces": ["right", "top"],
+          "head": {
+            "face": "top",
+            "x": 16,
+            "y": 4
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 136,
+      "placed": true,
+      "crack": [
+        {
+          "face": "bottom",
+          "x": 5,
+          "y": 1
+        }
+      ],
+      "ordinaryBlockers": ["r136-185", "r136-91", "r136-180"],
+      "seededBlockers": [
+        {
+          "id": "r136-xblock-fragile1",
+          "length": 5
+        },
+        {
+          "id": "r136-xblock-fragile0",
+          "length": 3
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r136-fragile-double",
+          "length": 10,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 3
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r136-fragile-crosser",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 1
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 138,
+      "placed": true,
+      "crack": [
+        {
+          "face": "front",
+          "x": 16,
+          "y": 7
+        }
+      ],
+      "ordinaryBlockers": [
+        "r138-43",
+        "r138-97",
+        "r138-96",
+        "r138-66",
+        "r138-93",
+        "r138-65"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r138-xblock-fragile0",
+          "length": 7
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r138-fragile-double",
+          "length": 8,
+          "faces": ["front", "top"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 1
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r138-fragile-crosser",
+          "length": 15,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 13,
+            "y": 7
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 142,
+      "placed": true,
+      "crack": [
+        {
+          "face": "front",
+          "x": 14,
+          "y": 10
+        }
+      ],
+      "ordinaryBlockers": [
+        "r142-36",
+        "r142-99",
+        "r142-174",
+        "r142-32",
+        "r142-104",
+        "r142-53"
+      ],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r142-fragile-double",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 10
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r142-fragile-crosser",
+          "length": 30,
+          "faces": ["front", "left"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 14
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 144,
+      "placed": true,
+      "crack": [
+        {
+          "face": "back",
+          "x": 12,
+          "y": 17
+        }
+      ],
+      "ordinaryBlockers": ["r144-111", "r144-31", "r144-99"],
+      "seededBlockers": [
+        {
+          "id": "r144-xblock-fragile0",
+          "length": 7
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r144-fragile-double",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r144-fragile-crosser",
+          "length": 7,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 17
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 145,
+      "placed": true,
+      "crack": [
+        {
+          "face": "top",
+          "x": 10,
+          "y": 8
+        }
+      ],
+      "ordinaryBlockers": [
+        "r145-29",
+        "r145-168",
+        "r145-151",
+        "r145-63",
+        "r145-141",
+        "r145-192",
+        "r145-101",
+        "r145-56",
+        "r145-110"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r145-xblock-fragile0",
+          "length": 5
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r145-fragile-double",
+          "length": 7,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 8,
+            "y": 8
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r145-fragile-crosser",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 9
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r145-fragile-c0",
+          "length": 4,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 12,
+            "y": 15
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 148,
+      "placed": false
+    },
+    {
+      "id": 149,
+      "placed": true,
+      "crack": [
+        {
+          "face": "left",
+          "x": 3,
+          "y": 9
+        }
+      ],
+      "ordinaryBlockers": [
+        "r149-34",
+        "r149-93",
+        "r149-68",
+        "r149-31",
+        "r149-70",
+        "r149-132"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r149-xblock-fragile0",
+          "length": 3
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r149-fragile-double",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 8,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r149-fragile-crosser",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 7
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r149-fragile-c0",
+          "length": 4,
+          "faces": ["left", "back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 8
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r149-fragile-c1",
+          "length": 5,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 5,
+            "y": 8
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 151,
+      "placed": true,
+      "crack": [
+        {
+          "face": "bottom",
+          "x": 2,
+          "y": 6
+        }
+      ],
+      "ordinaryBlockers": [
+        "r151-172",
+        "r151-85",
+        "r151-64",
+        "r151-176",
+        "r151-185",
+        "r151-161",
+        "r151-90",
+        "r151-38",
+        "r151-91",
+        "r151-28"
+      ],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r151-fragile-double",
+          "length": 5,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 6
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r151-fragile-crosser",
+          "length": 16,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 2,
+            "y": 8
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r151-fragile-c0",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 5
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r151-fragile-c1",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 16,
+            "y": 12
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 152,
+      "placed": true,
+      "crack": [
+        {
+          "face": "left",
+          "x": 0,
+          "y": 5
+        }
+      ],
+      "ordinaryBlockers": [],
+      "seededBlockers": [
+        {
+          "id": "r152-xblock-fragile0",
+          "length": 3
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r152-fragile-double",
+          "length": 9,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 5
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r152-fragile-crosser",
+          "length": 19,
+          "faces": ["left", "top", "back"],
+          "head": {
+            "face": "left",
+            "x": 0,
+            "y": 10
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r152-fragile-c0",
+          "length": 8,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 0
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 153,
+      "placed": true,
+      "crack": [
+        {
+          "face": "front",
+          "x": 3,
+          "y": 16
+        }
+      ],
+      "ordinaryBlockers": [
+        "r153-172",
+        "r153-132",
+        "r153-57",
+        "r153-121",
+        "r153-56",
+        "r153-78"
+      ],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r153-fragile-double",
+          "length": 5,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 10,
+            "y": 16
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r153-fragile-crosser",
+          "length": 10,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 3,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r153-fragile-c0",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 12
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 155,
+      "placed": true,
+      "crack": [
+        {
+          "face": "back",
+          "x": 10,
+          "y": 8
+        }
+      ],
+      "ordinaryBlockers": ["r155-71", "r155-178", "r155-169"],
+      "seededBlockers": [
+        {
+          "id": "r155-xblock-fragile0",
+          "length": 3
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r155-fragile-double",
+          "length": 6,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 10,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r155-fragile-crosser",
+          "length": 20,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 8,
+            "y": 8
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r155-fragile-c0",
+          "length": 6,
+          "faces": ["left", "back"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 4
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r155-fragile-c1",
+          "length": 4,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 17,
+            "y": 17
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 156,
+      "placed": true,
+      "crack": [
+        {
+          "face": "left",
+          "x": 1,
+          "y": 16
+        }
+      ],
+      "ordinaryBlockers": ["r156-69", "r156-100", "r156-108"],
+      "seededBlockers": [
+        {
+          "id": "r156-xblock-fragile0",
+          "length": 4
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r156-fragile-double",
+          "length": 6,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 16
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r156-fragile-crosser",
+          "length": 13,
+          "faces": ["bottom", "back", "left"],
+          "head": {
+            "face": "left",
+            "x": 1,
+            "y": 11
+          },
+          "heading": "south"
+        }
+      ]
+    },
+    {
+      "id": 158,
+      "placed": true,
+      "crack": [
+        {
+          "face": "left",
+          "x": 3,
+          "y": 17
+        }
+      ],
+      "ordinaryBlockers": ["r158-92", "r158-63", "r158-60", "r158-125"],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r158-fragile-double",
+          "length": 9,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 12
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r158-fragile-crosser",
+          "length": 13,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 17
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r158-fragile-c0",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 16,
+            "y": 13
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r158-fragile-c1",
+          "length": 8,
+          "faces": ["bottom", "left"],
+          "head": {
+            "face": "left",
+            "x": 17,
+            "y": 16
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 159,
+      "placed": true,
+      "crack": [
+        {
+          "face": "front",
+          "x": 14,
+          "y": 6
+        }
+      ],
+      "ordinaryBlockers": ["r159-32"],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r159-fragile-double",
+          "length": 9,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "front",
+            "x": 2,
+            "y": 6
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r159-fragile-crosser",
+          "length": 26,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 10
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r159-fragile-c0",
+          "length": 7,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 16,
+            "y": 0
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 160,
+      "placed": true,
+      "crack": [
+        {
+          "face": "bottom",
+          "x": 8,
+          "y": 13
+        }
+      ],
+      "ordinaryBlockers": [
+        "r160-146",
+        "r160-53",
+        "r160-107",
+        "r160-111",
+        "r160-137",
+        "r160-59"
+      ],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r160-fragile-double",
+          "length": 8,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 8,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r160-fragile-crosser",
+          "length": 9,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 5,
+            "y": 13
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r160-fragile-c1",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 2,
+            "y": 7
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r160-fragile-c0",
+          "length": 3,
+          "faces": ["left", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 8
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 163,
+      "placed": true,
+      "crack": [
+        {
+          "face": "back",
+          "x": 3,
+          "y": 6
+        }
+      ],
+      "ordinaryBlockers": [
+        "r163-73",
+        "r163-55",
+        "r163-177",
+        "r163-112",
+        "r163-58",
+        "r163-167",
+        "r163-47",
+        "r163-160",
+        "r163-61"
+      ],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r163-fragile-double",
+          "length": 5,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 3,
+            "y": 2
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r163-fragile-crosser",
+          "length": 26,
+          "faces": ["top", "back"],
+          "head": {
+            "face": "back",
+            "x": 5,
+            "y": 6
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r163-fragile-c0",
+          "length": 8,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 15,
+            "y": 4
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 166,
+      "placed": true,
+      "crack": [
+        {
+          "face": "left",
+          "x": 16,
+          "y": 14
+        }
+      ],
+      "ordinaryBlockers": ["r166-185", "r166-182", "r166-179"],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r166-fragile-double",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 16,
+            "y": 11
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r166-fragile-crosser",
+          "length": 5,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 13,
+            "y": 14
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r166-fragile-c0",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 15,
+            "y": 13
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 167,
+      "placed": true,
+      "crack": [
+        {
+          "face": "left",
+          "x": 2,
+          "y": 11
+        }
+      ],
+      "ordinaryBlockers": [
+        "r167-124",
+        "r167-86",
+        "r167-139",
+        "r167-196",
+        "r167-55",
+        "r167-179",
+        "r167-88",
+        "r167-197",
+        "r167-185",
+        "r167-91"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r167-xblock-fragile0",
+          "length": 4
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r167-fragile-double",
+          "length": 8,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 2,
+            "y": 9
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r167-fragile-crosser",
+          "length": 17,
+          "faces": ["back", "left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 11
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 168,
+      "placed": true,
+      "crack": [
+        {
+          "face": "front",
+          "x": 3,
+          "y": 1
+        }
+      ],
+      "ordinaryBlockers": ["r168-62", "r168-176", "r168-103"],
+      "seededBlockers": [
+        {
+          "id": "r168-xblock-fragile0",
+          "length": 8
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r168-fragile-double",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 3,
+            "y": 3
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r168-fragile-crosser",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 1
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 170,
+      "placed": true,
+      "crack": [
+        {
+          "face": "front",
+          "x": 14,
+          "y": 2
+        }
+      ],
+      "ordinaryBlockers": [
+        "r170-146",
+        "r170-67",
+        "r170-131",
+        "r170-42",
+        "r170-159",
+        "r170-107",
+        "r170-46",
+        "r170-40",
+        "r170-194",
+        "r170-96",
+        "r170-108",
+        "r170-61"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r170-xblock-fragile1",
+          "length": 7
+        },
+        {
+          "id": "r170-xblock-fragile0",
+          "length": 4
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r170-fragile-double",
+          "length": 6,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 4
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r170-fragile-crosser",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 16,
+            "y": 2
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r170-fragile-c0",
+          "length": 3,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 14,
+            "y": 8
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r170-fragile-c1",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 17,
+            "y": 9
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 171,
+      "placed": true,
+      "crack": [
+        {
+          "face": "back",
+          "x": 0,
+          "y": 9
+        }
+      ],
+      "ordinaryBlockers": ["r171-81", "r171-98", "r171-116", "r171-62"],
+      "seededBlockers": [
+        {
+          "id": "r171-xblock-fragile0",
+          "length": 6
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r171-fragile-double",
+          "length": 9,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 0,
+            "y": 2
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r171-fragile-crosser",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 2,
+            "y": 9
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r171-fragile-c0",
+          "length": 8,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 3,
+            "y": 3
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 173,
+      "placed": true,
+      "crack": [
+        {
+          "face": "bottom",
+          "x": 17,
+          "y": 3
+        }
+      ],
+      "ordinaryBlockers": ["r173-119", "r173-34", "r173-30"],
+      "seededBlockers": [
+        {
+          "id": "r173-xblock-fragile0",
+          "length": 5
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r173-fragile-double",
+          "length": 10,
+          "faces": ["right", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 17,
+            "y": 13
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r173-fragile-crosser",
+          "length": 28,
+          "faces": ["right", "front", "bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 3
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 175,
+      "placed": true,
+      "crack": [
+        {
+          "face": "front",
+          "x": 4,
+          "y": 2
+        }
+      ],
+      "ordinaryBlockers": [
+        "r175-197",
+        "r175-33",
+        "r175-146",
+        "r175-32",
+        "r175-150",
+        "r175-162"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r175-xblock-fragile0",
+          "length": 4
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r175-fragile-double",
+          "length": 8,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 4,
+            "y": 9
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r175-fragile-crosser",
+          "length": 14,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 3,
+            "y": 2
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r175-fragile-c0",
+          "length": 3,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "front",
+            "x": 0,
+            "y": 12
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 176,
+      "placed": true,
+      "crack": [
+        {
+          "face": "front",
+          "x": 1,
+          "y": 17
+        }
+      ],
+      "ordinaryBlockers": ["r176-158", "r176-111"],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r176-fragile-double",
+          "length": 9,
+          "faces": ["left", "front"],
+          "head": {
+            "face": "front",
+            "x": 1,
+            "y": 12
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r176-fragile-crosser",
+          "length": 25,
+          "faces": ["left", "bottom", "front"],
+          "head": {
+            "face": "front",
+            "x": 6,
+            "y": 17
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r176-fragile-c1",
+          "length": 4,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 15,
+            "y": 2
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r176-fragile-c0",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 17,
+            "y": 6
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 180,
+      "placed": true,
+      "crack": [
+        {
+          "face": "right",
+          "x": 17,
+          "y": 1
+        }
+      ],
+      "ordinaryBlockers": ["r180-123"],
+      "seededBlockers": [
+        {
+          "id": "r180-xblock-fragile0",
+          "length": 4
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r180-fragile-double",
+          "length": 10,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 6,
+            "y": 1
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r180-fragile-crosser",
+          "length": 25,
+          "faces": ["right"],
+          "head": {
+            "face": "right",
+            "x": 17,
+            "y": 2
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 181,
+      "placed": true,
+      "crack": [
+        {
+          "face": "bottom",
+          "x": 0,
+          "y": 17
+        }
+      ],
+      "ordinaryBlockers": [],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r181-fragile-double",
+          "length": 6,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 0,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r181-fragile-crosser",
+          "length": 7,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 1,
+            "y": 17
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 183,
+      "placed": false
+    },
+    {
+      "id": 184,
+      "placed": true,
+      "crack": [
+        {
+          "face": "back",
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "ordinaryBlockers": [
+        "r184-32",
+        "r184-141",
+        "r184-196",
+        "r184-187",
+        "r184-124",
+        "r184-112"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r184-xblock-fragile0",
+          "length": 7
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r184-fragile-double",
+          "length": 10,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 14,
+            "y": 1
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r184-fragile-crosser",
+          "length": 24,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 1,
+            "y": 3
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r184-fragile-c0",
+          "length": 8,
+          "faces": ["top", "back", "left"],
+          "head": {
+            "face": "left",
+            "x": 0,
+            "y": 0
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 186,
+      "placed": true,
+      "crack": [
+        {
+          "face": "top",
+          "x": 2,
+          "y": 2
+        }
+      ],
+      "ordinaryBlockers": [
+        "r186-96",
+        "r186-77",
+        "r186-76",
+        "r186-87",
+        "r186-161",
+        "r186-39",
+        "r186-64",
+        "r186-116"
+      ],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r186-fragile-double",
+          "length": 6,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 10,
+            "y": 2
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r186-fragile-crosser",
+          "length": 17,
+          "faces": ["top"],
+          "head": {
+            "face": "top",
+            "x": 2,
+            "y": 4
+          },
+          "heading": "north"
+        }
+      ]
+    },
+    {
+      "id": 189,
+      "placed": true,
+      "crack": [
+        {
+          "face": "left",
+          "x": 4,
+          "y": 17
+        }
+      ],
+      "ordinaryBlockers": ["r189-124", "r189-167"],
+      "seededBlockers": [
+        {
+          "id": "r189-xblock-fragile0",
+          "length": 7
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r189-fragile-double",
+          "length": 9,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 4,
+            "y": 5
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r189-fragile-crosser",
+          "length": 21,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 6,
+            "y": 17
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 191,
+      "placed": false
+    },
+    {
+      "id": 192,
+      "placed": true,
+      "crack": [
+        {
+          "face": "front",
+          "x": 10,
+          "y": 14
+        }
+      ],
+      "ordinaryBlockers": ["r192-131", "r192-54", "r192-136", "r192-53"],
+      "seededBlockers": [
+        {
+          "id": "r192-xblock-fragile0",
+          "length": 8
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r192-fragile-double",
+          "length": 7,
+          "faces": ["front"],
+          "head": {
+            "face": "front",
+            "x": 10,
+            "y": 3
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r192-fragile-crosser",
+          "length": 31,
+          "faces": ["front", "right", "bottom"],
+          "head": {
+            "face": "front",
+            "x": 9,
+            "y": 14
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 193,
+      "placed": true,
+      "crack": [
+        {
+          "face": "bottom",
+          "x": 9,
+          "y": 6
+        }
+      ],
+      "ordinaryBlockers": [
+        "r193-88",
+        "r193-184",
+        "r193-119",
+        "r193-125",
+        "r193-66",
+        "r193-86",
+        "r193-154"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r193-xblock-fragile0",
+          "length": 4
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r193-fragile-double",
+          "length": 8,
+          "faces": ["bottom", "back"],
+          "head": {
+            "face": "back",
+            "x": 8,
+            "y": 17
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r193-fragile-crosser",
+          "length": 20,
+          "faces": ["bottom", "front"],
+          "head": {
+            "face": "bottom",
+            "x": 7,
+            "y": 6
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 194,
+      "placed": true,
+      "crack": [
+        {
+          "face": "bottom",
+          "x": 14,
+          "y": 0
+        }
+      ],
+      "ordinaryBlockers": ["r194-108", "r194-136"],
+      "seededBlockers": [
+        {
+          "id": "r194-xblock-fragile0",
+          "length": 5
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r194-fragile-double",
+          "length": 10,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 14,
+            "y": 5
+          },
+          "heading": "north"
+        },
+        {
+          "id": "r194-fragile-crosser",
+          "length": 3,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 12,
+            "y": 0
+          },
+          "heading": "east"
+        },
+        {
+          "id": "r194-fragile-c0",
+          "length": 4,
+          "faces": ["bottom"],
+          "head": {
+            "face": "bottom",
+            "x": 13,
+            "y": 1
+          },
+          "heading": "east"
+        }
+      ]
+    },
+    {
+      "id": 195,
+      "placed": true,
+      "crack": [
+        {
+          "face": "back",
+          "x": 11,
+          "y": 14
+        }
+      ],
+      "ordinaryBlockers": [
+        "r195-112",
+        "r195-197",
+        "r195-58",
+        "r195-192",
+        "r195-45",
+        "r195-166",
+        "r195-159",
+        "r195-60",
+        "r195-135"
+      ],
+      "seededBlockers": [
+        {
+          "id": "r195-xblock-fragile1",
+          "length": 4
+        },
+        {
+          "id": "r195-xblock-fragile0",
+          "length": 3
+        }
+      ],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r195-fragile-double",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 11,
+            "y": 4
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r195-fragile-crosser",
+          "length": 11,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 15,
+            "y": 14
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r195-fragile-c0",
+          "length": 7,
+          "faces": ["back"],
+          "head": {
+            "face": "back",
+            "x": 12,
+            "y": 11
+          },
+          "heading": "west"
+        }
+      ]
+    },
+    {
+      "id": 199,
+      "placed": true,
+      "crack": [
+        {
+          "face": "left",
+          "x": 0,
+          "y": 15
+        }
+      ],
+      "ordinaryBlockers": ["r199-59", "r199-171", "r199-140"],
+      "seededBlockers": [],
+      "doubleEndpoint": "tail",
+      "arrows": [
+        {
+          "id": "r199-fragile-double",
+          "length": 10,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 5,
+            "y": 15
+          },
+          "heading": "west"
+        },
+        {
+          "id": "r199-fragile-crosser",
+          "length": 6,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 0,
+            "y": 14
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r199-fragile-c0",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 3,
+            "y": 13
+          },
+          "heading": "south"
+        },
+        {
+          "id": "r199-fragile-c1",
+          "length": 3,
+          "faces": ["left"],
+          "head": {
+            "face": "left",
+            "x": 1,
+            "y": 16
+          },
+          "heading": "west"
+        }
+      ]
+    }
+  ]
+}

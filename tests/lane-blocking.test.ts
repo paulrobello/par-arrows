@@ -51,7 +51,8 @@ const LANE_MECHANICS = [
     name: "fragile",
     firstLevel: 46,
     marker: FRAGILE_CORE_MARKER,
-    ids: [46, 52, 57],
+    // Level 118 previously kept the safe double-tail lane body-forbidden.
+    ids: [46, 52, 57, 118],
   },
   { name: "lock", firstLevel: 51, marker: LOCK_CORE_MARKER, ids: [64, 67, 70] },
   {

@@ -1,3 +1,4 @@
+import { applyMove, createGameState, simulateMove } from "../core/game-state";
 import { arrowTrack } from "../core/stops";
 import {
   cellKey,
@@ -10,6 +11,7 @@ import type {
   Cell,
   Heading,
   LevelDefinition,
+  GameState,
 } from "../core/types";
 import {
   flipHeadingProbes,
@@ -118,6 +120,58 @@ function laneContact(
       return grown;
   }
   return undefined;
+}
+
+/** Prove shared safety in actual reachable states, rather than independently
+ * freezing the other spot. Those independent witnesses can belong to disjoint
+ * arrows and fail to establish an interaction between the two spots. */
+function sharedFlipSafety(level: LevelDefinition): boolean {
+  const spots = level.directionals ?? [];
+  if (spots.length !== 2) return true;
+  const witnesses = spots.map(() => new Set<string>());
+  const pending: GameState[] = [createGameState(level)];
+  const seen = new Set<string>();
+  const safe = (kind: string) => kind === "exit" || kind === "paused";
+  while (pending.length) {
+    const state = pending.pop()!;
+    const key = JSON.stringify([
+      state.remainingIds,
+      state.spotHeadings,
+      state.offsets,
+      state.settledPaths,
+    ]);
+    if (seen.has(key)) continue;
+    if (seen.size >= 5000) return false;
+    seen.add(key);
+    for (const id of state.remainingIds) {
+      const move = simulateMove(level, state, id);
+      for (const [index, spot] of spots.entries()) {
+        const cell = cellKey(spot.cell);
+        const other = simulateMove(
+          level,
+          {
+            ...state,
+            spotHeadings: {
+              ...state.spotHeadings,
+              [cell]: oppositeHeading(
+                state.spotHeadings?.[cell] ?? spot.heading,
+              ),
+            },
+          },
+          id,
+        );
+        if (
+          safe(move.kind) !== safe(other.kind) &&
+          (move.kind === "blocked" || other.kind === "blocked")
+        )
+          witnesses[index]!.add(id);
+      }
+      if ([...witnesses[0]!].some((arrow) => witnesses[1]!.has(arrow)))
+        return true;
+      if (safe(move.kind)) pending.push(applyMove(level, state, move));
+    }
+  }
+  return false;
 }
 
 /** Grow a flip circuit from approaches, phased exits and sampled body contacts.
@@ -285,6 +339,7 @@ export function constructFlip(
       )
     )
       continue;
+    if (!sharedFlipSafety(board)) continue;
     return board;
   }
   return undefined;

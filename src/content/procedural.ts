@@ -1,3 +1,4 @@
+import { constructFragile } from "./fragile";
 import { constructOverlap } from "./overlap";
 import { constructDouble } from "./double";
 import { constructWormhole } from "./wormhole";
@@ -1051,7 +1052,7 @@ interface LaneBlockerInput {
 
 /**
  * Seed blocker arrows on a certificate-led core's lanes: the per-lane
- * sibling of `flipBlockers`. Wormhole blockers grow their bodies; the other
+ * sibling of `flipBlockers`. Wormhole and fragile blockers grow their bodies; the other
  * lane mechanics still use two-cell arrows whose tail
  * covers a late track cell of some core arrow and whose head points off the
  * lane; the mechanic's certificate must still replay on the core board with
@@ -1070,13 +1071,13 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
   const grownFlip = (input.board.directionals ?? []).some(
     (spot) => spot.kind === "flip",
   );
-  const grownWormhole = kind === "wormhole";
+  const grownLane = kind === "wormhole" || kind === "fragile";
   if (frequency(id) === 0) return [];
   const placementDraw = rng.next();
   // A grown layout may need more construction restarts. Preserve the
   // original blocker-presence plan; only its placement geometry retries.
   const planDraw =
-    grownFlip || grownWormhole
+    grownFlip || grownLane
       ? coreStream(id, `${kind}-block`, 0).next()
       : placementDraw;
   if (planDraw >= frequency(id)) return [];
@@ -1094,10 +1095,19 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
   // The core's own lanes are already in `occupied`. A blocker tail may sit
   // on a late lane cell (that is the entanglement), but its head and route
   // must stay off every lane, or the blocker would cross a core body.
+  const coreArrows = input.coreArrows.map((arrow) => {
+    const action = input.certificate.find(
+      (entry) => typeof entry !== "string" && entry.arrowId === arrow.id,
+    );
+    return arrow.kind === "double" &&
+      action &&
+      typeof action !== "string" &&
+      action.endpoint === "tail"
+      ? { ...arrow, path: [...arrow.path].reverse() }
+      : arrow;
+  });
   const laneKeys = new Set(
-    input.coreArrows.flatMap((arrow) =>
-      arrowTrack(input.board, arrow).map(cellKey),
-    ),
+    coreArrows.flatMap((arrow) => arrowTrack(input.board, arrow).map(cellKey)),
   );
   const coreBodyKeys = new Set(
     input.coreArrows.flatMap((arrow) => arrow.path.map(cellKey)),
@@ -1130,17 +1140,15 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
   // original draws and bounds; every candidate still replays the certificate.
   for (
     let attempt = 0;
-    attempt < (grownFlip || grownWormhole ? 24 : 6) &&
+    attempt < (grownFlip || grownLane ? 24 : 6) &&
     blockers.length < maxBlockers;
     attempt += 1
   ) {
     // Keep the original successful prefix. Broader contacts are a fallback
     // for an empty result, not another way to crowd later mechanic lanes.
-    const broader = grownWormhole || (grownFlip && attempt >= 6);
-    if (broader && !grownWormhole && blockers.length > 0) break;
-    const owner = input.coreArrows[
-      rng.int(input.coreArrows.length)
-    ] as ArrowDefinition;
+    const broader = grownLane || (grownFlip && attempt >= 6);
+    if (broader && !grownLane && blockers.length > 0) break;
+    const owner = coreArrows[rng.int(coreArrows.length)] as ArrowDefinition;
     const track = arrowTrack(input.board, owner).slice(owner.path.length);
     const candidates = broader
       ? track.filter((cell) => !bannedEntangle(cellKey(cell)))
@@ -1199,7 +1207,7 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
       cell: Cell;
     };
     let path = [entangle, choice.cell];
-    if (grownWormhole) {
+    if (grownLane) {
       let stemFits = true;
       for (let step = 0, gap = rng.int(3); step < gap; step++) {
         const heading = headingForPath(path, size);
@@ -1257,7 +1265,7 @@ function seedLaneBlockers(input: LaneBlockerInput): readonly ArrowDefinition[] {
       ...input.certificate,
     ];
     if (!validateGenerated(proofBoard, proofCertificate)) {
-      if (grownFlip || grownWormhole) continue;
+      if (grownFlip || grownLane) continue;
       break;
     }
     blockers.push(blocker);
@@ -1307,30 +1315,6 @@ function regionDanceOrder(
   return dance;
 }
 
-/**
- * The level-45 geometry relative to the fragile cell at (0, 0), rotated per
- * placement attempt. The crosser runs north over the cell. The double's head
- * end runs west over it too, and its tail end runs west into the crosser's
- * body, so the only zero-fall order is the crosser first, collapsing the
- * cell, then the double's tail. The other order crosses with the double's
- * head and leaves the crosser nothing but the hole. The double is six cells
- * and bends, like the generated double core.
- */
-export const FRAGILE_PATTERN = {
-  crosser: [
-    [0, 2],
-    [0, 1],
-  ],
-  double: [
-    [1, 1],
-    [2, 1],
-    [3, 1],
-    [3, 0],
-    [2, 0],
-    [1, 0],
-  ],
-} as const;
-
 /** Every generated fragile-core arrow id carries this marker. */
 export const FRAGILE_CORE_MARKER = "-fragile-";
 
@@ -1343,17 +1327,9 @@ interface FragileCore {
   readonly cells: ReadonlySet<string>;
 }
 
-/**
- * Place a fragile core on its own seeded stream. Every lane the two arrows
- * can travel (both ends of the double, under every flip and rotor state) and
- * the fragile cell itself must avoid every reserved cell and the parking
- * core's and groups' tracks, no lane may enter the cell twice, and no arrow
- * already placed may reach any core cell, so the core plays alone. On the
- * core board by itself the solver must find a zero-fall certificate that
- * collapses the cell, the other order must end in a fall, and no order may
- * soft-lock. The caller reserves the returned cells and keeps the fragile
- * cell off every later route.
- */
+/** Construct a grown crack ordering, then reserve both double endpoints and
+ * every heading-dependent reach against earlier mechanics. Ordinary fill can
+ * block these lanes; the crack itself remains reserved. */
 function fragileCore(
   id: number,
   level: LevelDefinition,
@@ -1361,92 +1337,44 @@ function fragileCore(
   forbiddenTracks: ReadonlySet<string>,
   restart: number,
 ): FragileCore | undefined {
-  const size = level.gridSize;
-  const rng = coreStream(id, "fragile-core", restart);
-  const faces = shuffledFaces(rng);
-  const margin = 4;
-  const inBounds = (cell: Cell): boolean =>
-    cell.x >= 0 && cell.y >= 0 && cell.x < size && cell.y < size;
-  const existing = level.arrows.map((arrow) => occupancyKeys(level, arrow));
-  for (let attempt = 0; attempt < 64; attempt += 1) {
-    const face = faces[attempt % faces.length] as FaceId;
-    const rotation = rng.int(4);
-    const fragile: Cell = {
-      face,
-      x: margin + rng.int(Math.max(1, size - 2 * margin)),
-      y: margin + rng.int(Math.max(1, size - 2 * margin)),
-    };
-    const at = ([dx, dy]: readonly [number, number]): Cell =>
-      patternCell(fragile, dx, dy, rotation);
-    const crosserId = `r${id}${FRAGILE_CORE_MARKER}crosser`;
-    const doubleId = `r${id}${FRAGILE_CORE_MARKER}double`;
-    const arrows: ArrowDefinition[] = [
-      { id: crosserId, path: FRAGILE_PATTERN.crosser.map(at) },
-      { id: doubleId, kind: "double", path: FRAGILE_PATTERN.double.map(at) },
-    ];
-    const bodies = arrows.flatMap((arrow) => arrow.path);
-    if (
-      [...bodies, fragile].some(
-        (cell) => !inBounds(cell) || occupied.has(cellKey(cell)),
-      )
-    )
-      continue;
-    const fragileKey = cellKey(fragile);
-    const cells = new Set<string>([fragileKey, ...bodies.map(cellKey)]);
-    let singlePass = true;
-    for (const probe of flipHeadingProbes(level)) {
-      for (const arrow of arrows) {
-        const ends =
-          arrow.kind === "double"
-            ? [arrow.path, [...arrow.path].reverse()]
-            : [arrow.path];
-        for (const path of ends) {
-          const keys = arrowTrack(probe, { ...arrow, path }).map(cellKey);
-          if (keys.filter((key) => key === fragileKey).length > 1)
-            singlePass = false;
-          for (const key of keys) cells.add(key);
-        }
+  const candidate = constructFragile(
+    level,
+    coreStream(id, "fragile-topology-v1", restart),
+    new Set([...occupied, ...forbiddenTracks]),
+    32,
+  );
+  if (!candidate) return undefined;
+  const arrows = candidate.arrows;
+  const cell = candidate.cell;
+  const key = cellKey(cell);
+  const cells = new Set<string>([
+    key,
+    ...arrows.flatMap((a) => a.path.map(cellKey)),
+  ]);
+  for (const probe of flipHeadingProbes(level)) {
+    for (const arrow of arrows) {
+      const ends =
+        arrow.kind === "double"
+          ? [arrow.path, [...arrow.path].reverse()]
+          : [arrow.path];
+      for (const path of ends) {
+        const keys = arrowTrack(probe, { ...arrow, path }).map(cellKey);
+        if (keys.filter((entry) => entry === key).length > 1) return undefined;
+        for (const entry of keys) cells.add(entry);
       }
     }
-    if (
-      !singlePass ||
-      [...cells].some((key) => occupied.has(key) || forbiddenTracks.has(key)) ||
-      existing.some((keys) => [...cells].some((key) => keys.has(key)))
-    )
-      continue;
-    const coreLevel: LevelDefinition = {
-      id: level.id,
-      title: level.title,
-      gridSize: level.gridSize,
-      lives: level.lives,
-      ...(level.edgePolicies ? { edgePolicies: level.edgePolicies } : {}),
-      arrows,
-      fragile: [fragile],
-    };
-    if (!validateLevel(coreLevel).valid) continue;
-    const certificate = solveLevelTargets(coreLevel);
-    if (!certificate) continue;
-    // The certificate must actually cross and collapse the cell.
-    let state = createGameState(coreLevel);
-    for (const target of certificate) {
-      state = applyMove(
-        coreLevel,
-        state,
-        simulateGameMove(coreLevel, state, target.arrowId, target.endpoint),
-      );
-    }
-    if (state.status !== "won" || !state.collapsed?.includes(fragileKey))
-      continue;
-    // The wrong order: the double's head crosses first and the crosser falls.
-    const early = createGameState(coreLevel);
-    const wrong = simulateGameMove(coreLevel, early, doubleId, "head");
-    if (wrong.kind !== "exit" || !wrong.collapses?.length) continue;
-    const after = applyMove(coreLevel, early, wrong);
-    if (simulateGameMove(coreLevel, after, crosserId).kind !== "fall") continue;
-    if (hasSoftLockState(coreLevel) !== false) continue;
-    return { arrows, cell: fragile, certificate, cells };
   }
-  return undefined;
+  if (
+    [...cells].some(
+      (entry) => occupied.has(entry) || forbiddenTracks.has(entry),
+    )
+  )
+    return undefined;
+  const existing = level.arrows.map((arrow) => occupancyKeys(level, arrow));
+  if (existing.some((reach) => [...cells].some((entry) => reach.has(entry))))
+    return undefined;
+  const certificate = candidate.certificate;
+  return { arrows, cell, certificate, cells };
 }
 
 /**
@@ -3970,19 +3898,24 @@ export function generateLevel(id: number): LevelDefinition {
           const spotKeys = new Set(
             nodeBoard.directionals.map((spot) => cellKey(spot.cell)),
           );
+          // A fragile certificate uses the double tail; releasing only its
+          // default head ray leaves the safe lane fenced against ordinary fill.
           for (const lane of laneCores)
             for (const arrow of lane.arrows)
-              for (const probe of flipHeadingProbes(laneBoard))
-                for (const cell of arrowTrack(probe, arrow)) {
-                  const key = cellKey(cell);
-                  if (
-                    !mechanicCells.has(key) &&
-                    !parkTrackKeys.has(key) &&
-                    !regionKeys.has(key) &&
-                    !spotKeys.has(key)
-                  )
-                    forbiddenBody.delete(key);
-                }
+              for (const path of arrow.kind === "double"
+                ? [arrow.path, [...arrow.path].reverse()]
+                : [arrow.path])
+                for (const probe of flipHeadingProbes(laneBoard))
+                  for (const cell of arrowTrack(probe, { ...arrow, path })) {
+                    const key = cellKey(cell);
+                    if (
+                      !mechanicCells.has(key) &&
+                      !parkTrackKeys.has(key) &&
+                      !regionKeys.has(key) &&
+                      !spotKeys.has(key)
+                    )
+                      forbiddenBody.delete(key);
+                  }
           // The double and directional cores are graph nodes too, so their
           // tracks (both ends of a double) release the same way.
           for (const arrow of [

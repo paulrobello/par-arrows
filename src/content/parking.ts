@@ -17,7 +17,10 @@ import type {
 import { hasStrandingState, validateLevel } from "../core/validation";
 import { routeFrom } from "./dependency-fill";
 import type { Rng } from "./procedural";
-import { growMechanicBody as growTail } from "./mechanic-body";
+import {
+  connectMechanicBody as connect,
+  growMechanicBody as growTail,
+} from "./mechanic-body";
 
 const FACES = ["front", "back", "left", "right", "top", "bottom"] as const;
 
@@ -26,67 +29,6 @@ export interface ParkingConstruction {
   readonly stops: readonly Cell[];
   readonly parkLegs: readonly string[];
   readonly spots: readonly DirectionalSpotDefinition[];
-}
-
-/** Connect a lane contact to a chosen neck on the surface, with seeded detours. */
-function connect(
-  level: LevelDefinition,
-  rng: Rng,
-  start: Cell,
-  goal: Cell,
-  forbidden: ReadonlySet<string>,
-): Cell[] | undefined {
-  const queue = [start];
-  const parents = new Map<string, Cell | undefined>([
-    [cellKey(start), undefined],
-  ]);
-  // A different sparse obstacle field each time changes the route itself,
-  // rather than transforming a completed gadget.
-  const obstacles = new Set<string>();
-  for (let i = 0; i < level.gridSize * level.gridSize; i += 1) {
-    if (rng.next() < 0.6)
-      obstacles.add(
-        cellKey({
-          face: rng.pick(FACES),
-          x: rng.int(level.gridSize),
-          y: rng.int(level.gridSize),
-        }),
-      );
-  }
-  for (
-    let cursor = 0;
-    cursor < queue.length && cursor < 6 * level.gridSize ** 2;
-    cursor += 1
-  ) {
-    const cell = queue[cursor]!;
-    if (cellKey(cell) === cellKey(goal)) {
-      const path: Cell[] = [];
-      let current: Cell | undefined = cell;
-      while (current) {
-        path.unshift(current);
-        current = parents.get(cellKey(current));
-      }
-      return path.length <= 30 ? path : undefined;
-    }
-    const offset = rng.int(4);
-    for (let h = 0; h < 4; h += 1) {
-      const next = stepSurface(
-        cell,
-        HEADINGS[(h + offset) % 4]!,
-        level.gridSize,
-      );
-      const key = cellKey(next);
-      if (
-        parents.has(key) ||
-        forbidden.has(key) ||
-        (key !== cellKey(goal) && obstacles.has(key))
-      )
-        continue;
-      parents.set(key, cell);
-      queue.push(next);
-    }
-  }
-  return undefined;
 }
 
 /**
