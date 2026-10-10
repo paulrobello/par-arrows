@@ -1,0 +1,300 @@
+import { applyMove, createGameState, simulateMove } from "../core/game-state";
+import { currentPath } from "../core/stops";
+import {
+  cellKey,
+  HEADINGS,
+  headingForPath,
+  oppositeHeading,
+  stepSurface,
+} from "../core/topology";
+import type {
+  ArrowDefinition,
+  Cell,
+  DirectionalSpotDefinition,
+  LevelDefinition,
+} from "../core/types";
+import { hasStrandingState, validateLevel } from "../core/validation";
+import { routeFrom } from "./dependency-fill";
+import type { Rng } from "./procedural";
+
+const FACES = ["front", "back", "left", "right", "top", "bottom"] as const;
+
+export interface ParkingConstruction {
+  readonly arrows: readonly ArrowDefinition[];
+  readonly stops: readonly Cell[];
+  readonly parkLegs: readonly string[];
+  readonly spots: readonly DirectionalSpotDefinition[];
+}
+
+/** Grow a surface walk backwards from its head; no relative-coordinate gadget. */
+function growTail(
+  level: LevelDefinition,
+  rng: Rng,
+  path: Cell[],
+  forbidden: ReadonlySet<string>,
+  length: number,
+): Cell[] {
+  const seen = new Set(path.map(cellKey));
+  while (path.length < length) {
+    const choices = HEADINGS.map((heading) =>
+      stepSurface(path[0]!, heading, level.gridSize),
+    ).filter(
+      (cell) => !seen.has(cellKey(cell)) && !forbidden.has(cellKey(cell)),
+    );
+    if (!choices.length) break;
+    const next = rng.pick(choices);
+    path.unshift(next);
+    seen.add(cellKey(next));
+  }
+  return path;
+}
+
+/** Connect a lane contact to a chosen neck on the surface, with seeded detours. */
+function connect(
+  level: LevelDefinition,
+  rng: Rng,
+  start: Cell,
+  goal: Cell,
+  forbidden: ReadonlySet<string>,
+): Cell[] | undefined {
+  const queue = [start];
+  const parents = new Map<string, Cell | undefined>([
+    [cellKey(start), undefined],
+  ]);
+  // A different sparse obstacle field each time changes the route itself,
+  // rather than transforming a completed gadget.
+  const obstacles = new Set<string>();
+  for (let i = 0; i < level.gridSize * level.gridSize; i += 1) {
+    if (rng.next() < 0.6)
+      obstacles.add(
+        cellKey({
+          face: rng.pick(FACES),
+          x: rng.int(level.gridSize),
+          y: rng.int(level.gridSize),
+        }),
+      );
+  }
+  for (
+    let cursor = 0;
+    cursor < queue.length && cursor < 6 * level.gridSize ** 2;
+    cursor += 1
+  ) {
+    const cell = queue[cursor]!;
+    if (cellKey(cell) === cellKey(goal)) {
+      const path: Cell[] = [];
+      let current: Cell | undefined = cell;
+      while (current) {
+        path.unshift(current);
+        current = parents.get(cellKey(current));
+      }
+      return path.length <= 30 ? path : undefined;
+    }
+    const offset = rng.int(4);
+    for (let h = 0; h < 4; h += 1) {
+      const next = stepSurface(
+        cell,
+        HEADINGS[(h + offset) % 4]!,
+        level.gridSize,
+      );
+      const key = cellKey(next);
+      if (
+        parents.has(key) ||
+        forbidden.has(key) ||
+        (key !== cellKey(goal) && obstacles.has(key))
+      )
+        continue;
+      parents.set(key, cell);
+      queue.push(next);
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Synthesize a dependency cycle from actual surface walks. Parking vacates a
+ * sampled body contact; one to three followers unwind; a routed last arrow
+ * occupies the parker's continuation. No catalog or stamped fallback exists.
+ * Proofs use the movement engine and bounded enumeration, never global search.
+ */
+export function constructParking(
+  level: LevelDefinition,
+  rng: Rng,
+  occupied: ReadonlySet<string>,
+  budget: number,
+): ParkingConstruction | undefined {
+  if (budget < 1) return undefined;
+  for (let attempt = 0; attempt < 96; attempt += 1) {
+    const head: Cell = {
+      face: rng.pick(FACES),
+      x: rng.int(level.gridSize),
+      y: rng.int(level.gridSize),
+    };
+    const heading = rng.pick(HEADINGS);
+    const neck = stepSurface(head, oppositeHeading(heading), level.gridSize);
+    if ([head, neck].some((cell) => occupied.has(cellKey(cell)))) continue;
+    const path = growTail(level, rng, [neck, head], occupied, 3 + rng.int(8));
+    const actualHeading = headingForPath(path, level.gridSize);
+    if (!actualHeading) continue;
+    const route = routeFrom(level, head, actualHeading);
+    if (
+      !route ||
+      route.length < 3 ||
+      route.some((cell) => occupied.has(cellKey(cell)))
+    )
+      continue;
+    const own = new Set(path.map(cellKey));
+    if (route.some((cell) => own.has(cellKey(cell)))) continue;
+    const travel = 1 + rng.int(Math.min(path.length - 1, route.length - 2));
+    const stop = route[travel - 1]!;
+    const parker: ArrowDefinition = { id: `r${level.id}-park-p`, path };
+    const board = { ...level, arrows: [parker], stops: [stop] };
+    const parked = currentPath(board, parker, travel);
+    const parkedKeys = new Set(parked.map(cellKey));
+    const vacated = path.filter((cell) => !parkedKeys.has(cellKey(cell)));
+    if (!vacated.length) continue;
+    const bodies = new Set([...occupied, ...path.map(cellKey), cellKey(stop)]);
+    // Future bodies cannot intercept any earlier follower's exit or the park.
+    const protectedRoutes = new Set(route.slice(0, travel).map(cellKey));
+    const followers: ArrowDefinition[] = [];
+    let targets: readonly Cell[] = vacated;
+    const count = 1 + rng.int(3);
+    let failed = false;
+    for (let index = 0; index <= count; index += 1) {
+      const last = index === count;
+      let placed: ArrowDefinition | undefined;
+      for (let trial = 0; trial < 48; trial += 1) {
+        const contact = rng.pick(targets);
+        let candidateHead = contact;
+        const backwards = rng.pick(HEADINGS);
+        let previous = contact;
+        const gap = 1 + rng.int(Math.min(5, level.gridSize - 1));
+        for (let step = 0; step < gap; step += 1) {
+          previous = candidateHead;
+          candidateHead = stepSurface(candidateHead, backwards, level.gridSize);
+        }
+        // Resolve seam-local heading by the link back towards the contact.
+        const direction = HEADINGS.find(
+          (h) =>
+            cellKey(stepSurface(candidateHead, h, level.gridSize)) ===
+            cellKey(previous),
+        );
+        if (!direction) continue;
+        const candidateNeck = stepSurface(
+          candidateHead,
+          oppositeHeading(direction),
+          level.gridSize,
+        );
+        const candidateRoute = routeFrom(level, candidateHead, direction);
+        if (
+          !candidateRoute ||
+          !candidateRoute.some((cell) => cellKey(cell) === cellKey(contact)) ||
+          candidateRoute.some(
+            (cell) =>
+              occupied.has(cellKey(cell)) ||
+              parkedKeys.has(cellKey(cell)) ||
+              cellKey(cell) === cellKey(stop),
+          )
+        )
+          continue;
+        const forbidden = new Set([
+          ...bodies,
+          ...protectedRoutes,
+          cellKey(candidateHead),
+        ]);
+        if (
+          forbidden.has(cellKey(candidateNeck)) ||
+          bodies.has(cellKey(candidateHead)) ||
+          protectedRoutes.has(cellKey(candidateHead))
+        )
+          continue;
+        let candidatePath: Cell[];
+        if (last) {
+          const anchors = route
+            .slice(travel)
+            .filter(
+              (cell) =>
+                !forbidden.has(cellKey(cell)) &&
+                cellKey(cell) !== cellKey(candidateHead) &&
+                !candidateRoute.some((r) => cellKey(r) === cellKey(cell)),
+            );
+          if (!anchors.length) continue;
+          const joined = connect(
+            level,
+            rng,
+            rng.pick(anchors),
+            candidateNeck,
+            forbidden,
+          );
+          if (!joined) continue;
+          candidatePath = [...joined, candidateHead];
+        } else {
+          candidatePath = growTail(
+            level,
+            rng,
+            [candidateNeck, candidateHead],
+            forbidden,
+            3 + rng.int(9),
+          );
+        }
+        const arrow = {
+          id: `r${level.id}-park-${last ? "b" : `f${index}`}`,
+          path: candidatePath,
+        };
+        const solo = { ...level, arrows: [arrow] };
+        if (!validateLevel(solo).valid) continue;
+        const probe = simulateMove(
+          { ...board, arrows: [parker, ...followers, arrow] },
+          createGameState({ ...board, arrows: [parker, ...followers, arrow] }),
+          arrow.id,
+        );
+        if (probe.kind !== "blocked") continue;
+        placed = arrow;
+        for (const cell of candidatePath) bodies.add(cellKey(cell));
+        for (const cell of candidateRoute) protectedRoutes.add(cellKey(cell));
+        break;
+      }
+      if (!placed) {
+        failed = true;
+        break;
+      }
+      followers.push(placed);
+      targets = placed.path;
+    }
+    if (failed) continue;
+    // Emission is reversed by the generator's replay: followers leave first,
+    // then the continuation blocker, then the parker.
+    const arrows = [parker, ...followers.reverse()];
+    const coreLevel = { ...level, arrows, stops: [stop] };
+    if (!validateLevel(coreLevel).valid) continue;
+    const stripped = { ...coreLevel, stops: [] };
+    if (
+      !arrows.every(
+        (arrow) =>
+          simulateMove(stripped, createGameState(stripped), arrow.id).kind ===
+          "blocked",
+      )
+    )
+      continue;
+    let state = createGameState(coreLevel);
+    const park = simulateMove(coreLevel, state, parker.id);
+    if (park.kind !== "paused") continue;
+    state = applyMove(coreLevel, state, park);
+    let clears = true;
+    for (const arrow of [...arrows].reverse()) {
+      const move = simulateMove(coreLevel, state, arrow.id);
+      if (move.kind !== "exit") {
+        clears = false;
+        break;
+      }
+      state = applyMove(coreLevel, state, move);
+    }
+    if (!clears || hasStrandingState(coreLevel) !== false) continue;
+    return {
+      arrows,
+      stops: [stop],
+      spots: [],
+      parkLegs: [`park:${parker.id}`],
+    };
+  }
+  return undefined;
+}

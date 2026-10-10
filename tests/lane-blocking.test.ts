@@ -25,6 +25,7 @@ const SEEDED = [
   "-rotor-",
   "-double-",
   "-dir-",
+  "-park-",
 ];
 
 // A double's certified move is its tail, so its lane runs from the reversed path.
@@ -137,4 +138,34 @@ describe("natural lane blocking coverage", () => {
       );
     }, 600_000);
   }
+});
+
+// Parking synthesis exposes a latent blocker reservation bug on this seed:
+// a seeded lock blocker crossed a portal end even though ordinary fill did not.
+test("seeded lane blockers stay off every other mechanic cell (level 114)", () => {
+  const level = cachedLevel(114);
+  const cells = new Set([
+    ...(level.wormholes ?? []).flatMap((entry) => [
+      cellKey(entry.a),
+      cellKey(entry.b),
+    ]),
+    ...(level.fragile ?? []).map(cellKey),
+    ...(level.locks ?? []).flatMap((entry) => [
+      cellKey(entry.key),
+      cellKey(entry.lock),
+    ]),
+    ...(level.mirrors ?? []).map((entry) => cellKey(entry.cell)),
+    ...(level.leaps ?? []).map(cellKey),
+  ]);
+  expect(cells.size).toBeGreaterThan(0);
+  const blockers = level.arrows.filter((arrow) =>
+    arrow.id.includes("-xblock-"),
+  );
+  expect(blockers.length).toBeGreaterThan(0);
+  for (const arrow of blockers)
+    expect(
+      arrowTrack({ ...level, wormholes: [] }, arrow).some((cell) =>
+        cells.has(cellKey(cell)),
+      ),
+    ).toBe(false);
 });

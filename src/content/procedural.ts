@@ -66,6 +66,7 @@ import { LEAP_INTRO_LEVEL } from "./leap-intro";
 import { LOCK_INTRO_LEVEL } from "./lock-intro";
 import { MIRROR_INTRO_LEVEL } from "./mirror-intro";
 import { OVERLAP_INTRO_LEVEL } from "./overlap-intro";
+import { constructParking } from "./parking";
 import { ROTOR_INTRO_LEVEL } from "./rotor-intro";
 import { STOP_INTRO_LEVEL } from "./stop-intro";
 import { WORMHOLE_INTRO_LEVEL } from "./wormhole-intro";
@@ -1132,261 +1133,7 @@ function overlapStarter(
   return undefined;
 }
 
-/** Pattern-local offset resolved against a base cell and rotation. */
-interface ParkDelta {
-  readonly dx: number;
-  readonly dy: number;
-}
-
-/**
- * Park-core deadlocks, relative to the parker's tail. Every pattern is a
- * closed cycle: with its circles stripped, each arrow's first route cell hits
- * another core arrow, so the cube provably needs parking; parking the parker
- * advances its tail off the next arrow's lane and the whole core unwinds in
- * the listed order. "classic" is the level-5 deadlock. "long" stretches the
- * same lanes. "cascade" adds a fourth arrow whose lane opens only after the
- * freed arrow leaves. "double" needs two parks: the blocker sits past the
- * second circle, so the parker's tail blocks the freed arrow's lane until
- * both parks are spent. "twist" gives the freed arrow an L-shaped lane.
- * "crossfire" interleaves a four-arrow unwind around one circle. "twin"
- * stacks two independent one-circle deadlocks with two different parkers;
- * its optional `second` unit repeats the shape, and the certificate parks
- * both parkers before either unit unwinds. "bounce" starts the parker head-on
- * into a static spot, so it reaches its circle only by reversing back over
- * its own body; its spot counts against the cube's static-spot plan, so the
- * pattern is eligible only on a spot-plan pass. A pattern is eligible only
- * when the level's stop budget covers its circles. `others` lists the non-parker
- * arrows in reverse unwinding order: the certificate drives core arrows
- * last-placed-first right after the park legs, so the last listed arrow must
- * be the one that moves immediately after the park.
- */
-export const PARK_PATTERNS: readonly {
-  readonly name: string;
-  readonly parker: readonly ParkDelta[];
-  readonly stops: readonly ParkDelta[];
-  readonly others: readonly (readonly ParkDelta[])[];
-  /** Static spots the core's routes bend through, in the pattern frame. */
-  readonly spots?: readonly (ParkDelta & { readonly heading: Heading })[];
-  /** Optional second independent deadlock: another parker with its own circle and followers. */
-  readonly second?: {
-    readonly parker: readonly ParkDelta[];
-    readonly stops: readonly ParkDelta[];
-    readonly others: readonly (readonly ParkDelta[])[];
-  };
-}[] = [
-  {
-    name: "classic",
-    parker: [
-      { dx: 0, dy: 0 },
-      { dx: 1, dy: 0 },
-    ],
-    stops: [{ dx: 2, dy: 0 }],
-    others: [
-      [
-        { dx: 3, dy: 0 },
-        { dx: 3, dy: 1 },
-        { dx: 2, dy: 1 },
-        { dx: 1, dy: 1 },
-      ],
-      [
-        { dx: 0, dy: 2 },
-        { dx: 0, dy: 1 },
-      ],
-    ],
-  },
-  {
-    name: "long",
-    parker: [
-      { dx: 0, dy: 0 },
-      { dx: 1, dy: 0 },
-      { dx: 2, dy: 0 },
-    ],
-    stops: [{ dx: 3, dy: 0 }],
-    others: [
-      [
-        { dx: 5, dy: 0 },
-        { dx: 5, dy: 1 },
-        { dx: 4, dy: 1 },
-        { dx: 3, dy: 1 },
-        { dx: 2, dy: 1 },
-        { dx: 1, dy: 1 },
-      ],
-      [
-        { dx: 0, dy: 2 },
-        { dx: 0, dy: 1 },
-      ],
-    ],
-  },
-  {
-    name: "cascade",
-    parker: [
-      { dx: 0, dy: 0 },
-      { dx: 1, dy: 0 },
-    ],
-    stops: [{ dx: 2, dy: 0 }],
-    others: [
-      [
-        { dx: 4, dy: 0 },
-        { dx: 4, dy: 1 },
-        { dx: 3, dy: 1 },
-      ],
-      [
-        { dx: 2, dy: 1 },
-        { dx: 1, dy: 1 },
-      ],
-      [
-        { dx: 0, dy: 2 },
-        { dx: 0, dy: 1 },
-      ],
-    ],
-  },
-  {
-    name: "double",
-    parker: [
-      { dx: 0, dy: 0 },
-      { dx: 1, dy: 0 },
-    ],
-    stops: [
-      { dx: 2, dy: 0 },
-      { dx: 4, dy: 0 },
-    ],
-    others: [
-      [
-        { dx: 6, dy: 0 },
-        { dx: 6, dy: 1 },
-        { dx: 5, dy: 1 },
-        { dx: 4, dy: 1 },
-        { dx: 3, dy: 1 },
-        { dx: 2, dy: 1 },
-      ],
-      [
-        { dx: 1, dy: 2 },
-        { dx: 1, dy: 1 },
-      ],
-    ],
-  },
-  {
-    name: "twist",
-    parker: [
-      { dx: 0, dy: 0 },
-      { dx: 1, dy: 0 },
-    ],
-    stops: [{ dx: 2, dy: 0 }],
-    others: [
-      [
-        { dx: 3, dy: 0 },
-        { dx: 3, dy: 1 },
-        { dx: 2, dy: 1 },
-        { dx: 1, dy: 1 },
-      ],
-      [
-        { dx: 2, dy: 2 },
-        { dx: 1, dy: 2 },
-        { dx: 0, dy: 2 },
-        { dx: 0, dy: 1 },
-      ],
-    ],
-  },
-  {
-    name: "crossfire",
-    parker: [
-      { dx: 0, dy: 0 },
-      { dx: 1, dy: 0 },
-    ],
-    stops: [{ dx: 2, dy: 0 }],
-    others: [
-      [
-        { dx: 6, dy: 0 },
-        { dx: 6, dy: 1 },
-        { dx: 5, dy: 1 },
-      ],
-      [
-        { dx: 4, dy: 1 },
-        { dx: 3, dy: 1 },
-        { dx: 2, dy: 1 },
-      ],
-      [
-        { dx: 1, dy: 2 },
-        { dx: 0, dy: 2 },
-        { dx: 0, dy: 1 },
-      ],
-    ],
-  },
-  {
-    name: "twin",
-    parker: [
-      { dx: 0, dy: 0 },
-      { dx: 1, dy: 0 },
-    ],
-    stops: [{ dx: 2, dy: 0 }],
-    others: [
-      [
-        { dx: 3, dy: 0 },
-        { dx: 3, dy: 1 },
-        { dx: 2, dy: 1 },
-        { dx: 1, dy: 1 },
-      ],
-      [
-        { dx: 0, dy: 2 },
-        { dx: 0, dy: 1 },
-      ],
-    ],
-    second: {
-      parker: [
-        { dx: 0, dy: 4 },
-        { dx: 1, dy: 4 },
-      ],
-      stops: [{ dx: 2, dy: 4 }],
-      others: [
-        [
-          { dx: 3, dy: 4 },
-          { dx: 3, dy: 5 },
-          { dx: 2, dy: 5 },
-          { dx: 1, dy: 5 },
-        ],
-        [
-          { dx: 0, dy: 6 },
-          { dx: 0, dy: 5 },
-        ],
-      ],
-    },
-  },
-  {
-    name: "bounce",
-    parker: [
-      { dx: 2, dy: 0 },
-      { dx: 1, dy: 0 },
-    ],
-    spots: [{ dx: 0, dy: 0, heading: "east" }],
-    stops: [{ dx: 3, dy: 0 }],
-    others: [
-      [
-        { dx: 4, dy: 0 },
-        { dx: 4, dy: 1 },
-        { dx: 3, dy: 1 },
-        { dx: 2, dy: 1 },
-      ],
-      [
-        { dx: 1, dy: 2 },
-        { dx: 1, dy: 1 },
-      ],
-    ],
-  },
-];
-
-/** Ids for the non-parker core arrows, in pattern order. */
-const PARK_FOLLOWER_IDS = ["park-b", "park-f", "park-g", "park-h"] as const;
-
 const PARK_CERTIFICATE_PREFIX = "park:";
-
-interface ParkingCore {
-  readonly arrows: readonly ArrowDefinition[];
-  readonly stops: readonly Cell[];
-  /** Static spots the core's routes bend through. */
-  readonly spots: readonly DirectionalSpotDefinition[];
-  /** Certificate park entries, one per circle, naming each circle's parker. */
-  readonly parkLegs: readonly string[];
-}
 
 /**
  * A required-use wormhole core: portal and gate plus the wormhole that
@@ -2730,6 +2477,9 @@ function lockCore(
   // regresses and only ids that actually place cross-face change fingerprint.
   const crossRng = coreStream(id, "lock-core-cross", restart);
   const crossFace = crossRng.int(2) === 0;
+  const parkingPresent = level.arrows.some((arrow) =>
+    arrow.id.includes("-park-"),
+  );
   const axis = HEADINGS[crossRng.int(4)]!;
   const side = rotatedHeading(axis);
   /** Build one variant's geometry for this attempt's face, gate, rotation. */
@@ -2793,7 +2543,11 @@ function lockCore(
     const cross = buildVariant(true, face, gate, at);
     if (cross) variants.push(cross);
     const same = buildVariant(false, face, gate, at);
-    if (same) variants.push(same);
+    // Parking walks occupy more varied topology than the old small stamps.
+    // Give the existing cross-face geometry a bounded placement search before
+    // accepting the same-face fallback; otherwise its first miss erases it.
+    if (same && !(parkingPresent && crossFace && attempt < 8))
+      variants.push(same);
     for (const { arrows, key } of variants) {
       const bodies = arrows.flatMap((arrow) => arrow.path);
       if (
@@ -3454,184 +3208,6 @@ function patternCell(
   return { face: base.face, x, y };
 }
 
-/**
- * Build a parking-required deadlock on its own seeded stream, independent of
- * layout retries. The stream first picks a catalog pattern whose circle count
- * fits the level's stop budget, then places it: pattern cells stay in bounds,
- * off occupied cells, and every arrow's exit ray must dodge occupied cells.
- * The core-only certificate — the park legs, then each arrow driven to exit in
- * reverse placement order — must replay through the real movement rules, so a
- * wrap or route crossing that would strand a core arrow rejects the placement
- * instead of failing the level's replay later. Undefined means no placement
- * fit and the level falls back to decorative circles only.
- */
-function parkingCore(
-  id: number,
-  level: LevelDefinition,
-  occupied: ReadonlySet<string>,
-  stopCount: number,
-  restart: number,
-  spotFaces: readonly FaceId[] = [],
-  spotForbidden: ReadonlySet<string> = new Set(),
-): ParkingCore | undefined {
-  const size = level.gridSize;
-  const rng = coreStream(id, "park-core", restart);
-  // A pattern with its own spots spends the cube's static-spot plan, so it
-  // is only drawn on a pass that plans spots, and only onto a planned face.
-  const catalog = PARK_PATTERNS.filter(
-    (pattern) => !pattern.spots || spotFaces.length > 0,
-  );
-  const patternCost = (pattern: (typeof PARK_PATTERNS)[number]): number =>
-    pattern.stops.length + (pattern.second?.stops.length ?? 0);
-  const eligible = catalog.filter(
-    (pattern) => patternCost(pattern) <= stopCount,
-  );
-  const pattern = eligible[
-    rng.int(eligible.length)
-  ] as (typeof PARK_PATTERNS)[number];
-  const faces = pattern.spots
-    ? shuffledFaces(rng).filter((face) => spotFaces.includes(face))
-    : shuffledFaces(rng);
-  const units = [
-    { parker: pattern.parker, stops: pattern.stops, others: pattern.others },
-    ...(pattern.second
-      ? [
-          {
-            parker: pattern.second.parker,
-            stops: pattern.second.stops,
-            others: pattern.second.others,
-          },
-        ]
-      : []),
-  ];
-  const parkerIds = units.map((_, index) =>
-    index === 0 ? `r${id}-park-p` : `r${id}-park-q`,
-  );
-  for (let attempt = 0; attempt < 96; attempt += 1) {
-    const face = faces[attempt % faces.length] as FaceId;
-    const rotation = rng.int(4);
-    const base: Cell = {
-      face,
-      x: 1 + rng.int(Math.max(1, size - 2)),
-      y: 1 + rng.int(Math.max(1, size - 2)),
-    };
-    const parkerPaths = units.map((unit) =>
-      unit.parker.map(({ dx, dy }) => patternCell(base, dx, dy, rotation)),
-    );
-    // A second unit's exit lanes cross the first unit's cells, so the first
-    // unit must unwind first; the certificate drives arrows last-placed-first,
-    // so the second unit's followers place before the first's. Single-unit
-    // patterns are unaffected by the reversal.
-    const followerPaths = [...units]
-      .reverse()
-      .flatMap((unit) =>
-        unit.others.map((deltas) =>
-          deltas.map(({ dx, dy }) => patternCell(base, dx, dy, rotation)),
-        ),
-      );
-    const stops = units.flatMap((unit) =>
-      unit.stops.map(({ dx, dy }) => patternCell(base, dx, dy, rotation)),
-    );
-    const spots: DirectionalSpotDefinition[] = (pattern.spots ?? []).map(
-      ({ dx, dy, heading }) => ({
-        cell: patternCell(base, dx, dy, rotation),
-        heading: rotateHeading(heading, rotation),
-      }),
-    );
-    const cells = [
-      ...parkerPaths.flat(),
-      ...followerPaths.flat(),
-      ...stops,
-      ...spots.map((spot) => spot.cell),
-    ];
-    const patternKeys = new Set(cells.map(cellKey));
-    if (
-      patternKeys.size !== cells.length ||
-      cells.some(
-        (cell) =>
-          cell.x < 0 ||
-          cell.y < 0 ||
-          cell.x >= size ||
-          cell.y >= size ||
-          occupied.has(cellKey(cell)),
-      ) ||
-      spots.some((spot) => spotForbidden.has(cellKey(spot.cell)))
-    )
-      continue;
-    const rayClear = (path: readonly Cell[]): boolean => {
-      if (spots.length > 0) {
-        // A spot bends the route, so the arrow's whole solo drive is checked
-        // instead of the straight ray from its head.
-        const probe: LevelDefinition = {
-          ...level,
-          arrows: [{ id: "probe", path }],
-          directionals: spots,
-        };
-        const alone = simulateMove(probe, ["probe"], "probe");
-        return (
-          alone.kind === "exit" &&
-          alone.route
-            .slice(1)
-            .every(
-              (cell) =>
-                patternKeys.has(cellKey(cell)) || !occupied.has(cellKey(cell)),
-            )
-        );
-      }
-      const head = path[path.length - 1];
-      const heading = head ? headingForPath(path, size) : undefined;
-      if (!head || !heading) return false;
-      const ray = exitRay(level, head, heading);
-      return (
-        ray.length > 0 &&
-        ray
-          .slice(1)
-          .every(
-            (cell) =>
-              patternKeys.has(cellKey(cell)) || !occupied.has(cellKey(cell)),
-          )
-      );
-    };
-    const arrows: ArrowDefinition[] = [
-      ...parkerPaths.map((path, index) => ({
-        id: parkerIds[index] as string,
-        path,
-      })),
-      ...followerPaths.map((path, index) => ({
-        id: `r${id}-${PARK_FOLLOWER_IDS[index]}`,
-        path,
-      })),
-    ];
-    if (!arrows.every((arrow) => rayClear(arrow.path))) continue;
-    // The core drives right after its park legs, with every graph node still
-    // on the board; that is safe because every lead track is reserved against
-    // fill bodies. Prove the core alone here so a hostile wrap config rejects
-    // this placement instead of the level.
-    const coreLevel: LevelDefinition = {
-      ...level,
-      arrows,
-      stops,
-      ...(spots.length > 0 ? { directionals: spots } : {}),
-    };
-    const parkLegs = units.flatMap((unit, index) =>
-      Array.from(
-        { length: unit.stops.length },
-        () => `${PARK_CERTIFICATE_PREFIX}${parkerIds[index]}`,
-      ),
-    );
-    const certificate = [
-      ...parkLegs,
-      ...[...arrows].reverse().map((arrow) => arrow.id),
-    ];
-    if (!replayCertificate(coreLevel, certificate)) continue;
-    // Core arrows may park into each other's lanes; every collision-free
-    // order through the isolated core must still clear it.
-    if (hasStrandingState(coreLevel) !== false) continue;
-    return { arrows, stops, spots, parkLegs };
-  }
-  return undefined;
-}
-
 const HEADING_VECTORS: Record<
   Heading,
   { readonly dx: number; readonly dy: number }
@@ -4194,7 +3770,7 @@ function reversalBlockers(
  * every new cell off every other arrow's track, so parking there only ever
  * frees cells for the rest of the board. Double arrows never park on a
  * passing circle. Parking-core arrows may block one another on the core's own
- * circles, which `parkingCore` proves safe by enumeration; any other circle
+ * circles, which `constructParking` proves safe by enumeration; any other circle
  * on a core track is rejected so the core behaves exactly as enumerated.
  */
 function strandSafeCircle(
@@ -4387,16 +3963,12 @@ function validateGenerated(
 }
 
 /**
- * Build a pure, reproducible level. Only the parking core and the flip or
- * rotor region lead; every other arrow, the mechanic cores included, is a
- * node in an acyclic "must leave first" graph built by `dependencyFill`, and
- * `level.arrows` lists those nodes in reverse removal order ahead of the
- * leads, so the lead certificates followed by the reversed node section are
- * a real no-mistake solution certificate. Levels carrying stop circles also
- * embed the parking core, whose circles and tracks are reserved from every
- * fill body so the park legs can never fail. A flip core's proven
- * interaction region is reserved the same way, and the region's own solution
- * leads the certificate.
+ * Build a pure, reproducible level. The flip or rotor region leads; other
+ * arrows participate in the acyclic removal graph. A synthesized parking
+ * cycle enters as one atomic node: its multi-leg certificate runs after its
+ * ordinary lane blockers, then the rest of the graph continues. Only its
+ * parked windows and circle stay body-reserved. Outside routes stay off its
+ * tracks so an early park cannot strand an outside arrow.
  */
 export function generateLevel(id: number): LevelDefinition {
   assertLevelId(id);
@@ -4610,14 +4182,11 @@ export function generateLevel(id: number): LevelDefinition {
         }
         const core =
           parkBudget >= 1
-            ? parkingCore(
-                id,
+            ? constructParking(
                 { ...candidateLevel, arrows },
+                coreStream(id, "park-topology-v1", restart),
                 occupied,
                 parkBudget,
-                restart,
-                planFaceIds,
-                groupTracks,
               )
             : undefined;
         // Spots that ship with the parking core; they bend only the core's
@@ -4642,12 +4211,9 @@ export function generateLevel(id: number): LevelDefinition {
           for (const stop of core.stops) occupied.add(cellKey(stop));
           for (const spot of parkSpots) occupied.add(cellKey(spot.cell));
         }
-        // The park core leaves right after its legs, ahead of every graph
-        // node, so no later body may sit on its tracks: starters and wrap
-        // arrows redraw off them and the fill treats them as forbidden
-        // bodies. Fill routes may not cross them either: the park core's
-        // circles must stay strand-safe, and `strandSafeCircle` rejects a
-        // parked window that lands on any other arrow's track.
+        // Earlier mechanic placements and starters avoid the parking
+        // tracks. The fill can put bodies on its lanes through the atomic
+        // parking node; outside routes remain fenced for strand safety.
         const parkTrackKeys = new Set<string>();
         if (core) {
           for (const arrow of core.arrows) {
@@ -5092,13 +4658,12 @@ export function generateLevel(id: number): LevelDefinition {
           if (shape) shapeCounts.set(shape, (shapeCounts.get(shape) ?? 1) - 1);
         };
         // Lead arrows clear first, in certificate order; they are not graph
-        // nodes. Their bodies are never fill cells. Leads are the park core
-        // and the flip or rotor region. Every other core (the five lane
-        // cores, the double and the directional core) is a graph node, so
+        // nodes. Their bodies are never fill cells. Only the flip or rotor
+        // region leads. The parking cycle is one atomic graph node; every
+        // other core is a per-arrow graph node, so
         // its body blocks fill cells as an owner cell and its lane is
         // fill-blockable like any starter's.
         const leadIds = new Set<string>([
-          ...(core?.arrows ?? []).map((arrow) => arrow.id),
           ...(flip?.arrows ?? []).map((arrow) => arrow.id),
         ]);
         const leadBodies = new Set(
@@ -5243,7 +4808,15 @@ export function generateLevel(id: number): LevelDefinition {
                 parkTracks: parkTrackKeys,
                 // Earlier lanes' blockers are not in `occupied`, so their bodies
                 // and routes are reserved here to keep lanes from colliding.
-                reservedCells: new Set([...lane.cellKeys, ...priorBlockerKeys]),
+                reservedCells: new Set([
+                  ...lane.cellKeys,
+                  ...portalKeys,
+                  ...(fragileKey ? [fragileKey] : []),
+                  ...lockKeys,
+                  ...mirrorKeys,
+                  ...leapKeys,
+                  ...priorBlockerKeys,
+                ]),
                 // Lead bodies and tracks are gone before any graph node moves,
                 // so a blocker route may cross them; the flip region stays fenced.
                 crossable: new Set(
@@ -5308,16 +4881,32 @@ export function generateLevel(id: number): LevelDefinition {
         const emissionLeads = new Set(
           [...leadIds].filter((arrowId) => !emissionExcluded.has(arrowId)),
         );
-        // Reserved cells no fill body may use: everything `occupied` holds
-        // that is not a placed body, plus the parking core's tracks, which
-        // must stay clear because the park core leaves before any fill.
+        // Release parking lanes to fill bodies, then reserve every parked
+        // window and the circle. The atomic node orders lane blockers before
+        // the park; window protection also keeps arbitrary early parks safe.
         const bodyKeys = new Set(
           arrows.flatMap((arrow) => arrow.path.map(cellKey)),
         );
         const forbiddenBody = new Set<string>([
           ...[...occupied].filter((key) => !bodyKeys.has(key)),
-          ...parkTrackKeys,
         ]);
+        for (const key of parkTrackKeys) forbiddenBody.delete(key);
+        for (const arrow of core?.arrows ?? []) {
+          const track = arrowTrack(parkBoard, arrow);
+          for (const stop of core?.stops ?? []) {
+            const index = track.findIndex(
+              (cell) => cellKey(cell) === cellKey(stop),
+            );
+            if (index < arrow.path.length) continue;
+            for (const cell of currentPath(
+              parkBoard,
+              arrow,
+              index - arrow.path.length + 1,
+            ))
+              forbiddenBody.add(cellKey(cell));
+          }
+        }
+        for (const stop of core?.stops ?? []) forbiddenBody.add(cellKey(stop));
         // Lane cores are graph nodes, so their lanes are ordinary routes a
         // fill body may block. Only the mechanic cells stay reserved; lead
         // tracks and blocker routes are re-added below. The flip or rotor
@@ -5456,6 +5045,15 @@ export function generateLevel(id: number): LevelDefinition {
           ...(leap ? { leaps: [leap.pad] } : {}),
         };
         const graphNodes: FillNode[] = [
+          ...(core
+            ? [
+                {
+                  id: core.arrows[0]!.id,
+                  arrows: core.arrows,
+                  routeKeys: new Set(core.arrows.flatMap(nodeRoute)),
+                },
+              ]
+            : []),
           ...(groupArrows.length > 0
             ? [
                 {
@@ -5770,8 +5368,8 @@ export function generateLevel(id: number): LevelDefinition {
         // it may ever reach its cells. Its own solution leads.
         const flipLead = flip ? flipRegionLead(level) : [];
         // Leads replay first, each core in the order its own proof uses; the
-        // park core unwinds in reverse placement order right after its legs.
-        // The graph section follows in removal order.
+        // parking node injects its park legs at its position in the graph,
+        // then unwinds in reverse placement order after its lane blockers.
         // The fragile core touches no other arrow's reach, so its crossing
         // certificate may lead wherever it sits.
         const certificate: CertificateEntry[] = [
@@ -5791,18 +5389,18 @@ export function generateLevel(id: number): LevelDefinition {
           ...(double && !entangledKinds.has("double")
             ? double.certificate
             : []),
-          ...(core ? core.parkLegs : []),
-          ...(core ? [...core.arrows].reverse().map((arrow) => arrow.id) : []),
           ...(directionalSpot && !entangledKinds.has("directional")
             ? directionalSpot.arrows.map((arrow) => arrow.id)
             : []),
           ...[...arrows]
             .reverse()
             .filter((arrow) => !emissionLeads.has(arrow.id))
-            .map(
-              (arrow): CertificateEntry =>
-                entangledTargets.get(arrow.id) ?? arrow.id,
-            ),
+            .flatMap((arrow): CertificateEntry[] => [
+              ...(core && arrow.id === core.arrows[core.arrows.length - 1]!.id
+                ? core.parkLegs
+                : []),
+              entangledTargets.get(arrow.id) ?? arrow.id,
+            ]),
         ];
         const accepted =
           flipLead !== undefined &&

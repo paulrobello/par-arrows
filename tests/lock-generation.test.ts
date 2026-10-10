@@ -39,9 +39,9 @@ const LAST_ID = 200;
  * faces. The seeded coin prefers cross on every lock id; a cross aspirant
  * whose geometry cannot fit falls back to the same-face pattern, so this set
  * is the measured share of the placed cores that fit cross-face (flip-core
- * blockers re-rolled which ids place cross-face).
+ * blockers and parking topology re-rolled which ids place cross-face).
  */
-const CROSS_FACE: ReadonlySet<number> = new Set([169]);
+const CROSS_FACE: ReadonlySet<number> = new Set([200]);
 
 /** The core's two arrows and its lock, alone on the level's cube. */
 function coreBoard(level: LevelDefinition): LevelDefinition {

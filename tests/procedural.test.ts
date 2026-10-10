@@ -227,16 +227,16 @@ describe("runtime campaign generator", () => {
       "8873698cd5bc9a4615cfd425fa1fe72e8ab7a9b6a16ec360f3fadb79115b6423",
     );
     expect(geometryHash(generateLevel(10))).toBe(
-      "5abd7e2f8e6886d7767af4f54e1322ea49bce6608d0ae8e7c8633425a132c985",
+      "ea236a75627aa45f6b0ea03db6b083a78124774d6143da9776c58eb1a20c9518",
     );
     expect(geometryHash(generateLevel(12))).toBe(
-      "c394d47d4d0611b6dbede804565bbd3f1c774f844fb098684d0ff1e4a2e65fa4",
+      "fe7581dbba1a4eb2f81764668fe1c36c82d291172baa972759ae45bb9c8abdeb",
     );
     expect(geometryHash(generateLevel(13))).toBe(
-      "10de04197b7d2c26217114ffeb369a815d8fc56b5b5d01980842eec1170dc045",
+      "2604be3ecadfe1290172f2322d11799e65140ada38329ddbdffa472c6765244d",
     );
     expect(geometryHash(generateLevel(14))).toBe(
-      "63d63ee2dc223b7c1521e483d611e066a87086259403006a551c1ee66da42eb9",
+      "620bcb076f6af423c7dcdcf571c851acb216dbeb75daf07cac5e51dca50296ec",
     );
     expect(geometryHash(generateLevel(3))).toBe(
       "bd8d7ce45d5fa1648c6d886fac6de9548249748339e52e5949b83f57f5f64f0e",
@@ -645,89 +645,10 @@ describe("runtime campaign generator", () => {
     }
   }, 20_000);
 
-  test("park cores vary in shape across the campaign", () => {
-    const shapes = new Set<string>();
-    // The self-passage rule rebuilds boards where a lone park arrow folded
-    // over its own body, so the first twin core moved from level 75 to 77;
-    // flip-core blockers then re-rolled flip-planned ids and moved it to 108
-    // (also 113); the sweep reaches past it.
-    for (let id = 6; id <= 113; id += 1) {
-      const level = generateLevel(id);
-      if ((level.stops ?? []).length === 0) continue;
-      const parkArrows = level.arrows.filter((arrow) =>
-        arrow.id.includes("-park-"),
-      );
-      // A rotor core takes the first circle; with a budget of one it holds
-      // the level's only circle and no parking core is placed.
-      if (
-        parkArrows.length === 0 &&
-        level.arrows.some((arrow) => arrow.id.includes("-rotor-"))
-      )
-        continue;
-      shapes.add(
-        `${parkArrows.length}:${parkArrows.reduce(
-          (cells, arrow) => cells + arrow.path.length,
-          0,
-        )}`,
-      );
-    }
-    // classic 3:8, cascade 4:9, crossfire 4:11, double/twist 3:10, long 3:11,
-    // twin 6:16.
-    expect([...shapes].sort()).toEqual([
-      "3:10",
-      "3:11",
-      "3:8",
-      "4:11",
-      "4:9",
-      "6:16",
-    ]);
-  }, 90_000);
-
-  test("double-circle cores stay deadlocked after one park and open after two", () => {
-    let checked = 0;
-    for (let id = 6; id <= 80 && checked < 3; id += 1) {
-      const level = generateLevel(id);
-      if ((level.stops ?? []).length < 2) continue;
-      const parkArrows = level.arrows.filter((arrow) =>
-        arrow.id.includes("-park-"),
-      );
-      const parker = parkArrows.find((arrow) => arrow.id.endsWith("-park-p"));
-      if (!parker) continue;
-      const others = parkArrows.filter((arrow) => arrow.id !== parker.id);
-      let state = createGameState(level);
-      const first = simulateGameMove(level, state, parker.id);
-      if (first.kind !== "paused") continue;
-      state = applyMove(level, state, first);
-      // Plain arrows may legally sit on the core's vacated route cells, so
-      // only core-arrow blockers prove the deadlock is the core's own.
-      const blockedByCore = (arrow: (typeof parkArrows)[number]): boolean => {
-        const result = simulateGameMove(level, state, arrow.id);
-        return (
-          result.kind === "blocked" &&
-          result.blockerId?.includes("-park-") === true
-        );
-      };
-      if (!others.every(blockedByCore)) continue;
-      // The freed arrow is the one the parker itself pins: its lane cell is
-      // the parker's head, which only the second park vacates.
-      const freed = others.find(
-        (arrow) =>
-          simulateGameMove(level, state, arrow.id).blockerId === parker.id,
-      );
-      if (!freed) continue;
-      checked += 1;
-      const second = simulateGameMove(level, state, parker.id);
-      expect(second.kind).toBe("paused");
-      state = applyMove(level, state, second);
-      const result = simulateGameMove(level, state, freed.id);
-      expect(result.kind === "blocked" ? result.blockerId : null).not.toBe(
-        parker.id,
-      );
-    }
-    expect(checked).toBeGreaterThan(0);
-  }, 60_000);
-
-  test("decorative circles ahead on the parker's track only add pauses", () => {
+  // Parking structural variation and required interactions are checked in
+  // parking-generation.test.ts after canonicalizing rigid transforms. The
+  // old catalog-size and double-circle stamp assertions no longer apply.
+  test("synthesized parking circles are required and reachable", () => {
     let checked = 0;
     for (let id = 6; id <= 120 && checked < 3; id += 1) {
       const level = generateLevel(id);
@@ -741,8 +662,8 @@ describe("runtime campaign generator", () => {
       );
       if (ahead.length === 0) continue;
       checked += 1;
-      expect(solveLevel({ ...level, stops: [] })).toBeUndefined();
-      expect(solveLevel(level)).toBeDefined();
+      expect(solveLevelTargets({ ...level, stops: [] })).toBeUndefined();
+      expect(solveLevelTargets(level)).toBeDefined();
     }
     expect(checked).toBeGreaterThan(0);
   }, 30_000);

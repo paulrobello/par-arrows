@@ -1,0 +1,713 @@
+{
+  "flip": [
+    41, 54, 59, 62, 65, 70, 84, 85, 87, 88, 89, 90, 92, 96, 100, 107, 108, 114,
+    115, 117, 119, 121, 124, 126, 127, 131, 142, 148, 151, 152, 157, 162, 163,
+    170, 176, 190, 191
+  ],
+  "rotor": [
+    42, 46, 47, 58, 61, 68, 75, 78, 79, 82, 83, 99, 101, 102, 111, 137, 139,
+    156, 167, 169, 179, 196
+  ],
+  "combined": [
+    {
+      "id": 41,
+      "kind": "flip",
+      "arrows": [
+        "r41-flip-weave-reverser",
+        "r41-flip-weave-runner",
+        "r41-flip-weave-cap"
+      ],
+      "stops": ["top:6:4"],
+      "pattern": "weave"
+    },
+    {
+      "id": 42,
+      "kind": "rotor",
+      "arrows": [
+        "r42-rotor-lane-window-opener",
+        "r42-rotor-lane-window-riser",
+        "r42-rotor-lane-window-window",
+        "r42-rotor-lane-window-capper",
+        "r42-rotor-lane-window-latch"
+      ],
+      "stops": ["bottom:9:13"],
+      "pattern": "lane-window"
+    },
+    {
+      "id": 46,
+      "kind": "rotor",
+      "arrows": [
+        "r46-rotor-cycle-gate-opener",
+        "r46-rotor-cycle-gate-dropper",
+        "r46-rotor-cycle-gate-latch"
+      ],
+      "stops": ["left:3:6"],
+      "pattern": "cycle-gate"
+    },
+    {
+      "id": 47,
+      "kind": "rotor",
+      "arrows": [
+        "r47-rotor-cycle-gate-opener",
+        "r47-rotor-cycle-gate-dropper",
+        "r47-rotor-cycle-gate-latch"
+      ],
+      "stops": ["back:11:10"],
+      "pattern": "cycle-gate"
+    },
+    {
+      "id": 54,
+      "kind": "flip",
+      "arrows": [
+        "r54-flip-lane-packer",
+        "r54-flip-lane-waiter",
+        "r54-flip-lane-lid"
+      ],
+      "stops": ["right:9:6"],
+      "pattern": "lane-packer"
+    },
+    {
+      "id": 58,
+      "kind": "rotor",
+      "arrows": [
+        "r58-rotor-lane-window-opener",
+        "r58-rotor-lane-window-riser",
+        "r58-rotor-lane-window-window",
+        "r58-rotor-lane-window-capper",
+        "r58-rotor-lane-window-latch"
+      ],
+      "stops": ["back:11:6"],
+      "pattern": "lane-window"
+    },
+    {
+      "id": 59,
+      "kind": "flip",
+      "arrows": [
+        "r59-flip-weave-reverser",
+        "r59-flip-weave-runner",
+        "r59-flip-weave-cap"
+      ],
+      "stops": ["back:11:14"],
+      "pattern": "weave"
+    },
+    {
+      "id": 61,
+      "kind": "rotor",
+      "arrows": [
+        "r61-rotor-lane-window-opener",
+        "r61-rotor-lane-window-riser",
+        "r61-rotor-lane-window-window",
+        "r61-rotor-lane-window-capper",
+        "r61-rotor-lane-window-latch"
+      ],
+      "stops": ["front:8:12"],
+      "pattern": "lane-window"
+    },
+    {
+      "id": 62,
+      "kind": "flip",
+      "arrows": [
+        "r62-flip-lane-packer",
+        "r62-flip-lane-waiter",
+        "r62-flip-lane-lid"
+      ],
+      "stops": ["bottom:10:6"],
+      "pattern": "lane-packer"
+    },
+    {
+      "id": 65,
+      "kind": "flip",
+      "arrows": [
+        "r65-flip-lane-packer",
+        "r65-flip-lane-waiter",
+        "r65-flip-lane-lid"
+      ],
+      "stops": ["back:9:7"],
+      "pattern": "lane-packer"
+    },
+    {
+      "id": 68,
+      "kind": "rotor",
+      "arrows": [
+        "r68-rotor-lane-window-opener",
+        "r68-rotor-lane-window-riser",
+        "r68-rotor-lane-window-window",
+        "r68-rotor-lane-window-capper",
+        "r68-rotor-lane-window-latch"
+      ],
+      "stops": ["front:11:9"],
+      "pattern": "lane-window"
+    },
+    {
+      "id": 70,
+      "kind": "flip",
+      "arrows": [
+        "r70-flip-relay2-traverser",
+        "r70-flip-relay2-lid",
+        "r70-flip-relay2-west",
+        "r70-flip-relay2-east"
+      ],
+      "stops": ["bottom:4:12"],
+      "pattern": "relay2-traverser"
+    },
+    {
+      "id": 75,
+      "kind": "rotor",
+      "arrows": [
+        "r75-rotor-cycle-gate-opener",
+        "r75-rotor-cycle-gate-dropper",
+        "r75-rotor-cycle-gate-latch"
+      ],
+      "stops": ["left:10:11"],
+      "pattern": "cycle-gate"
+    },
+    {
+      "id": 78,
+      "kind": "rotor",
+      "arrows": [
+        "r78-rotor-cycle-gate-opener",
+        "r78-rotor-cycle-gate-dropper",
+        "r78-rotor-cycle-gate-latch"
+      ],
+      "stops": ["left:15:7"],
+      "pattern": "cycle-gate"
+    },
+    {
+      "id": 79,
+      "kind": "rotor",
+      "arrows": [
+        "r79-rotor-cycle-gate-opener",
+        "r79-rotor-cycle-gate-dropper",
+        "r79-rotor-cycle-gate-latch"
+      ],
+      "stops": ["top:3:10"],
+      "pattern": "cycle-gate"
+    },
+    {
+      "id": 82,
+      "kind": "rotor",
+      "arrows": [
+        "r82-rotor-lane-window-opener",
+        "r82-rotor-lane-window-riser",
+        "r82-rotor-lane-window-window",
+        "r82-rotor-lane-window-capper",
+        "r82-rotor-lane-window-latch"
+      ],
+      "stops": ["left:3:8"],
+      "pattern": "lane-window"
+    },
+    {
+      "id": 83,
+      "kind": "rotor",
+      "arrows": [
+        "r83-rotor-lane-window-opener",
+        "r83-rotor-lane-window-riser",
+        "r83-rotor-lane-window-window",
+        "r83-rotor-lane-window-capper",
+        "r83-rotor-lane-window-latch"
+      ],
+      "stops": ["right:11:13"],
+      "pattern": "lane-window"
+    },
+    {
+      "id": 84,
+      "kind": "flip",
+      "arrows": [
+        "r84-flip-relay2-traverser",
+        "r84-flip-relay2-lid",
+        "r84-flip-relay2-west",
+        "r84-flip-relay2-east"
+      ],
+      "stops": ["top:12:13"],
+      "pattern": "relay2-traverser"
+    },
+    {
+      "id": 85,
+      "kind": "flip",
+      "arrows": [
+        "r85-flip-relay-west",
+        "r85-flip-relay-east",
+        "r85-flip-relay-northcap",
+        "r85-flip-relay-southcap"
+      ],
+      "stops": ["front:13:9"],
+      "pattern": "relay-west"
+    },
+    {
+      "id": 87,
+      "kind": "flip",
+      "arrows": [
+        "r87-flip-relay-east",
+        "r87-flip-relay-west",
+        "r87-flip-relay-northcap",
+        "r87-flip-relay-southcap"
+      ],
+      "stops": ["bottom:2:8"],
+      "pattern": "relay-east"
+    },
+    {
+      "id": 88,
+      "kind": "flip",
+      "arrows": [
+        "r88-flip-relay-west",
+        "r88-flip-relay-east",
+        "r88-flip-relay-northcap",
+        "r88-flip-relay-southcap"
+      ],
+      "stops": ["bottom:7:7"],
+      "pattern": "relay-west"
+    },
+    {
+      "id": 89,
+      "kind": "flip",
+      "arrows": [
+        "r89-flip-lane-waiter",
+        "r89-flip-lane-packer",
+        "r89-flip-lane-lid"
+      ],
+      "stops": ["back:5:5"],
+      "pattern": "lane"
+    },
+    {
+      "id": 90,
+      "kind": "flip",
+      "arrows": [
+        "r90-flip-weave-reverser",
+        "r90-flip-weave-runner",
+        "r90-flip-weave-cap"
+      ],
+      "stops": ["front:5:6"],
+      "pattern": "weave"
+    },
+    {
+      "id": 92,
+      "kind": "flip",
+      "arrows": [
+        "r92-flip-lane-packer",
+        "r92-flip-lane-waiter",
+        "r92-flip-lane-lid"
+      ],
+      "stops": ["back:6:11"],
+      "pattern": "lane-packer"
+    },
+    {
+      "id": 96,
+      "kind": "flip",
+      "arrows": [
+        "r96-flip-bounce-runner",
+        "r96-flip-bounce-reverser",
+        "r96-flip-bounce-cap"
+      ],
+      "stops": ["back:0:10"],
+      "pattern": "bounce"
+    },
+    {
+      "id": 99,
+      "kind": "rotor",
+      "arrows": [
+        "r99-rotor-lane-window-opener",
+        "r99-rotor-lane-window-riser",
+        "r99-rotor-lane-window-window",
+        "r99-rotor-lane-window-capper",
+        "r99-rotor-lane-window-latch"
+      ],
+      "stops": ["left:7:1"],
+      "pattern": "lane-window"
+    },
+    {
+      "id": 100,
+      "kind": "flip",
+      "arrows": [
+        "r100-flip-relay-west",
+        "r100-flip-relay-east",
+        "r100-flip-relay-northcap",
+        "r100-flip-relay-southcap"
+      ],
+      "stops": ["top:6:2"],
+      "pattern": "relay-west"
+    },
+    {
+      "id": 101,
+      "kind": "rotor",
+      "arrows": [
+        "r101-rotor-lane-window-opener",
+        "r101-rotor-lane-window-riser",
+        "r101-rotor-lane-window-window",
+        "r101-rotor-lane-window-capper",
+        "r101-rotor-lane-window-latch"
+      ],
+      "stops": ["bottom:14:10"],
+      "pattern": "lane-window"
+    },
+    {
+      "id": 102,
+      "kind": "rotor",
+      "arrows": [
+        "r102-rotor-lane-window-opener",
+        "r102-rotor-lane-window-riser",
+        "r102-rotor-lane-window-window",
+        "r102-rotor-lane-window-capper",
+        "r102-rotor-lane-window-latch"
+      ],
+      "stops": ["left:9:11"],
+      "pattern": "lane-window"
+    },
+    {
+      "id": 107,
+      "kind": "flip",
+      "arrows": [
+        "r107-flip-relay2-traverser",
+        "r107-flip-relay2-lid",
+        "r107-flip-relay2-west",
+        "r107-flip-relay2-east"
+      ],
+      "stops": ["right:10:3"],
+      "pattern": "relay2-traverser"
+    },
+    {
+      "id": 108,
+      "kind": "flip",
+      "arrows": [
+        "r108-flip-relay-east",
+        "r108-flip-relay-west",
+        "r108-flip-relay-northcap",
+        "r108-flip-relay-southcap"
+      ],
+      "stops": ["left:6:5"],
+      "pattern": "relay-east"
+    },
+    {
+      "id": 111,
+      "kind": "rotor",
+      "arrows": [
+        "r111-rotor-cycle-gate-opener",
+        "r111-rotor-cycle-gate-dropper",
+        "r111-rotor-cycle-gate-latch"
+      ],
+      "stops": ["front:6:6"],
+      "pattern": "cycle-gate"
+    },
+    {
+      "id": 114,
+      "kind": "flip",
+      "arrows": [
+        "r114-flip-weave-reverser",
+        "r114-flip-weave-runner",
+        "r114-flip-weave-cap"
+      ],
+      "stops": ["bottom:10:3"],
+      "pattern": "weave"
+    },
+    {
+      "id": 115,
+      "kind": "flip",
+      "arrows": [
+        "r115-flip-relay-west",
+        "r115-flip-relay-east",
+        "r115-flip-relay-northcap",
+        "r115-flip-relay-southcap"
+      ],
+      "stops": ["right:14:4"],
+      "pattern": "relay-west"
+    },
+    {
+      "id": 117,
+      "kind": "flip",
+      "arrows": [
+        "r117-flip-relay-east",
+        "r117-flip-relay-west",
+        "r117-flip-relay-southcap",
+        "r117-flip-relay-northcap"
+      ],
+      "stops": ["back:11:6"],
+      "pattern": "relay-east"
+    },
+    {
+      "id": 119,
+      "kind": "flip",
+      "arrows": [
+        "r119-flip-weave-reverser",
+        "r119-flip-weave-runner",
+        "r119-flip-weave-cap"
+      ],
+      "stops": ["front:11:7"],
+      "pattern": "weave"
+    },
+    {
+      "id": 121,
+      "kind": "flip",
+      "arrows": [
+        "r121-flip-relay2-traverser",
+        "r121-flip-relay2-lid",
+        "r121-flip-relay2-west",
+        "r121-flip-relay2-east"
+      ],
+      "stops": ["right:14:15"],
+      "pattern": "relay2-traverser"
+    },
+    {
+      "id": 124,
+      "kind": "flip",
+      "arrows": [
+        "r124-flip-weave-runner",
+        "r124-flip-weave-reverser",
+        "r124-flip-weave-cap"
+      ],
+      "stops": ["back:3:13"],
+      "pattern": "weave"
+    },
+    {
+      "id": 126,
+      "kind": "flip",
+      "arrows": [
+        "r126-flip-bounce-runner",
+        "r126-flip-bounce-reverser",
+        "r126-flip-bounce-cap"
+      ],
+      "stops": ["front:1:14"],
+      "pattern": "bounce"
+    },
+    {
+      "id": 127,
+      "kind": "flip",
+      "arrows": [
+        "r127-flip-relay-east",
+        "r127-flip-relay-west",
+        "r127-flip-relay-southcap",
+        "r127-flip-relay-northcap"
+      ],
+      "stops": ["bottom:2:3"],
+      "pattern": "relay-east"
+    },
+    {
+      "id": 131,
+      "kind": "flip",
+      "arrows": [
+        "r131-flip-relay-east",
+        "r131-flip-relay-west",
+        "r131-flip-relay-northcap",
+        "r131-flip-relay-southcap"
+      ],
+      "stops": ["left:7:9"],
+      "pattern": "relay-east"
+    },
+    {
+      "id": 137,
+      "kind": "rotor",
+      "arrows": [
+        "r137-rotor-lane-window-opener",
+        "r137-rotor-lane-window-riser",
+        "r137-rotor-lane-window-window",
+        "r137-rotor-lane-window-capper",
+        "r137-rotor-lane-window-latch"
+      ],
+      "stops": ["right:7:12"],
+      "pattern": "lane-window"
+    },
+    {
+      "id": 139,
+      "kind": "rotor",
+      "arrows": [
+        "r139-rotor-lane-window-opener",
+        "r139-rotor-lane-window-riser",
+        "r139-rotor-lane-window-window",
+        "r139-rotor-lane-window-capper",
+        "r139-rotor-lane-window-latch"
+      ],
+      "stops": ["back:11:6"],
+      "pattern": "lane-window"
+    },
+    {
+      "id": 142,
+      "kind": "flip",
+      "arrows": [
+        "r142-flip-bounce-runner",
+        "r142-flip-bounce-reverser",
+        "r142-flip-bounce-cap"
+      ],
+      "stops": ["bottom:5:5"],
+      "pattern": "bounce"
+    },
+    {
+      "id": 148,
+      "kind": "flip",
+      "arrows": [
+        "r148-flip-relay2-traverser",
+        "r148-flip-relay2-lid",
+        "r148-flip-relay2-west",
+        "r148-flip-relay2-east"
+      ],
+      "stops": ["right:4:8"],
+      "pattern": "relay2-traverser"
+    },
+    {
+      "id": 151,
+      "kind": "flip",
+      "arrows": [
+        "r151-flip-relay-east",
+        "r151-flip-relay-west",
+        "r151-flip-relay-southcap",
+        "r151-flip-relay-northcap"
+      ],
+      "stops": ["right:5:12"],
+      "pattern": "relay-east"
+    },
+    {
+      "id": 152,
+      "kind": "flip",
+      "arrows": [
+        "r152-flip-relay-west",
+        "r152-flip-relay-east",
+        "r152-flip-relay-northcap",
+        "r152-flip-relay-southcap"
+      ],
+      "stops": ["top:6:7"],
+      "pattern": "relay-west"
+    },
+    {
+      "id": 156,
+      "kind": "rotor",
+      "arrows": [
+        "r156-rotor-lane-window-opener",
+        "r156-rotor-lane-window-riser",
+        "r156-rotor-lane-window-window",
+        "r156-rotor-lane-window-capper",
+        "r156-rotor-lane-window-latch"
+      ],
+      "stops": ["left:10:11"],
+      "pattern": "lane-window"
+    },
+    {
+      "id": 157,
+      "kind": "flip",
+      "arrows": [
+        "r157-flip-bounce-reverser",
+        "r157-flip-bounce-runner",
+        "r157-flip-bounce-cap"
+      ],
+      "stops": ["left:13:15"],
+      "pattern": "bounce"
+    },
+    {
+      "id": 162,
+      "kind": "flip",
+      "arrows": [
+        "r162-flip-relay-west",
+        "r162-flip-relay-east",
+        "r162-flip-relay-northcap",
+        "r162-flip-relay-southcap"
+      ],
+      "stops": ["bottom:13:9"],
+      "pattern": "relay-west"
+    },
+    {
+      "id": 163,
+      "kind": "flip",
+      "arrows": [
+        "r163-flip-lane-packer",
+        "r163-flip-lane-waiter",
+        "r163-flip-lane-lid"
+      ],
+      "stops": ["top:8:12"],
+      "pattern": "lane-packer"
+    },
+    {
+      "id": 167,
+      "kind": "rotor",
+      "arrows": [
+        "r167-rotor-lane-window-opener",
+        "r167-rotor-lane-window-riser",
+        "r167-rotor-lane-window-window",
+        "r167-rotor-lane-window-capper",
+        "r167-rotor-lane-window-latch"
+      ],
+      "stops": ["bottom:6:5"],
+      "pattern": "lane-window"
+    },
+    {
+      "id": 169,
+      "kind": "rotor",
+      "arrows": [
+        "r169-rotor-lane-window-opener",
+        "r169-rotor-lane-window-riser",
+        "r169-rotor-lane-window-window",
+        "r169-rotor-lane-window-capper",
+        "r169-rotor-lane-window-latch"
+      ],
+      "stops": ["bottom:3:10"],
+      "pattern": "lane-window"
+    },
+    {
+      "id": 170,
+      "kind": "flip",
+      "arrows": [
+        "r170-flip-relay-east",
+        "r170-flip-relay-west",
+        "r170-flip-relay-southcap",
+        "r170-flip-relay-northcap"
+      ],
+      "stops": ["left:15:14"],
+      "pattern": "relay-east"
+    },
+    {
+      "id": 176,
+      "kind": "flip",
+      "arrows": [
+        "r176-flip-lane-waiter",
+        "r176-flip-lane-packer",
+        "r176-flip-lane-lid"
+      ],
+      "stops": ["top:7:11"],
+      "pattern": "lane"
+    },
+    {
+      "id": 179,
+      "kind": "rotor",
+      "arrows": [
+        "r179-rotor-lane-window-opener",
+        "r179-rotor-lane-window-riser",
+        "r179-rotor-lane-window-window",
+        "r179-rotor-lane-window-capper",
+        "r179-rotor-lane-window-latch"
+      ],
+      "stops": ["left:7:13"],
+      "pattern": "lane-window"
+    },
+    {
+      "id": 190,
+      "kind": "flip",
+      "arrows": [
+        "r190-flip-relay2-traverser",
+        "r190-flip-relay2-lid",
+        "r190-flip-relay2-west",
+        "r190-flip-relay2-east"
+      ],
+      "stops": ["left:5:3"],
+      "pattern": "relay2-traverser"
+    },
+    {
+      "id": 191,
+      "kind": "flip",
+      "arrows": [
+        "r191-flip-weave-reverser",
+        "r191-flip-weave-runner",
+        "r191-flip-weave-cap"
+      ],
+      "stops": ["back:5:6"],
+      "pattern": "weave"
+    },
+    {
+      "id": 196,
+      "kind": "rotor",
+      "arrows": [
+        "r196-rotor-lane-window-opener",
+        "r196-rotor-lane-window-riser",
+        "r196-rotor-lane-window-window",
+        "r196-rotor-lane-window-capper",
+        "r196-rotor-lane-window-latch"
+      ],
+      "stops": ["left:7:14"],
+      "pattern": "lane-window"
+    }
+  ]
+}
