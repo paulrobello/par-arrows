@@ -14,6 +14,7 @@ import { cellKey, cellToWorld, faceNormal } from "../src/core/topology";
 import type { Cell, Endpoint } from "../src/core/types";
 import { solveLevelTargets } from "../src/core/validation";
 import { cachedLevel } from "./generated-levels";
+import { fundHints, advanceHint } from "./hint-fixtures";
 import { waitForReady } from "./runtime-fixtures";
 
 const REVERSER = "flip-intro-reverser";
@@ -419,6 +420,7 @@ async function assertScriptedWalkthrough(
     // Non-discriminating: the walkthrough gates hints to the guard, and the
     // guard also leads the level's candidate order, so this cannot land on the
     // runner whatever the spot reads. assertSeenPlayAndReload pins the rule.
+    await fundHints(page);
     await page.click("#hint-button");
     const hinted = (await state(page)).hint;
     assert.ok(hinted, "A hint must be showing");
@@ -428,7 +430,7 @@ async function assertScriptedWalkthrough(
       "The hint must read the flipped spot",
     );
     assert.equal(hinted.arrowId, GUARD);
-    await page.evaluate(() => window.advanceTime?.(3200));
+    await advanceHint(page, 3200);
     assert.equal((await state(page)).hint, null);
 
     await clickArrow(page, GUARD);
@@ -565,11 +567,12 @@ async function assertSeenPlayAndReload(
 
     // Non-discriminating for the same reason as the walkthrough check: the
     // guard is the first safe candidate in level order in either spot state.
+    await fundHints(page);
     await page.click("#hint-button");
     const hinted = (await state(page)).hint;
     assert.ok(hinted, "A hint must be showing");
     assert.notEqual(hinted.arrowId, RUNNER);
-    await page.evaluate(() => window.advanceTime?.(3200));
+    await advanceHint(page, 3200);
 
     // Discriminating: the flipped spot now turns the runner into the guard.
     await activate(page, RUNNER);

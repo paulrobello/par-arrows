@@ -30,6 +30,12 @@ import type {
 } from "./core/types";
 import { PointerInput } from "./input";
 import {
+  type Economy,
+  emptyEconomy,
+  HINT_COST,
+  COMPLETION_REWARD,
+} from "./economy";
+import {
   detectInstallContext,
   installSteps,
   PwaInstallPrompt,
@@ -37,7 +43,10 @@ import {
 } from "./pwa";
 import { arrowMotionDuration, PuzzleRenderer } from "./render/renderer";
 import {
-  clearCampaign,
+  campaignEconomy,
+  commitCampaign,
+  resetCampaign,
+  type CampaignSave,
   type LoadedCampaign,
   layoutFingerprint,
   loadCampaign,
@@ -45,7 +54,6 @@ import {
   loadSettings,
   type PlayerSettings,
   type StorageResult,
-  saveCampaign,
   saveSettings,
 } from "./storage";
 import { TutorialRunner, scriptForLevel } from "./tutorial";
@@ -74,6 +82,7 @@ interface Hint {
   phase: "rotating" | "flashing";
   elapsed: number;
   lit: boolean;
+  delivering: boolean;
 }
 
 const CELEBRATION_DURATION = 2080;
@@ -139,6 +148,9 @@ export class ParArrowsApp {
   private state: GameState = createGameState(LEVEL_ONE);
   private displayedState: GameState = this.state;
   private unlockedLevelId = 1;
+  private economy: Economy | undefined = emptyEconomy();
+  private savingAvailable = true;
+  private campaignEpoch = 0;
   private tutorialComplete = false;
   private settings: PlayerSettings = loadSettings();
   private motion: Motion | undefined;
@@ -176,7 +188,7 @@ export class ParArrowsApp {
         <p class="wrap-intro" id="wrap-intro" hidden>Yellow edges carry arrows onto the next face. Try an arrow pointing toward the yellow line.</p>
         <header class="hud" aria-label="Puzzle status">
           <div class="brand"><span class="brand-mark">↗</span><span>Par Arrows</span></div>
-          <div class="status-chip"><span id="level-label">Cube 1</span><span class="separator">·</span><span id="arrows-label">0 arrows</span></div>
+          <div class="status-chip"><span id="level-label">Cube 1</span><span class="separator">·</span><span id="arrows-label">0 arrows</span><span class="coin-balance" id="coin-balance" aria-live="polite">0 coins</span><span class="hint-help" id="hint-help"></span></div>
           <div class="lives" aria-live="polite"><span class="lives-caption">LIVES</span><strong id="lives-label">5</strong></div>
         </header>
         <section class="game-stage" id="game-stage" aria-label="Interactive cube puzzle">
@@ -200,7 +212,7 @@ export class ParArrowsApp {
         </section>
         <nav class="control-dock" aria-label="Puzzle controls">
           <button class="dock-button" data-action="reset" type="button" aria-label="Reset camera view">⌖<span>View</span></button>
-          <button class="dock-button" id="hint-button" data-action="hint" type="button" aria-label="Hint">✦<span>Hint</span></button>
+          <button class="dock-button" id="hint-button" data-action="hint" type="button" aria-label="Hint" aria-describedby="hint-price hint-help coin-balance">✦<span>Hint</span><span class="hint-price" id="hint-price">${HINT_COST} coins</span></button>
           <button class="dock-button" data-action="retry" type="button">↻<span>Retry</span></button>
           <form class="level-picker" id="level-form"><label for="level-input">Cube</label><div><input id="level-input" aria-label="Choose an unlocked cube" inputmode="numeric" min="1" step="1" type="number" /><button type="submit">Go</button></div></form>
           <button class="dock-button" id="settings-button" type="button" aria-expanded="false">☼<span>Settings</span></button>
@@ -314,6 +326,7 @@ export class ParArrowsApp {
       },
     });
     this.bindControls();
+    window.addEventListener("storage", this.handleWalletStorage);
     this.systemMotionPreference.addEventListener(
       "change",
       this.handleMotionPreference,
@@ -352,6 +365,7 @@ export class ParArrowsApp {
 
   dispose(): void {
     this.disposed = true;
+    window.removeEventListener("storage", this.handleWalletStorage);
     this.loadRequest += 1;
     cancelAnimationFrame(this.animationFrame);
     this.systemMotionPreference.removeEventListener(
@@ -476,6 +490,8 @@ export class ParArrowsApp {
         ),
       ),
       lives: this.displayedState.lives,
+      coins: this.economy?.coins ?? null,
+      hintCost: HINT_COST,
       remainingIds: this.displayedState.remainingIds,
       failedIds: this.displayedState.failedIds,
       settledPaths: this.displayedState.settledPaths ?? {},
@@ -520,6 +536,7 @@ export class ParArrowsApp {
             phase: this.hint.phase,
             elapsed: Math.round(this.hint.elapsed),
             lit: this.hint.lit,
+            purchasing: this.hint.delivering && this.hint.phase === "rotating",
           }
         : null,
       loading: this.loading,
@@ -603,7 +620,7 @@ export class ParArrowsApp {
         this.previewResolvedLevelId = level.id;
         this.updatePreviewUrl(level.id);
       }
-      this.persist();
+      await this.persist();
     } catch (error) {
       if (this.disposed || request !== this.loadRequest) return;
       this.loadingError =
@@ -624,7 +641,10 @@ export class ParArrowsApp {
     this.loadRequest += 1;
     this.requestedLevelId = 1;
     this.retryPurpose = undefined;
-    clearCampaign();
+    this.campaignEpoch += 1;
+    this.economy = emptyEconomy();
+    this.savingAvailable = true;
+    void resetCampaign();
     this.level = LEVEL_ONE;
     this.state = createGameState(LEVEL_ONE);
     this.displayedState = this.state;
@@ -769,7 +789,8 @@ export class ParArrowsApp {
     );
   }
 
-  private attempt(target: MoveTarget): void {
+  /** Returns the queued save so automation can await a durable move. */
+  private attempt(target: MoveTarget): Promise<void> | undefined {
     const { arrowId, endpoint } = target;
     this.cancelHint();
     // A new move must never begin while a gate still shows its padlock to
@@ -795,7 +816,7 @@ export class ParArrowsApp {
         Math.min(MAX_LEVEL_ID, this.level.id + 1),
       );
     }
-    this.persist();
+    const persisted = this.persist();
     this.motion = {
       result,
       elapsed: 0,
@@ -818,6 +839,7 @@ export class ParArrowsApp {
     if (!this.settings.reducedMotion) {
       this.renderer.beginKeyFlights(result, this.motion.duration);
     }
+    return persisted;
   }
 
   private finishMotion(arrowId: string): void {
@@ -949,8 +971,11 @@ export class ParArrowsApp {
       this.displayedState = this.state;
       this.unlockedLevelId = saved.value.unlockedLevelId;
       this.tutorialComplete = saved.value.tutorialComplete;
-      if (this.tutorialComplete) this.persist();
+      this.economy = saved.value.economy;
     }
+    // Persist migration even for a legacy save whose tutorial was incomplete.
+    await this.persist();
+    if (this.disposed || request !== this.loadRequest) return;
     this.renderer.setLevel(this.level, this.state);
     this.loading = false;
     this.renderUi();
@@ -993,20 +1018,38 @@ export class ParArrowsApp {
     void this.loadLevel(levelId);
   }
 
-  private persist(): void {
-    if (this.preview.active) return;
-    const stored = saveCampaign({
+  private campaignSave(): CampaignSave {
+    return {
       currentLevelId: this.level.id,
       unlockedLevelId: this.unlockedLevelId,
       state: this.state,
       tutorialComplete: this.tutorialComplete,
       layout: layoutFingerprint(this.level),
+    };
+  }
+
+  private async persist(): Promise<void> {
+    if (this.preview.active) return;
+    const epoch = this.campaignEpoch;
+    const stored = await commitCampaign(this.campaignSave(), {
+      valid: () => !this.disposed && epoch === this.campaignEpoch,
     });
-    if (!stored) {
+    if (this.disposed || epoch !== this.campaignEpoch) return;
+    this.savingAvailable = stored.saved;
+    // A later queued purchase may have committed before this continuation.
+    if (stored.saved) this.economy = campaignEconomy();
+    else {
       this.message.textContent =
         "Progress cannot be saved in this browser session.";
     }
+    this.renderUi();
   }
+
+  private readonly handleWalletStorage = (): void => {
+    if (this.preview.active || this.loading) return;
+    this.economy = campaignEconomy();
+    this.renderUi();
+  };
 
   private showPreviewError(error: string, requestedLevelId: number): void {
     this.loadRequest += 1;
@@ -1079,12 +1122,37 @@ export class ParArrowsApp {
       (this.loadingError !== undefined && !this.preview.active);
     this.levelInput.disabled = pickerDisabled;
     this.levelSubmit.disabled = pickerDisabled;
+    const hintUnavailable = this.hintUnavailable();
+    const balance = this.requireElement("coin-balance");
+    const coins = this.economy?.coins;
+    const compact = (value: number): string =>
+      new Intl.NumberFormat("en", {
+        notation: "compact",
+        maximumFractionDigits: 1,
+      }).format(value);
+    balance.textContent = this.preview.active
+      ? "Coins unchanged"
+      : coins === undefined
+        ? "Coins unavailable"
+        : `${compact(coins)} coins`;
+    balance.title = this.preview.active
+      ? "Campaign balance is unchanged"
+      : coins === undefined
+        ? "Wallet unavailable"
+        : `${coins} coins`;
+    balance.setAttribute("aria-label", balance.title);
+    this.requireElement("hint-help").textContent =
+      hintUnavailable ?? `First clear +${COMPLETION_REWARD} coins`;
+    this.hintButton.title = hintUnavailable
+      ? `Hint costs ${HINT_COST} coins. ${hintUnavailable}.`
+      : `Show a safe arrow for ${HINT_COST} coins`;
     this.hintButton.disabled =
       this.loading ||
       this.loadingError !== undefined ||
       this.motion !== undefined ||
       this.hint !== undefined ||
-      this.state.status !== "playing";
+      this.state.status !== "playing" ||
+      hintUnavailable !== undefined;
     this.levelInput.value = String(this.level.id);
     this.levelInput.max = String(
       this.preview.active ? MAX_LEVEL_ID : this.unlockedLevelId,
@@ -1126,7 +1194,7 @@ export class ParArrowsApp {
     if (won) {
       this.requireElement("state-kicker").textContent = "NICE WORK";
       title.textContent = "Cube cleared!";
-      copy.textContent = "Every arrow is free. Your next cube is ready.";
+      copy.textContent = `Every arrow is free. First clears earn ${COMPLETION_REWARD} coins.`;
       button.textContent = "Next Level";
       button.dataset.action = "next";
     } else if (this.state.status === "lost") {
@@ -1313,12 +1381,23 @@ export class ParArrowsApp {
     );
   }
 
+  private hintUnavailable(): string | undefined {
+    if (this.preview.active) return "Campaign only";
+    if (this.state.lives <= 0) return "Retry before buying a Hint";
+    if (!this.savingAvailable) return "Hints need saved progress";
+    if (!this.economy) return "Wallet unavailable";
+    if (this.economy.coins < HINT_COST)
+      return `Need ${HINT_COST - this.economy.coins} more coins`;
+    return undefined;
+  }
+
   private beginHint(): void {
     if (
       this.loading ||
       this.loadingError !== undefined ||
       this.motion ||
       this.hint ||
+      this.hintUnavailable() !== undefined ||
       this.state.status !== "playing"
     ) {
       return;
@@ -1338,20 +1417,64 @@ export class ParArrowsApp {
       .filter((candidate) => this.gateAllows(candidate))
       .find((candidate) => this.isSafeMove(candidate));
     if (!target || !this.renderer.beginHint(target)) {
+      this.hintStatus.textContent =
+        "No safe hint is available. No coins spent.";
       return;
     }
     this.hint = {
       target,
-      phase: this.shouldReduceMotion() ? "flashing" : "rotating",
+      phase: "rotating",
       elapsed: 0,
-      lit: this.shouldReduceMotion(),
+      lit: false,
+      delivering: false,
     };
     if (this.shouldReduceMotion()) {
       this.renderer.animateHintFocus(1);
-      this.renderer.flashHint(true);
+      this.deliverHint();
     }
-    this.hintStatus.textContent = "Showing a safe arrow.";
+    this.hintStatus.textContent = "Finding a safe arrow…";
     this.renderUi();
+  }
+
+  private deliverHint(): void {
+    const hint = this.hint;
+    if (!hint || hint.delivering || hint.phase === "flashing") return;
+    hint.delivering = true;
+    const state = this.state;
+    const epoch = this.campaignEpoch;
+    void commitCampaign(this.campaignSave(), {
+      purchaseHint: true,
+      valid: () =>
+        !this.disposed &&
+        epoch === this.campaignEpoch &&
+        this.hint === hint &&
+        this.state === state &&
+        !this.loading &&
+        !this.motion &&
+        state.status === "playing" &&
+        state.lives > 0 &&
+        this.renderer.canShowHint(hint.target) &&
+        this.gateAllows(hint.target) &&
+        this.isSafeMove(hint.target),
+      delivered: (economy) => {
+        this.economy = economy;
+        this.savingAvailable = true;
+        hint.phase = "flashing";
+        hint.elapsed = 0;
+        hint.lit = true;
+        this.renderer.flashHint(true);
+        this.hintStatus.textContent = `Showing a safe arrow. ${HINT_COST} coins spent.`;
+        this.renderUi();
+      },
+    }).then((result) => {
+      if (this.disposed || this.hint !== hint) return;
+      if (result.saved) return;
+      if (result.economy) this.economy = campaignEconomy();
+      if (result.error === "storage") this.savingAvailable = false;
+      this.cancelHint();
+      this.hintStatus.textContent = "Hint unavailable. No coins spent.";
+      this.renderUi();
+    });
   }
 
   private updateHint(delta: number): void {
@@ -1359,11 +1482,12 @@ export class ParArrowsApp {
     if (!hint) return;
     hint.elapsed += delta;
     if (hint.phase === "rotating") {
+      if (hint.delivering) return;
       const progress = Math.min(1, hint.elapsed / HINT_FOCUS_DURATION);
       this.renderer.animateHintFocus(progress);
       if (progress < 1) return;
-      hint.phase = "flashing";
-      hint.elapsed = 0;
+      this.deliverHint();
+      return;
     }
     const lit = this.shouldReduceMotion()
       ? true
@@ -1379,6 +1503,11 @@ export class ParArrowsApp {
 
   private snapHintForReducedMotion(): void {
     if (!this.hint) return;
+    if (this.hint.phase === "rotating") {
+      this.renderer.animateHintFocus(1);
+      this.deliverHint();
+      return;
+    }
     this.hint.phase = "flashing";
     this.hint.elapsed = 0;
     this.hint.lit = true;

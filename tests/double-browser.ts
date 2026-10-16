@@ -5,6 +5,7 @@ import sharp from "sharp";
 import { PerspectiveCamera, Vector3 } from "three";
 import { DOUBLE_INTRO_LEVEL } from "../src/content/double-intro";
 import { cellToWorld } from "../src/core/topology";
+import { fundHints, advanceHint } from "./hint-fixtures";
 import { waitForReady } from "./runtime-fixtures";
 
 const CHOICE = "double-intro-choice";
@@ -282,6 +283,7 @@ export async function assertDoubleIntro(
       failedColors.failed > 10,
       "The whole-arrow failure outline must render",
     );
+    await fundHints(page);
     await page.getByRole("button", { name: "Hint" }).click();
     const hint = (
       await page.evaluate(() =>
@@ -289,7 +291,7 @@ export async function assertDoubleIntro(
       )
     ).hint as { endpoint: string } | null;
     assert.equal(hint?.endpoint, "tail", "The hint must target the safe half");
-    await page.evaluate(() => window.advanceTime?.(5000));
+    await advanceHint(page, 5000);
     await activate(page, CHOICE, "head");
     assert.equal((await state(page)).lives, failed.lives);
     await activate(page, CHOICE, "tail");

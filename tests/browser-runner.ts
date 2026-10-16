@@ -19,6 +19,7 @@ import { solveLevel } from "../src/core/validation";
 import { arrowDimensions } from "../src/render/renderer";
 import { assertContextRecovery } from "./context-browser";
 import { runHintChecks } from "./hints-browser";
+import { assertHintEconomy } from "./hint-economy-browser";
 import { assertConsistentMotion } from "./motion-browser";
 import { assertOverlapIntro } from "./overlap-browser";
 import { assertWidePickTargets } from "./pick-browser";
@@ -1556,6 +1557,7 @@ try {
   assert.equal(await page.locator('link[rel="manifest"]').count(), 1);
   console.log("PASS PWA manifest and installation assets");
   await assertThemes(page);
+  await assertHintEconomy(browser, url, output);
   await runHintChecks(page, output);
 
   const mobile = await browser.newContext({

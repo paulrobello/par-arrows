@@ -72,9 +72,10 @@ export async function assertRuntimeCampaign(
   );
   assert.ok(blocked);
   const blockedIds = overlappingArrowIds(twelve, blocked.id);
-  await page.evaluate((id) => {
-    window.__PAR_ARROWS_TEST__?.activate(id);
+  await page.evaluate(async (id) => {
+    const persisted = window.__PAR_ARROWS_TEST__?.activate(id);
     window.advanceTime?.(1000);
+    await persisted;
   }, blocked.id);
   const saved = await page.evaluate((key) => localStorage.getItem(key), KEY);
   assert.ok(saved);

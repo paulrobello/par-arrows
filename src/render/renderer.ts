@@ -1440,6 +1440,7 @@ export class PuzzleRenderer {
 
   /** Focuses the chosen arrow's actual head face, without changing game state. */
   beginHint(target: MoveTarget): boolean {
+    if (!this.canShowHint(target)) return false;
     const visual = this.visuals.get(target.arrowId);
     const hintedHead =
       target.endpoint === "tail" ? visual?.tailHead : visual?.head;
@@ -1450,6 +1451,16 @@ export class PuzzleRenderer {
     this.hintLit = false;
     this.startFaceFocus(target, face);
     return true;
+  }
+
+  /** Rechecked at purchase time: a lost graphics context cannot deliver a hint. */
+  canShowHint(target: MoveTarget): boolean {
+    const visual = this.visuals.get(target.arrowId);
+    const head = target.endpoint === "tail" ? visual?.tailHead : visual?.head;
+    return (
+      !this.renderer.getContext().isContextLost() &&
+      Boolean(visual?.visible && head?.visible && head.face)
+    );
   }
 
   /**

@@ -16,7 +16,10 @@ interface Window {
     resetProgress(): void;
     getState(): string;
     getLevel(): import("./core/types").LevelDefinition;
-    activate(arrowId: string, endpoint?: import("./core/types").Endpoint): void;
+    activate(
+      arrowId: string,
+      endpoint?: import("./core/types").Endpoint,
+    ): Promise<void> | undefined;
     render(): void;
     renderStats(): { calls: number; triangles: number };
     orbit(deltaX: number, deltaY: number): void;

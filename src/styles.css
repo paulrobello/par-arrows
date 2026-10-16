@@ -229,6 +229,30 @@ button {
   color: var(--accent);
 }
 
+.coin-balance,
+.hint-help {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.6rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.coin-balance {
+  color: var(--page-text);
+}
+
+.hint-help {
+  color: var(--muted-text);
+  font-size: 0.55rem;
+}
+
+.dock-button .hint-price {
+  font-size: 0.56rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .lives {
   display: flex;
   align-items: baseline;
@@ -766,9 +790,17 @@ input:focus-visible {
     top: max(0.8rem, env(safe-area-inset-top));
     right: 0.85rem;
     left: 0.85rem;
+    gap: 0.5rem;
   }
   .brand {
-    font-size: 0.7rem;
+    gap: 0.35rem;
+    padding: 0.35rem 0.55rem 0.35rem 0.35rem;
+    font-size: 0.65rem;
+    white-space: nowrap;
+  }
+  .brand-mark {
+    width: 1.5rem;
+    height: 1.5rem;
   }
   .status-chip {
     display: block;
@@ -777,19 +809,19 @@ input:focus-visible {
   }
   .tutorial-card {
     top: auto;
-    bottom: 6.8rem;
+    bottom: 7.9rem;
     transform: none;
   }
   .gesture-help {
     right: 50%;
-    bottom: 4.7rem;
+    bottom: 5.8rem;
     width: 90vw;
     transform: translateX(50%);
     text-align: center;
   }
   .storage-note {
     right: 50%;
-    bottom: 6.4rem;
+    bottom: 7.5rem;
     width: 90vw;
     transform: translateX(50%);
     text-align: center;

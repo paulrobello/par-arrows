@@ -17,6 +17,14 @@ import {
 import { cellKey } from "./core/topology";
 import { linkHeading } from "./core/wormholes";
 import type { Cell, GameState, Heading, LevelDefinition } from "./core/types";
+import {
+  type Economy,
+  emptyEconomy,
+  isEconomy,
+  migrateEconomy,
+  rewardCompletion,
+  spendHint,
+} from "./economy";
 
 const STORAGE_KEY = "par-arrows:campaign:v1";
 const SETTINGS_KEY = "par-arrows:settings:v1";
@@ -32,6 +40,8 @@ export interface CampaignSave {
 }
 
 export interface LoadedCampaign extends CampaignSave {
+  /** Undefined means a malformed wallet was preserved and purchases are blocked. */
+  readonly economy: Economy | undefined;
   /** Resolved for this session only. It is never written to local storage. */
   readonly level: LevelDefinition;
 }
@@ -55,10 +65,42 @@ export interface StorageResult<T> {
 }
 
 type StoredCampaign = Omit<Partial<CampaignSave>, "layout"> & {
+  readonly economy?: unknown;
   readonly contentVersion?: unknown;
   readonly seed?: unknown;
   readonly layout?: unknown;
 };
+
+function consistentMetadata(value: unknown): value is StoredCampaign & {
+  currentLevelId: number;
+  unlockedLevelId: number;
+} {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const row = value as StoredCampaign;
+  return (
+    isLevelId(row.currentLevelId) &&
+    isLevelId(row.unlockedLevelId) &&
+    row.unlockedLevelId >= row.currentLevelId
+  );
+}
+
+function economyOf(stored: StoredCampaign | undefined): Economy | undefined {
+  if (stored && Object.hasOwn(stored, "economy"))
+    return isEconomy(stored.economy) ? stored.economy : undefined;
+  return consistentMetadata(stored)
+    ? migrateEconomy(stored.unlockedLevelId)
+    : emptyEconomy();
+}
+
+/** Read-only refresh for wallet changes made by another tab. */
+export function campaignEconomy(): Economy | undefined {
+  try {
+    const raw = getStore()?.getItem(STORAGE_KEY);
+    return economyOf(raw ? (JSON.parse(raw) as StoredCampaign) : undefined);
+  } catch {
+    return undefined;
+  }
+}
 
 const DEFAULT_SETTINGS: PlayerSettings = {
   gridLines: true,
@@ -660,6 +702,7 @@ export async function loadCampaign(
         tutorialComplete: parsed.tutorialComplete === true,
         layout,
         level,
+        economy: economyOf(parsed),
       }
     : {
         currentLevelId,
@@ -668,6 +711,7 @@ export async function loadCampaign(
         tutorialComplete: parsed.tutorialComplete === true,
         layout,
         level,
+        economy: economyOf(parsed),
       };
 
   return {
@@ -686,35 +730,61 @@ export async function loadCampaign(
  * (both ids valid, unlocked >= current), so a corrupt stored row can never
  * promote progress the player has not earned.
  */
-export function saveCampaign(value: CampaignSave): boolean {
+export interface CampaignCommit {
+  readonly saved: boolean;
+  readonly economy: Economy | undefined;
+  readonly error?: "storage" | "wallet" | "funds" | "cancelled" | "delivery";
+}
+
+interface CommitOptions {
+  readonly purchaseHint?: boolean;
+  /** Checked inside the write lock, immediately before any debit. */
+  readonly valid?: () => boolean;
+  /** Synchronous delivery after a successful durable debit, inside the lock. */
+  readonly delivered?: (economy: Economy) => void;
+}
+
+function writeCampaign(
+  value: CampaignSave,
+  options: CommitOptions = {},
+): CampaignCommit {
+  if (options.valid && !options.valid())
+    return { saved: false, economy: undefined, error: "cancelled" };
   try {
     const store = getStore();
-    if (
-      !store ||
-      !isLevelId(value.currentLevelId) ||
-      !isLevelId(value.unlockedLevelId) ||
-      value.unlockedLevelId < value.currentLevelId
-    ) {
-      return false;
-    }
-    let unlockedLevelId = value.unlockedLevelId;
-    try {
-      const raw = store.getItem(STORAGE_KEY);
-      if (raw) {
-        const stored = JSON.parse(raw) as Partial<CampaignSave>;
-        const storedCurrent = stored.currentLevelId;
-        const storedUnlock = stored.unlockedLevelId;
-        if (
-          isLevelId(storedCurrent) &&
-          isLevelId(storedUnlock) &&
-          storedUnlock >= storedCurrent &&
-          storedUnlock > unlockedLevelId
-        ) {
-          unlockedLevelId = storedUnlock;
-        }
+    if (!store || !consistentMetadata(value))
+      return { saved: false, economy: undefined, error: "storage" };
+    let stored: StoredCampaign | undefined;
+    const raw = store.getItem(STORAGE_KEY);
+    if (raw) {
+      try {
+        const decoded: unknown = JSON.parse(raw);
+        if (decoded && typeof decoded === "object" && !Array.isArray(decoded))
+          stored = decoded as StoredCampaign;
+      } catch {
+        // An unreadable save contributes neither progress nor wallet credit.
       }
-    } catch {
-      // An unreadable stored save cannot block this write or contribute a merge.
+    }
+    const unlockedLevelId = consistentMetadata(stored)
+      ? Math.max(stored.unlockedLevelId, value.unlockedLevelId)
+      : value.unlockedLevelId;
+    let economy = economyOf(stored);
+    const priorEconomy = economy;
+    if (options.purchaseHint) {
+      if (value.state.status !== "playing" || value.state.lives <= 0)
+        return { saved: false, economy, error: "cancelled" };
+      if (!economy) return { saved: false, economy, error: "wallet" };
+      const spent = spendHint(economy);
+      if (!spent) return { saved: false, economy, error: "funds" };
+      economy = spent;
+    } else if (
+      economy &&
+      value.state.status === "won" &&
+      value.state.levelId === value.currentLevelId &&
+      value.state.lives > 0 &&
+      value.state.remainingIds.length === 0
+    ) {
+      economy = rewardCompletion(economy, value.currentLevelId);
     }
     store.setItem(
       STORAGE_KEY,
@@ -727,12 +797,58 @@ export function saveCampaign(value: CampaignSave): boolean {
         generatorVersion: GENERATOR_VERSION,
         seed: seedForLevel(value.currentLevelId),
         layout: value.layout,
+        // A damaged wallet never becomes a second legacy migration or erases progress.
+        economy: economy ?? stored?.economy ?? null,
       }),
     );
-    return true;
+    if (options.purchaseHint && economy) {
+      try {
+        options.delivered?.(economy);
+      } catch {
+        // Delivery and debit share the lock; no intervening write is lost.
+        if (raw === null) store.removeItem(STORAGE_KEY);
+        else store.setItem(STORAGE_KEY, raw);
+        return { saved: false, economy: priorEconomy, error: "delivery" };
+      }
+    }
+    return { saved: true, economy };
   } catch {
-    return false;
+    return { saved: false, economy: undefined, error: "storage" };
   }
+}
+
+/** Synchronous compatibility API. Runtime writes use commitCampaign's lock. */
+export function saveCampaign(value: CampaignSave): boolean {
+  return writeCampaign(value).saved;
+}
+
+let campaignWrites: Promise<unknown> = Promise.resolve();
+
+/** Serialize local writes and, where supported, writes from other tabs. */
+function campaignWrite<T>(write: () => T): Promise<T> {
+  const next = campaignWrites.then(() => {
+    if (typeof navigator !== "undefined" && navigator.locks)
+      return navigator.locks.request("par-arrows:campaign", write);
+    return write();
+  });
+  campaignWrites = next.catch(() => undefined);
+  return next;
+}
+
+export async function commitCampaign(
+  value: CampaignSave,
+  options: CommitOptions = {},
+): Promise<CampaignCommit> {
+  try {
+    return await campaignWrite(() => writeCampaign(value, options));
+  } catch {
+    return { saved: false, economy: undefined, error: "storage" };
+  }
+}
+
+/** Reset joins the same queue so an older pending write cannot resurrect coins. */
+export function resetCampaign(): Promise<void> {
+  return campaignWrite(() => clearCampaign());
 }
 
 export function loadSettings(): PlayerSettings {

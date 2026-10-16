@@ -18,6 +18,7 @@ import {
 import type { Cell } from "../src/core/types";
 import { arrowDimensions } from "../src/render/renderer";
 import { layoutFingerprint } from "../src/storage";
+import { fundHints, campaignProgress, advanceHint } from "./hint-fixtures";
 import { waitForReady } from "./runtime-fixtures";
 
 type Group = {
@@ -533,6 +534,16 @@ export async function assertOverlapIntro(
       OVERLAP_INTRO_LEVEL.id,
       "The public overlap selector opens its introduction",
     );
+    assert.equal(await page.locator("#hint-button").isDisabled(), true);
+    // Group hints are purchases in campaign play; preview has no free bypass.
+    await page.evaluate(() =>
+      localStorage.setItem(
+        "par-arrows:settings:v1",
+        JSON.stringify({ tutorialSeenLevels: [15] }),
+      ),
+    );
+    await page.goto(url);
+    await waitForReady(page);
     await loadOverlap(page);
     const diagnostics = await state(page);
     assert.deepEqual(
@@ -563,12 +574,13 @@ export async function assertOverlapIntro(
     const afterBlockerExit = await state(page);
     assert.ok(!afterBlockerExit.remainingIds.includes(blockerId));
 
+    await fundHints(page);
     const savedBeforeHint = await page.evaluate(() =>
       localStorage.getItem("par-arrows:campaign:v1"),
     );
     await page.getByRole("button", { name: "Hint", exact: true }).click();
     assert.equal((await state(page)).hint?.arrowId, pair.ids[0]);
-    await advance(page, 600);
+    await advanceHint(page, 700);
     const hinted = await state(page);
     assert.equal(hinted.hint?.phase, "flashing");
     assert.equal(hinted.hint?.lit, true);
@@ -578,10 +590,14 @@ export async function assertOverlapIntro(
         "Both linked arrows must be highlighted during the same hint flash",
       );
     }
-    assert.equal(
-      await page.evaluate(() => localStorage.getItem("par-arrows:campaign:v1")),
-      savedBeforeHint,
-      "Showing a group hint must not change campaign progress",
+    assert.deepEqual(
+      campaignProgress(
+        await page.evaluate(() =>
+          localStorage.getItem("par-arrows:campaign:v1"),
+        ),
+      ),
+      campaignProgress(savedBeforeHint),
+      "A group hint changes only the wallet",
     );
     await page.getByRole("button", { name: "Reset camera view" }).click();
 

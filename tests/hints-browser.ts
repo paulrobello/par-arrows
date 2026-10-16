@@ -10,6 +10,7 @@ import {
 } from "../src/core/topology";
 import type { GameState, LevelDefinition } from "../src/core/types";
 import { arrowDimensions } from "../src/render/renderer";
+import { fundHints, campaignProgress, advanceHint } from "./hint-fixtures";
 import { LEVELS, waitForReady } from "./runtime-fixtures";
 
 interface HintSnapshot {
@@ -38,7 +39,7 @@ async function snapshot(page: Page): Promise<HintSnapshot> {
 }
 
 async function advance(page: Page, milliseconds: number): Promise<void> {
-  await page.evaluate((ms) => window.advanceTime?.(ms), milliseconds);
+  await advanceHint(page, milliseconds);
 }
 
 function logical(state: HintSnapshot): unknown {
@@ -123,12 +124,13 @@ export async function runHintChecks(
     (id) => window.__PAR_ARROWS_TEST__?.loadLevel(id),
     level.id,
   );
+  await fundHints(page);
   const before = await snapshot(page);
   const savedBefore = await page.evaluate(() =>
     localStorage.getItem("par-arrows:campaign:v1"),
   );
   // The hint names the first safe arrow, and parking counts as safe: it costs
-  // nothing, and on circle levels the parker is exactly the arrow to suggest.
+  // no life, and on circle levels the parker is exactly the arrow to suggest.
   const safe = level.arrows.find((arrow) =>
     ["exit", "paused"].includes(
       simulateMove(level, createGameState(level), arrow.id).kind,
@@ -199,9 +201,11 @@ export async function runHintChecks(
   assert.equal((await snapshot(page)).hint, null);
   assert.equal(await button.isDisabled(), false);
   assert.deepEqual(logical(await snapshot(page)), logical(before));
-  assert.equal(
-    await page.evaluate(() => localStorage.getItem("par-arrows:campaign:v1")),
-    savedBefore,
+  assert.deepEqual(
+    campaignProgress(
+      await page.evaluate(() => localStorage.getItem("par-arrows:campaign:v1")),
+    ),
+    campaignProgress(savedBefore),
   );
 
   await button.click();
@@ -221,6 +225,10 @@ export async function runHintChecks(
   }
   if (!mobile) {
     await button.click();
+    await page.mouse.move(
+      bounds.x + bounds.width / 2,
+      bounds.y + bounds.height / 2,
+    );
     await page.mouse.wheel(0, 60);
     await page.waitForFunction(() => {
       const raw = window.render_game_to_text?.();
@@ -364,6 +372,6 @@ export async function runHintChecks(
     await page.setViewportSize({ width: 390, height: 844 });
   }
   console.log(
-    `PASS ${mobile ? "mobile" : "desktop"} safe hints: hidden-head reveal, rotation before flashing, cancellation, wrapped/red arrows, reduced motion, safe activation, and unchanged progress`,
+    `PASS ${mobile ? "mobile" : "desktop"} safe hints: hidden-head reveal, rotation before flashing, cancellation, wrapped/red arrows, reduced motion, safe activation, and coin purchases without changing the board`,
   );
 }
