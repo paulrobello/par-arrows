@@ -1,0 +1,260 @@
+[
+  {
+    "gridSize": 4,
+    "goal": {
+      "face": "front",
+      "x": 0,
+      "y": 0
+    },
+    "seed": 1,
+    "path": ["front:0:0"],
+    "next": 0.492200440261513
+  },
+  {
+    "gridSize": 4,
+    "goal": {
+      "face": "front",
+      "x": 0,
+      "y": 0
+    },
+    "seed": 37,
+    "path": ["front:0:0"],
+    "next": 0.7668873304501176
+  },
+  {
+    "gridSize": 4,
+    "goal": {
+      "face": "front",
+      "x": 0,
+      "y": 0
+    },
+    "seed": 64,
+    "path": ["front:0:0"],
+    "next": 0.1793323685415089
+  },
+  {
+    "gridSize": 4,
+    "goal": {
+      "face": "front",
+      "x": 3,
+      "y": 3
+    },
+    "seed": 1,
+    "path": [
+      "front:0:0",
+      "front:0:1",
+      "front:0:2",
+      "front:0:3",
+      "front:1:3",
+      "bottom:1:0",
+      "bottom:2:0",
+      "bottom:3:0",
+      "front:3:3"
+    ],
+    "next": 0.0016011265106499195
+  },
+  {
+    "gridSize": 4,
+    "goal": {
+      "face": "front",
+      "x": 3,
+      "y": 3
+    },
+    "seed": 37,
+    "path": [
+      "front:0:0",
+      "front:1:0",
+      "top:1:3",
+      "top:2:3",
+      "top:3:3",
+      "front:3:0",
+      "front:3:1",
+      "front:3:2",
+      "front:3:3"
+    ],
+    "next": 0.19730055681429803
+  },
+  {
+    "gridSize": 4,
+    "goal": {
+      "face": "front",
+      "x": 3,
+      "y": 3
+    },
+    "seed": 64,
+    "path": [
+      "front:0:0",
+      "front:0:1",
+      "front:0:2",
+      "front:1:2",
+      "front:1:3",
+      "bottom:1:0",
+      "bottom:2:0",
+      "bottom:3:0",
+      "front:3:3"
+    ],
+    "next": 0.3185702960472554
+  },
+  {
+    "gridSize": 4,
+    "goal": {
+      "face": "back",
+      "x": 3,
+      "y": 3
+    },
+    "seed": 1,
+    "path": [
+      "front:0:0",
+      "top:0:3",
+      "top:0:2",
+      "top:0:1",
+      "top:0:0",
+      "back:3:0",
+      "back:3:1",
+      "back:3:2",
+      "back:3:3"
+    ],
+    "next": 0.7727785797324032
+  },
+  {
+    "gridSize": 4,
+    "goal": {
+      "face": "back",
+      "x": 3,
+      "y": 3
+    },
+    "seed": 37,
+    "path": [
+      "front:0:0",
+      "left:3:0",
+      "left:2:0",
+      "left:1:0",
+      "left:1:1",
+      "left:1:2",
+      "left:0:2",
+      "left:0:3",
+      "back:3:3"
+    ],
+    "next": 0.6789192939177155
+  },
+  {
+    "gridSize": 4,
+    "goal": {
+      "face": "back",
+      "x": 3,
+      "y": 3
+    },
+    "seed": 64,
+    "path": [
+      "front:0:0",
+      "left:3:0",
+      "left:2:0",
+      "left:1:0",
+      "left:1:1",
+      "left:0:1",
+      "left:0:2",
+      "left:0:3",
+      "back:3:3"
+    ],
+    "next": 0.8568591014482081
+  },
+  {
+    "gridSize": 18,
+    "goal": {
+      "face": "front",
+      "x": 0,
+      "y": 0
+    },
+    "seed": 1,
+    "path": ["front:0:0"],
+    "next": 0.8652593037113547
+  },
+  {
+    "gridSize": 18,
+    "goal": {
+      "face": "front",
+      "x": 0,
+      "y": 0
+    },
+    "seed": 37,
+    "path": ["front:0:0"],
+    "next": 0.9851971685420722
+  },
+  {
+    "gridSize": 18,
+    "goal": {
+      "face": "front",
+      "x": 0,
+      "y": 0
+    },
+    "seed": 64,
+    "path": ["front:0:0"],
+    "next": 0.3518127768766135
+  },
+  {
+    "gridSize": 18,
+    "goal": {
+      "face": "front",
+      "x": 17,
+      "y": 17
+    },
+    "seed": 1,
+    "path": null,
+    "next": 0.19352098880335689
+  },
+  {
+    "gridSize": 18,
+    "goal": {
+      "face": "front",
+      "x": 17,
+      "y": 17
+    },
+    "seed": 37,
+    "path": null,
+    "next": 0.18048799224197865
+  },
+  {
+    "gridSize": 18,
+    "goal": {
+      "face": "front",
+      "x": 17,
+      "y": 17
+    },
+    "seed": 64,
+    "path": null,
+    "next": 0.9220398184843361
+  },
+  {
+    "gridSize": 18,
+    "goal": {
+      "face": "back",
+      "x": 17,
+      "y": 17
+    },
+    "seed": 1,
+    "path": null,
+    "next": 0.45823923381976783
+  },
+  {
+    "gridSize": 18,
+    "goal": {
+      "face": "back",
+      "x": 17,
+      "y": 17
+    },
+    "seed": 37,
+    "path": null,
+    "next": 0.6752760042436421
+  },
+  {
+    "gridSize": 18,
+    "goal": {
+      "face": "back",
+      "x": 17,
+      "y": 17
+    },
+    "seed": 64,
+    "path": null,
+    "next": 0.6213369793258607
+  }
+]
