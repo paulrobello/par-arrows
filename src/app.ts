@@ -116,6 +116,7 @@ const HINT_FLASH_DURATION = 2400;
 const HINT_FLASH_HALF_PULSE = 400;
 const TUTORIAL_NUDGE_MS = 450;
 const LIFE_LOST_FLASH_MS = 900;
+const GAME_OVER_DELAY_MS = 2000;
 /** A detected life-losing move holds this beat before its travel starts. */
 const DOOMED_ANTICIPATION_MS = 240;
 const MOUSE_PICK_MARGIN_PX = 6;
@@ -181,6 +182,9 @@ export class ParArrowsApp {
   private settings: PlayerSettings = loadSettings();
   private motion: Motion | undefined;
   private heldCollision: MoveResult | undefined;
+  private gameOverDelay:
+    | { readonly state: GameState; remaining: number; updatedAt: number }
+    | undefined;
   private tutorialMove:
     | { arrowId: string; endpoint: MoveTarget["endpoint"]; kind: MoveKind }
     | undefined;
@@ -417,6 +421,7 @@ export class ParArrowsApp {
 
   dispose(): void {
     this.disposed = true;
+    this.setHeldCollision(undefined);
     this.deletion = undefined;
     this.deletePlanner.cancel();
     window.removeEventListener("storage", this.handleWalletStorage);
@@ -442,7 +447,7 @@ export class ParArrowsApp {
   advanceTime(milliseconds: number): void {
     const steps = Math.max(1, Math.ceil(milliseconds / (1000 / 60)));
     for (let index = 0; index < steps; index += 1) {
-      this.update(milliseconds / steps);
+      this.update(milliseconds / steps, milliseconds / steps);
     }
   }
 
@@ -606,6 +611,10 @@ export class ParArrowsApp {
             ),
           }
         : null,
+      gameOverDelayMs:
+        this.gameOverDelay?.state === this.state
+          ? Math.ceil(this.gameOverDelay.remaining)
+          : 0,
       celebration: this.celebration
         ? {
             active: true,
@@ -740,7 +749,7 @@ export class ParArrowsApp {
     this.tutorialRunner = undefined;
     this.unlockedLevelId = 1;
     this.motion = undefined;
-    this.heldCollision = undefined;
+    this.setHeldCollision(undefined);
     this.pendingTap = undefined;
     this.tutorialNudgeMs = 0;
     this.lifeLostFlashMs = 0;
@@ -763,7 +772,33 @@ export class ParArrowsApp {
     this.animationFrame = requestAnimationFrame(this.tick);
   };
 
-  private update(delta: number): void {
+  private update(delta: number, advancePresentationBy?: number): void {
+    const delay = this.gameOverDelay;
+    if (delay) {
+      if (
+        this.disposed ||
+        this.loading ||
+        this.state !== delay.state ||
+        this.state.status !== "lost" ||
+        !this.heldCollision
+      ) {
+        this.gameOverDelay = undefined;
+      } else {
+        // Physics caps slow frames; this pause still measures real time from
+        // the rendered impact. advanceTime supplies controlled presentation time.
+        const now = performance.now();
+        const elapsed = Math.max(
+          0,
+          advancePresentationBy ?? now - delay.updatedAt,
+        );
+        delay.updatedAt = now;
+        delay.remaining = Math.max(0, delay.remaining - elapsed);
+        if (delay.remaining === 0) {
+          this.gameOverDelay = undefined;
+          this.renderUi();
+        }
+      }
+    }
     if (this.tutorialNudgeMs > 0) {
       this.tutorialNudgeMs = Math.max(0, this.tutorialNudgeMs - delta);
       this.renderer.setTutorialNudge(this.tutorialNudgeMs > 0);
@@ -918,7 +953,7 @@ export class ParArrowsApp {
       };
     }
     this.state = next;
-    this.heldCollision = undefined;
+    this.setHeldCollision(undefined);
     this.tutorialMove = { arrowId, endpoint, kind: result.kind };
     if (next.status === "won") {
       this.unlockedLevelId = Math.max(
@@ -971,8 +1006,8 @@ export class ParArrowsApp {
     // settle re-lays the moved arrow, so the render rides settle's pass.
     this.renderer.updateState(this.state, false);
     if (motion?.phase === "impact") {
-      this.heldCollision = motion.result;
       this.renderer.animate(arrowId, motion.result, 0.5, true);
+      this.setHeldCollision(motion.result);
     } else {
       this.renderer.settle(arrowId);
     }
@@ -1074,6 +1109,7 @@ export class ParArrowsApp {
 
   private async restore(): Promise<void> {
     if (this.preview.active) return;
+    this.setHeldCollision(undefined);
     const request = ++this.loadRequest;
     this.retryPurpose = "restore";
     this.loading = true;
@@ -1117,18 +1153,10 @@ export class ParArrowsApp {
     await this.persist();
     if (this.disposed || request !== this.loadRequest) return;
     this.renderer.setLevel(this.level, this.state);
-    this.heldCollision = fatalCollisionForUndo(
-      this.level,
-      this.state,
-      this.undo,
-    );
-    if (this.heldCollision)
-      this.renderer.animate(
-        this.heldCollision.arrowId,
-        this.heldCollision,
-        0.5,
-        true,
-      );
+    const collision = fatalCollisionForUndo(this.level, this.state, this.undo);
+    if (collision)
+      this.renderer.animate(collision.arrowId, collision, 0.5, true);
+    this.setHeldCollision(collision);
     this.loading = false;
     this.renderUi();
   }
@@ -1139,7 +1167,7 @@ export class ParArrowsApp {
     }
     this.cancelDelete();
     this.motion = undefined;
-    this.heldCollision = undefined;
+    this.setHeldCollision(undefined);
     this.undo = null;
     this.pendingTap = undefined;
     this.tutorialNudgeMs = 0;
@@ -1386,6 +1414,7 @@ export class ParArrowsApp {
       this.loading ||
       this.loadingError !== undefined ||
       this.motion !== undefined ||
+      this.gameOverDelay?.state === this.state ||
       this.state.status === "playing";
     if (won) {
       this.requireElement("state-kicker").textContent = "NICE WORK";
@@ -1807,7 +1836,7 @@ export class ParArrowsApp {
         this.restoreTutorial(restored.tutorialStep);
         this.tutorialMove = undefined;
         this.undo = null;
-        this.heldCollision = undefined;
+        this.setHeldCollision(undefined);
         if (collision)
           this.motion = {
             result: collision,
@@ -2174,7 +2203,7 @@ export class ParArrowsApp {
   }
 
   private settleMotion(): void {
-    this.heldCollision = undefined;
+    this.setHeldCollision(undefined);
     if (!this.motion) return;
     const arrowId = this.motion.result.arrowId;
     this.motion = undefined;
@@ -2182,6 +2211,18 @@ export class ParArrowsApp {
     this.renderer.updateState(this.state);
     this.renderer.settle(arrowId);
     this.displayedState = this.state;
+  }
+
+  /** Only the currently held loss can reveal Game Over; no detached callback survives it. */
+  private setHeldCollision(result: MoveResult | undefined): void {
+    this.heldCollision = result;
+    this.gameOverDelay = result
+      ? {
+          state: this.state,
+          remaining: GAME_OVER_DELAY_MS,
+          updatedAt: performance.now(),
+        }
+      : undefined;
   }
 
   private requireElement(id: string): HTMLElement {

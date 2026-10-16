@@ -160,6 +160,8 @@ async function checkFixture(
       held.renderedHeads,
       "Reload reconstructs exact impact geometry",
     );
+    assert.equal(await page.locator("#state-card").isVisible(), false);
+    await advance(page, 2001);
     await page.locator("#recovery-undo").click();
     await page.waitForFunction(
       () =>

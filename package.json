@@ -15,6 +15,7 @@
     "browser:hint-economy": "bun run build && bun run tests/hint-economy-browser.ts",
     "browser:undo": "bun run build && bun run tests/undo-browser.ts",
     "browser:fatal-collision": "bun run build && bun run tests/fatal-collision-browser.ts",
+    "browser:game-over-delay": "bun run build && bun run tests/game-over-delay-browser.ts",
     "browser:delete-arrow": "bun run build && bun run tests/delete-browser.ts",
     "browser:install": "playwright install chromium"
   },

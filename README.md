@@ -79,6 +79,8 @@ Undo history survives reloads, including a move interrupted by closing the page.
 
 A collision that spends your last life leaves the arrow at its impact point. Paid Undo visibly rewinds it to its complete pre-move position and restores the life. The impact view survives reloads using the saved move history. Purchases and arrow taps are blocked during the rewind; restarting remains free. Ordinary collisions still return automatically, and reduced-motion preferences shorten the recovery animation.
 
+Game Over waits two seconds after the final collision settles, leaving the impact uncovered. Dock Undo and free Retry remain available during that pause. Reloading a held loss reconstructs the impact and starts a fresh two-second pause; restoring, restarting or leaving the cube cancels it.
+
 **Delete Arrow costs 30 coins**. Choose Delete, then tap an arrow; Cancel or Escape leaves the board and coins unchanged. Both heads of a double, or every arrow in a linked-tail group, are removed together for one purchase. Deletion removes the target without moving it, triggering terrain or restoring lives. It requires a life and a playing campaign cube; finish any guided interaction first.
 
 Before charging, the game proves that the remaining arrows can still finish without losing another life. An arrow holding a pending flip/rotor change or fragile-cell collapse cannot be deleted. A needed key carrier or any target whose safe finish cannot be proved is refused with a reason, at no cost. Checks run separately from the interactive view, can be cancelled, and fail safely if unavailable or too slow. Previews cannot purchase or use Delete Arrow.

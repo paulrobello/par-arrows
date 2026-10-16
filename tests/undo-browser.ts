@@ -83,6 +83,8 @@ async function recovery(
     await page.reload();
     await waitForReady(page);
     assert.equal((await savedRow(page)).state.lives, 0);
+    assert.equal(await page.locator("#state-card").isVisible(), false);
+    await page.evaluate(() => window.advanceTime?.(2001));
     assert.equal(await page.locator("#recovery-undo").isVisible(), true);
     assert.match(await page.locator("#state-button").innerText(), /Free/);
     assert.equal(await page.locator("#hint-button").isDisabled(), true);

@@ -22,6 +22,7 @@ import { runHintChecks } from "./hints-browser";
 import { assertHintEconomy } from "./hint-economy-browser";
 import { assertUndoEconomy } from "./undo-browser";
 import { assertFatalCollisionRewind } from "./fatal-collision-browser";
+import { assertGameOverDelay } from "./game-over-delay-browser";
 import { assertDeleteEconomy } from "./delete-browser";
 import { assertConsistentMotion } from "./motion-browser";
 import { assertOverlapIntro } from "./overlap-browser";
@@ -1563,6 +1564,7 @@ try {
   await assertHintEconomy(browser, url, output);
   await assertUndoEconomy(browser, url, output);
   await assertFatalCollisionRewind(browser, url, output);
+  await assertGameOverDelay(browser, url, output);
   await assertDeleteEconomy(browser, url, output);
   await runHintChecks(page, output);
 
