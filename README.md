@@ -50,6 +50,7 @@ make checkall
 make browser-install
 make browser-test
 bun run browser:hint-economy
+bun run browser:undo
 ```
 
 `checkall` runs format verification, lint, TypeScript checks, unit tests, a production build, and an icon regeneration check. Browser checks use Playwright and are separate from physical-device and installed-PWA acceptance. The isolated browser test port is 8058. `make fmt` formats the project; during ongoing work, format only the files being changed.
@@ -59,6 +60,8 @@ For the WebKit compatibility run, install its browser with `bunx playwright inst
 
 The focused Hint command runs purchase and persistence checks plus the existing desktop/mobile targeting and animation checks. In a cloud environment with only software WebGL, use `BROWSER_EXECUTABLE_PATH=/usr/bin/chromium BROWSER_SOFTWARE=1 bun run browser:hint-economy`; this produces functional and DOM evidence, while canvas-pixel acceptance still requires a real GPU.
 
+`bun run browser:undo` checks desktop/mobile purchases, fatal recovery, interrupted saves, tutorial restoration, concurrent tabs and lifecycle boundaries. The same software-rendering environment variables apply.
+
 Install pre-commit and run `pre-commit install` to enable the pinned secret-scanning and project checks. `make pre-commit` runs them over all files. Dependencies are pinned in `package.json` and `bun.lock`.
 
 ## Controls and progress
@@ -66,6 +69,10 @@ Install pre-commit and run `pre-commit install` to enable the pinned secret-scan
 First campaign clears earn **10 coins**. **Hint costs 20 coins** and highlights a safe arrow or endpoint. Its price, your balance, and any shortfall are shown beside the puzzle. A hint is charged once when its highlight is delivered; cancelling camera travel, an unavailable hint, or a failed save costs nothing. Hints are unavailable at zero lives and in URL preview sessions. Replays never earn another completion reward.
 
 Existing saves receive a one-time credit of 10 coins for each level below their saved unlock ceiling. This is an **inferred-progress migration**, because older saves do not record individual clears or test-hook skips. The migration preserves the current attempt and unlocks; its completion ledger prevents repeated credits on reload or replay. Resetting campaign progress also clears coins and the ledger.
+
+**Undo costs 20 coins** and reverses the latest move that changed gameplay, restoring any life it cost. It restores the full board, including parked paths, spot directions, holes and gates. At zero lives, an affordable Undo is offered alongside a free restart. Undo also works after clearing a cube until you restart or leave it. Coins already spent, earned rewards and unlocked cubes stay unchanged; replaying an undone win earns no second reward. Each move can be undone once, and another new move creates the next opportunity. Free repeat collisions and gate rewinds do not replace that opportunity.
+
+Undo history survives reloads, including a move interrupted by closing the page. A restart, level change or progress reset clears it. Older saves safely start without Undo history, and their next eligible move creates it. Purchases require a valid saved record and charge only when restoration succeeds. Price, balance and unavailable reasons are shown in the controls; URL previews cannot buy or use Undo.
 
 - Click or touch an arrow to attempt a move. Drag to rotate continuously in any direction, including over the top and bottom. Use the mouse wheel or pinch to zoom, and View to restore the starting angle.
 - A press highlights its arrow or connected tail group. Ambiguous touches do nothing. Dragging and pinching do not activate arrows.

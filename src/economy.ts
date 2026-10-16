@@ -2,6 +2,7 @@ import { MAX_LEVEL_ID } from "./content/procedural";
 
 export const COMPLETION_REWARD = 10;
 export const HINT_COST = 20;
+export const UNDO_COST = 20;
 const MAX_COINS = Number.MAX_SAFE_INTEGER;
 
 /** Inclusive, sorted ranges keep an endless sequential campaign compact. */
@@ -89,7 +90,14 @@ export function rewardCompletion(economy: Economy, levelId: number): Economy {
 }
 
 export function spendHint(economy: Economy): Economy | undefined {
-  return economy.coins >= HINT_COST
-    ? { ...economy, coins: economy.coins - HINT_COST }
+  return spendCoins(economy, HINT_COST);
+}
+
+export function spendCoins(
+  economy: Economy,
+  cost: number,
+): Economy | undefined {
+  return Number.isSafeInteger(cost) && cost > 0 && economy.coins >= cost
+    ? { ...economy, coins: economy.coins - cost }
     : undefined;
 }

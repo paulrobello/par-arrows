@@ -20,6 +20,7 @@ import { arrowDimensions } from "../src/render/renderer";
 import { assertContextRecovery } from "./context-browser";
 import { runHintChecks } from "./hints-browser";
 import { assertHintEconomy } from "./hint-economy-browser";
+import { assertUndoEconomy } from "./undo-browser";
 import { assertConsistentMotion } from "./motion-browser";
 import { assertOverlapIntro } from "./overlap-browser";
 import { assertWidePickTargets } from "./pick-browser";
@@ -1558,6 +1559,7 @@ try {
   console.log("PASS PWA manifest and installation assets");
   await assertThemes(page);
   await assertHintEconomy(browser, url, output);
+  await assertUndoEconomy(browser, url, output);
   await runHintChecks(page, output);
 
   const mobile = await browser.newContext({

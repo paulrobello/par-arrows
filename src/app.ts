@@ -17,6 +17,7 @@ import {
 import { spotHeadingAt } from "./core/directionals";
 import { pendingCollapseKeys } from "./core/fragile";
 import { applyMove, createGameState, simulateMove } from "./core/game-state";
+import { canUndo, changesGameplay, type UndoSnapshot } from "./core/undo";
 import { settledPathOf } from "./core/stops";
 import { resolvePick } from "./pick";
 import { overlappingArrowIds } from "./core/overlap";
@@ -33,6 +34,7 @@ import {
   type Economy,
   emptyEconomy,
   HINT_COST,
+  UNDO_COST,
   COMPLETION_REWARD,
 } from "./economy";
 import {
@@ -44,7 +46,9 @@ import {
 import { arrowMotionDuration, PuzzleRenderer } from "./render/renderer";
 import {
   campaignEconomy,
+  campaignUndo,
   commitCampaign,
+  purchaseUndo,
   resetCampaign,
   type CampaignSave,
   type LoadedCampaign,
@@ -121,6 +125,7 @@ export class ParArrowsApp {
   });
   private readonly settingsButton: HTMLButtonElement;
   private readonly hintButton: HTMLButtonElement;
+  private readonly undoButton: HTMLButtonElement;
   private readonly hintStatus: HTMLElement;
   private readonly gridLines: HTMLInputElement;
   private readonly gridAlignmentSelect: HTMLSelectElement;
@@ -165,6 +170,8 @@ export class ParArrowsApp {
   private pendingTap: MoveTarget | undefined;
   private celebration: Celebration | undefined;
   private hint: Hint | undefined;
+  private undo: UndoSnapshot | null = null;
+  private undoBuying = false;
   private animationFrame = 0;
   private lastTimestamp = 0;
   private appliedTheme: "light" | "dark" | undefined;
@@ -188,7 +195,7 @@ export class ParArrowsApp {
         <p class="wrap-intro" id="wrap-intro" hidden>Yellow edges carry arrows onto the next face. Try an arrow pointing toward the yellow line.</p>
         <header class="hud" aria-label="Puzzle status">
           <div class="brand"><span class="brand-mark">↗</span><span>Par Arrows</span></div>
-          <div class="status-chip"><span id="level-label">Cube 1</span><span class="separator">·</span><span id="arrows-label">0 arrows</span><span class="coin-balance" id="coin-balance" aria-live="polite">0 coins</span><span class="hint-help" id="hint-help"></span></div>
+          <div class="status-chip"><span id="level-label">Cube 1</span><span class="separator">·</span><span id="arrows-label">0 arrows</span><span class="coin-balance" id="coin-balance" aria-live="polite">0 coins</span><span class="hint-help" id="hint-help"></span><span class="hint-help" id="undo-help"></span></div>
           <div class="lives" aria-live="polite"><span class="lives-caption">LIVES</span><strong id="lives-label">5</strong></div>
         </header>
         <section class="game-stage" id="game-stage" aria-label="Interactive cube puzzle">
@@ -208,11 +215,13 @@ export class ParArrowsApp {
             <h2 id="state-title">Path complete</h2>
             <p id="state-copy">The next cube is ready.</p>
             <button class="primary-button" id="state-button" type="button">Next Level</button>
+            <button class="primary-button" id="recovery-undo" data-action="undo" type="button" aria-describedby="undo-help coin-balance" hidden>Undo · ${UNDO_COST} coins</button>
           </div>
         </section>
         <nav class="control-dock" aria-label="Puzzle controls">
           <button class="dock-button" data-action="reset" type="button" aria-label="Reset camera view">⌖<span>View</span></button>
           <button class="dock-button" id="hint-button" data-action="hint" type="button" aria-label="Hint" aria-describedby="hint-price hint-help coin-balance">✦<span>Hint</span><span class="hint-price" id="hint-price">${HINT_COST} coins</span></button>
+          <button class="dock-button" id="undo-button" data-action="undo" type="button" aria-label="Undo" aria-describedby="undo-price undo-help coin-balance">↶<span>Undo</span><span class="hint-price" id="undo-price">${UNDO_COST} coins</span></button>
           <button class="dock-button" data-action="retry" type="button">↻<span>Retry</span></button>
           <form class="level-picker" id="level-form"><label for="level-input">Cube</label><div><input id="level-input" aria-label="Choose an unlocked cube" inputmode="numeric" min="1" step="1" type="number" /><button type="submit">Go</button></div></form>
           <button class="dock-button" id="settings-button" type="button" aria-expanded="false">☼<span>Settings</span></button>
@@ -248,6 +257,7 @@ export class ParArrowsApp {
         </dialog>
         <p class="gesture-help">Drag to orbit · <span class="zoom-help-mouse">Mouse wheel to zoom</span><span class="zoom-help-touch">Pinch to zoom</span> · press an exposed arrow to move it</p>
         <p class="screenreader-status" id="hint-status" aria-live="polite"></p>
+        <p class="screenreader-status" id="undo-status" aria-live="polite"></p>
         <div class="storage-note" id="storage-note" role="status"></div>
       </main>`;
     this.stage = this.requireElement("game-stage");
@@ -273,6 +283,7 @@ export class ParArrowsApp {
       "settings-button",
     ) as HTMLButtonElement;
     this.hintButton = this.requireElement("hint-button") as HTMLButtonElement;
+    this.undoButton = this.requireElement("undo-button") as HTMLButtonElement;
     this.hintStatus = this.requireElement("hint-status");
     this.gridLines = this.requireElement("grid-lines") as HTMLInputElement;
     this.gridAlignmentSelect = this.requireElement(
@@ -492,6 +503,15 @@ export class ParArrowsApp {
       lives: this.displayedState.lives,
       coins: this.economy?.coins ?? null,
       hintCost: HINT_COST,
+      undoCost: UNDO_COST,
+      undoPurchasing: this.undoBuying,
+      undo: this.undo
+        ? {
+            available: this.undoUnavailable() === undefined,
+            purchasing: this.undoBuying,
+            target: this.undo.target,
+          }
+        : null,
       remainingIds: this.displayedState.remainingIds,
       failedIds: this.displayedState.failedIds,
       settledPaths: this.displayedState.settledPaths ?? {},
@@ -604,6 +624,7 @@ export class ParArrowsApp {
     this.loading = true;
     this.loadingError = undefined;
     this.motion = undefined;
+    this.undo = null;
     this.cancelHint();
     this.clearCelebration();
     this.renderUi();
@@ -642,6 +663,7 @@ export class ParArrowsApp {
     this.requestedLevelId = 1;
     this.retryPurpose = undefined;
     this.campaignEpoch += 1;
+    this.undo = null;
     this.economy = emptyEconomy();
     this.savingAvailable = true;
     void resetCampaign();
@@ -796,7 +818,7 @@ export class ParArrowsApp {
     // A new move must never begin while a gate still shows its padlock to
     // arrows that may legally pass it.
     this.renderer.snapKeyFlights();
-    if (this.loading || this.loadingError || this.motion) {
+    if (this.loading || this.loadingError || this.motion || this.undoBuying) {
       return;
     }
     if (!this.gateAllows(target)) {
@@ -808,6 +830,20 @@ export class ParArrowsApp {
     if (result.kind === "invalid" || next === this.state) {
       return;
     }
+    const before = this.state;
+    const useful = changesGameplay(before, next);
+    if (!this.preview.active && useful) {
+      this.undo = {
+        version: 1,
+        id: crypto.randomUUID(),
+        before,
+        target,
+        tutorialComplete: this.tutorialComplete,
+        ...(this.tutorialRunner
+          ? { tutorialStep: this.tutorialRunner.stepIndex }
+          : {}),
+      };
+    }
     this.state = next;
     this.tutorialMove = { arrowId, endpoint, kind: result.kind };
     if (next.status === "won") {
@@ -816,7 +852,7 @@ export class ParArrowsApp {
         Math.min(MAX_LEVEL_ID, this.level.id + 1),
       );
     }
-    const persisted = this.persist();
+    const persisted = this.persist(useful);
     this.motion = {
       result,
       elapsed: 0,
@@ -832,6 +868,7 @@ export class ParArrowsApp {
       ),
     };
     this.hintButton.disabled = true;
+    this.undoButton.disabled = true;
     // One render launches the move: clearing the selection alone draws
     // nothing new, so it rides the animate pass instead of paying its own.
     this.renderer.setSelected(undefined, false);
@@ -852,6 +889,8 @@ export class ParArrowsApp {
     const move = this.tutorialMove;
     this.tutorialMove = undefined;
     if (move) this.tutorialRunner?.onMove(move);
+    if (move && this.tutorialRunner && this.state.status !== "won")
+      void this.persist();
     if (this.state.status === "won") {
       if (this.level.id === 1) this.tutorialComplete = true;
       this.tutorialRunner?.onWon();
@@ -888,7 +927,8 @@ export class ParArrowsApp {
     const active =
       !this.preview.active &&
       script !== undefined &&
-      !this.settings.tutorialSeenLevels.includes(this.level.id) &&
+      (!this.settings.tutorialSeenLevels.includes(this.level.id) ||
+        this.tutorialRunner?.levelId === this.level.id) &&
       this.state.status === "playing";
     if (!active || !script) {
       this.tutorialRunner = undefined;
@@ -972,6 +1012,8 @@ export class ParArrowsApp {
       this.unlockedLevelId = saved.value.unlockedLevelId;
       this.tutorialComplete = saved.value.tutorialComplete;
       this.economy = saved.value.economy;
+      this.undo = saved.value.undo;
+      this.restoreTutorial(saved.value.tutorialStep);
     }
     // Persist migration even for a legacy save whose tutorial was incomplete.
     await this.persist();
@@ -986,6 +1028,7 @@ export class ParArrowsApp {
       return;
     }
     this.motion = undefined;
+    this.undo = null;
     this.pendingTap = undefined;
     this.tutorialNudgeMs = 0;
     this.lifeLostFlashMs = 0;
@@ -1025,20 +1068,30 @@ export class ParArrowsApp {
       state: this.state,
       tutorialComplete: this.tutorialComplete,
       layout: layoutFingerprint(this.level),
+      undo: this.undo,
+      ...(this.tutorialRunner
+        ? { tutorialStep: this.tutorialRunner.stepIndex }
+        : {}),
     };
   }
 
-  private async persist(): Promise<void> {
+  private async persist(captureUndo = false): Promise<void> {
     if (this.preview.active) return;
     const epoch = this.campaignEpoch;
-    const stored = await commitCampaign(this.campaignSave(), {
+    const value = this.campaignSave();
+    const stored = await commitCampaign(value, {
+      level: this.level,
+      captureUndo,
       valid: () => !this.disposed && epoch === this.campaignEpoch,
     });
     if (this.disposed || epoch !== this.campaignEpoch) return;
     this.savingAvailable = stored.saved;
     // A later queued purchase may have committed before this continuation.
-    if (stored.saved) this.economy = campaignEconomy();
-    else {
+    if (stored.saved) {
+      this.economy = campaignEconomy();
+      if (this.state === value.state)
+        this.undo = campaignUndo(this.level, value);
+    } else {
       this.message.textContent =
         "Progress cannot be saved in this browser session.";
     }
@@ -1048,6 +1101,7 @@ export class ParArrowsApp {
   private readonly handleWalletStorage = (): void => {
     if (this.preview.active || this.loading) return;
     this.economy = campaignEconomy();
+    this.undo = campaignUndo(this.level, this.campaignSave());
     this.renderUi();
   };
 
@@ -1152,7 +1206,19 @@ export class ParArrowsApp {
       this.motion !== undefined ||
       this.hint !== undefined ||
       this.state.status !== "playing" ||
-      hintUnavailable !== undefined;
+      hintUnavailable !== undefined ||
+      this.undoBuying;
+    const undoUnavailable = this.undoUnavailable();
+    this.requireElement("undo-help").textContent =
+      `Undo: ${undoUnavailable ?? "Restore the last move"}`;
+    this.undoButton.title = `Undo costs ${UNDO_COST} coins. ${undoUnavailable ?? "Restore the last move and its life"}.`;
+    this.undoButton.disabled = undoUnavailable !== undefined;
+    const recoveryUndo = this.requireElement(
+      "recovery-undo",
+    ) as HTMLButtonElement;
+    recoveryUndo.hidden =
+      this.state.status !== "lost" || undoUnavailable !== undefined;
+    recoveryUndo.disabled = undoUnavailable !== undefined;
     this.levelInput.value = String(this.level.id);
     this.levelInput.max = String(
       this.preview.active ? MAX_LEVEL_ID : this.unlockedLevelId,
@@ -1200,8 +1266,11 @@ export class ParArrowsApp {
     } else if (this.state.status === "lost") {
       this.requireElement("state-kicker").textContent = "TRY AGAIN";
       title.textContent = "Try that cube again";
-      copy.textContent = "A retry restores its full set of lives.";
-      button.textContent = "Retry cube";
+      copy.textContent =
+        undoUnavailable === undefined
+          ? "Undo restores your last move and its lost life. Or restart for free."
+          : "Restart for free to restore the full set of lives.";
+      button.textContent = "Restart · Free";
       button.dataset.action = "retry";
     }
   }
@@ -1214,6 +1283,7 @@ export class ParArrowsApp {
       if (action === "reset") this.renderer.resetView();
       if (action === "reset") this.cancelHint();
       if (action === "hint") this.beginHint();
+      if (action === "undo") void this.beginUndo();
       if (action === "retry") this.retry();
       if (action === "next")
         this.selectLevel(Math.min(this.level.id + 1, MAX_LEVEL_ID));
@@ -1381,6 +1451,96 @@ export class ParArrowsApp {
     );
   }
 
+  private restoreTutorial(step: number | undefined): void {
+    this.tutorialRunner = undefined;
+    const script = scriptForLevel(this.level.id);
+    if (
+      script &&
+      step !== undefined &&
+      Number.isSafeInteger(step) &&
+      step >= 0 &&
+      step < script.steps.length
+    )
+      this.tutorialRunner = new TutorialRunner(script, step);
+    this.tutorialFocusTarget = undefined;
+    this.tutorialFocusMs = 0;
+  }
+
+  private undoUnavailable(): string | undefined {
+    if (this.preview.active) return "Campaign only";
+    if (this.loading || this.loadingError) return "Wait for the cube";
+    if (this.undoBuying) return "Restoring the last move…";
+    if (this.motion) return "Wait for the move to finish";
+    if (!this.savingAvailable) return "Undo needs saved progress";
+    if (!this.economy) return "Wallet unavailable";
+    if (!this.undo || !canUndo(this.level, this.state, this.undo))
+      return "No move to undo";
+    if (this.economy.coins < UNDO_COST) {
+      const shortfall = UNDO_COST - this.economy.coins;
+      return `Need ${shortfall} more ${shortfall === 1 ? "coin" : "coins"}`;
+    }
+    if (!this.renderer.graphicsAvailable()) return "Graphics unavailable";
+    return undefined;
+  }
+
+  private async beginUndo(): Promise<void> {
+    if (this.undoUnavailable() !== undefined || !this.undo) return;
+    const value = this.campaignSave();
+    const state = this.state;
+    const entry = this.undo;
+    const epoch = this.campaignEpoch;
+    const request = this.loadRequest;
+    this.cancelHint();
+    this.pendingTap = undefined;
+    this.undoBuying = true;
+    this.requireElement("undo-status").textContent = "Restoring the last move…";
+    this.renderUi();
+    const result = await purchaseUndo(this.level, value, {
+      valid: () =>
+        !this.disposed &&
+        this.campaignEpoch === epoch &&
+        this.loadRequest === request &&
+        this.state === state &&
+        this.undo?.id === entry.id &&
+        !this.loading &&
+        !this.motion &&
+        this.renderer.graphicsAvailable(),
+      delivered: (restored, economy) => {
+        this.renderer.setLevel(this.level, restored.state);
+        this.state = restored.state;
+        this.displayedState = this.state;
+        this.tutorialComplete = restored.tutorialComplete;
+        this.restoreTutorial(restored.tutorialStep);
+        this.tutorialMove = undefined;
+        this.undo = null;
+        this.economy = economy;
+        this.savingAvailable = true;
+        this.clearLifeLostFlash();
+        this.clearCelebration();
+        this.requireElement("undo-status").textContent =
+          `Last move restored. ${UNDO_COST} coins spent.`;
+      },
+    });
+    this.undoBuying = false;
+    if (this.disposed) return;
+    if (this.campaignEpoch !== epoch || this.loadRequest !== request) {
+      this.renderUi();
+      return;
+    }
+    if (!result.saved) {
+      if (result.error === "storage") this.savingAvailable = false;
+      this.economy = campaignEconomy();
+      this.undo = campaignUndo(this.level, this.campaignSave());
+      this.requireElement("undo-status").textContent =
+        "Undo unavailable. No coins spent.";
+    }
+    this.renderUi();
+    if (result.saved) {
+      this.stage.tabIndex = -1;
+      this.stage.focus({ preventScroll: true });
+    }
+  }
+
   private hintUnavailable(): string | undefined {
     if (this.preview.active) return "Campaign only";
     if (this.state.lives <= 0) return "Retry before buying a Hint";
@@ -1396,6 +1556,7 @@ export class ParArrowsApp {
       this.loading ||
       this.loadingError !== undefined ||
       this.motion ||
+      this.undoBuying ||
       this.hint ||
       this.hintUnavailable() !== undefined ||
       this.state.status !== "playing"
@@ -1443,6 +1604,7 @@ export class ParArrowsApp {
     const state = this.state;
     const epoch = this.campaignEpoch;
     void commitCampaign(this.campaignSave(), {
+      level: this.level,
       purchaseHint: true,
       valid: () =>
         !this.disposed &&

@@ -1453,12 +1453,17 @@ export class PuzzleRenderer {
     return true;
   }
 
-  /** Rechecked at purchase time: a lost graphics context cannot deliver a hint. */
+  /** A lost graphics context cannot deliver a visible power-up result. */
+  graphicsAvailable(): boolean {
+    return !this.renderer.getContext().isContextLost();
+  }
+
+  /** Rechecked when a prepared hint is purchased. */
   canShowHint(target: MoveTarget): boolean {
     const visual = this.visuals.get(target.arrowId);
     const head = target.endpoint === "tail" ? visual?.tailHead : visual?.head;
     return (
-      !this.renderer.getContext().isContextLost() &&
+      this.graphicsAvailable() &&
       Boolean(visual?.visible && head?.visible && head.face)
     );
   }

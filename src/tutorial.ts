@@ -493,8 +493,13 @@ export class TutorialRunner {
 
   private index = 0;
 
-  constructor(private readonly script: TutorialScript) {
+  constructor(
+    private readonly script: TutorialScript,
+    step = 0,
+  ) {
     this.levelId = script.levelId;
+    if (Number.isSafeInteger(step) && step >= 0 && step < script.steps.length)
+      this.index = step;
   }
 
   get done(): boolean {

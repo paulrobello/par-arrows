@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "browser:test": "bun run tests/browser-runner.ts",
     "browser:hint-economy": "bun run build && bun run tests/hint-economy-browser.ts",
+    "browser:undo": "bun run build && bun run tests/undo-browser.ts",
     "browser:install": "playwright install chromium"
   },
   "dependencies": {

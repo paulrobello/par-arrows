@@ -18,12 +18,20 @@ import { cellKey } from "./core/topology";
 import { linkHeading } from "./core/wormholes";
 import type { Cell, GameState, Heading, LevelDefinition } from "./core/types";
 import {
+  canUndo,
+  gameStateKey,
+  undoState,
+  type UndoSnapshot,
+} from "./core/undo";
+import {
   type Economy,
   emptyEconomy,
   isEconomy,
   migrateEconomy,
   rewardCompletion,
   spendHint,
+  spendCoins,
+  UNDO_COST,
 } from "./economy";
 
 const STORAGE_KEY = "par-arrows:campaign:v1";
@@ -37,9 +45,12 @@ export interface CampaignSave {
   readonly tutorialComplete: boolean;
   /** `layoutFingerprint` of the current level; a current save resumes only on a match. */
   readonly layout?: string;
+  readonly undo?: UndoSnapshot | null;
+  readonly tutorialStep?: number;
 }
 
 export interface LoadedCampaign extends CampaignSave {
+  readonly undo: UndoSnapshot | null;
   /** Undefined means a malformed wallet was preserved and purchases are blocked. */
   readonly economy: Economy | undefined;
   /** Resolved for this session only. It is never written to local storage. */
@@ -64,7 +75,8 @@ export interface StorageResult<T> {
   readonly contentUpdated: boolean;
 }
 
-type StoredCampaign = Omit<Partial<CampaignSave>, "layout"> & {
+type StoredCampaign = Omit<Partial<CampaignSave>, "layout" | "undo"> & {
+  readonly undo?: unknown;
   readonly economy?: unknown;
   readonly contentVersion?: unknown;
   readonly seed?: unknown;
@@ -587,6 +599,69 @@ function isState(value: unknown, level: LevelDefinition): value is GameState {
   );
 }
 
+function readUndo(
+  value: unknown,
+  level: LevelDefinition,
+  current: GameState,
+): UndoSnapshot | null {
+  try {
+    if (!value || typeof value !== "object") return null;
+    const record = value as Partial<UndoSnapshot>;
+    if (
+      record.version !== 1 ||
+      typeof record.id !== "string" ||
+      !record.id.length ||
+      record.id.length > 128 ||
+      typeof record.tutorialComplete !== "boolean" ||
+      (record.tutorialStep !== undefined &&
+        (!Number.isSafeInteger(record.tutorialStep) ||
+          record.tutorialStep < 0 ||
+          record.tutorialStep > 100)) ||
+      !record.target ||
+      typeof record.target.arrowId !== "string" ||
+      !["head", "tail"].includes(record.target.endpoint) ||
+      !isState(record.before, level)
+    )
+      return null;
+    return canUndo(level, current, record as UndoSnapshot)
+      ? (record as UndoSnapshot)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function sameAttempt(
+  stored: StoredCampaign | undefined,
+  value: CampaignSave,
+): boolean {
+  return (
+    consistentMetadata(stored) &&
+    stored.currentLevelId === value.currentLevelId &&
+    stored.contentVersion === CONTENT_VERSION &&
+    stored.layout === value.layout &&
+    stored.seed === seedForLevel(value.currentLevelId) &&
+    !!stored.state &&
+    gameStateKey(stored.state, true) === gameStateKey(value.state, true)
+  );
+}
+
+/** Refresh only history belonging to this exact persisted attempt. */
+export function campaignUndo(
+  level: LevelDefinition,
+  value: CampaignSave,
+): UndoSnapshot | null {
+  try {
+    const raw = getStore()?.getItem(STORAGE_KEY);
+    const stored = raw ? (JSON.parse(raw) as StoredCampaign) : undefined;
+    return sameAttempt(stored, value)
+      ? readUndo(stored?.undo, level, value.state)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function removeStoredCampaign(store: Storage): void {
   try {
     store.removeItem(STORAGE_KEY);
@@ -703,6 +778,10 @@ export async function loadCampaign(
         layout,
         level,
         economy: economyOf(parsed),
+        undo: readUndo(parsed.undo, level, restored as GameState),
+        ...(Number.isSafeInteger(parsed.tutorialStep)
+          ? { tutorialStep: parsed.tutorialStep as number }
+          : {}),
       }
     : {
         currentLevelId,
@@ -712,6 +791,7 @@ export async function loadCampaign(
         layout,
         level,
         economy: economyOf(parsed),
+        undo: null,
       };
 
   return {
@@ -733,10 +813,19 @@ export async function loadCampaign(
 export interface CampaignCommit {
   readonly saved: boolean;
   readonly economy: Economy | undefined;
-  readonly error?: "storage" | "wallet" | "funds" | "cancelled" | "delivery";
+  readonly error?:
+    | "storage"
+    | "wallet"
+    | "funds"
+    | "cancelled"
+    | "delivery"
+    | "undo";
 }
 
 interface CommitOptions {
+  readonly level?: LevelDefinition;
+  /** Only an actual new gameplay move may create history. */
+  readonly captureUndo?: boolean;
   readonly purchaseHint?: boolean;
   /** Checked inside the write lock, immediately before any debit. */
   readonly valid?: () => boolean;
@@ -786,6 +875,16 @@ function writeCampaign(
     ) {
       economy = rewardCompletion(economy, value.currentLevelId);
     }
+    let undo: UndoSnapshot | null = null;
+    if (options.level && value.undo) {
+      const existing = readUndo(stored?.undo, options.level, value.state);
+      if (existing?.id === value.undo.id) undo = existing;
+      else if (
+        options.captureUndo &&
+        sameAttempt(stored, { ...value, state: value.undo.before })
+      )
+        undo = readUndo(value.undo, options.level, value.state);
+    }
     store.setItem(
       STORAGE_KEY,
       JSON.stringify({
@@ -797,6 +896,10 @@ function writeCampaign(
         generatorVersion: GENERATOR_VERSION,
         seed: seedForLevel(value.currentLevelId),
         layout: value.layout,
+        undo,
+        ...(value.tutorialStep === undefined
+          ? {}
+          : { tutorialStep: value.tutorialStep }),
         // A damaged wallet never becomes a second legacy migration or erases progress.
         economy: economy ?? stored?.economy ?? null,
       }),
@@ -841,6 +944,85 @@ export async function commitCampaign(
 ): Promise<CampaignCommit> {
   try {
     return await campaignWrite(() => writeCampaign(value, options));
+  } catch {
+    return { saved: false, economy: undefined, error: "storage" };
+  }
+}
+
+/** Debit, restore and consume history together under the existing save lock. */
+export async function purchaseUndo(
+  level: LevelDefinition,
+  value: CampaignSave,
+  options: {
+    readonly valid: () => boolean;
+    readonly delivered: (restored: CampaignSave, economy: Economy) => void;
+  },
+): Promise<CampaignCommit> {
+  try {
+    return await campaignWrite(() => {
+      if (!options.valid())
+        return {
+          saved: false,
+          economy: undefined,
+          error: "cancelled",
+        } as const;
+      try {
+        const store = getStore();
+        const raw = store?.getItem(STORAGE_KEY);
+        if (!store || !raw)
+          return {
+            saved: false,
+            economy: undefined,
+            error: "storage",
+          } as const;
+        const stored = JSON.parse(raw) as StoredCampaign;
+        const economy = economyOf(stored);
+        const entry =
+          consistentMetadata(value) &&
+          sameAttempt(stored, value) &&
+          isState(stored.state, level)
+            ? readUndo(stored.undo, level, value.state)
+            : null;
+        if (!entry || entry.id !== value.undo?.id)
+          return { saved: false, economy, error: "undo" } as const;
+        if (!economy)
+          return { saved: false, economy, error: "wallet" } as const;
+        const spent = spendCoins(economy, UNDO_COST);
+        if (!spent) return { saved: false, economy, error: "funds" } as const;
+        const restored: CampaignSave = {
+          currentLevelId: value.currentLevelId,
+          unlockedLevelId: Math.max(
+            value.unlockedLevelId,
+            stored.unlockedLevelId ?? 1,
+          ),
+          state: undoState(value.state, entry),
+          tutorialComplete: entry.tutorialComplete,
+          ...(value.layout === undefined ? {} : { layout: value.layout }),
+          ...(entry.tutorialStep === undefined
+            ? {}
+            : { tutorialStep: entry.tutorialStep }),
+          undo: null,
+        };
+        store.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            ...stored,
+            ...restored,
+            tutorialStep: entry.tutorialStep,
+            economy: spent,
+          }),
+        );
+        try {
+          options.delivered(restored, spent);
+        } catch {
+          store.setItem(STORAGE_KEY, raw);
+          return { saved: false, economy, error: "delivery" } as const;
+        }
+        return { saved: true, economy: spent } as const;
+      } catch {
+        return { saved: false, economy: undefined, error: "storage" } as const;
+      }
+    });
   } catch {
     return { saved: false, economy: undefined, error: "storage" };
   }

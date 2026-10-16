@@ -828,7 +828,26 @@ input:focus-visible {
   }
   .control-dock {
     width: calc(100vw - 1.2rem);
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .control-dock .level-picker {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: flex;
+    align-items: center;
     justify-content: center;
+    border-left: 0;
+    border-top: 1px solid var(--divider);
+  }
+  .gesture-help {
+    bottom: 8.2rem;
+  }
+  .tutorial-card {
+    bottom: 10rem;
+  }
+  .storage-note {
+    bottom: 9.4rem;
   }
   .dock-button {
     min-width: 2.85rem;
