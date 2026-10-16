@@ -66,7 +66,8 @@ export async function openCampaign(
   const page = await context.newPage();
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.clock.install({ time: instant });
+  // Install before the pause target so protocol latency cannot put it in the past.
+  await page.clock.install({ time: new Date(instant.getTime() - 1000) });
   await page.clock.pauseAt(instant);
   await page.goto(url);
   await waitForReady(page);

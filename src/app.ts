@@ -17,7 +17,12 @@ import {
 import { spotHeadingAt } from "./core/directionals";
 import { pendingCollapseKeys } from "./core/fragile";
 import { applyMove, createGameState, simulateMove } from "./core/game-state";
-import { canUndo, changesGameplay, type UndoSnapshot } from "./core/undo";
+import {
+  canUndo,
+  changesGameplay,
+  fatalCollisionForUndo,
+  type UndoSnapshot,
+} from "./core/undo";
 import { deleteTargetUnavailable } from "./core/delete-arrow";
 import { DeletePlanner } from "./delete-planner";
 import { settledPathOf } from "./core/stops";
@@ -46,7 +51,12 @@ import {
   PwaInstallPrompt,
   runningStandalone,
 } from "./pwa";
-import { arrowMotionDuration, PuzzleRenderer } from "./render/renderer";
+import {
+  arrowAnimationProgress,
+  arrowMotionDuration,
+  type MotionPhase,
+  PuzzleRenderer,
+} from "./render/renderer";
 import {
   campaignEconomy,
   campaignUndo,
@@ -74,6 +84,7 @@ import {
 
 interface Motion {
   readonly result: MoveResult;
+  readonly phase: MotionPhase;
   readonly duration: number;
   /** Lead-in beat before a detected life-losing move starts to travel. */
   readonly anticipation: number;
@@ -169,6 +180,7 @@ export class ParArrowsApp {
   private tutorialComplete = false;
   private settings: PlayerSettings = loadSettings();
   private motion: Motion | undefined;
+  private heldCollision: MoveResult | undefined;
   private tutorialMove:
     | { arrowId: string; endpoint: MoveTarget["endpoint"]; kind: MoveKind }
     | undefined;
@@ -349,6 +361,7 @@ export class ParArrowsApp {
       onTap: (id) => {
         // One tap during a running move buffers instead of dropping, so quick
         // play never loses input to the one-attempt-at-a-time lock.
+        if (this.motion?.phase === "rewind" || this.undoBuying) return;
         if (this.motion) this.pendingTap = id;
         else this.attempt(id);
       },
@@ -548,6 +561,12 @@ export class ParArrowsApp {
       remainingIds: this.displayedState.remainingIds,
       failedIds: this.displayedState.failedIds,
       settledPaths: this.displayedState.settledPaths ?? {},
+      renderedHeads: Object.fromEntries(
+        this.state.remainingIds.map((id) => [
+          id,
+          this.renderer.arrowHeadPosition(id),
+        ]),
+      ),
       failedPositions: this.displayedState.failedPositions ?? [],
       overlappingGroups: this.level.arrows
         .map((arrow) => overlappingArrowIds(this.level, arrow.id))
@@ -559,6 +578,7 @@ export class ParArrowsApp {
         ? {
             arrowId: this.motion.result.arrowId,
             kind: this.motion.result.kind,
+            phase: this.motion.phase,
             members: (this.motion.result.members ?? [this.motion.result]).map(
               (member) => ({
                 arrowId: member.arrowId,
@@ -573,6 +593,17 @@ export class ParArrowsApp {
             elapsed: Math.round(this.motion.elapsed),
             duration: this.motion.duration,
             anticipation: this.motion.anticipation,
+          }
+        : null,
+      heldCollision: this.heldCollision
+        ? {
+            arrowId: this.heldCollision.arrowId,
+            members: (this.heldCollision.members ?? [this.heldCollision]).map(
+              (member) => ({
+                arrowId: member.arrowId,
+                headPosition: this.renderer.arrowHeadPosition(member.arrowId),
+              }),
+            ),
           }
         : null,
       celebration: this.celebration
@@ -709,6 +740,7 @@ export class ParArrowsApp {
     this.tutorialRunner = undefined;
     this.unlockedLevelId = 1;
     this.motion = undefined;
+    this.heldCollision = undefined;
     this.pendingTap = undefined;
     this.tutorialNudgeMs = 0;
     this.lifeLostFlashMs = 0;
@@ -772,16 +804,21 @@ export class ParArrowsApp {
       this.renderer.animate(
         this.motion.result.arrowId,
         this.motion.result,
-        progress,
+        arrowAnimationProgress(progress, this.motion.phase),
+        this.motion.phase !== "move",
       );
       // A fall costs its life as the head turns into the hole, which the
       // track reaches at its surface share of travel.
       const impactAt =
-        this.motion.result.kind === "blocked"
-          ? 0.5
-          : this.motion.result.kind === "fall"
-            ? this.fallImpactProgress(this.motion.result)
-            : undefined;
+        this.motion.phase === "rewind"
+          ? undefined
+          : this.motion.result.kind === "blocked"
+            ? this.motion.phase === "impact"
+              ? 1
+              : 0.5
+            : this.motion.result.kind === "fall"
+              ? this.fallImpactProgress(this.motion.result)
+              : undefined;
       if (
         impactAt !== undefined &&
         !this.motion.impactShown &&
@@ -881,6 +918,7 @@ export class ParArrowsApp {
       };
     }
     this.state = next;
+    this.heldCollision = undefined;
     this.tutorialMove = { arrowId, endpoint, kind: result.kind };
     if (next.status === "won") {
       this.unlockedLevelId = Math.max(
@@ -889,18 +927,29 @@ export class ParArrowsApp {
       );
     }
     const persisted = this.persist(useful);
+    const phase: MotionPhase =
+      result.kind === "blocked" && next.lives === 0 && before.lives > next.lives
+        ? "impact"
+        : "move";
     this.motion = {
       result,
+      phase,
       elapsed: 0,
       impactShown: false,
       anticipation:
-        result.kind === "blocked" && !this.settings.reducedMotion
+        result.kind === "blocked" &&
+        !(phase === "impact"
+          ? this.shouldReduceMotion()
+          : this.settings.reducedMotion)
           ? DOOMED_ANTICIPATION_MS
           : 0,
       duration: arrowMotionDuration(
-        this.renderer.motionDistance(arrowId, result),
+        this.renderer.motionDistance(arrowId, result, phase === "impact"),
         result.kind,
-        this.settings.reducedMotion,
+        phase === "impact"
+          ? this.shouldReduceMotion()
+          : this.settings.reducedMotion,
+        phase,
       ),
     };
     this.hintButton.disabled = true;
@@ -908,7 +957,7 @@ export class ParArrowsApp {
     // One render launches the move: clearing the selection alone draws
     // nothing new, so it rides the animate pass instead of paying its own.
     this.renderer.setSelected(undefined, false);
-    this.renderer.animate(arrowId, result, 0);
+    this.renderer.animate(arrowId, result, 0, phase === "impact");
     if (!this.settings.reducedMotion) {
       this.renderer.beginKeyFlights(result, this.motion.duration);
     }
@@ -916,12 +965,25 @@ export class ParArrowsApp {
   }
 
   private finishMotion(arrowId: string): void {
+    const motion = this.motion;
     this.motion = undefined;
     // One render lands the move: updateState applies the settled state and
     // settle re-lays the moved arrow, so the render rides settle's pass.
     this.renderer.updateState(this.state, false);
-    this.renderer.settle(arrowId);
+    if (motion?.phase === "impact") {
+      this.heldCollision = motion.result;
+      this.renderer.animate(arrowId, motion.result, 0.5, true);
+    } else {
+      this.renderer.settle(arrowId);
+    }
     this.displayedState = this.state;
+    if (motion?.phase === "rewind") {
+      this.pendingTap = undefined;
+      this.requireElement("undo-status").textContent =
+        `Last move restored. ${UNDO_COST} coins spent.`;
+      this.renderUi();
+      return;
+    }
     const move = this.tutorialMove;
     this.tutorialMove = undefined;
     if (move) this.tutorialRunner?.onMove(move);
@@ -1055,6 +1117,18 @@ export class ParArrowsApp {
     await this.persist();
     if (this.disposed || request !== this.loadRequest) return;
     this.renderer.setLevel(this.level, this.state);
+    this.heldCollision = fatalCollisionForUndo(
+      this.level,
+      this.state,
+      this.undo,
+    );
+    if (this.heldCollision)
+      this.renderer.animate(
+        this.heldCollision.arrowId,
+        this.heldCollision,
+        0.5,
+        true,
+      );
     this.loading = false;
     this.renderUi();
   }
@@ -1065,6 +1139,7 @@ export class ParArrowsApp {
     }
     this.cancelDelete();
     this.motion = undefined;
+    this.heldCollision = undefined;
     this.undo = null;
     this.pendingTap = undefined;
     this.tutorialNudgeMs = 0;
@@ -1323,8 +1398,12 @@ export class ParArrowsApp {
       title.textContent = "Try that cube again";
       copy.textContent =
         undoUnavailable === undefined
-          ? "Undo restores your last move and its lost life. Or restart for free."
-          : "Restart for free to restore the full set of lives.";
+          ? this.heldCollision
+            ? "Arrow stopped at the collision. Undo rewinds it and restores your lost life. Or restart for free."
+            : "Undo restores your last move and its lost life. Or restart for free."
+          : this.heldCollision
+            ? "Arrow stopped at the collision. Restart for free to restore all lives."
+            : "Restart for free to restore the full set of lives.";
       button.textContent = "Restart · Free";
       button.dataset.action = "retry";
     }
@@ -1696,6 +1775,7 @@ export class ParArrowsApp {
     const value = this.campaignSave();
     const state = this.state;
     const entry = this.undo;
+    const collision = fatalCollisionForUndo(this.level, state, entry);
     const epoch = this.campaignEpoch;
     const request = this.loadRequest;
     this.cancelHint();
@@ -1714,19 +1794,41 @@ export class ParArrowsApp {
         !this.motion &&
         this.renderer.graphicsAvailable(),
       delivered: (restored, economy) => {
-        this.renderer.setLevel(this.level, restored.state);
+        if (collision) {
+          // Keep the impact pose until the durable purchase has succeeded.
+          // Reuse the exact trace, including portals, bends and group distance.
+          this.renderer.animate(collision.arrowId, collision, 0.5, true);
+        } else {
+          this.renderer.setLevel(this.level, restored.state);
+        }
         this.state = restored.state;
         this.displayedState = this.state;
         this.tutorialComplete = restored.tutorialComplete;
         this.restoreTutorial(restored.tutorialStep);
         this.tutorialMove = undefined;
         this.undo = null;
+        this.heldCollision = undefined;
+        if (collision)
+          this.motion = {
+            result: collision,
+            phase: "rewind",
+            elapsed: 0,
+            anticipation: 0,
+            impactShown: true,
+            duration: arrowMotionDuration(
+              this.renderer.motionDistance(collision.arrowId, collision, true),
+              "blocked",
+              this.shouldReduceMotion(),
+              "rewind",
+            ),
+          };
         this.economy = economy;
         this.savingAvailable = true;
         this.clearLifeLostFlash();
         this.clearCelebration();
-        this.requireElement("undo-status").textContent =
-          `Last move restored. ${UNDO_COST} coins spent.`;
+        this.requireElement("undo-status").textContent = collision
+          ? `Rewinding the last move. ${UNDO_COST} coins spent.`
+          : `Last move restored. ${UNDO_COST} coins spent.`;
       },
     });
     this.undoBuying = false;
@@ -2072,6 +2174,7 @@ export class ParArrowsApp {
   }
 
   private settleMotion(): void {
+    this.heldCollision = undefined;
     if (!this.motion) return;
     const arrowId = this.motion.result.arrowId;
     this.motion = undefined;

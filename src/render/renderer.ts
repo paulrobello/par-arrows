@@ -925,8 +925,25 @@ export function arrowMotionTrack(
   gridSize: number,
   minimumDistance = 0,
   level?: PortalSource,
+  exactContact = false,
 ): ArrowMotionTrack {
-  const route = expandedPoints(result.route, gridSize, level);
+  let route = expandedPoints(result.route, gridSize, level);
+  if (
+    exactContact &&
+    result.kind === "blocked" &&
+    result.contact &&
+    route.points.length
+  ) {
+    // A blocked portal exit or leap landing need not be half a cell before
+    // the last route point. Keep the engine's contact, including jump gaps.
+    route = {
+      ...route,
+      points: [
+        ...route.points.slice(0, -1),
+        new THREE.Vector3(...result.contact.point),
+      ],
+    };
+  }
   const orientedPath = result.endpoint === "tail" ? reversePath(path) : path;
   const bodyLength = pathLength(orientedPath);
   let track = concatPaths(orientedPath, route);
@@ -976,7 +993,9 @@ export function arrowMotionTrack(
     result.kind === "exit" || result.kind === "fall"
       ? pathLength(track) - bodyLength
       : result.kind === "blocked" || result.kind === "gated"
-        ? Math.max(0, pathLength(route) - 1 / gridSize)
+        ? exactContact && result.kind === "blocked" && result.contact
+          ? pathLength(route)
+          : Math.max(0, pathLength(route) - 1 / gridSize)
         : // A pause travels the whole route and stays parked on the circle.
           result.kind === "paused"
           ? pathLength(route)
@@ -990,10 +1009,23 @@ const PAUSE_MINIMUM_DURATION = 160;
 /** A doomed attempt plays at this fraction of time until its rewind lands. */
 const DOOMED_TIME_SCALE = 0.6;
 
+export type MotionPhase = "move" | "impact" | "rewind";
+
+/** Fatal collisions split the existing outbound/return trace at contact. */
+export function arrowAnimationProgress(
+  progress: number,
+  phase: MotionPhase,
+): number {
+  if (phase === "impact") return progress / 2;
+  if (phase === "rewind") return (1 + progress) / 2;
+  return progress;
+}
+
 export function arrowMotionDuration(
   distance: number,
   kind: MoveResult["kind"],
   reducedMotion = false,
+  phase: MotionPhase = "move",
 ): number {
   if (reducedMotion) return REDUCED_MOTION_DURATION;
   const outboundAndReturn = kind === "blocked" || kind === "gated" ? 2 : 1;
@@ -1002,7 +1034,10 @@ export function arrowMotionDuration(
   // inside a frame and read as a jump rather than as stopping at the circle.
   const base =
     kind === "paused" ? Math.max(travel, PAUSE_MINIMUM_DURATION) : travel;
-  return kind === "blocked" ? base / DOOMED_TIME_SCALE : base;
+  const duration = kind === "blocked" ? base / DOOMED_TIME_SCALE : base;
+  return phase === "move"
+    ? duration
+    : Math.max(PAUSE_MINIMUM_DURATION, duration / 2);
 }
 
 function arrowFace(arrow: ArrowDefinition): Cell["face"] {
@@ -1700,7 +1735,12 @@ export class PuzzleRenderer {
     return nearest;
   }
 
-  animate(arrowId: string, result: MoveResult, progress: number): void {
+  animate(
+    arrowId: string,
+    result: MoveResult,
+    progress: number,
+    exactContact = false,
+  ): void {
     if (!this.level) {
       return;
     }
@@ -1710,7 +1750,7 @@ export class PuzzleRenderer {
           ? progress * 2
           : (1 - progress) * 2
         : progress;
-    const distance = this.motionDistance(arrowId, result);
+    const distance = this.motionDistance(arrowId, result, exactContact);
     for (const member of result.members ?? [result]) {
       const visual = this.visuals.get(member.arrowId);
       if (!visual) continue;
@@ -1720,6 +1760,7 @@ export class PuzzleRenderer {
         this.level.gridSize,
         distance,
         this.level,
+        exactContact,
       );
       const slice = slicePath(track, travel * distance, bodyLength);
       this.updatePathVisual(
@@ -2214,14 +2255,18 @@ export class PuzzleRenderer {
     return [tip.x, tip.y, tip.z];
   }
 
-  motionDistance(arrowId: string, result: MoveResult): number {
+  motionDistance(
+    arrowId: string,
+    result: MoveResult,
+    exactContact = false,
+  ): number {
     if (result.members) {
       const rebounds = result.kind === "blocked" || result.kind === "gated";
       const members = rebounds
         ? result.members.filter((member) => member.kind === result.kind)
         : result.members;
       const distances = members.map((member) =>
-        this.motionDistance(member.arrowId, member),
+        this.motionDistance(member.arrowId, member, exactContact),
       );
       return rebounds ? Math.min(...distances) : Math.max(...distances);
     }
@@ -2233,6 +2278,7 @@ export class PuzzleRenderer {
       this.level.gridSize,
       0,
       this.level,
+      exactContact,
     ).distance;
   }
 

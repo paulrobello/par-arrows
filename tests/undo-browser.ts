@@ -31,6 +31,10 @@ async function finishedUndo(page: Page, coins: number): Promise<void> {
     const state = JSON.parse(window.render_game_to_text?.() ?? "{}");
     return state.coins === coins && !state.undoPurchasing;
   }, coins);
+  await page.evaluate(() => {
+    const state = JSON.parse(window.render_game_to_text?.() ?? "{}");
+    if (state.moving?.phase === "rewind") window.advanceTime?.(10000);
+  });
 }
 
 async function recovery(

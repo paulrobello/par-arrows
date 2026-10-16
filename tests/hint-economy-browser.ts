@@ -85,7 +85,7 @@ async function contextFor(
   const page = await context.newPage();
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.clock.install({ time: instant });
+  await page.clock.install({ time: new Date(instant.getTime() - 1000) });
   await page.clock.pauseAt(instant);
   await page.goto(url);
   await waitForReady(page);
@@ -338,7 +338,7 @@ async function concurrentTabs(browser: Browser, url: string): Promise<void> {
   const { context, page } = await contextFor(browser, url, saved(LEVEL_ONE));
   try {
     const other = await context.newPage();
-    await other.clock.install({ time: instant });
+    await other.clock.install({ time: new Date(instant.getTime() - 1000) });
     await other.clock.pauseAt(instant);
     await other.goto(url);
     await waitForReady(other);

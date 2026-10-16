@@ -1,6 +1,11 @@
 import { applyMove, simulateMove } from "./game-state";
 import { deleteArrowState } from "./delete-arrow";
-import type { GameState, LevelDefinition, MoveTarget } from "./types";
+import type {
+  GameState,
+  LevelDefinition,
+  MoveResult,
+  MoveTarget,
+} from "./types";
 
 /** One move of gameplay history, deliberately excluding wallet/progression. */
 export interface UndoSnapshot {
@@ -89,4 +94,28 @@ export function undoState(
 ): GameState {
   // Logical contents go back; the revision advances to reject stale results.
   return { ...snapshot.before, revision: current.revision + 1 };
+}
+
+/** Reconstruct presentation of a fatal collision from verified, durable history. */
+export function fatalCollisionForUndo(
+  level: LevelDefinition,
+  current: GameState,
+  snapshot: UndoSnapshot | null,
+): MoveResult | undefined {
+  if (
+    current.status !== "lost" ||
+    current.lives !== 0 ||
+    !snapshot ||
+    snapshot.kind === "delete" ||
+    snapshot.before.lives !== 1 ||
+    !canUndo(level, current, snapshot)
+  )
+    return undefined;
+  const result = simulateMove(
+    level,
+    snapshot.before,
+    snapshot.target.arrowId,
+    snapshot.target.endpoint,
+  );
+  return result.kind === "blocked" ? result : undefined;
 }

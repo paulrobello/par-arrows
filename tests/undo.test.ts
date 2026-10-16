@@ -20,6 +20,7 @@ import {
   canUndo,
   changesGameplay,
   gameStateKey,
+  fatalCollisionForUndo,
   type UndoSnapshot,
 } from "../src/core/undo";
 import type { GameState, LevelDefinition, MoveTarget } from "../src/core/types";
@@ -197,6 +198,10 @@ test("fatal collision can be undone after reload, including red marks and stale-
   expect(after.lives).toBe(0);
   const loaded = (await loadCampaign(async () => level)).value;
   expect(loaded?.undo).not.toBeNull();
+  if (!loaded) throw new Error("Expected the fatal attempt to reload");
+  expect(fatalCollisionForUndo(level, loaded.state, loaded.undo)).toEqual(
+    result,
+  );
   expect((await purchaseUndo(level, loaded ?? value, delivery)).saved).toBe(
     true,
   );
@@ -222,6 +227,9 @@ test("fatal fall restores the removed double, holes, failed-position history and
   expect(after.status).toBe("lost");
   expect(after.remainingIds).toEqual([]);
   expect(after.fallenIds).toEqual(["fragile-intro-double"]);
+  expect(
+    fatalCollisionForUndo(level, after, value.undo ?? null),
+  ).toBeUndefined();
   expect((await purchaseUndo(level, value, delivery)).saved).toBe(true);
   expect(gameStateKey(row().state)).toBe(gameStateKey(before));
 });
