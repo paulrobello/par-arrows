@@ -178,6 +178,8 @@ describe("durable economy", () => {
     await commitCampaign(campaign(1, true));
     await commitCampaign(campaign(2, true));
     const stale = campaign();
+    expect((await commitCampaign(stale, purchase)).error).toBe("cancelled");
+    await commitCampaign(stale);
     expect((await commitCampaign(stale, purchase)).economy?.coins).toBe(0);
     await commitCampaign(stale);
     await commitCampaign(campaign(1, true));
@@ -192,6 +194,7 @@ describe("durable economy", () => {
       commitCampaign(campaign(1, true)),
     ]);
     await commitCampaign(campaign(2, true));
+    await commitCampaign(campaign());
     let delivered = 0;
     const options = {
       purchaseHint: true,
@@ -211,6 +214,7 @@ describe("durable economy", () => {
 
   test("insufficient funds and zero lives never charge or deliver", async () => {
     await commitCampaign(campaign(1, true));
+    await commitCampaign(campaign());
     expect((await commitCampaign(campaign(), purchase)).error).toBe("funds");
     const value = legacy();
     const before = entries.get(KEY);

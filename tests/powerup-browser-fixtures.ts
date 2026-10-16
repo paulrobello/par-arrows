@@ -5,7 +5,7 @@ import { seedForLevel } from "../src/content/procedural";
 import type { GameState, LevelDefinition } from "../src/core/types";
 import type { UndoSnapshot } from "../src/core/undo";
 import { createGameState } from "../src/core/game-state";
-import { migrateEconomy } from "../src/economy";
+import { migrateEconomy, type Economy } from "../src/economy";
 import { layoutFingerprint } from "../src/storage";
 import { waitForReady } from "./runtime-fixtures";
 
@@ -76,7 +76,7 @@ export async function openCampaign(
 export async function savedRow(page: Page): Promise<
   Record<string, unknown> & {
     state: GameState;
-    economy: { coins: number };
+    economy: Economy;
     undo: UndoSnapshot | null;
   }
 > {

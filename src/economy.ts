@@ -3,6 +3,7 @@ import { MAX_LEVEL_ID } from "./content/procedural";
 export const COMPLETION_REWARD = 10;
 export const HINT_COST = 20;
 export const UNDO_COST = 20;
+export const DELETE_COST = 30;
 const MAX_COINS = Number.MAX_SAFE_INTEGER;
 
 /** Inclusive, sorted ranges keep an endless sequential campaign compact. */

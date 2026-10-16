@@ -1163,6 +1163,7 @@ export class PuzzleRenderer {
   private level: LevelDefinition | undefined;
   private state: GameState | undefined;
   private selectedTarget: MoveTarget | undefined;
+  private selectedWhole = false;
   private hintFocus: HintFocus | undefined;
   private hintLit = false;
   private tutorialHighlightTarget: MoveTarget | undefined;
@@ -1275,8 +1276,13 @@ export class PuzzleRenderer {
     if (render) this.render();
   }
 
-  setSelected(target: MoveTarget | undefined, render = true): void {
+  setSelected(
+    target: MoveTarget | undefined,
+    render = true,
+    whole = false,
+  ): void {
     this.selectedTarget = target;
+    this.selectedWhole = whole && target !== undefined;
     if (render) this.render();
   }
 
@@ -2435,7 +2441,7 @@ export class PuzzleRenderer {
       const endpointColor = (endpoint: MoveTarget["endpoint"]): number => {
         const endpointSelected =
           this.selectedTarget?.arrowId === visual.arrow.id &&
-          this.selectedTarget.endpoint === endpoint;
+          (this.selectedWhole || this.selectedTarget.endpoint === endpoint);
         const endpointHinted =
           this.hintFocus?.target.arrowId === visual.arrow.id &&
           this.hintFocus.target.endpoint === endpoint &&

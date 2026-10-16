@@ -51,6 +51,7 @@ make browser-install
 make browser-test
 bun run browser:hint-economy
 bun run browser:undo
+bun run browser:delete-arrow
 ```
 
 `checkall` runs format verification, lint, TypeScript checks, unit tests, a production build, and an icon regeneration check. Browser checks use Playwright and are separate from physical-device and installed-PWA acceptance. The isolated browser test port is 8058. `make fmt` formats the project; during ongoing work, format only the files being changed.
@@ -61,6 +62,8 @@ For the WebKit compatibility run, install its browser with `bunx playwright inst
 The focused Hint command runs purchase and persistence checks plus the existing desktop/mobile targeting and animation checks. In a cloud environment with only software WebGL, use `BROWSER_EXECUTABLE_PATH=/usr/bin/chromium BROWSER_SOFTWARE=1 bun run browser:hint-economy`; this produces functional and DOM evidence, while canvas-pixel acceptance still requires a real GPU.
 
 `bun run browser:undo` checks desktop/mobile purchases, fatal recovery, interrupted saves, tutorial restoration, concurrent tabs and lifecycle boundaries. The same software-rendering environment variables apply.
+
+`bun run browser:delete-arrow` checks pointer/touch target selection, cancellation, safe removals, whole linked groups and doubles, proof-worker failures, purchases and Undo/reward interactions. It supports the same software-rendering options.
 
 Install pre-commit and run `pre-commit install` to enable the pinned secret-scanning and project checks. `make pre-commit` runs them over all files. Dependencies are pinned in `package.json` and `bun.lock`.
 
@@ -73,6 +76,12 @@ Existing saves receive a one-time credit of 10 coins for each level below their 
 **Undo costs 20 coins** and reverses the latest move that changed gameplay, restoring any life it cost. It restores the full board, including parked paths, spot directions, holes and gates. At zero lives, an affordable Undo is offered alongside a free restart. Undo also works after clearing a cube until you restart or leave it. Coins already spent, earned rewards and unlocked cubes stay unchanged; replaying an undone win earns no second reward. Each move can be undone once, and another new move creates the next opportunity. Free repeat collisions and gate rewinds do not replace that opportunity.
 
 Undo history survives reloads, including a move interrupted by closing the page. A restart, level change or progress reset clears it. Older saves safely start without Undo history, and their next eligible move creates it. Purchases require a valid saved record and charge only when restoration succeeds. Price, balance and unavailable reasons are shown in the controls; URL previews cannot buy or use Undo.
+
+**Delete Arrow costs 30 coins**. Choose Delete, then tap an arrow; Cancel or Escape leaves the board and coins unchanged. Both heads of a double, or every arrow in a linked-tail group, are removed together for one purchase. Deletion removes the target without moving it, triggering terrain or restoring lives. It requires a life and a playing campaign cube; finish any guided interaction first.
+
+Before charging, the game proves that the remaining arrows can still finish without losing another life. An arrow holding a pending flip/rotor change or fragile-cell collapse cannot be deleted. A needed key carrier or any target whose safe finish cannot be proved is refused with a reason, at no cost. Checks run separately from the interactive view, can be cancelled, and fail safely if unavailable or too slow. Previews cannot purchase or use Delete Arrow.
+
+A successful deletion persists immediately and becomes the latest Undo opportunity. Paying for Undo restores the deleted arrow or group while keeping the deletion cost, other purchases and first-clear rewards unchanged. A deletion that clears the cube earns its normal first-clear reward exactly once.
 
 - Click or touch an arrow to attempt a move. Drag to rotate continuously in any direction, including over the top and bottom. Use the mouse wheel or pinch to zoom, and View to restore the starting angle.
 - A press highlights its arrow or connected tail group. Ambiguous touches do nothing. Dragging and pinching do not activate arrows.

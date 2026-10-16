@@ -16,7 +16,14 @@ import {
 } from "./core/stops";
 import { cellKey } from "./core/topology";
 import { linkHeading } from "./core/wormholes";
-import type { Cell, GameState, Heading, LevelDefinition } from "./core/types";
+import type {
+  Cell,
+  GameState,
+  Heading,
+  LevelDefinition,
+  MoveTarget,
+} from "./core/types";
+import { deleteArrowState, verifiesDeleteFinish } from "./core/delete-arrow";
 import {
   canUndo,
   gameStateKey,
@@ -32,6 +39,7 @@ import {
   spendHint,
   spendCoins,
   UNDO_COST,
+  DELETE_COST,
 } from "./economy";
 
 const STORAGE_KEY = "par-arrows:campaign:v1";
@@ -613,6 +621,8 @@ function readUndo(
       !record.id.length ||
       record.id.length > 128 ||
       typeof record.tutorialComplete !== "boolean" ||
+      (record.kind !== undefined &&
+        !["move", "delete"].includes(record.kind)) ||
       (record.tutorialStep !== undefined &&
         (!Number.isSafeInteger(record.tutorialStep) ||
           record.tutorialStep < 0 ||
@@ -819,6 +829,7 @@ export interface CampaignCommit {
     | "funds"
     | "cancelled"
     | "delivery"
+    | "delete"
     | "undo";
 }
 
@@ -860,6 +871,8 @@ function writeCampaign(
     let economy = economyOf(stored);
     const priorEconomy = economy;
     if (options.purchaseHint) {
+      if (!sameAttempt(stored, value))
+        return { saved: false, economy, error: "cancelled" };
       if (value.state.status !== "playing" || value.state.lives <= 0)
         return { saved: false, economy, error: "cancelled" };
       if (!economy) return { saved: false, economy, error: "wallet" };
@@ -1014,6 +1027,104 @@ export async function purchaseUndo(
         );
         try {
           options.delivered(restored, spent);
+        } catch {
+          store.setItem(STORAGE_KEY, raw);
+          return { saved: false, economy, error: "delivery" } as const;
+        }
+        return { saved: true, economy: spent } as const;
+      } catch {
+        return { saved: false, economy: undefined, error: "storage" } as const;
+      }
+    });
+  } catch {
+    return { saved: false, economy: undefined, error: "storage" };
+  }
+}
+
+/** A worker proof is replayed against the authoritative attempt before spending. */
+export async function purchaseDelete(
+  level: LevelDefinition,
+  value: CampaignSave,
+  target: MoveTarget,
+  certificate: readonly MoveTarget[],
+  options: {
+    readonly id: string;
+    readonly valid: () => boolean;
+    readonly delivered: (completed: CampaignSave, economy: Economy) => void;
+  },
+): Promise<CampaignCommit> {
+  try {
+    return await campaignWrite(() => {
+      if (!options.valid())
+        return {
+          saved: false,
+          economy: undefined,
+          error: "cancelled",
+        } as const;
+      try {
+        const store = getStore();
+        const raw = store?.getItem(STORAGE_KEY);
+        if (!store || !raw)
+          return {
+            saved: false,
+            economy: undefined,
+            error: "storage",
+          } as const;
+        const stored = JSON.parse(raw) as StoredCampaign;
+        const economy = economyOf(stored);
+        if (
+          !consistentMetadata(value) ||
+          !sameAttempt(stored, value) ||
+          !isState(stored.state, level) ||
+          typeof options.id !== "string" ||
+          !options.id ||
+          options.id.length > 128
+        )
+          return { saved: false, economy, error: "delete" } as const;
+        const state = deleteArrowState(level, value.state, target);
+        if (
+          !state ||
+          !isState(state, level) ||
+          !verifiesDeleteFinish(level, state, certificate)
+        )
+          return { saved: false, economy, error: "delete" } as const;
+        if (!economy)
+          return { saved: false, economy, error: "wallet" } as const;
+        let spent = spendCoins(economy, DELETE_COST);
+        if (!spent) return { saved: false, economy, error: "funds" } as const;
+        if (state.status === "won") spent = rewardCompletion(spent, level.id);
+        const undo: UndoSnapshot = {
+          version: 1,
+          id: options.id,
+          kind: "delete",
+          before: value.state,
+          target,
+          tutorialComplete: value.tutorialComplete,
+          ...(value.tutorialStep === undefined
+            ? {}
+            : { tutorialStep: value.tutorialStep }),
+        };
+        const completed: CampaignSave = {
+          ...value,
+          state,
+          undo,
+          tutorialComplete:
+            value.tutorialComplete ||
+            (level.id === 1 && state.status === "won"),
+          unlockedLevelId: Math.max(
+            value.unlockedLevelId,
+            stored.unlockedLevelId ?? 1,
+            state.status === "won"
+              ? Math.min(MAX_LEVEL_ID, level.id + 1)
+              : level.id,
+          ),
+        };
+        store.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ ...stored, ...completed, economy: spent }),
+        );
+        try {
+          options.delivered(completed, spent);
         } catch {
           store.setItem(STORAGE_KEY, raw);
           return { saved: false, economy, error: "delivery" } as const;

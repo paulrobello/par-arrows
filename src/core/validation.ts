@@ -1196,6 +1196,24 @@ export function solveLevelTargets(
   });
 }
 
+/** Bounded no-life-loss search from an already valid settled game state. */
+export function solveStateTargets(
+  level: LevelDefinition,
+  state: GameState,
+  nodeBudget = SOLVER_NODE_BUDGET,
+): readonly MoveTarget[] | undefined {
+  if (
+    state.levelId !== level.id ||
+    state.lives <= 0 ||
+    state.status === "lost" ||
+    !Number.isSafeInteger(nodeBudget) ||
+    nodeBudget < 1 ||
+    nodeBudget > SOLVER_NODE_BUDGET
+  )
+    return undefined;
+  return searchSolution(level, state, new Set(), { remaining: nodeBudget });
+}
+
 /** Legacy string certificate for levels containing only single-ended arrows. */
 export function solveLevel(
   level: LevelDefinition,

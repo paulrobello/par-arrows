@@ -1,4 +1,5 @@
 import { applyMove, simulateMove } from "./game-state";
+import { deleteArrowState } from "./delete-arrow";
 import type { GameState, LevelDefinition, MoveTarget } from "./types";
 
 /** One move of gameplay history, deliberately excluding wallet/progression. */
@@ -7,6 +8,7 @@ export interface UndoSnapshot {
   readonly id: string;
   readonly before: GameState;
   readonly target: MoveTarget;
+  readonly kind?: "move" | "delete";
   readonly tutorialComplete: boolean;
   readonly tutorialStep?: number;
 }
@@ -61,14 +63,21 @@ export function canUndo(
     !Number.isSafeInteger(current.revision + 1)
   )
     return false;
-  const result = simulateMove(
-    level,
-    before,
-    snapshot.target.arrowId,
-    snapshot.target.endpoint,
-  );
-  const after = applyMove(level, before, result);
+  const after =
+    snapshot.kind === "delete"
+      ? deleteArrowState(level, before, snapshot.target)
+      : applyMove(
+          level,
+          before,
+          simulateMove(
+            level,
+            before,
+            snapshot.target.arrowId,
+            snapshot.target.endpoint,
+          ),
+        );
   return (
+    !!after &&
     changesGameplay(before, after) &&
     gameStateKey(after) === gameStateKey(current)
   );

@@ -18,6 +18,8 @@ import { spotHeadingAt } from "./core/directionals";
 import { pendingCollapseKeys } from "./core/fragile";
 import { applyMove, createGameState, simulateMove } from "./core/game-state";
 import { canUndo, changesGameplay, type UndoSnapshot } from "./core/undo";
+import { deleteTargetUnavailable } from "./core/delete-arrow";
+import { DeletePlanner } from "./delete-planner";
 import { settledPathOf } from "./core/stops";
 import { resolvePick } from "./pick";
 import { overlappingArrowIds } from "./core/overlap";
@@ -35,6 +37,7 @@ import {
   emptyEconomy,
   HINT_COST,
   UNDO_COST,
+  DELETE_COST,
   COMPLETION_REWARD,
 } from "./economy";
 import {
@@ -49,6 +52,7 @@ import {
   campaignUndo,
   commitCampaign,
   purchaseUndo,
+  purchaseDelete,
   resetCampaign,
   type CampaignSave,
   type LoadedCampaign,
@@ -89,6 +93,11 @@ interface Hint {
   delivering: boolean;
 }
 
+interface DeleteSelection {
+  readonly id: string;
+  phase: "selecting" | "checking" | "purchasing";
+}
+
 const CELEBRATION_DURATION = 2080;
 const CONFETTI_COUNT = 56;
 const HINT_FOCUS_DURATION = 600;
@@ -126,6 +135,7 @@ export class ParArrowsApp {
   private readonly settingsButton: HTMLButtonElement;
   private readonly hintButton: HTMLButtonElement;
   private readonly undoButton: HTMLButtonElement;
+  private readonly deleteButton: HTMLButtonElement;
   private readonly hintStatus: HTMLElement;
   private readonly gridLines: HTMLInputElement;
   private readonly gridAlignmentSelect: HTMLSelectElement;
@@ -172,6 +182,9 @@ export class ParArrowsApp {
   private hint: Hint | undefined;
   private undo: UndoSnapshot | null = null;
   private undoBuying = false;
+  private deletion: DeleteSelection | undefined;
+  private deleteMessage = "";
+  private readonly deletePlanner = new DeletePlanner();
   private animationFrame = 0;
   private lastTimestamp = 0;
   private appliedTheme: "light" | "dark" | undefined;
@@ -195,10 +208,14 @@ export class ParArrowsApp {
         <p class="wrap-intro" id="wrap-intro" hidden>Yellow edges carry arrows onto the next face. Try an arrow pointing toward the yellow line.</p>
         <header class="hud" aria-label="Puzzle status">
           <div class="brand"><span class="brand-mark">↗</span><span>Par Arrows</span></div>
-          <div class="status-chip"><span id="level-label">Cube 1</span><span class="separator">·</span><span id="arrows-label">0 arrows</span><span class="coin-balance" id="coin-balance" aria-live="polite">0 coins</span><span class="hint-help" id="hint-help"></span><span class="hint-help" id="undo-help"></span></div>
+          <div class="status-chip"><span id="level-label">Cube 1</span><span class="separator">·</span><span id="arrows-label">0 arrows</span><span class="coin-balance" id="coin-balance" aria-live="polite">0 coins</span><span class="hint-help" id="hint-help"></span><span class="hint-help" id="undo-help"></span><span class="hint-help" id="delete-help"></span></div>
           <div class="lives" aria-live="polite"><span class="lives-caption">LIVES</span><strong id="lives-label">5</strong></div>
         </header>
         <section class="game-stage" id="game-stage" aria-label="Interactive cube puzzle">
+          <aside class="delete-selection" id="delete-selection" aria-label="Delete Arrow selection" hidden>
+            <p id="delete-selection-copy" role="status" aria-live="polite">Choose an arrow to delete.</p>
+            <button id="delete-cancel" data-action="delete-cancel" type="button">Cancel</button>
+          </aside>
           <div class="tutorial-card" id="tutorial" aria-live="polite">
             <div class="tutorial-kicker">HOW IT WORKS</div>
             <h1 id="tutorial-title">Find the open way.</h1>
@@ -222,6 +239,7 @@ export class ParArrowsApp {
           <button class="dock-button" data-action="reset" type="button" aria-label="Reset camera view">⌖<span>View</span></button>
           <button class="dock-button" id="hint-button" data-action="hint" type="button" aria-label="Hint" aria-describedby="hint-price hint-help coin-balance">✦<span>Hint</span><span class="hint-price" id="hint-price">${HINT_COST} coins</span></button>
           <button class="dock-button" id="undo-button" data-action="undo" type="button" aria-label="Undo" aria-describedby="undo-price undo-help coin-balance">↶<span>Undo</span><span class="hint-price" id="undo-price">${UNDO_COST} coins</span></button>
+          <button class="dock-button" id="delete-button" data-action="delete" type="button" aria-label="Delete Arrow" aria-describedby="delete-price delete-help coin-balance">⌫<span>Delete</span><span class="hint-price" id="delete-price">${DELETE_COST} coins</span></button>
           <button class="dock-button" data-action="retry" type="button">↻<span>Retry</span></button>
           <form class="level-picker" id="level-form"><label for="level-input">Cube</label><div><input id="level-input" aria-label="Choose an unlocked cube" inputmode="numeric" min="1" step="1" type="number" /><button type="submit">Go</button></div></form>
           <button class="dock-button" id="settings-button" type="button" aria-expanded="false">☼<span>Settings</span></button>
@@ -258,6 +276,7 @@ export class ParArrowsApp {
         <p class="gesture-help">Drag to orbit · <span class="zoom-help-mouse">Mouse wheel to zoom</span><span class="zoom-help-touch">Pinch to zoom</span> · press an exposed arrow to move it</p>
         <p class="screenreader-status" id="hint-status" aria-live="polite"></p>
         <p class="screenreader-status" id="undo-status" aria-live="polite"></p>
+        <p class="screenreader-status" id="delete-status" aria-live="polite"></p>
         <div class="storage-note" id="storage-note" role="status"></div>
       </main>`;
     this.stage = this.requireElement("game-stage");
@@ -284,6 +303,9 @@ export class ParArrowsApp {
     ) as HTMLButtonElement;
     this.hintButton = this.requireElement("hint-button") as HTMLButtonElement;
     this.undoButton = this.requireElement("undo-button") as HTMLButtonElement;
+    this.deleteButton = this.requireElement(
+      "delete-button",
+    ) as HTMLButtonElement;
     this.hintStatus = this.requireElement("hint-status");
     this.gridLines = this.requireElement("grid-lines") as HTMLInputElement;
     this.gridAlignmentSelect = this.requireElement(
@@ -313,10 +335,15 @@ export class ParArrowsApp {
           : this.resolvePick(x, y, pointerType),
       onPress: (id) => {
         this.cancelHint();
+        if (this.deletion && this.deletion.phase !== "selecting") return;
         this.renderer.setSelected(
-          this.motion || id === undefined || !this.gateAllows(id)
+          this.motion ||
+            id === undefined ||
+            (!this.deletion && !this.gateAllows(id))
             ? undefined
             : id,
+          true,
+          this.deletion !== undefined,
         );
       },
       onTap: (id) => {
@@ -338,6 +365,7 @@ export class ParArrowsApp {
     });
     this.bindControls();
     window.addEventListener("storage", this.handleWalletStorage);
+    window.addEventListener("keydown", this.handleDeleteKey);
     this.systemMotionPreference.addEventListener(
       "change",
       this.handleMotionPreference,
@@ -376,7 +404,10 @@ export class ParArrowsApp {
 
   dispose(): void {
     this.disposed = true;
+    this.deletion = undefined;
+    this.deletePlanner.cancel();
     window.removeEventListener("storage", this.handleWalletStorage);
+    window.removeEventListener("keydown", this.handleDeleteKey);
     this.loadRequest += 1;
     cancelAnimationFrame(this.animationFrame);
     this.systemMotionPreference.removeEventListener(
@@ -505,6 +536,8 @@ export class ParArrowsApp {
       hintCost: HINT_COST,
       undoCost: UNDO_COST,
       undoPurchasing: this.undoBuying,
+      deleteCost: DELETE_COST,
+      deletion: this.deletion ? { phase: this.deletion.phase } : null,
       undo: this.undo
         ? {
             available: this.undoUnavailable() === undefined,
@@ -619,6 +652,7 @@ export class ParArrowsApp {
     }
     const request = ++this.loadRequest;
     this.requestedLevelId = levelId;
+    this.cancelDelete();
     this.retryPurpose = "level";
     this.settleMotion();
     this.loading = true;
@@ -660,6 +694,7 @@ export class ParArrowsApp {
       return;
     }
     this.loadRequest += 1;
+    this.cancelDelete();
     this.requestedLevelId = 1;
     this.retryPurpose = undefined;
     this.campaignEpoch += 1;
@@ -813,6 +848,7 @@ export class ParArrowsApp {
 
   /** Returns the queued save so automation can await a durable move. */
   private attempt(target: MoveTarget): Promise<void> | undefined {
+    if (this.deletion) return this.chooseDeleteTarget(target);
     const { arrowId, endpoint } = target;
     this.cancelHint();
     // A new move must never begin while a gate still shows its padlock to
@@ -1027,6 +1063,7 @@ export class ParArrowsApp {
     if (this.loading || this.loadingError) {
       return;
     }
+    this.cancelDelete();
     this.motion = undefined;
     this.undo = null;
     this.pendingTap = undefined;
@@ -1207,6 +1244,7 @@ export class ParArrowsApp {
       this.hint !== undefined ||
       this.state.status !== "playing" ||
       hintUnavailable !== undefined ||
+      this.deletion !== undefined ||
       this.undoBuying;
     const undoUnavailable = this.undoUnavailable();
     this.requireElement("undo-help").textContent =
@@ -1219,6 +1257,23 @@ export class ParArrowsApp {
     recoveryUndo.hidden =
       this.state.status !== "lost" || undoUnavailable !== undefined;
     recoveryUndo.disabled = undoUnavailable !== undefined;
+    const deleteUnavailable = this.deleteUnavailable();
+    this.stage.classList.toggle("is-deleting", this.deletion !== undefined);
+    this.requireElement("hint-help").hidden = this.deletion !== undefined;
+    this.requireElement("undo-help").hidden = this.deletion !== undefined;
+    this.deleteButton.disabled =
+      deleteUnavailable !== undefined || this.deletion !== undefined;
+    this.deleteButton.title = `Delete Arrow costs ${DELETE_COST} coins. ${deleteUnavailable ?? "Choose a whole arrow or linked group"}.`;
+    this.requireElement("delete-help").textContent =
+      `Delete: ${deleteUnavailable ?? "Choose a whole arrow"}`;
+    this.requireElement("delete-selection").hidden = !this.deletion;
+    this.requireElement("delete-selection-copy").textContent =
+      this.deletion?.phase === "checking"
+        ? "Checking a safe finish… Cancel is free."
+        : this.deletion?.phase === "purchasing"
+          ? "Removing the arrow…"
+          : this.deleteMessage ||
+            `Tap an arrow to delete for ${DELETE_COST} coins. Both heads or linked tails are removed together. Cancel is free.`;
     this.levelInput.value = String(this.level.id);
     this.levelInput.max = String(
       this.preview.active ? MAX_LEVEL_ID : this.unlockedLevelId,
@@ -1284,6 +1339,8 @@ export class ParArrowsApp {
       if (action === "reset") this.cancelHint();
       if (action === "hint") this.beginHint();
       if (action === "undo") void this.beginUndo();
+      if (action === "delete") this.beginDelete();
+      if (action === "delete-cancel") this.cancelDelete(true);
       if (action === "retry") this.retry();
       if (action === "next")
         this.selectLevel(Math.min(this.level.id + 1, MAX_LEVEL_ID));
@@ -1294,6 +1351,7 @@ export class ParArrowsApp {
       this.selectLevel(Number(this.levelInput.value));
     });
     this.settingsButton.addEventListener("click", () => {
+      this.cancelDelete();
       const panel = this.requireElement("settings-panel");
       panel.hidden = !panel.hidden;
       this.settingsButton.setAttribute("aria-expanded", String(!panel.hidden));
@@ -1439,7 +1497,11 @@ export class ParArrowsApp {
         y,
         pointerType === "touch" ? TOUCH_PICK_MARGIN_PX : MOUSE_PICK_MARGIN_PX,
       ),
-      (target) => this.isSafeMove(target),
+      (target) =>
+        this.deletion
+          ? deleteTargetUnavailable(this.level, this.state, target) ===
+            undefined
+          : this.isSafeMove(target),
     );
   }
 
@@ -1449,6 +1511,151 @@ export class ParArrowsApp {
       simulateMove(this.level, this.state, target.arrowId, target.endpoint)
         .kind,
     );
+  }
+
+  private readonly handleDeleteKey = (event: KeyboardEvent): void => {
+    if (event.key === "Escape" && this.deletion) {
+      event.preventDefault();
+      this.cancelDelete(true);
+    }
+  };
+
+  private deleteUnavailable(): string | undefined {
+    if (this.preview.active) return "Campaign only";
+    if (this.loading || this.loadingError) return "Wait for the cube";
+    if (this.motion) return "Wait for the move to finish";
+    if (this.undoBuying) return "Wait for Undo to finish";
+    if (this.state.lives <= 0) return "Undo or restart before deleting";
+    if (this.state.status !== "playing") return "Start another cube first";
+    if (this.tutorialRunner?.gateTarget) return "Finish the guided move first";
+    if (!this.savingAvailable) return "Delete needs saved progress";
+    if (!this.economy) return "Wallet unavailable";
+    if (this.economy.coins < DELETE_COST) {
+      const shortfall = DELETE_COST - this.economy.coins;
+      return `Need ${shortfall} more ${shortfall === 1 ? "coin" : "coins"}`;
+    }
+    if (!this.renderer.graphicsAvailable()) return "Graphics unavailable";
+    return undefined;
+  }
+
+  private beginDelete(): void {
+    if (this.deletion || this.deleteUnavailable() !== undefined) return;
+    this.cancelHint();
+    this.pendingTap = undefined;
+    this.renderer.snapKeyFlights();
+    this.deletion = { id: crypto.randomUUID(), phase: "selecting" };
+    this.deleteMessage = "";
+    this.requireElement("delete-status").textContent = "";
+    this.renderUi();
+    this.stage.tabIndex = -1;
+    this.stage.focus({ preventScroll: true });
+  }
+
+  private cancelDelete(announce = false): void {
+    if (!this.deletion) return;
+    this.deletion = undefined;
+    this.deletePlanner.cancel();
+    this.deleteMessage = "";
+    this.renderer.setSelected(undefined);
+    if (announce)
+      this.requireElement("delete-status").textContent =
+        "Delete cancelled. No coins spent.";
+    this.renderUi();
+    if (announce) this.deleteButton.focus({ preventScroll: true });
+  }
+
+  private async chooseDeleteTarget(target: MoveTarget): Promise<void> {
+    const selection = this.deletion;
+    if (selection?.phase !== "selecting") return;
+    const reason =
+      this.deleteUnavailable() ??
+      deleteTargetUnavailable(this.level, this.state, target);
+    if (reason) {
+      this.deleteMessage = `${reason}. No coins spent.`;
+      this.renderUi();
+      return;
+    }
+    const value = this.campaignSave();
+    const state = this.state;
+    const epoch = this.campaignEpoch;
+    const request = this.loadRequest;
+    selection.phase = "checking";
+    this.renderer.setSelected(target, true, true);
+    this.renderUi();
+    const plan = await this.deletePlanner.plan(this.level, state, target);
+    if (
+      this.disposed ||
+      this.deletion !== selection ||
+      this.state !== state ||
+      this.campaignEpoch !== epoch ||
+      this.loadRequest !== request
+    )
+      return;
+    if (!plan.eligible) {
+      selection.phase = "selecting";
+      this.deleteMessage = `${plan.reason}. No coins spent.`;
+      this.renderUi();
+      return;
+    }
+    selection.phase = "purchasing";
+    this.renderUi();
+    const result = await purchaseDelete(
+      this.level,
+      value,
+      target,
+      plan.certificate,
+      {
+        id: selection.id,
+        valid: () =>
+          !this.disposed &&
+          this.deletion === selection &&
+          this.state === state &&
+          this.campaignEpoch === epoch &&
+          this.loadRequest === request &&
+          this.deleteUnavailable() === undefined,
+        delivered: (completed, economy) => {
+          this.renderer.setLevel(this.level, completed.state);
+          this.renderer.setSelected(undefined, false);
+          this.state = completed.state;
+          this.displayedState = this.state;
+          this.undo = completed.undo ?? null;
+          this.unlockedLevelId = completed.unlockedLevelId;
+          this.tutorialComplete = completed.tutorialComplete;
+          this.economy = economy;
+          this.savingAvailable = true;
+          this.deletion = undefined;
+          this.deleteMessage = "";
+          this.tutorialMove = undefined;
+          this.clearLifeLostFlash();
+          this.clearCelebration();
+          if (this.state.status === "won") {
+            this.tutorialRunner?.onWon();
+            if (this.tutorialRunner) this.markTutorialSeen(this.level.id);
+            this.tutorialRunner = undefined;
+            this.startCelebration();
+          }
+          const count =
+            value.state.remainingIds.length - this.state.remainingIds.length;
+          this.requireElement("delete-status").textContent =
+            `${count > 1 ? `${count} linked arrows` : "Arrow"} deleted. ${DELETE_COST} coins spent.`;
+        },
+      },
+    );
+    if (
+      this.disposed ||
+      this.campaignEpoch !== epoch ||
+      this.loadRequest !== request
+    )
+      return;
+    if (!result.saved && this.deletion === selection) {
+      this.economy = campaignEconomy();
+      this.undo = campaignUndo(this.level, this.campaignSave());
+      if (result.error === "storage") this.savingAvailable = false;
+      selection.phase = "selecting";
+      this.deleteMessage = `${this.deleteUnavailable() ?? "Removal unavailable; choose another arrow or reload"}. No coins spent.`;
+    }
+    this.renderUi();
+    if (result.saved) this.stage.focus({ preventScroll: true });
   }
 
   private restoreTutorial(step: number | undefined): void {
@@ -1468,6 +1675,7 @@ export class ParArrowsApp {
 
   private undoUnavailable(): string | undefined {
     if (this.preview.active) return "Campaign only";
+    if (this.deletion) return "Cancel Delete Arrow first";
     if (this.loading || this.loadingError) return "Wait for the cube";
     if (this.undoBuying) return "Restoring the last move…";
     if (this.motion) return "Wait for the move to finish";
@@ -1543,6 +1751,7 @@ export class ParArrowsApp {
 
   private hintUnavailable(): string | undefined {
     if (this.preview.active) return "Campaign only";
+    if (this.deletion) return "Cancel Delete Arrow first";
     if (this.state.lives <= 0) return "Retry before buying a Hint";
     if (!this.savingAvailable) return "Hints need saved progress";
     if (!this.economy) return "Wallet unavailable";
@@ -1556,6 +1765,7 @@ export class ParArrowsApp {
       this.loading ||
       this.loadingError !== undefined ||
       this.motion ||
+      this.deletion ||
       this.undoBuying ||
       this.hint ||
       this.hintUnavailable() !== undefined ||
